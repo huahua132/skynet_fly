@@ -1,4 +1,4 @@
-local skynet = require "contriner_client"
+local skynet = require "contriner_client_2"
 
 local CMD = {}
 
