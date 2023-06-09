@@ -36,9 +36,10 @@ skynet.start(function()
 		CMD.init()
 	end
 
-	skynet.dispatch('lua',function(session,source,cmd,...)
+	skynet.dispatch('lua',function(session,source,module_name,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
+		assert(module_name == MODULE_NAME,"module_name not same")
 		if is_exit and CMD.is_close() then
 			return skynet.retpack("move",new_id_list)
 		end

@@ -13,14 +13,14 @@ function CMD.load_module(module_name,launch_num)
 
 	local id_list = {}
 	for i = 1,launch_num do
-		local server_id = skynet.newservice('hot_container',module_name)
-		skynet.call(server_id,'lua','start')
+		local server_id = skynet.newservice('hot_container_2',module_name)
+		skynet.call(server_id,'lua',module_name,'start')
 		table.insert(id_list,server_id)
 	end
 
 	local old_id_list = g_module_id_list_map[module_name] or {}
 	for _,id in ipairs(old_id_list) do
-		skynet.send(id,'lua','exit')
+		skynet.send(id,'lua',module_name,'exit')
 	end
 
 	g_module_id_list_map[module_name] = id_list
@@ -44,7 +44,7 @@ function CMD.query(module_name)
 end
 
 skynet.start(function()
-	skynet.register('.contriner_mgr')
+	skynet.register('.contriner_mgr_2')
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
