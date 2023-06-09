@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+require "skynet.manager"
 skynet.start(function()
 	-- local cur_time = skynet.time()
 	-- for i = 1,10000 do
@@ -9,7 +10,8 @@ skynet.start(function()
 
 	local cur_time = skynet.time()
 	for i = 1,10000 do
-		skynet.newservice('test')
+		local id = skynet.newservice('test')
+		skynet.kill(id)
 	end
 	skynet.error("use time:",skynet.time() - cur_time)
 
