@@ -8,9 +8,10 @@ local tunpack = table.unpack
 
 local SELF_ADRESS = skynet.self()
 local g_balance_num_map = {}
+local g_version_map = {}
 
 local g_module_id_list_map = setmetatable({},{__index = function(t,key)
-	t[key] = skynet.call('.contriner_mgr_2','lua','query',key)
+	t[key],g_version_map[key] = skynet.call('.contriner_mgr_2','lua','query',key)
 	assert(t[key],"query err " .. key)
 	skynet.error(SELF_ADRESS .. " update " .. key .. " adress " .. table.concat(t[key],','))
 	g_balance_num_map[key] = 1
@@ -18,12 +19,13 @@ local g_module_id_list_map = setmetatable({},{__index = function(t,key)
 end})
 
 local function call(module_name,server_id,...)
-	local ret = {pcall(skynet.call,server_id,'lua',module_name,...)}
+	local ret = {pcall(skynet.call,server_id,'lua',module_name,g_version_map[module_name],...)}
 	local is_ok = ret[1]
 	local code = ret[2]
 	if not is_ok then
 		g_module_id_list_map[module_name] = nil
 		g_balance_num_map[module_name] = nil
+		g_version_map[module_name] = nil
 	elseif code == "move" then
 		g_module_id_list_map[module_name] = ret[3]
 		g_balance_num_map[module_name] = 1

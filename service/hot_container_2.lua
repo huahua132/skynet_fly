@@ -1,10 +1,14 @@
 local skynet = require "skynet"
 local cache = require "skynet.codecache"
 cache.mode "OFF"
+local assert = assert
+local tonumber = tonumber
 
-local ARGS = {...}
-local MODULE_NAME = ARGS[1]
+local ARGV = {...}
+local MODULE_NAME = ARGV[1]
+local VERSION = tonumber(ARGV[2])
 assert(MODULE_NAME)
+assert(VERSION)
 
 local CMD = require(MODULE_NAME)
 
@@ -36,11 +40,13 @@ skynet.start(function()
 		CMD.init()
 	end
 
-	skynet.dispatch('lua',function(session,source,module_name,cmd,...)
+	skynet.dispatch('lua',function(session,source,module_name,version,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
-		assert(module_name == MODULE_NAME,"module_name not same")
-		if is_exit and CMD.is_close() then
+		
+		if module_name ~= MODULE_NAME 
+		or version ~= VERSION
+		or (is_exit and CMD.is_close()) then
 			return skynet.retpack("move",new_id_list)
 		end
 
