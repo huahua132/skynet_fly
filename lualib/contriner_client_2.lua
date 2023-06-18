@@ -6,14 +6,14 @@ local pcall = pcall
 local ipairs = ipairs
 local tunpack = table.unpack
 
-local SELF_ADRESS = skynet.self()
+local SELF_ADDRESS = skynet.self()
 local g_balance_num_map = {}
 local g_version_map = {}
 
 local g_module_id_list_map = setmetatable({},{__index = function(t,key)
 	t[key],g_version_map[key] = skynet.call('.contriner_mgr_2','lua','query',key)
 	assert(t[key],"query err " .. key)
-	skynet.error(SELF_ADRESS .. " update " .. key .. " adress " .. table.concat(t[key],','))
+	skynet.error(SELF_ADDRESS .. " update " .. key .. " adress " .. table.concat(t[key],','))
 	g_balance_num_map[key] = 1
 	return t[key]
 end})
@@ -38,7 +38,7 @@ end
 function skynet.contriner_mod_call(module_name,...)
 	for i = 1,2 do
 		local id_list = g_module_id_list_map[module_name]
-		local index = SELF_ADRESS % #id_list + 1
+		local index = SELF_ADDRESS % #id_list + 1
 		local server_id = id_list[index]
 		local ret = {call(module_name,server_id,...)}
 		local code = ret[1]
