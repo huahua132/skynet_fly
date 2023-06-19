@@ -80,7 +80,6 @@ function M:mod_send(...)
 end
 
 function M:mod_call(...)
-	skynet.error("mod_call begin")
 	switch_svr(self)
 	return skynet.call(get_mod(self),'lua',...)
 end
