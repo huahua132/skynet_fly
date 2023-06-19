@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
+local ipairs = ipairs
 
 local M = {}
 local meta = {__index = M}
@@ -92,6 +93,14 @@ end
 function M:balance_call(...)
 	switch_svr(self)
 	return skynet.call(get_balance(self),'lua',...)
+end
+
+function M:broadcast(...)
+	switch_svr(self)
+	local id_list = self.cur_id_list
+	for _,id in ipairs(id_list) do
+		skynet.send(id,'lua',...)
+	end
 end
 
 return M
