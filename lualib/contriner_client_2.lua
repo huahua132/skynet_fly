@@ -13,7 +13,7 @@ local g_version_map = {}
 local g_module_id_list_map = setmetatable({},{__index = function(t,key)
 	t[key],g_version_map[key] = skynet.call('.contriner_mgr_2','lua','query',key)
 	assert(t[key],"query err " .. key)
-	skynet.error(SELF_ADDRESS .. " update " .. key .. " adress " .. table.concat(t[key],','))
+	skynet.error(SELF_ADDRESS .. " update " .. key .. " address " .. table.concat(t[key],','))
 	g_balance_num_map[key] = 1
 	return t[key]
 end})
