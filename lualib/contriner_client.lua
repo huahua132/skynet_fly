@@ -65,6 +65,8 @@ local function switch_svr(t)
 end
 
 function M:new(module_name,can_switch_func)
+	assert(module_name)
+	assert(can_switch_func)
     local t = {
         can_switch_func = can_switch_func, 			 --是否可以切服
         module_name = module_name,         			 --模块名称
