@@ -1,8 +1,8 @@
 local skynet = require "skynet"
-local contriner_client = require "contriner_client_3"
+local contriner_client = require "contriner_client"
 skynet.start(function()
 	skynet.error("start hot_module4!!!>>>>>>>>>>>>>>>>>")
-	local cmgr = skynet.uniqueservice('contriner_mgr_3')
+	local cmgr = skynet.uniqueservice('contriner_mgr')
 
 	skynet.call(cmgr,'lua','load_module',"server_m",1)
 
@@ -22,4 +22,5 @@ skynet.start(function()
 	skynet.sleep(500)
 	skynet.error("update service>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 	skynet.call(cmgr,'lua','load_module',"server_m",1)
+	skynet.error("over !!!")
 end)
