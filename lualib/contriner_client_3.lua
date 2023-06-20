@@ -10,32 +10,41 @@ local meta = {__index = M}
 local skynet_exit = skynet.exit
 
 local SELF_ADDRESS = skynet.self()
+local IS_CLOSE = false
+
+local g_mod_svr_version_map = {}
+
+local function monitor(t,key)
+	while not IS_CLOSE do
+		local old_version = g_mod_svr_version_map[key]
+		skynet.error("monitor req ",key,old_version)
+		local id_list,version = skynet.call('.contriner_mgr_3','lua','watch',key,old_version)
+		t[key] = id_list
+		g_mod_svr_version_map[key] = version
+		skynet.error("monitor ret ",key,version)
+	end
+
+	skynet.error("monitor quit ",key)
+end
 
 local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
-	t[key] = skynet.call('.contriner_mgr_3','lua','watch',key)
-	assert(t[key],"watch err " .. key)
+	t[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr_3','lua','query',key)
+	assert(t[key],"query err " .. key)
 
-	skynet.error(SELF_ADDRESS .. " watch " .. key .. " address " .. table.concat(t[key],','))
-	return t[key]
-end})             --记录最新的服务id地址
+	skynet.fork(monitor,t,key)
+	skynet.error(SELF_ADDRESS .. " query " .. key .. " address " .. table.concat(t[key],','))
+	return t[key],g_mod_svr_version_map[key]
+end})
 
 skynet.exit = function()
+	IS_CLOSE = true
 	skynet.error("unwatch mod")
 	for mod_name in pairs(g_mod_svr_ids_map) do
-		skynet.send('contriner_mgr_3','lua','unwatch',mod_name)
+		skynet.error("unwatch ",mod_name)
+		skynet.send('.contriner_mgr_3','lua','unwatch',mod_name)
 	end
 	return skynet_exit()
 end
-
-skynet.dispatch('lua',function(source,session,cmd,...)
-	if cmd == 'watchrsp' then
-		local args = {...}
-		local mod_name = args[1]
-		local svr_id_list = args[2]
-		g_mod_svr_ids_map[mod_name] = svr_id_list
-		skynet.error("watchrsp update address ",mod_name,svr_id_list)
-	end
-end)
 
 local function get_balance(t)
     local id_list = t.cur_id_list
