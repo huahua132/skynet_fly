@@ -18,7 +18,7 @@ local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		skynet.error("monitor req ",key,old_version)
-		local id_list,version = skynet.call('.contriner_mgr_3','lua','watch',key,old_version)
+		local id_list,version = skynet.call('.contriner_mgr','lua','watch',key,old_version)
 		t[key] = id_list
 		g_mod_svr_version_map[key] = version
 		skynet.error("monitor ret ",key,version)
@@ -28,7 +28,7 @@ local function monitor(t,key)
 end
 
 local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
-	t[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr_3','lua','query',key)
+	t[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr','lua','query',key)
 	assert(t[key],"query err " .. key)
 
 	skynet.fork(monitor,t,key)
@@ -41,7 +41,7 @@ skynet.exit = function()
 	skynet.error("unwatch mod")
 	for mod_name in pairs(g_mod_svr_ids_map) do
 		skynet.error("unwatch ",mod_name)
-		skynet.send('.contriner_mgr_3','lua','unwatch',mod_name)
+		skynet.send('.contriner_mgr','lua','unwatch',mod_name)
 	end
 	return skynet_exit()
 end

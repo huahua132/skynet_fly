@@ -41,7 +41,7 @@ skynet_handle_register(struct skynet_context *ctx) {
 		int i;
 		uint32_t handle = s->handle_index;
 		for (i=0;i<s->slot_size;i++,handle++) {
-			if (handle > 20) {
+			if (handle > HANDLE_MASK) {
 				// 0 is reserved
 				handle = 1;
 			}

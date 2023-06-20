@@ -24,7 +24,7 @@ function CMD.load_module(source,module_name,launch_num)
 
 	local id_list = {}
 	for i = 1,launch_num do
-		local server_id = skynet.newservice('hot_container_3',module_name)
+		local server_id = skynet.newservice('hot_container',module_name)
 		skynet_call(server_id,'lua','start')
 		tinsert(id_list,server_id)
 	end
@@ -104,7 +104,7 @@ function CMD.unwatch(source,module_name)
 end
 
 skynet.start(function()
-	skynet.register('.contriner_mgr_3')
+	skynet.register('.contriner_mgr')
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		skynet.error("dispatch:",source,cmd,...)
 		local f = CMD[cmd]
