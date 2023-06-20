@@ -3,3 +3,7 @@
 
 (热更新方案二的实现)[https://huahua132.github.io/2023/05/22/think/reload/]
 运行**examples/hot_module2**示例
+运行**examples/hot_module3**示例
+
+(热更新方案三的实现)[https://huahua132.github.io/2023/05/22/think/reload/]
+运行**examples/hot_module4**示例
