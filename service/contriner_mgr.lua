@@ -18,14 +18,14 @@ local g_module_version_map = {}
 
 local CMD = {}
 
-function CMD.load_module(source,module_name,launch_num,mod_args)
+function CMD.load_module(source,module_name,launch_num,mod_args,default_arg)
 	assert(module_name,'not module_name')
 	assert(launch_num and launch_num > 0,"launch_num err")
 	mod_args = mod_args or {}
 	local id_list = {}
 	for i = 1,launch_num do
 		local server_id = skynet.newservice('hot_container',module_name,i)
-		skynet_call(server_id,'lua','start',mod_args[i])
+		skynet_call(server_id,'lua','start',mod_args[i] or default_arg)
 		tinsert(id_list,server_id)
 	end
 
