@@ -16,7 +16,7 @@ return {
 		mod_args = {
 			{
 				player_id = 10001,
-				nickname = "张三"
+				nickname = "张三",
 			},
 			{
 				player_id = 10002,

@@ -3,9 +3,8 @@ local ARGV = {...}
 local skynet_fly_path = ARGV[1]
 local svr_name = ARGV[2]
 local thread = ARGV[3] or 4
-assert(skynet_fly_path)
-assert(svr_name)
-assert(thread)
+assert(skynet_fly_path,'缺少 skynet_fly_path')
+assert(svr_name,'缺少 svr_name')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
 package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
@@ -94,7 +93,12 @@ else
 	--load_mods 新增字段对应config添加
 	--load_mods 删除字段对应config删除
 	--load_mods 修改字段值对应config值不变
-
 	local load_mods = require "load_mods"
 	assert(load_mods)
+	old_config = old_config()
+	local old_mod_config = load(_G['mod_config'])()
+	assert(old_mod_config)
+
+	local def_t = util.check_def_table(load_mods,old_mod_config,"config")
+	print(util.dump(def_t))
 end
