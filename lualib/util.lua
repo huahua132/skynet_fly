@@ -8,6 +8,8 @@ local tostring = tostring
 local string = string
 local table = table
 local assert = assert
+local setmetatable = setmetatable
+local next = next
 local io = io
 
 --map按 字符编码顺序排序后遍历
@@ -108,11 +110,7 @@ end
 function util.readallfile(file_path)
 	local file = io.open(file_path,'r')
 	assert(file)
-
-	local str = ""
-	for line in file:lines() do
-		str = str .. line .. '\n';
-	end
+	local str = file:read("*all")
 	file:close()
 	return str
 end
@@ -141,6 +139,99 @@ function util.sort_ipairs(t,comp)
 		index = index + 1
 		return k,v
 	end
+end
+
+--检查表不同
+function util.check_def_table(new_t,old_t,key)
+	local des_map = {}
+
+	local function add_des_map(key,sub_key,flag,new,old)
+		if not sub_key then
+			des_map[key] = {flag = flag,new = new,old = old}
+		else
+			if not des_map[key] then
+				des_map[key] = {}
+			end
+			des_map[key][sub_key] = {flag = flag,new = new,old = old}
+		end
+	end
+
+	local n_type = type(new_t)
+	local o_type = type(old_t)
+	if n_type ~= o_type then
+		add_des_map(key,nil,"typedef",n_type,o_type)
+	else
+	  	if n_type == 'table' then
+			for k,v in pairs(new_t) do
+		  		if not old_t[k] then
+					add_des_map(key,k,"add",v,nil)
+		  		end
+			end
+  
+			for k,v in pairs(old_t) do
+				if not new_t[k] then
+					add_des_map(key,k,"reduce",nil,v)
+				end
+			end
+  
+			for k,v in pairs(new_t) do
+				if old_t[k] then
+					local temp_des_map = util.check_def_table(new_t[k],old_t[k],k)
+					if next(temp_des_map) then
+						if not des_map[key] then
+							des_map[key] = {}
+						end
+						des_map[key][k] = temp_des_map[k]
+					end
+				end
+			end
+		else
+			if new_t ~= old_t then
+				add_des_map(key,nil,"valuedef",new_t,old_t)
+			end
+		end
+	end
+  
+	return des_map
+end
+
+function util.dump(tab)
+	local filter = {}
+	local function dp(k,v,level)
+		local t = type(v)
+		local str = ''
+		local head_str = ""
+		for i = 1,level do
+			head_str = head_str .. '\t'
+		end
+		
+		if t == 'table' then
+			filter[v] = k or ''
+			if k then
+				str = str .. head_str .. tostring(k) .. ' = ' .. tostring(v) .. ' {\n'
+			else
+				str = str .. head_str .. tostring(v) .. '{\n'
+			end
+			for kk,vv in pairs(v) do
+				if type(vv) == 'table' and filter[vv] then
+					str = str .. head_str .. '\t' .. tostring(kk) .. ' = ' .. tostring(vv) .. ',\n'
+				else
+					str = str .. dp(kk,vv,level + 1)
+				end
+			end
+			str = str .. head_str .. '}\n'
+		else
+			if k then
+				str = str .. head_str .. tostring(k) .. ' = ' .. tostring(v) .. ',\n'
+			else
+				str = str .. head_str .. tostring(v) .. '\n'
+			end
+		end
+
+		return str
+	end
+
+	return dp(nil,tab,0)
 end
 
 return util
