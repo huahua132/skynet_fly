@@ -1,16 +1,11 @@
 local skynet = require "skynet"
 local seat_mgr = require "seat_mgr"
+local GAME_STATE_ENUM = require "GAME_STATE"
 local string = string
 local assert = assert
 
 
 --======================enum=================================
-local GAME_STATE_ENUM = {
-	waiting = 0,
-	playing = 1,
-	over = 2,
-}
-
 local MINE_MIN = 1
 local MINE_MAX = 100
 --======================enum=================================
@@ -22,19 +17,24 @@ local g_game_seat_id_list = {}   	     --参与游戏的玩家座位号
 local g_mine = 0                         --雷
 local g_doing_seat_id = nil              --操作座位号
 local g_doing_index = nil
-local g_mine_min = MINE_MIN
-local g_mine_max = MINE_MAX
+local g_mine_min = nil
+local g_mine_max = nil
 --======================Data=================================
 
 local function doing_cast()
 	--通知操作
 	local player = seat_mgr.get_player_info_by_seat_id(g_doing_seat_id)
-	seat_mgr.broad_cast_msg(string.format("请玩家[%s] 操作 选择数字范围[%d,%d]",player.player_id,g_mine_min,g_mine_max))
+	local args = {
+		content = string.format("请玩家[%s] 操作 选择数字范围[%d,%d]",player.player_id,g_mine_min,g_mine_max),
+		doing_player_id = player.player_id,
+		min_num = g_mine_min,
+		max_num = g_mine_max,
+	}
+	seat_mgr.broad_cast_msg("doing_cast",args)
 end
 
 --======================GAME_STATE===========================
 local function game_start()
-	skynet.error("游戏开始！！！")
 	GAME_STATE = GAME_STATE_ENUM.playing
 	g_game_seat_id_list = seat_mgr.game_start()
 
@@ -43,27 +43,29 @@ local function game_start()
 		local player = seat_mgr.get_player_info_by_seat_id(seat_id)
 		msg = msg .. string.format("player_id[%s] nickname[%s]\n",player.player_id,player.nickname)
 	end
-	seat_mgr.broad_cast_msg(string.format("游戏开始 ！！！ 参与玩家有 %s",msg))
+	local args = {
+		content = string.format("游戏开始 ！！！ 参与玩家有 %s",msg)
+	}
+	seat_mgr.broad_cast_msg("game_start",args)
 	
 	g_mine = math.random(MINE_MIN,MINE_MAX)         --随机雷
-
+	g_mine_min = MINE_MIN
+	g_mine_max = MINE_MAX
 	g_doing_index = math.random(1,#g_game_seat_id_list)
 	g_doing_seat_id = g_game_seat_id_list[g_doing_index]   --先手
+
+	skynet.error("游戏开始！！！数字雷是",g_mine)
 	doing_cast()
 end
 
 local function game_over(player)
 	skynet.error("游戏结束！！！")
-	seat_mgr.broad_cast_msg("游戏结束 玩家[%s]踩雷了 %s",player.nickname,g_mine)
+	local args = {
+		content = string.format("游戏结束 玩家[%s]踩雷了 %s",player.nickname,g_mine)
+	}
+	seat_mgr.broad_cast_msg("game_over",args)
 	GAME_STATE = GAME_STATE_ENUM.over
 	seat_mgr.game_over()
-
-	skynet.timeout(500,function()
-		if seat_mgr.enter_len >= 2 then
-			skynet.error("游戏继续！！！")
-			game_start()
-		end
-	end)
 end
 --======================GAME_STATE===========================
 
@@ -80,10 +82,13 @@ function CLIENT_CMD.enter(player)
 		skynet.error("进入房间失败 ",player.player_id)
 		return nil
 	end
-
-	seat_mgr.broad_cast_msg(string.format("进入房间 player_id = %s nickname=%s seat_id = %s",player.player_id,player.nickname,seat_id))
+	local args = {
+		content = string.format("进入房间 player_id = %s nickname=%s seat_id = %s",player.player_id,player.nickname,seat_id),
+		enter_player = player
+	}
+	seat_mgr.broad_cast_msg("enter",args)
 	skynet.error("进入房间成功 ",player.player_id)
-	if seat_mgr.enter_len >= 2 then
+	if seat_mgr.enter_len() >= 2 then
 		skynet.fork(game_start)
 	end
 
@@ -97,8 +102,11 @@ function CLIENT_CMD.leave(player)
 		skynet.error("离开房间失败 ",player.player_id)
 		return nil
 	end
-
-	seat_mgr.broad_cast_msg(string.format("离开房间 player_id = %s nickname=%s seat_id = %s",player.player_id,player.nickname,seat_id))
+	local args = {
+		content = string.format("离开房间 player_id = %s nickname=%s",player.player_id,player.nickname),
+		leave_player = player,
+	}
+	seat_mgr.broad_cast_msg("leave",args)
 	skynet.error("离开房间成功 ",player.player_id)
 
 	return seat_id
@@ -106,15 +114,28 @@ end
 
 --玩家操作
 function CLIENT_CMD.play(player,opt_num)
+	if GAME_STATE ~= GAME_STATE_ENUM.playing then
+		skynet.error("游戏还没有开始！！！")
+	end
+
 	local seat_id = seat_mgr.get_player_seat_id(player.player_id)
 	if seat_id ~= g_doing_seat_id then
 		skynet.error("不是该玩家操作 ",player.player_id)
-		return
+		return nil
 	end
 	if opt_num < g_mine_min or opt_num > g_mine_max then
 		skynet.error("play args err ",player.player_id,opt_num)
 		return nil
 	end
+
+	local args = {
+		content = string.format("玩家操作[%s] num[%s]",player.player_id,opt_num),
+		doing_player_id = player.player_id,
+		min_num = g_mine_min,
+		max_num = g_mine_max,
+	}
+	seat_mgr.broad_cast_msg("doing",args)
+
 	if opt_num == g_mine then  --踩雷 游戏结束
 		return game_over(player)
 	elseif opt_num > g_mine then
@@ -130,15 +151,16 @@ function CLIENT_CMD.play(player,opt_num)
 	end
  	g_doing_seat_id = g_game_seat_id_list[g_doing_index]
 	doing_cast()
+	return true
 end
 
 --======================CLIENT_CMD===========================
 
 --======================CMD==================================
 
-function CMD.client(cmd)
-	assert(CLIENT_CMD[cmd])
-	return CLIENT_CMD[cmd]
+function CMD.client(cmd,...)
+	local f = assert(CLIENT_CMD[cmd])
+	return f(...)
 end
 
 function CMD.start(config)
@@ -146,6 +168,8 @@ function CMD.start(config)
 	local player_num = config.player_num
 	assert(player_num)
 	seat_mgr.init(player_num)
+	MINE_MIN = config.min_num
+	MINE_MAX = config.max_num
 end
 
 function CMD.exit()

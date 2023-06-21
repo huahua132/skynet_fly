@@ -61,7 +61,7 @@ end
 local function get_mod(t)
     local id_list = t.cur_id_list
     local len = #id_list
-    return id_list[len % SELF_ADDRESS]
+    return id_list[SELF_ADDRESS % len + 1]
 end
 
 local function switch_svr(t)

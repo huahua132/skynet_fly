@@ -24,6 +24,7 @@ function M.enter(player)
 			seater:enter(player)
 			g_player_seat_map[player_id] = seat_id
 			g_enter_num = g_enter_num + 1
+			break
 		end
 	end
 
@@ -41,6 +42,7 @@ function M.leave(player)
 	else
 		seater:leave()
 		g_enter_num = g_enter_num - 1
+		g_player_seat_map[player_id] = nil
 		return true
 	end
 end
@@ -80,15 +82,15 @@ function M.enter_len()
 	return g_enter_num
 end
 
-function M.broad_cast_msg(msgbody)
+function M.broad_cast_msg(cmd,args)
 	for _,seater in ipairs(g_seat_list) do
-		seater:send_msg(msgbody)
+		seater:send_msg(cmd,args)
 	end
 end
 
-function M.send_msg_by_seat_id(seat_id,msgbody)
+function M.send_msg_by_seat_id(seat_id,cmd,args)
 	local seater = g_seat_list[seat_id]
-	return seater:send_msg(msgbody)
+	return seater:send_msg(cmd,args)
 end
 
 return M
