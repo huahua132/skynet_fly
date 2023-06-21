@@ -36,12 +36,12 @@ function M:is_can_leave()
 	return self.state ~= SEAT_STATE.playing
 end
 
-function M:send_msg(msg)
+function M:send_msg(cmd,args)
 	if not self.player then
 		return nil
 	end
 
-	skynet.send(self.player.gate,'lua',msg)
+	skynet.send(self.player.gate,'lua',"server",skynet.self(),cmd,args)
 end
 
 function M:get_player()
