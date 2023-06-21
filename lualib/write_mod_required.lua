@@ -31,17 +31,17 @@ return function(mod_name,loaded)
 	for f_name in pairs(loaded) do
 		if not ignore_map[f_name] then
 		local f_dir = package.searchpath(f_name, package.path)
-		if f_dir then
-			local f_info = lfs.attributes(f_dir)
-			if f_info then
-			local f_last_change_time = f_info.modification
-			info_file:write(string.format("\t['%s'] = {\n",f_name))
-			info_file:write(string.format("\t\t['dir'] = '%s',\n",f_dir))
-			info_file:write(string.format("\t\t['last_change_time'] = %s,\n",f_last_change_time))
-			info_file:write(string.format("\t},\n"))
-			skynet.yield()
+			if f_dir then
+				local f_info = lfs.attributes(f_dir)
+				if f_info then
+				local f_last_change_time = f_info.modification
+				info_file:write(string.format("\t['%s'] = {\n",f_name))
+				info_file:write(string.format("\t\t['dir'] = '%s',\n",f_dir))
+				info_file:write(string.format("\t\t['last_change_time'] = %s,\n",f_last_change_time))
+				info_file:write(string.format("\t},\n"))
+				skynet.yield()
+				end
 			end
-		end
 		end
 	end
 
