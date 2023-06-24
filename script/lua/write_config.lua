@@ -71,34 +71,19 @@ config.lua_path = lua_path
 
 local config_path = server_path .. '/' .. svr_name .. '_config.lua'
 
---mod_config
 local old_config = loadfile(config_path)
-if not old_config then
-	--全写
-	config.mod_config = util.readallfile(server_path .. '/load_mods.lua')
-	local file = io.open(config_path,'w+')
-	assert(file)
-	for k,v in util.kvsortipairs(config) do
-		if type(v) == 'number' or type(v) == 'boolean' then
-			file:write(string.format("%s = %s\n",k,v))
-		elseif type(v) == 'string' then
-			file:write(string.format("%s = [[%s]]\n",k,v))
-		else
-			error('can`t use type = ' .. type(v) .. ' key = ' .. k)
+
+if old_config then
+	old_config = old_config()
+	for k,_ in pairs(config) do
+		if k ~= 'lua_path' and _G[k] then
+			config[k] = _G[k]
 		end
 	end
-	file:close()
-else
-	--对比load_mods 和 mod_config
-	--load_mods 新增字段对应config添加
-	--load_mods 删除字段对应config删除
-	--load_mods 修改字段值对应config值不变
-	local load_mods = require "load_mods"
-	assert(load_mods)
-	old_config = old_config()
-	local old_mod_config = load(_G['mod_config'])()
-	assert(old_mod_config)
-
-	local def_t = util.check_def_table(load_mods,old_mod_config,"config")
-	print(util.dump(def_t))
 end
+
+local file = io.open(config_path,'w+')
+assert(file)
+local str = util.table_to_luafile("G",config)
+file:write(str)
+file:close()

@@ -11,6 +11,8 @@ local assert = assert
 local setmetatable = setmetatable
 local next = next
 local io = io
+local tinsert = table.insert
+local tremove = table.remove
 
 --map按 字符编码顺序排序后遍历
 function util.kvsortipairs(map)
@@ -21,7 +23,7 @@ function util.kvsortipairs(map)
 		assert(t == 'number' or t == 'string',"k type err")
 		local new_k = tostring(k)
 		k_type_map[new_k] = t
-	  	table.insert(list,new_k)
+	  	tinsert(list,new_k)
 	end
 	table.sort(list)
 	local index = 1
@@ -46,7 +48,7 @@ function util.diripairs(path_url)
 	
 	local function push_stack(path)
 		local next,meta1,meta2 = lfs.dir(path)
-		table.insert(stack,{
+		tinsert(stack,{
 			path = path,
 			next = next,
 			meta1 = meta1,
@@ -68,42 +70,66 @@ function util.diripairs(path_url)
 				end
 				return file_name,file_path,file_info
 			else
-				table.remove(stack,#stack)
+				tremove(stack,#stack)
 			end
 		end
 		return nil,nil,nil
 	end
 end
 
---写luatable到文件中
-function util.write_table(file_handle,pre_k,pre_v,level)
-	local head_str = ""
-	for i = 1,level do
-		head_str = head_str .. '\t'
-	end
+--写luafile mode = G M
+function util.table_to_luafile(mode,tab)
+	local ret_str = ""
+	local function to_file_str(pre_k,pre_v,level)
+		local result_str = ""
+		local head_str = ""
+		for i = 1,level do
+			head_str = head_str .. '\t'
+		end
 
-	if type(pre_v) == 'table' then
-		if pre_k then
-			if type(pre_k) == 'number' then
-				file_handle:write(head_str .. string.format("%s = {\n",pre_k))
+		if type(pre_v) == 'table' then
+			result_str = head_str .. result_str .. string.format("%s = {\n",pre_k)
+	
+			for k,v in util.kvsortipairs(pre_v) do
+				result_str = head_str .. result_str .. to_file_str(k,v,level + 1)
+			end
+			if level == 0 then
+				result_str = head_str .. result_str .. '}\n'
 			else
-				file_handle:write(head_str .. string.format("'%s' = {\n",pre_k))
+				result_str = head_str .. result_str .. '},\n'
+			end
+		else
+			if type(pre_v) == 'number' or type(pre_v) == 'boolean' then
+				if level == 0 then
+					result_str = head_str .. result_str .. string.format("%s = %s\n",pre_k,pre_v)
+				else
+					result_str = head_str .. result_str .. string.format("%s = %s,\n",pre_k,pre_v)
+				end
+				
+			else
+				if level == 0 then
+					result_str = head_str .. result_str .. string.format("%s = [[%s]]\n",pre_k,pre_v)
+				else
+					result_str = head_str .. result_str .. string.format("%s = [[%s]],\n",pre_k,pre_v)
+				end
 			end
 		end
-  
-	  	for k,v in util.kvsortipairs(pre_v) do
-			util.write_table(file_handle,k,v,level + 1)
-	  	end
-		if pre_k then
-	  		file_handle:write(head_str .. '},\n')
-		end
-	else
-	  	if type(pre_v) == 'number' or type(pre_v) == 'boolean' then
-			file_handle:write(head_str .. string.format("%s = %s,\n",pre_k,pre_v))
-	  	else
-			file_handle:write(head_str .. string.format("%s = '%s',\n",pre_k,pre_v))
-	  	end
+		return result_str
 	end
+
+	local init_level = 0
+	if mode == 'M' then
+		ret_str = "return {\n"
+		init_level = 1
+	end
+	for k,v in util.kvsortipairs(tab) do
+		ret_str = ret_str .. to_file_str(k,v,init_level)
+	end
+	
+	if mode == 'M' then
+		ret_str = ret_str .. "}"
+	end
+	return ret_str
 end
 
 --打开并读取文件
@@ -122,7 +148,7 @@ function util.sort_ipairs(t,comp)
 	local list = {}
 	local v_k = {}
 	for k,v in pairs(t) do
-		table.insert(list,v)
+		tinsert(list,v)
 		v_k[v] = k 
 	end
 
@@ -142,57 +168,52 @@ function util.sort_ipairs(t,comp)
 end
 
 --检查表不同
-function util.check_def_table(new_t,old_t,key)
-	local des_map = {}
+function util.check_def_table(new_t,old_t)
+	assert(type(new_t) == 'table' and type(old_t) == 'table')
 
-	local function add_des_map(key,sub_key,flag,new,old)
-		if not sub_key then
-			des_map[key] = {flag = flag,new = new,old = old}
+	local function check_func(nt,ot)
+		local des_map = {}
+		local n_type = type(nt)
+		local o_type = type(ot)
+		if n_type ~= o_type then
+			return {_flag = "typedef",_new = n_type,_old = o_type}
 		else
-			if not des_map[key] then
-				des_map[key] = {}
-			end
-			des_map[key][sub_key] = {flag = flag,new = new,old = old}
-		end
-	end
-
-	local n_type = type(new_t)
-	local o_type = type(old_t)
-	if n_type ~= o_type then
-		add_des_map(key,nil,"typedef",n_type,o_type)
-	else
-	  	if n_type == 'table' then
-			for k,v in pairs(new_t) do
-		  		if not old_t[k] then
-					add_des_map(key,k,"add",v,nil)
-		  		end
-			end
-  
-			for k,v in pairs(old_t) do
-				if not new_t[k] then
-					add_des_map(key,k,"reduce",nil,v)
-				end
-			end
-  
-			for k,v in pairs(new_t) do
-				if old_t[k] then
-					local temp_des_map = util.check_def_table(new_t[k],old_t[k],k)
-					if next(temp_des_map) then
-						if not des_map[key] then
-							des_map[key] = {}
-						end
-						des_map[key][k] = temp_des_map[k]
+			if n_type == 'table' then
+				for k,v in pairs(nt) do
+					if not ot[k] then
+						des_map[k] = {_flag = "add",_new = v,_old = nil}
 					end
 				end
-			end
-		else
-			if new_t ~= old_t then
-				add_des_map(key,nil,"valuedef",new_t,old_t)
+	
+				for k,v in pairs(ot) do
+					if not nt[k] then
+						des_map[k] = {_flag = "reduce",_new = nil,_old = v}
+					end
+				end
+	
+				for k,v in pairs(nt) do
+					if ot[k] then
+						local temp_des_map = check_func(nt[k],ot[k])
+						if next(temp_des_map) then
+							des_map[k] = temp_des_map
+						end
+					end
+				end
+			else
+				if nt ~= ot then
+					return {_flag = "valuedef",_new = nt,_old = ot}
+				end
 			end
 		end
+		return des_map
 	end
-  
-	return des_map
+
+	return check_func(new_t,old_t)
+end
+
+--更新表依赖
+function util.update_tab_by_def(def,new_t,old_t)
+	
 end
 
 function util.dump(tab)
@@ -232,6 +253,61 @@ function util.dump(tab)
 	end
 
 	return dp(nil,tab,0)
+end
+
+--table是否有环
+function util.is_loop_table(check_table,is_route)
+	assert(type(check_table) == 'table')
+	local src_dest = {}
+	local dest_src = {}
+	local t_route = {}
+
+	local function record_route(t,r)
+		if not is_route or t_route[t] then
+			return
+		end
+		t_route[t] = r
+	end
+
+	local stack = {check_table}
+	record_route(check_table,'root')
+
+	while #stack > 0 do
+		local src = tremove(stack,#stack)
+		
+		if not src_dest[src] then
+			src_dest[src] = {}
+		end
+
+		if not dest_src[src] then
+			dest_src[src] = {}
+		end
+
+		for k,v in pairs(src) do
+			if type(v) == 'table' then
+				if not dest_src[v] then
+					dest_src[v] = {}
+				end
+				if is_route then
+					record_route(v,t_route[src] .. '.' .. tostring(k))
+				end
+				if src_dest[v] and src_dest[v][src] then
+					return true,t_route[src],t_route[v]
+				else
+					local dsrc = dest_src[src]
+					for s in pairs(dsrc) do
+						src_dest[s][v] = true
+					end
+
+					dest_src[v][src] = true
+					src_dest[src][v] = true
+					tinsert(stack,v)
+				end				
+			end
+		end
+	end
+
+	return false
 end
 
 return util

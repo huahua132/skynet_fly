@@ -19,8 +19,9 @@ return {
 				nickname = "张三",
 			},
 			{
-				player_id = 10002,
-				nickname = "李四"
+				player_id = 10004,
+				nickname = "李四",
+				hello = {a = 1,b = 2}
 			},
 		}
 	}
