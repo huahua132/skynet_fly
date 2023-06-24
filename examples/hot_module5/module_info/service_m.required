@@ -1,0 +1,26 @@
+return {
+	['SEAT_STATE'] = {
+		['dir'] = './/lualib/SEAT_STATE.lua',
+		['last_change_time'] = 1687347227,
+	},
+	['write_mod_required'] = {
+		['dir'] = '../..//lualib/write_mod_required.lua',
+		['last_change_time'] = 1687365100,
+	},
+	['seat_mgr'] = {
+		['dir'] = './/lualib/seat_mgr.lua',
+		['last_change_time'] = 1687347227,
+	},
+	['service_m'] = {
+		['dir'] = './/module/service_m.lua',
+		['last_change_time'] = 1687347227,
+	},
+	['GAME_STATE'] = {
+		['dir'] = './/lualib/GAME_STATE.lua',
+		['last_change_time'] = 1687347227,
+	},
+	['seater'] = {
+		['dir'] = './/lualib/seater.lua',
+		['last_change_time'] = 1687347227,
+	},
+}

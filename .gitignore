@@ -2,3 +2,4 @@
 *.pem
 *.vscode
 *.log
+*.pid
