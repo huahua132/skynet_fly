@@ -14,18 +14,28 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
 
 local mod_config_path = server_path .. '/' .. 'mod_config.lua'
+local mod_old_config_path = server_path .. '/' .. 'mod_config_old.lua'
 
 local old_mod_config = loadfile(mod_config_path)
 
 if not old_mod_config then
     local file = io.open(mod_config_path,'w+')
     assert(file)
-    local str = util.readallfile(server_path.. '/load_mods.lua')
-    file:write(str)
+	local mod_config = require "load_mods"
+	assert(mod_config)
+    file:write(util.table_to_luafile("M",mod_config))
     file:close()
 else
     local new = require "load_mods"
     local old = old_mod_config()
     local def = util.check_def_table(new,old)
-    print(util.dump(def))
+	local mod_config = util.update_tab_by_def(def,old,{['typedef'] = true,['reduce'] = true,['add'] = true})
+	local old_file = io.open(mod_old_config_path,'w+')
+	assert(old_file)
+	old_file:write(util.table_to_luafile("M",old))
+	old_file:close()
+
+	local new_file = io.open(mod_config_path,'w+')
+	new_file:write(util.table_to_luafile("M",mod_config))
+    new_file:close()
 end
