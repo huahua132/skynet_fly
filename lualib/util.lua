@@ -88,29 +88,44 @@ function util.table_to_luafile(mode,tab)
 		end
 
 		if type(pre_v) == 'table' then
-			result_str = head_str .. result_str .. string.format("%s = {\n",pre_k)
-	
+			if level == 0 then
+				result_str = result_str .. head_str .. string.format("%s = {\n",pre_k)
+			else
+				if type(pre_k) == 'number' then
+					result_str = result_str .. head_str .. string.format("[%s] = {\n",pre_k)
+				else
+					result_str = result_str .. head_str .. string.format("['%s'] = {\n",pre_k)
+				end
+			end
+		
 			for k,v in util.kvsortipairs(pre_v) do
-				result_str = head_str .. result_str .. to_file_str(k,v,level + 1)
+				result_str = result_str .. to_file_str(k,v,level + 1)
 			end
 			if level == 0 then
-				result_str = head_str .. result_str .. '}\n'
+				result_str = result_str .. head_str .. '}\n'
 			else
-				result_str = head_str .. result_str .. '},\n'
+				result_str = result_str .. head_str .. '},\n'
 			end
 		else
 			if type(pre_v) == 'number' or type(pre_v) == 'boolean' then
 				if level == 0 then
-					result_str = head_str .. result_str .. string.format("%s = %s\n",pre_k,pre_v)
+					result_str = result_str .. head_str .. string.format("%s = %s\n",pre_k,pre_v)
 				else
-					result_str = head_str .. result_str .. string.format("%s = %s,\n",pre_k,pre_v)
+					if type(pre_k) == 'number' then
+						result_str = result_str .. head_str .. string.format("[%s] = %s,\n",pre_k,pre_v)
+					else
+						result_str = result_str .. head_str .. string.format("['%s'] = %s,\n",pre_k,pre_v)
+					end
 				end
-				
 			else
 				if level == 0 then
-					result_str = head_str .. result_str .. string.format("%s = [[%s]]\n",pre_k,pre_v)
+					result_str = result_str .. head_str .. string.format("%s = [[%s]]\n",pre_k,pre_v)
 				else
-					result_str = head_str .. result_str .. string.format("%s = [[%s]],\n",pre_k,pre_v)
+					if type(pre_k) == 'number' then
+						result_str = result_str .. head_str .. string.format("[%s] = [[%s]],\n",pre_k,pre_v)
+					else
+						result_str = result_str .. head_str .. string.format("['%s'] = [[%s]],\n",pre_k,pre_v)
+					end
 				end
 			end
 		end
@@ -176,7 +191,7 @@ function util.check_def_table(new_t,old_t)
 		local n_type = type(nt)
 		local o_type = type(ot)
 		if n_type ~= o_type then
-			return {_flag = "typedef",_new = n_type,_old = o_type}
+			return {_flag = "typedef",_new = nt,_old = ot}
 		else
 			if n_type == 'table' then
 				for k,v in pairs(nt) do
@@ -212,8 +227,35 @@ function util.check_def_table(new_t,old_t)
 end
 
 --更新表依赖
-function util.update_tab_by_def(def,new_t,old_t)
-	
+function util.update_tab_by_def(def,old_t,change_flags)
+	assert(type(def) == 'table')
+	assert(type(old_t) == 'table')
+	assert(type(change_flags) == 'table')
+
+	local function update(dt,ot)
+		local flag = dt._flag
+		local ret = {}
+		if not flag then
+			if ot then
+				for k,v in pairs(ot) do
+					ret[k] = v
+				end
+			end
+
+			for k,v in pairs(dt) do
+				ret[k] = update(v,ot[k])
+			end
+		else
+			if change_flags[flag] then
+				return dt._new
+			else
+				return dt._old
+			end
+		end
+		return ret
+	end
+
+	return update(def,old_t)
 end
 
 function util.dump(tab)

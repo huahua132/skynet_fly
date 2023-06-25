@@ -2,7 +2,7 @@ local assert = assert
 local ARGV = {...}
 local skynet_fly_path = ARGV[1]
 local svr_name = ARGV[2]
-local thread = ARGV[3] or 4
+local thread = tonumber(ARGV[3]) or 4
 assert(skynet_fly_path,'缺少 skynet_fly_path')
 assert(svr_name,'缺少 svr_name')
 
