@@ -18,10 +18,41 @@ local g_module_version_map = {}
 
 local CMD = {}
 
-function CMD.load_module(source,module_name,launch_num,mod_args,default_arg)
+local function kill_module(module_name)
+	local old_id_list = g_module_id_list_map[module_name] or {}
+	for _,id in ipairs(old_id_list) do
+		skynet_send(id,'lua','exit')
+	end
+end
+
+function CMD.kill_module(source,module_name)
 	assert(module_name,'not module_name')
-	assert(launch_num and launch_num > 0,"launch_num err")
-	mod_args = mod_args or {}
+	kill_module(module_name)
+	
+	g_module_id_list_map[module_name] = nil
+	g_module_watch_map[module_name] = nil
+	g_module_version_map[module_name] = nil
+end
+
+function CMD.kill_all(source)
+	for module_name,_ in pairs(g_module_id_list_map) do
+		CMD.kill_module(source,module_name)
+	end
+end
+
+function CMD.load_module(source,module_name)
+	assert(module_name,'not module_name')
+	local mod_args = {}
+	local default_arg = {}
+	
+	local mod_config = loadfile("mod_config.lua")()
+	assert(mod_config,"not mod_config")
+	local m_cfg = mod_config[module_name]
+	assert(m_cfg,"not m_cfg")
+	local launch_num = m_cfg.launch_num
+	local mod_args = m_cfg.mod_args or {}
+	local default_arg = m_cfg.default_arg or {}
+
 	local id_list = {}
 	for i = 1,launch_num do
 		local server_id = skynet.newservice('hot_container',module_name,i)
@@ -29,10 +60,7 @@ function CMD.load_module(source,module_name,launch_num,mod_args,default_arg)
 		tinsert(id_list,server_id)
 	end
 
-	local old_id_list = g_module_id_list_map[module_name] or {}
-	for _,id in ipairs(old_id_list) do
-		skynet_send(id,'lua','exit')
-	end
+	kill_module(module_name)
 
 	g_module_id_list_map[module_name] = id_list
 

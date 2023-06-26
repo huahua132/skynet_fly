@@ -28,6 +28,7 @@ local config = {
 	daemon	= "./skynet.pid",
 	svr_id = 1,
 	svr_name = svr_name,
+	debug_port = 8888,
 	cpath = skynet_fly_path .. "cservice/?.so;" .. skynet_path .. "cservice/?.so;",
 
 	lua_cpath = skynet_fly_path .. "luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
