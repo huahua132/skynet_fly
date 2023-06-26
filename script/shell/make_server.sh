@@ -1,5 +1,5 @@
 #!/bin/bash
-#构建配置文件 skynet.config 还有mod_config
+#构建服务设施 skynet.config 还有mod_config run.sh
 
 skynet_fly_path=$1
 svr_name=$2
@@ -25,3 +25,5 @@ script_path="${skynet_fly_path}/script/lua"
 
 ${lua} ${script_path}/write_config.lua ${skynet_fly_path} ${svr_name} ${thread}
 ${lua} ${script_path}/write_mod_config.lua ${skynet_fly_path}
+${lua} ${script_path}/write_runsh.lua ${skynet_fly_path} ${svr_name}
+${lua} ${script_path}/write_reloadsh.lua ${skynet_fly_path} ${svr_name}
