@@ -1,5 +1,5 @@
 local lfs = require "lfs"
-
+local json = require "cjson"
 local util = {}
 local pairs = pairs
 local type = type
@@ -256,6 +256,42 @@ function util.update_tab_by_def(def,old_t,change_flags)
 	end
 
 	return update(def,old_t)
+end
+
+--不同转成string
+function util.def_tostring(def)
+	assert(type(def) == 'table')
+	local function tstring(dk,dt)
+		
+		local ret = ''
+		local flag = dt._flag
+		if not flag then
+			for k,v in pairs(dt) do
+				if dk then
+					ret = ret .. tstring(dk .. '.' .. k,v)
+				else
+					ret = ret .. tstring(k,v)
+				end
+			end
+		else
+			local s1,s2 = dt._new,dt._old
+			if not s1 then
+				s1 = "nil"
+			elseif type(s1) == 'table' then
+				s1 = json.encode(s1)
+			end
+
+			if not s2 then
+				s2 = "nil"
+			elseif type(s2) == 'table' then
+				s2 = json.encode(s2)
+			end
+			ret = ret .. string.format("%s %s[%s:%s] ",dk,flag,s1,s2)
+		end
+		return ret
+	end
+
+	return tstring(nil,def)
 end
 
 function util.dump(tab)
