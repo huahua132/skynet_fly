@@ -66,4 +66,77 @@ function CMD.reload()
 	print(string.format("'%s'",reload_url))
 end
 
+function CMD.check_reload()
+	local module_info_dir = "module_info"
+	local dir_info = lfs.attributes(module_info_dir)
+	assert(dir_info and dir_info.mode == 'directory')
+	local mod_config = require "mod_config"
+
+	local module_info_map = {}
+	for f_name,f_path,f_info in util.diripairs(module_info_dir) do
+		local m_name = string.sub(f_name,1,#f_name - 9)
+		if mod_config[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
+			local f_tb = loadfile(f_path)()
+			module_info_map[m_name] = f_tb
+		end
+	end
+
+	local need_reload_module = {}
+
+  	for module_name,loaded in pairs(module_info_map) do
+    	local change_f_name = {}
+
+		for load_f_name,load_f_info in pairs(loaded) do
+		local load_f_dir = load_f_info.dir
+		local last_change_time = load_f_info.last_change_time
+		local now_f_info = lfs.attributes(load_f_dir)
+			if now_f_info then
+				local new_change_time = now_f_info.modification
+				if new_change_time > last_change_time then
+				table.insert(change_f_name,load_f_name)
+				end
+			end
+		end
+
+		if #change_f_name > 0 then
+			need_reload_module[module_name] = "changefile:" .. table.concat(change_f_name,'|')
+		end
+  	end
+
+	for module_name,_ in pairs(mod_config) do
+		if not module_info_map[module_name] then
+		need_reload_module[module_name] = "launch_new_module"
+		end
+	end
+
+	local old_mod_confg = loadfile("mod_config.lua.old")
+	if old_mod_confg then
+		old_mod_confg = old_mod_confg()
+	end
+
+	if old_mod_confg and next(old_mod_confg) then
+		for module_name,module_cfg in pairs(mod_config) do
+			local old_module_cfg = old_mod_confg[module_name]
+			if old_module_cfg then
+			local def_des = util.check_def_table(module_cfg,old_module_cfg)
+			if next(def_des) then
+				need_reload_module[module_name] = util.def_tostring(def_des)
+			end
+			else
+			need_reload_module[module_name] = "relaunch module"
+			end
+		end
+	end
+
+	for module_name,change_file in pairs(need_reload_module) do
+		print(module_name)
+		print(change_file)
+	end
+end
+
+function CMD.create_mod_config_old()
+	local mod_config = require "mod_config"
+	os.execute("cp mod_config.lua mod_config.lua.old")
+end
+
 CMD[cmd]()

@@ -27,3 +27,4 @@ ${lua} ${script_path}/write_config.lua ${skynet_fly_path} ${svr_name} ${thread}
 ${lua} ${script_path}/write_mod_config.lua ${skynet_fly_path}
 ${lua} ${script_path}/write_runsh.lua ${skynet_fly_path} ${svr_name}
 ${lua} ${script_path}/write_reloadsh.lua ${skynet_fly_path} ${svr_name}
+${lua} ${script_path}/write_check_reloadsh.lua ${skynet_fly_path} ${svr_name}
