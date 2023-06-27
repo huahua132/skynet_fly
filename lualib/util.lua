@@ -388,4 +388,33 @@ function util.is_loop_table(check_table,is_route)
 	return false
 end
 
+--创建 lua文件 查找规则，优先级 server下非service文件夹 > skynet_fly lualib下所有文件夹 > skynet lualib下所以文件夹
+function util.create_luapath(skynet_fly_path)
+	local server_path = './'
+	local skynet_path = skynet_fly_path .. '/skynet'
+	local lua_path = server_path .. '?.lua;'
+
+	for file_name,file_path,file_info in util.diripairs(server_path) do
+		if file_info.mode == 'directory' and file_name ~= 'service' then
+			lua_path = lua_path .. file_path .. '/?.lua;'
+		end
+	end
+
+	lua_path = lua_path .. skynet_fly_path .. '/lualib/?.lua;'
+	for file_name,file_path,file_info in util.diripairs(skynet_fly_path .. '/lualib') do
+		if file_info.mode == 'directory' then
+			lua_path = lua_path .. file_path .. '/?.lua;'
+		end
+	end
+
+	lua_path = lua_path .. skynet_path .. '/lualib/?.lua;'
+	for file_name,file_path,file_info in util.diripairs(skynet_path .. '/lualib') do
+		if file_info.mode == 'directory' then
+			lua_path = lua_path .. file_path .. '/?.lua;'
+		end
+	end
+
+	return lua_path
+end
+
 return util

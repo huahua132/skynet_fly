@@ -29,6 +29,8 @@ local config = {
 	svr_id = 1,
 	svr_name = svr_name,
 	debug_port = 8888,
+	skynet_fly_path = skynet_fly_path,
+	preload = skynet_fly_path .. 'lualib/preload.lua',
 	cpath = skynet_fly_path .. "cservice/?.so;" .. skynet_path .. "cservice/?.so;",
 
 	lua_cpath = skynet_fly_path .. "luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
@@ -45,30 +47,7 @@ local config = {
 --路径优先级  服务 > skynet_fly > skynet
 
 --lua_path server [非service的目录] skynet_fly[lualib 目录下所有文件] skynet[lualib 下所有文件] 自动生成路径
-
-local lua_path = server_path .. '?.lua;'
-
-for file_name,file_path,file_info in util.diripairs(server_path) do
-	if file_info.mode == 'directory' and file_name ~= 'service' then
-		lua_path = lua_path .. file_path .. '/?.lua;'
-	end
-end
-
-lua_path = lua_path .. skynet_fly_path .. '/lualib/?.lua;'
-for file_name,file_path,file_info in util.diripairs(skynet_fly_path .. '/lualib') do
-	if file_info.mode == 'directory' then
-		lua_path = lua_path .. file_path .. '/?.lua;'
-	end
-end
-
-lua_path = lua_path .. skynet_path .. '/lualib/?.lua;'
-for file_name,file_path,file_info in util.diripairs(skynet_path .. '/lualib') do
-	if file_info.mode == 'directory' then
-		lua_path = lua_path .. file_path .. '/?.lua;'
-	end
-end
-
-config.lua_path = lua_path
+config.lua_path = util.create_luapath(skynet_fly_path)
 
 local config_path = server_path .. '/' .. svr_name .. '_config.lua'
 
@@ -77,7 +56,7 @@ local old_config = loadfile(config_path)
 if old_config then
 	old_config = old_config()
 	for k,_ in pairs(config) do
-		if k ~= 'lua_path' and _G[k] then
+		if _G[k] then
 			config[k] = _G[k]
 		end
 	end
