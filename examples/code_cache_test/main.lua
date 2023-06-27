@@ -10,8 +10,7 @@ skynet.start(function()
 
 	local cur_time = skynet.time()
 	for i = 1,10000 do
-		local id = skynet.newservice('test')
-		skynet.kill(id)
+		skynet.newservice('test')
 	end
 	skynet.error("use time:",skynet.time() - cur_time)
 
