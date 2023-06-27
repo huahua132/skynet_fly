@@ -74,9 +74,14 @@ end
 --======================CLIENT_CMD===========================
 local CMD = {}
 local CLIENT_CMD = {}
+local IS_CLOSE = false
 
 --玩家进入房间
 function CLIENT_CMD.enter(player)
+	if IS_CLOSE then 
+		skynet.error("服务已经关闭",player.player_id)
+		return nil
+	end
 	local seat_id = seat_mgr.enter(player)
 	if not seat_id then
 		skynet.error("进入房间失败 ",player.player_id)
@@ -173,7 +178,16 @@ function CMD.start(config)
 end
 
 function CMD.exit()
+	IS_CLOSE = true
+	while true do
+		if seat_mgr.enter_len() <= 0 then
+			skynet.error("桌子没有人了，可以退出 ",seat_mgr.enter_len())
+			skynet.exit()
+		end
 
+		skynet.error("桌子还有人不能退出 ",seat_mgr.enter_len())
+		skynet.sleep(500)
+	end
 end
 
 function CMD.init()
