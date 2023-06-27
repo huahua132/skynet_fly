@@ -134,9 +134,42 @@ function CMD.check_reload()
 	end
 end
 
+function CMD.check_kill_mod()
+	local mod_config = require "mod_config"
+	local old_mod_confg = loadfile("mod_config.lua.old")
+	if not old_mod_confg then
+		return	
+	end
+	old_mod_confg = old_mod_confg()
+
+	for mod_name,_ in pairs(old_mod_confg) do
+		if not mod_config[mod_name] then
+			print(mod_name)
+		end
+	end
+end
+
+function CMD.call()
+	local mod_cmd = assert(ARGV[4])
+	local server_id = assert(ARGV[#ARGV])
+
+	local mod_cmd_args = ""
+	for i = 5,#ARGV - 1 do
+		if tonumber(ARGV[i]) then
+			mod_cmd_args = mod_cmd_args .. string.format(',%s',ARGV[i])
+		else
+			mod_cmd_args = mod_cmd_args .. string.format(',"%s"',ARGV[i])
+		end
+	end
+
+	local cmd_url = string.format('%s/call/%s/"%s"%s',get_host(),server_id,mod_cmd,mod_cmd_args)
+ 	print(string.format("'%s'",cmd_url))
+end
+
 function CMD.create_mod_config_old()
 	local mod_config = require "mod_config"
 	os.execute("cp mod_config.lua mod_config.lua.old")
 end
 
+assert(CMD[cmd],'not cmd:' .. cmd)
 CMD[cmd]()
