@@ -5,7 +5,7 @@ local assert = assert
 local tonumber = tonumber
 
 local ARGV = {...}
-local MODULE_NAME = ARGV[1]
+MODULE_NAME = ARGV[1]
 local INDEX = tonumber(ARGV[2])
 assert(MODULE_NAME)
 
@@ -21,6 +21,8 @@ if INDEX == 1 then
 		return old_require(name)
 	end
 end
+
+local MODULE_NAME = MODULE_NAME
 
 local CMD = require(MODULE_NAME)
 local write_mod_required = require "write_mod_required"

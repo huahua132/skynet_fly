@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
+local log = require "log"
 local assert = assert
 
 local M = {}
@@ -26,9 +27,9 @@ function SERVER_CMD.game_over(args)
 	local ret = client:mod_call('client','leave',g_player)
 	if ret then
 		g_seat_id = nil 
-		skynet.error("离开成功！！！",g_player.player_id)
+		log.info("离开成功！！！",g_player.player_id)
 	else
-		skynet.error("离开失败！！！",g_player.player_id)
+		log.info("离开失败！！！",g_player.player_id)
 	end
 
 	skynet.timeout(math.random(100,500),function()
@@ -55,7 +56,7 @@ end
 
 function M.server(server_id,cmd,args)
 	local f = assert(SERVER_CMD[cmd],"not cmd " .. cmd)
-	skynet.error("server_id =",server_id,cmd,args.content)
+	log.error("server_id =",server_id,cmd,args.content)
 	return f(args)
 end
 
@@ -63,13 +64,13 @@ function M.start(player)
 	player.gate = skynet.self()
 	g_player = player
 
-	skynet.error("start ",player.player_id)
+	log.info("start ",player.player_id)
 	local seat_id = client:mod_call('client','enter',player)
 	if seat_id then
-		skynet.error("enter succ ",player.player_id)
+		log.info("enter succ ",player.player_id)
 		g_seat_id = seat_id
 	else
-		skynet.error("enter faild ",player)
+		log.info("enter faild ",player)
 	end
 end
 

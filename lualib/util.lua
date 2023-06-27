@@ -307,9 +307,9 @@ function util.dump(tab)
 		if t == 'table' then
 			filter[v] = k or ''
 			if k then
-				str = str .. head_str .. tostring(k) .. ' = ' .. tostring(v) .. ' {\n'
+				str = str .. head_str .. tostring(k) .. ' = ' .. ' {\n'
 			else
-				str = str .. head_str .. tostring(v) .. '{\n'
+				str = str .. head_str .. '{\n'
 			end
 			for kk,vv in pairs(v) do
 				if type(vv) == 'table' and filter[vv] then
@@ -323,7 +323,7 @@ function util.dump(tab)
 			if k then
 				str = str .. head_str .. tostring(k) .. ' = ' .. tostring(v) .. ',\n'
 			else
-				str = str .. head_str .. tostring(v) .. '\n'
+				str = str .. head_str .. tostring(v)
 			end
 		end
 

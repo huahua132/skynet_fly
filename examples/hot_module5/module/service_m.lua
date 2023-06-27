@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local seat_mgr = require "seat_mgr"
+local log = require "log"
 local GAME_STATE_ENUM = require "GAME_STATE"
 local string = string
 local assert = assert
@@ -54,12 +55,12 @@ local function game_start()
 	g_doing_index = math.random(1,#g_game_seat_id_list)
 	g_doing_seat_id = g_game_seat_id_list[g_doing_index]   --先手
 
-	skynet.error("游戏开始！！！数字雷是",g_mine)
+	log.info("游戏开始！！！数字雷是",g_mine)
 	doing_cast()
 end
 
 local function game_over(player)
-	skynet.error("游戏结束！！！")
+	log.info("游戏结束！！！")
 	local args = {
 		content = string.format("游戏结束 玩家[%s]踩雷了 %s",player.nickname,g_mine)
 	}
@@ -79,12 +80,12 @@ local IS_CLOSE = false
 --玩家进入房间
 function CLIENT_CMD.enter(player)
 	if IS_CLOSE then 
-		skynet.error("服务已经关闭",player.player_id)
+		log.info("服务已经关闭",player.player_id)
 		return nil
 	end
 	local seat_id = seat_mgr.enter(player)
 	if not seat_id then
-		skynet.error("进入房间失败 ",player.player_id)
+		log.info("进入房间失败 ",player.player_id)
 		return nil
 	end
 	local args = {
@@ -92,7 +93,7 @@ function CLIENT_CMD.enter(player)
 		enter_player = player
 	}
 	seat_mgr.broad_cast_msg("enter",args)
-	skynet.error("进入房间成功 ",player.player_id)
+	log.info("进入房间成功 ",player.player_id)
 	if seat_mgr.enter_len() >= 2 then
 		skynet.fork(game_start)
 	end
@@ -104,7 +105,7 @@ end
 function CLIENT_CMD.leave(player)
 	local seat_id = seat_mgr.leave(player)
 	if not seat_id then
-		skynet.error("离开房间失败 ",player.player_id)
+		log.info("离开房间失败 ",player.player_id)
 		return nil
 	end
 	local args = {
@@ -112,7 +113,7 @@ function CLIENT_CMD.leave(player)
 		leave_player = player,
 	}
 	seat_mgr.broad_cast_msg("leave",args)
-	skynet.error("离开房间成功 ",player.player_id)
+	log.info("离开房间成功 ",player.player_id)
 
 	return seat_id
 end
@@ -120,16 +121,16 @@ end
 --玩家操作
 function CLIENT_CMD.play(player,opt_num)
 	if GAME_STATE ~= GAME_STATE_ENUM.playing then
-		skynet.error("游戏还没有开始！！！")
+		log.info("游戏还没有开始！！！")
 	end
 
 	local seat_id = seat_mgr.get_player_seat_id(player.player_id)
 	if seat_id ~= g_doing_seat_id then
-		skynet.error("不是该玩家操作 ",player.player_id)
+		log.info("不是该玩家操作 ",player.player_id)
 		return nil
 	end
 	if opt_num < g_mine_min or opt_num > g_mine_max then
-		skynet.error("play args err ",player.player_id,opt_num)
+		log.info("play args err ",player.player_id,opt_num)
 		return nil
 	end
 
@@ -181,11 +182,11 @@ function CMD.exit()
 	IS_CLOSE = true
 	while true do
 		if seat_mgr.enter_len() <= 0 then
-			skynet.error("桌子没有人了，可以退出 ",seat_mgr.enter_len())
+			log.info("桌子没有人了，可以退出 ",seat_mgr.enter_len())
 			skynet.exit()
 		end
 
-		skynet.error("桌子还有人不能退出 ",seat_mgr.enter_len())
+		log.info("桌子还有人不能退出 ",seat_mgr.enter_len())
 		skynet.sleep(500)
 	end
 end

@@ -24,6 +24,7 @@ local config = {
 	lualoader	= skynet_path.."lualib/loader.lua",
 	bootstrap 	= "snlua bootstrap",        --the service for bootstrap
 	logger 		= "server.log",
+	loglevel    = "info",
 	logpath		= server_path,
 	daemon	= "./skynet.pid",
 	svr_id = 1,
