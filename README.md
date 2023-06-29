@@ -20,7 +20,7 @@
     - `cd examples/webapp/`
     - `sh ../../binshell/make_server.sh ../../ webapp 4`
 - 如果一些顺利的话将会生成script文件夹，文件夹下有:
-- `run.sh` 运行时配置日志分割
+- `run.sh` 运行时并且配置日志分割
 - `stop.sh` 停止
 - `restart.sh` 重启
 - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
