@@ -25,8 +25,4 @@ function CMD.is_close()
 	return IS_CLOSE
 end
 
-function CMD.init()
-
-end
-
 return CMD

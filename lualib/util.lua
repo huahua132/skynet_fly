@@ -417,4 +417,24 @@ function util.create_luapath(skynet_fly_path)
 	return lua_path
 end
 
+function util.string_split(inputstr, ...)
+    local seps = {...}
+    local sep = table.remove(seps,1)
+
+    if sep == nil then
+        return inputstr
+    end
+    local result={}
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+        table.insert(result,str)
+    end
+    if seps and next(seps) then
+        for k,v in pairs(result) do
+            result[k] = util.string_split(v,table.unpack(seps))
+        end
+    end
+
+    return result
+end
+
 return util

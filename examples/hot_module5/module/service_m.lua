@@ -190,11 +190,6 @@ function CMD.exit()
 		skynet.sleep(500)
 	end
 end
-
-function CMD.init()
-
-end
-
 --======================CMD==================================
 
 return CMD

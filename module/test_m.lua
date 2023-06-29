@@ -1,3 +1,0 @@
-local CMD = {}
-
-return CMD

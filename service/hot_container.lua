@@ -7,7 +7,10 @@ local tonumber = tonumber
 local ARGV = {...}
 MODULE_NAME = ARGV[1]
 local INDEX = tonumber(ARGV[2])
+local LAUNCH_TIME = ARGV[3]
 assert(MODULE_NAME)
+
+local log = require "log"
 
 local new_loaded = {}
 
@@ -30,10 +33,20 @@ local write_mod_required = require "write_mod_required"
 local module_start = CMD.start
 local module_exit = CMD.exit
 assert(module_start,MODULE_NAME .. " not start func")
+assert(module_exit,MODULE_NAME .. " not exit func")
+
+local old_skynet_exit = skynet.exit
+
+skynet.exit = function()
+	log.info("mod exit ",MODULE_NAME,INDEX,LAUNCH_TIME)
+	old_skynet_exit()
+end
 
 function CMD.start(...)
 	module_start(...)
-	skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
+	if INDEX == 1 then
+		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
+	end
 end
 
 function CMD.exit(list)
@@ -41,16 +54,12 @@ function CMD.exit(list)
 		module_exit()
 	else
 		skynet.timeout(60,function()
-			skynet.error(MODULE_NAME .. ' exit')
+			log.error(MODULE_NAME .. ' exit')
 		end)
 	end
 end
 
 skynet.start(function()
-	if CMD.init then
-		CMD.init()
-	end
-
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)

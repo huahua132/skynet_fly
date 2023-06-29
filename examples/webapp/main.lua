@@ -3,7 +3,7 @@ local mod_config = require "mod_config"
 local util = require "util"
 
 skynet.start(function()
-	skynet.error("start hot_module5!!!>>>>>>>>>>>>>>>>>")
+	skynet.error("start webapp!!!>>>>>>>>>>>>>>>>>")
 	local cmgr = skynet.uniqueservice('contriner_mgr')
 
 	skynet.newservice("debug_console", skynet.getenv('debug_port'))

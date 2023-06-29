@@ -29,10 +29,6 @@ function CMD.exit(list)
 end
 
 skynet.start(function()
-	if CMD.init then
-		CMD.init()
-	end
-
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
