@@ -14,34 +14,34 @@
 
 快速开始(运行examples/webapp)
 ===
-1. 编译skynet 参考了涵曦的skynet_demo[https://github.com/hanxi/skynet-demo]
-    `make build`
+1. 编译skynet 参考了涵曦的skynet_demo[https://github.com/hanxi/skynet-demo] 
+    - `make build`
 2. 构建skynet_config,mod_config,webapp运维脚本
-    `cd examples/webapp/`
-    `sh ../../binshell/make_server.sh ../../ webapp 4`
-如果一些顺利的话将会生成script文件夹，文件夹下有:
-`run.sh` 运行时配置日志分割
-`stop.sh` 停止
-`restart.sh` 重启
-`kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
-`check_reload.sh` 检查可热更模块是否有文件或者配置修改，有的话就更新。
+    - `cd examples/webapp/`
+    - `sh ../../binshell/make_server.sh ../../ webapp 4`
+- 如果一些顺利的话将会生成script文件夹，文件夹下有:
+- `run.sh` 运行时配置日志分割
+- `stop.sh` 停止
+- `restart.sh` 重启
+- `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
+- `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有的话就更新。
 
-还会生成webapp_config.lua，也就是skynet启动用的配置文件。
+- 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 还有生成mod_config.lua，可热更模块配置文件。（首次生成是拷贝webapp/load_mods.lua，如果mod_config文件存在会对比load_mods和mod_config，将配置值类型不同的，有增加的，有删除的，同步到mod_config，只是值不同不覆盖原本修改的配置）
 
 3. 运行
-    `sh script/run.sh`
+   - `sh script/run.sh`
 
 4. 访问
-    浏览器打开 `x.x.x.x:8080`
+   - 浏览器打开 `x.x.x.x:8080`
 
-如果一切顺利的话，网页将会显示内容。
+ - 如果一切顺利的话，网页将会显示内容。
 
 5. 热更
-    修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码，加个空格，最好是改一下html代码加个文本什么的，能看出来更新了
-    之后执行 `sh script/check_reload.sh`
-    再次访问网站就更新了。
-    也可以观察webapp/server.log
+    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码，加个空格，最好是改一下html代码加个文本什么的，能看出来更新了
+    - 之后执行 `sh script/check_reload.sh`
+    - 再次访问网站就更新了。
+    - 也可以观察webapp/server.log
 
 **恭喜你成功了**
 
