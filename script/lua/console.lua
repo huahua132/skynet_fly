@@ -43,21 +43,7 @@ end
 function CMD.reload()
 	local module_name = assert(ARGV[4])
 	local server_id = assert(ARGV[5])
-	local skynet_fly_mod_path = skynet_fly_path .. '/module'
-	local svr_mod_path = './module'
-
-	local is_exists = false
-	local find_path_list = {svr_mod_path,skynet_fly_mod_path}
-	for _,path in ipairs(find_path_list) do
-		for filename in util.diripairs(path) do
-			if string.find(filename,module_name .. '.lua',nil,true) then
-				is_exists = true
-				break
-			end
-		end
-	end
-	assert(is_exists)
-
+	
 	local mod_config = require "mod_config"
 	local mod_cfg = mod_config[module_name]
 	assert(mod_cfg,"not mod_cfg")

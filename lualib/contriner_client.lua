@@ -6,6 +6,7 @@ local ipairs = ipairs
 
 local M = {}
 local meta = {__index = M}
+local default_can_switch = function() return true end 
 
 local skynet_exit = skynet.exit
 
@@ -66,7 +67,9 @@ end
 
 function M:new(module_name,can_switch_func)
 	assert(module_name)
-	assert(can_switch_func)
+	if not can_switch_func then
+		can_switch_func = default_can_switch
+	end
     local t = {
         can_switch_func = can_switch_func, 			 --是否可以切服
         module_name = module_name,         			 --模块名称

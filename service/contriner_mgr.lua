@@ -5,6 +5,7 @@ local ipairs = ipairs
 local pairs = pairs
 local tinsert = table.insert
 local tremove = table.remove
+local os = os
 local skynet_send = skynet.send
 local skynet_call = skynet.call
 local skynet_pack = skynet.pack
@@ -55,7 +56,7 @@ function CMD.load_module(source,module_name)
 
 	local id_list = {}
 	for i = 1,launch_num do
-		local server_id = skynet.newservice('hot_container',module_name,i)
+		local server_id = skynet.newservice('hot_container',module_name,i,os.date("%Y-%m-%d %H:%M:%S",os.time()))
 		skynet_call(server_id,'lua','start',mod_args[i] or default_arg)
 		tinsert(id_list,server_id)
 	end

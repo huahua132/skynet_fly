@@ -3,7 +3,7 @@ local contriner_client = require "contriner_client"
 local log = require "log"
 local assert = assert
 
-local M = {}
+local CMD = {}
 local g_seat_id = nil   --座位号
 local g_player = nil
 
@@ -33,7 +33,7 @@ function SERVER_CMD.game_over(args)
 	end
 
 	skynet.timeout(math.random(100,500),function()
-		M.start(g_player)
+		CMD.start(g_player)
 	end)
 end
 
@@ -54,13 +54,17 @@ function SERVER_CMD.doing(args)
 
 end
 
-function M.server(server_id,cmd,args)
+function CMD.server(server_id,cmd,args)
 	local f = assert(SERVER_CMD[cmd],"not cmd " .. cmd)
 	log.error("server_id =",server_id,cmd,args.content)
 	return f(args)
 end
 
-function M.start(player)
+function CMD.start(player)
+	client = contriner_client:new("service_m",function()
+		return not g_seat_id  --没有坐下的情况下可以切换到新服务
+	end)
+
 	player.gate = skynet.self()
 	g_player = player
 
@@ -74,14 +78,8 @@ function M.start(player)
 	end
 end
 
-function M.exit()
+function CMD.exit()
 
 end
 
-function M.init()
-	client = contriner_client:new("service_m",function()
-		return not g_seat_id  --没有坐下的情况下可以切换到新服务
-	end)
-end
-
-return M
+return CMD
