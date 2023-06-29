@@ -75,11 +75,8 @@ local function do_request(fd, ip,port, protocol, handle)
               addr     = port,
             }
             local code,bodyfunc = handle(req)
-            local response_header = {
-              ["Content-Type"] = "application/json",
-            }
             if code == 200 then
-              do_response(fd, interface.write, code, bodyfunc, response_header)
+              do_response(fd, interface.write, code, bodyfunc, header)
               return true
             else
               do_response(fd, interface.write, code)
