@@ -13,7 +13,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			protocol = 'http',
-			port = 28888,
+			port = 80,
 		}
 	}
 }
