@@ -50,13 +50,7 @@ function CMD.start(...)
 end
 
 function CMD.exit(list)
-	if module_exit then
-		module_exit()
-	else
-		skynet.timeout(60,function()
-			log.error(MODULE_NAME .. ' exit')
-		end)
-	end
+	module_exit()
 end
 
 skynet.start(function()
