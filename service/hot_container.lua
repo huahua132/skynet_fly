@@ -49,7 +49,7 @@ function CMD.start(...)
 	end
 end
 
-function CMD.exit(list)
+function CMD.exit()
 	module_exit()
 end
 
