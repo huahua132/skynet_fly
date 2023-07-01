@@ -45,6 +45,7 @@ end
 function CMD.start(...)
 	module_start(...)
 	if INDEX == 1 then
+		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
 end
