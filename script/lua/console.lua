@@ -171,7 +171,7 @@ function CMD.create_logrotate()
 	logrotate_file:write('\tnocompress\n')
 	logrotate_file:write('\tdateext\n')
 	logrotate_file:write('\tpostrotate\n')
-	logrotate_file:write(string.format('\t\t/usr/bin/pkill -HUP -f skynet.config_%s\n',svr_name))
+	logrotate_file:write(string.format('\t\t/usr/bin/pkill -HUP -f skynet.%s_config.lua\n',svr_name))
 	logrotate_file:write('\tendscript\n')
 
 	logrotate_file:write('}\n')
