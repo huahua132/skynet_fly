@@ -40,10 +40,8 @@ register = function(t)
 			--为了防止大于 1 分钟的定时器出现大量注册又注销，创建过多的无效携程和定时器事件
 			skynet.sleep(CHECK_INVAL_TIME)
 		else
-			skynet.timeout(remain_time,function()
-				time_out_func(t)
-			end)
-
+			skynet.sleep(remain_time)
+			time_out_func(t)
 			break
 		end
 	end
