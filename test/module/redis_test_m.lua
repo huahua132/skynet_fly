@@ -1,5 +1,7 @@
 local log = require "log"
 local redis = require "redisf"
+local timer = require "timer"
+local skynet = require "skynet"
 
 local CMD = {}
 
@@ -24,6 +26,7 @@ local function client_test()
 	log.info("client_test test over !!!")
 end
 
+local cancel
 local function watch_test()
 	log.info("watch_test test start !!!")
 
@@ -36,13 +39,9 @@ local function watch_test()
 		"pmonitor:*"
 	}
 	
-	local cancel = redis.new_watch("game",sub_list,psub_list,function(msg,key,pkey)
+	cancel = redis.new_watch("game",sub_list,psub_list,function(msg,key,pkey)
 		log.info("watch:",msg,key,pkey)
 	end)
-
-	if not cancel then
-		log.error("new_watch err ")
-	end
 
 	local client = redis.new_client("game")
 	if not client then
@@ -54,9 +53,6 @@ local function watch_test()
 		client:publish("pmonitor:move","player move")
 	end
 
-	if cancel then
-		cancel()
-	end
 	log.info("watch_test test over !!!")
 end
 
@@ -67,7 +63,10 @@ function CMD.start()
 end
 
 function CMD.exit()
-
+	if cancel then
+		cancel()
+	end
+	timer:new(timer.second * 60,1,skynet.exit)
 end
 
 return CMD
