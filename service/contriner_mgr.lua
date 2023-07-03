@@ -1,11 +1,13 @@
 local skynet = require "skynet.manager"
 
+local loadfile = loadfile
 local assert = assert
 local ipairs = ipairs
 local pairs = pairs
+local os = os
 local tinsert = table.insert
 local tremove = table.remove
-local os = os
+local tunpack = table.unpack
 local skynet_send = skynet.send
 local skynet_call = skynet.call
 local skynet_pack = skynet.pack
@@ -19,7 +21,14 @@ local g_module_version_map = {}
 
 local CMD = {}
 
-local function kill_module(module_name)
+local function before_exit_module(module_name)
+	local old_id_list = g_module_id_list_map[module_name] or {}
+	for _,id in ipairs(old_id_list) do
+		skynet_send(id,'lua','before_exit')
+	end
+end
+
+local function exit_module(module_name)
 	local old_id_list = g_module_id_list_map[module_name] or {}
 	for _,id in ipairs(old_id_list) do
 		skynet_send(id,'lua','exit')
@@ -28,7 +37,8 @@ end
 
 function CMD.kill_module(source,module_name)
 	assert(module_name,'not module_name')
-	kill_module(module_name)
+	before_exit_module(module_name)
+	exit_module(module_name)
 	
 	g_module_id_list_map[module_name] = nil
 	g_module_watch_map[module_name] = nil
@@ -54,14 +64,16 @@ function CMD.load_module(source,module_name)
 	local mod_args = m_cfg.mod_args or {}
 	local default_arg = m_cfg.default_arg or {}
 
+	before_exit_module(module_name)
+
 	local id_list = {}
-	for i = 1,launch_num do
+	for i = 1,launch_num do		
 		local server_id = skynet.newservice('hot_container',module_name,i,os.date("%Y-%m-%d %H:%M:%S",os.time()))
 		skynet_call(server_id,'lua','start',mod_args[i] or default_arg)
 		tinsert(id_list,server_id)
 	end
 
-	kill_module(module_name)
+	exit_module(module_name)
 
 	g_module_id_list_map[module_name] = id_list
 
