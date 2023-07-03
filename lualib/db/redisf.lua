@@ -54,7 +54,9 @@ function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
 			if ok then
 				call_back(msg,key,psubkey)
 			else
-				log.fatal("watch.message err :",msg,key,psubkey)
+				if not is_cancel then
+					log.fatal("watch.message err :",msg,key,psubkey)
+				end
 				break
 			end
 		end
