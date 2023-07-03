@@ -4,6 +4,7 @@ local handle_web = require "handle_web"
 local socket = require "skynet.socket"
 local log = require "log"
 local cache_help = require "cache_help"
+local timer = require "timer"
 
 local table  = table
 local string = string
@@ -179,20 +180,16 @@ function SOCKET.close(fd)
 end
 
 function CMD.exit()
-	log.error("web_agent_module close begin!")
+	log.error("web_agent_module exit begin!")
 	for fd,info in pairs(fd_info_map) do
-		log.error("web_agent_module close id:",fd)
+		log.error("web_agent_module exit id:",fd)
 		skynet.fork(close_fd,fd)
 	end
-	log.error("web_agent_module close end!")
+	log.error("web_agent_module exit end!")
 
-	skynet.fork(function()
-		while true do
-			if not next(fd_info_map) then
-				skynet.exit()
-			else
-				skynet.sleep(6000)
-			end
+	timer:new(timer.second * 60,0,function()
+		if not next(fd_info_map) then
+			skynet.exit()
 		end
 	end)
 end

@@ -32,6 +32,7 @@ local write_mod_required = require "write_mod_required"
 
 local module_start = CMD.start
 local module_exit = CMD.exit
+local module_before_exit = CMD.before_exit
 assert(module_start,MODULE_NAME .. " not start func")
 assert(module_exit,MODULE_NAME .. " not exit func")
 
@@ -52,6 +53,13 @@ end
 
 function CMD.exit()
 	module_exit()
+end
+
+--退出之前
+function CMD.before_exit()
+	if module_before_exit then
+		module_before_exit()
+	end
 end
 
 skynet.start(function()

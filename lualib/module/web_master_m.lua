@@ -5,6 +5,7 @@ local log = require "log"
 local cache_help = require "cache_help"
 local util = require "util"
 local contriner_client = require "contriner_client"
+local timer = require "timer"
 
 local table  = table
 local string = string
@@ -161,25 +162,6 @@ function CMD.get_black_ip_map()
 	return black_ip_map
 end
 
-function CMD.exit()
-	CMD.print_dsp_info()
-	log.error("web master close begin!",listen_fd)
-	--这里需要同步关，不然热更端口还被占用着！
-	socket.close(listen_fd)
-	agent_client:broadcast('close')
-	log.error("web master close end!",listen_fd)
-
-	skynet.fork(function()
-		while true do
-			if not next(fd_agent_map) then
-				skynet.exit()
-			else
-				skynet.sleep(6000)
-			end
-		end
-	end)
-end
-
 local SOCKET = {}
 function CMD.socket(cmd,...)
 	assert(SOCKET[cmd],"SOCKET cmd not exist")
@@ -230,6 +212,23 @@ function CMD.start(args)
 			socket.close_fd(fd)
 		else
 			connect_succ(ip,port,fd,agent_id)
+		end
+	end)
+end
+
+function CMD.before_exit()
+	--这里关闭监听，新服务会重启监听
+	socket.close(listen_fd)
+end
+
+function CMD.exit()
+	log.error("web master exit begin!",listen_fd)
+	agent_client:broadcast('exit')
+	log.error("web master exit end!",listen_fd)
+
+	timer:new(timer.second * 60,0,function()
+		if not next(fd_agent_map) then
+			skynet.exit()
 		end
 	end)
 end
