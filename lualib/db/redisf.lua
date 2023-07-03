@@ -1,7 +1,7 @@
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local redis = require "skynet.db.redis"
-local crypt = require "crypt"
+local sha2 = require "sha2"
 local log = require "log"
 
 local setmetatable = setmetatable
@@ -10,11 +10,6 @@ local pcall = pcall
 local ipairs = ipairs
 local type = type
 local string = string
-
-local function sha1(text)
-	local c = crypt.sha1(text)
-	return crypt.hexencode(c)
-end
 
 local g_sha_map = {}
 
@@ -42,7 +37,7 @@ function M.script_run(conn,script_str,...)
 
 	local sha = g_sha_map[script_str]
 	if not sha then
-		sha = sha1(script_str)
+		sha = sha2.sha1(script_str)
 		g_sha_map[script_str] = sha
 	end
 
