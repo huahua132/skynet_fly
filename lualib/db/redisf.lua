@@ -1,15 +1,24 @@
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local redis = require "skynet.db.redis"
+local crypt = require "crypt"
 local log = require "log"
 
 local setmetatable = setmetatable
 local assert = assert
 local pcall = pcall
 local ipairs = ipairs
+local type = type
+local string = string
+
+local function sha1(text)
+	local c = crypt.sha1(text)
+	return crypt.hexencode(c)
+end
+
+local g_sha_map = {}
 
 local M = {}
-local meta = {__index = M}
 
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
@@ -24,6 +33,27 @@ function M.new_client(db_name)
 	end
 
 	return conn
+end
+
+
+function M.script_run(conn,script_str,...)
+	assert(conn)
+	assert(type(script_str) == 'string','script_str not string')
+
+	local sha = g_sha_map[script_str]
+	if not sha then
+		sha = sha1(script_str)
+		g_sha_map[script_str] = sha
+	end
+
+	local ok,ret = pcall(conn.evalsha,conn,sha,...)
+	if not ok then
+		if string.find(ret,"NOSCRIPT",nil,true) then
+			ret = conn:eval(script_str,...)
+		end
+	end
+	
+	return ret
 end
 
 function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
