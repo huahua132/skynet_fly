@@ -14,6 +14,7 @@ local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
 
 local g_mod_svr_version_map = {}
+local g_is_watch_map = {}
 
 local function monitor(t,key)
 	while not IS_CLOSE do
@@ -27,8 +28,10 @@ end
 local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	t[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr','lua','query',key)
 	assert(t[key],"query err " .. key)
-
-	skynet.fork(monitor,t,key)
+	if not g_is_watch_map[key] then
+		g_is_watch_map[key] = true
+		skynet.fork(monitor,t,key)
+	end
 	return t[key],g_mod_svr_version_map[key]
 end})
 
