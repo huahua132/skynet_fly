@@ -53,19 +53,33 @@ local function watch_test()
 		client:publish("pmonitor:move","player move")
 	end
 
+	if cancel then
+		cancel()
+	end
 	log.info("watch_test test over !!!")
+end
+
+local function script_test()
+	log.info("script_test test start !!!")
+	local client = redis.new_client("game")
+	if not client then
+		log.error("not script_test ",client)
+		return
+	end
+
+	log.info(redis.script_run(client,[[return ARGV[2] ]],0,"argv 1","argv 2"))
+
+	log.info("script_test test over !!!")
 end
 
 function CMD.start()
 	log.info("redis_test_m start !!!")
 	client_test()
 	watch_test()
+	script_test()
 end
 
 function CMD.exit()
-	if cancel then
-		cancel()
-	end
 	timer:new(timer.second * 60,1,skynet.exit)
 end
 
