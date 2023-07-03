@@ -1,8 +1,8 @@
 return {
-	timer_test_m = {
-		launch_seq = 1,
-		launch_num = 1,
-	},
+	-- timer_test_m = {
+	-- 	launch_seq = 1,
+	-- 	launch_num = 1,
+	-- },
 
 	share_config_m = {
 		launch_seq = 2,
@@ -23,5 +23,10 @@ return {
 				},
 			},
 		}
+	},
+
+	redis_test_m = {
+		launch_seq = 3,
+		launch_num = 1,
 	}
 }
