@@ -43,6 +43,7 @@ function CMD.start(config)
 	local ti_6 = timer:new(timer.second * 2,2,time_out,"test 9")
 	skynet.sleep(600)
 	log.info("extend",ti_6:extend(timer.second * 5))
+	return true
 end
 
 function CMD.exit()

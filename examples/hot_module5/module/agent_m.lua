@@ -61,7 +61,7 @@ function CMD.server(server_id,cmd,args)
 end
 
 function CMD.start(player)
-	client = contriner_client:new("service_m",function()
+	client = contriner_client:new("service_m",nil,function()
 		return not g_seat_id  --没有坐下的情况下可以切换到新服务
 	end)
 
@@ -76,6 +76,7 @@ function CMD.start(player)
 	else
 		log.info("enter faild ",player)
 	end
+	return true
 end
 
 function CMD.exit()

@@ -6,6 +6,7 @@ local CMD = {}
 
 function CMD.start(config)
 	g_config = config
+	return true
 end
 
 function CMD.query(k)

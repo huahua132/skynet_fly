@@ -211,6 +211,7 @@ function CMD.start(args)
 	assert(web,"not dispatch")
 	assert(web.dispatch,"not dispatch func")
 	check_time_out_loop()
+	return true
 end
 
 return CMD
