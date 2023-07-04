@@ -10,7 +10,7 @@ function CMD.ping(from)
 end
 
 function CMD.start()
-
+	return true
 end
 
 function CMD.exit()

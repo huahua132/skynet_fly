@@ -77,6 +77,7 @@ function CMD.start()
 	client_test()
 	watch_test()
 	script_test()
+	return true
 end
 
 function CMD.exit()

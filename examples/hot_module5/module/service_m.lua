@@ -176,6 +176,7 @@ function CMD.start(config)
 	seat_mgr.init(player_num)
 	MINE_MIN = config.min_num
 	MINE_MAX = config.max_num
+	return true
 end
 
 function CMD.exit()

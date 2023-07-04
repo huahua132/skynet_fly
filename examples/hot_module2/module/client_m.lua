@@ -9,6 +9,7 @@ function CMD.start()
 			skynet.sleep(100)
 		end
 	end)
+	return true
 end
 
 function CMD.exit()

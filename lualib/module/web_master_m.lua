@@ -214,6 +214,8 @@ function CMD.start(args)
 			connect_succ(ip,port,fd,agent_id)
 		end
 	end)
+
+	return true
 end
 
 function CMD.before_exit()

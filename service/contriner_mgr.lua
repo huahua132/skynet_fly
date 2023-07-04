@@ -1,4 +1,5 @@
 local skynet = require "skynet.manager"
+local log = require "log"
 
 local loadfile = loadfile
 local assert = assert
@@ -15,21 +16,20 @@ local skynet_ret = skynet.ret
 
 local NORET = {}
 
-local g_module_id_list_map = {}
-local g_module_watch_map = {}
-local g_module_version_map = {}
+local g_name_id_list_map = {}
+local g_id_list_map = {}
+local g_watch_map = {}
+local g_version_map = {}
 
 local CMD = {}
 
-local function before_exit_module(module_name)
-	local old_id_list = g_module_id_list_map[module_name] or {}
+local function before_exit_module(old_id_list)
 	for _,id in ipairs(old_id_list) do
 		skynet_send(id,'lua','before_exit')
 	end
 end
 
-local function exit_module(module_name)
-	local old_id_list = g_module_id_list_map[module_name] or {}
+local function exit_module(old_id_list)
 	for _,id in ipairs(old_id_list) do
 		skynet_send(id,'lua','exit')
 	end
@@ -37,16 +37,18 @@ end
 
 function CMD.kill_module(source,module_name)
 	assert(module_name,'not module_name')
-	before_exit_module(module_name)
-	exit_module(module_name)
+	local old_id_list = g_id_list_map[module_name]
+	before_exit_module(old_id_list)
+	exit_module(old_id_list)
 	
-	g_module_id_list_map[module_name] = nil
-	g_module_watch_map[module_name] = nil
-	g_module_version_map[module_name] = nil
+	g_name_id_list_map[module_name] = nil
+	g_id_list_map[module_name] = nil
+	g_watch_map[module_name] = nil
+	g_version_map[module_name] = nil
 end
 
 function CMD.kill_all(source)
-	for module_name,_ in pairs(g_module_id_list_map) do
+	for module_name,_ in pairs(g_id_list_map) do
 		CMD.kill_module(source,module_name)
 	end
 end
@@ -64,63 +66,81 @@ function CMD.load_module(source,module_name)
 	local mod_args = m_cfg.mod_args or {}
 	local default_arg = m_cfg.default_arg or {}
 
-	before_exit_module(module_name)
+	local old_id_list = g_id_list_map[module_name] or {}
+	before_exit_module(old_id_list)
 
 	local id_list = {}
+	local name_id_list = {}
 	for i = 1,launch_num do		
 		local server_id = skynet.newservice('hot_container',module_name,i,os.date("%Y-%m-%d %H:%M:%S",os.time()))
-		skynet_call(server_id,'lua','start',mod_args[i] or default_arg)
+		local args = mod_args[i] or default_arg
+
+		if not skynet_call(server_id,'lua','start',args) then
+			log.fatal("load_module err ",module_name,args)
+			return
+		end
+		local instance_name = args.instance_name
+		if instance_name then
+			if not name_id_list[instance_name] then
+				name_id_list[instance_name] = {}
+			end
+			tinsert(name_id_list[instance_name],server_id)
+		end
 		tinsert(id_list,server_id)
 	end
 
-	exit_module(module_name)
+	g_name_id_list_map[module_name] = name_id_list
+	g_id_list_map[module_name] = id_list
 
-	g_module_id_list_map[module_name] = id_list
-
-	if not g_module_version_map[module_name] then
-		g_module_version_map[module_name] = 0
+	if not g_version_map[module_name] then
+		g_version_map[module_name] = 0
 	end
 
-	if not g_module_watch_map[module_name] then
-		g_module_watch_map[module_name] = {}
+	if not g_watch_map[module_name] then
+		g_watch_map[module_name] = {}
 	end
 	
-	g_module_version_map[module_name] = g_module_version_map[module_name] + 1
-	local version = g_module_version_map[module_name]
+	g_version_map[module_name] = g_version_map[module_name] + 1
+	local version = g_version_map[module_name]
 
-	local watch_map = g_module_watch_map[module_name]
+	local watch_map = g_watch_map[module_name]
 	for source,response in pairs(watch_map) do
-		response(true,id_list,version)
+		response(true,id_list,name_id_list,version)
 		watch_map[source] = nil
 	end
 	
-	return id_list,version
+	exit_module(old_id_list)
+
+	return id_list,name_id_list,version
 end
 
 function CMD.query(source,module_name)
 	assert(module_name,'not module_name')
-	assert(g_module_id_list_map[module_name])
-	assert(g_module_version_map[module_name])
+	assert(g_id_list_map[module_name])
+	assert(g_name_id_list_map[module_name])
+	assert(g_version_map[module_name])
 
-	local id_list = g_module_id_list_map[module_name]
-	local version = g_module_version_map[module_name]
+	local id_list = g_id_list_map[module_name]
+	local name_id_list = g_name_id_list_map[module_name]
+	local version = g_version_map[module_name]
 
-	return id_list,version
+	return id_list,name_id_list,version
 end
 
 function CMD.watch(source,module_name,version)
     assert(module_name,'not module_name')
 	assert(version,"not version")
-	assert(g_module_id_list_map[module_name])
-	assert(g_module_version_map[module_name])
+	assert(g_id_list_map[module_name])
+	assert(g_version_map[module_name])
 
-	local id_list = g_module_id_list_map[module_name]
-	local version = g_module_version_map[module_name]
-	local watch_map = g_module_watch_map[module_name]
+	local id_list = g_id_list_map[module_name]
+	local name_id_list = g_name_id_list_map[module_name]
+	local version = g_version_map[module_name]
+	local watch_map = g_watch_map[module_name]
 
 	assert(not watch_map[source])
 	if version ~= version then
-		return id_list,version
+		return id_list,name_id_list,version
 	end
 
 	watch_map[source] = skynet.response()
@@ -129,16 +149,17 @@ end
 
 function CMD.unwatch(source,module_name)
 	assert(module_name,'not module_name')
-	assert(g_module_id_list_map[module_name])
-	assert(g_module_version_map[module_name])
+	assert(g_id_list_map[module_name])
+	assert(g_version_map[module_name])
 
-	local id_list = g_module_id_list_map[module_name]
-	local version = g_module_version_map[module_name]
-	local watch_map = g_module_watch_map[module_name]
+	local id_list = g_id_list_map[module_name]
+	local name_id_list = g_name_id_list_map[module_name]
+	local version = g_version_map[module_name]
+	local watch_map = g_watch_map[module_name]
 	local response = watch_map[source]
 	assert(response)
 
-	response(true,id_list,version)
+	response(true,id_list,name_id_list,version)
 	watch_map[source] = nil
 	return true
 end
@@ -148,9 +169,9 @@ skynet.start(function()
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
-		local r1,r2 = f(source,...)
+		local r1,r2,r3 = f(source,...)
 		if r1 ~= NORET then
-			skynet_ret(skynet_pack(r1,r2))
+			skynet_ret(skynet_pack(r1,r2,r3))
 		end
 	end)
 end)
