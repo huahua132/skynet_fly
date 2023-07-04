@@ -1,0 +1,12 @@
+package login;
+
+message LoginReq {
+	optional int32 player_id = 1;
+	optional string nickname = 2;
+	optional string password = 3;
+	optional string account = 4;
+}
+
+message LoginRes {
+	optional int32 result = 1;
+}

@@ -414,6 +414,12 @@ function util.create_luapath(skynet_fly_path)
 		end
 	end
 
+	for file_name,file_path,file_info in util.diripairs(skynet_fly_path .. '/3rd') do
+		if file_info.mode == 'directory' then
+			lua_path = lua_path .. file_path .. '/?.lua;'
+		end
+	end
+
 	return lua_path
 end
 

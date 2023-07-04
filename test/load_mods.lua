@@ -84,5 +84,10 @@ return {
 	mysql_test_m = {
 		launch_seq = 5,
 		launch_num = 1,
-	}
+	},
+
+	proto_test_m = {
+		launch_seq = 6,
+		launch_num = 1,
+	},
 }
