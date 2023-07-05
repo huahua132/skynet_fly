@@ -14,7 +14,7 @@ return {
 		launch_seq = 2,
 		launch_num = 1,
 		mod_args = {
-			{account = "skynet_fly", password = "123456"},
+			{player_id = 10001,nickname = "skynet_fly",account = "skynet_fly", password = "123456"},
 		}
 	},
 }

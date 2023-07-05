@@ -1,8 +1,10 @@
 package login;
 
 message LoginReq {
-	optional string account = 1;
-	optional string password = 2;
+	optional int32 player_id = 1;
+	optional string account = 2;
+	optional string password = 3;
+	optional string nickname = 4;
 }
 
 message LoginRes {
