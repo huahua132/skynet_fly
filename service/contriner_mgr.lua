@@ -72,7 +72,7 @@ function CMD.load_module(source,module_name)
 	local id_list = {}
 	local name_id_list = {}
 	for i = 1,launch_num do		
-		local server_id = skynet.newservice('hot_container',module_name,i,os.date("%Y-%m-%d %H:%M:%S",os.time()))
+		local server_id = skynet.newservice('hot_container',module_name,i,os.date("%Y-%m-%d[%H:%M:%S]",os.time()))
 		local args = mod_args[i] or default_arg
 
 		if not skynet_call(server_id,'lua','start',args) then

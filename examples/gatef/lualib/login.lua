@@ -3,6 +3,7 @@ local skynet = require "skynet"
 local pb_util = require "pb_util"
 local socket = require "socket"
 local netpack = require "netpack"
+local pbnet_util = require "pbnet_util"
 
 local M = {}
 
@@ -10,41 +11,17 @@ function M.init(gate)
 	pb_util.load("./proto")
 end
 
-function M.unpack(msg,sz)
-	local msgstr = skynet.tostring(msg,sz)
-	if sz < 2 then
-		log.info("unpack invalid msg ",msgstr,sz)
-		return nil
-	end
-	
-	local packname,tab = pb_util.unpack(msgstr)
-	if not packname then
-		log.fatal("unpack err ",tab)
-		return
-	end
+M.unpack = pbnet_util.unpack
 
-	if packname ~= ".login.LoginReq" then
-		log.fatal("unpack err pack ",packname)
-		return
-	end
-
-	return tab
-end
-
-function M.dispatch(fd,address,msgtab)
+function M.dispatch(fd,address,packname,msgtab)
 	skynet.ignoreret()
-	log.info("dispatch:",fd,address,msgtab)
+	log.info("dispatch:",fd,address,packname,msgtab)
 
 	local login_res = {
-		player_id = 10000,
+		player_id = msgtab.player_id,
 	}
-	local msg,err = pb_util.pack(".login.LoginRes",login_res)
-	if not msg then
-		log.error("pb_util.pack err ",msg)
-		return
-	end
 
-	socket.write(fd,netpack.pack(msg))
+	pbnet_util.send(fd,".login.LoginRes",login_res)
 end
 
 function M.open(gate,fd,addr)
