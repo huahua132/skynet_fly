@@ -3,6 +3,7 @@ local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
 local ipairs = ipairs
+local type = type
 
 local M = {}
 local meta = {__index = M}
@@ -77,7 +78,9 @@ end
 local function get_mod(t)
     local id_list = t.cur_id_list
     local len = #id_list
-    return id_list[SELF_ADDRESS % len + 1]
+	local mod = t.mod_num or SELF_ADDRESS
+	skynet.error("get_name_mod:",mod,t.mod_num,SELF_ADDRESS)
+    return id_list[mod % len + 1]
 end
 
 local function get_name_mod(t)
@@ -85,9 +88,10 @@ local function get_name_mod(t)
 	local cur_name_id_list = t.cur_name_id_list
 	assert(cur_name_id_list[t.instance_name],"not svr " .. t.instance_name)
 
+	local mod = t.mod_num or SELF_ADDRESS
 	local id_list = cur_name_id_list[t.instance_name]
 	local len = #id_list
-	return id_list[SELF_ADDRESS % len + 1]
+	return id_list[mod % len + 1]
 end
 
 local function switch_svr(t)
@@ -116,6 +120,12 @@ function M:new(module_name,instance_name,can_switch_func)
 
     setmetatable(t,meta)
     return t
+end
+
+--设置mod映射访问的数字 如果没有设置，默认使用 自身服务id % 服务数量
+function M:set_mod_num(num)
+	assert(type(num) == 'number')
+	self.mod_num = num
 end
 
 function M:mod_send(...)
