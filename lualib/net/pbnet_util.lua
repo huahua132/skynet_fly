@@ -71,8 +71,8 @@ function M.recv(fd,dispatch)
 	skynet.fork(function()
 		while not is_cancel do
 			local ok,msg = pcall(socket.read,fd)
-			if not ok then
-				log.error("read faild ",fd)
+			if not ok or msg == false then
+				log.error("read faild ",fd,msg)
 				break
 			end
 

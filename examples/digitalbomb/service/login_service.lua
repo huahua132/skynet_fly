@@ -7,12 +7,16 @@ local timer = require "timer"
 local log = require "log"
 local queue = require "skynet.queue"
 local errorcode = require "errorcode"
+local errors_msg = require "errors_msg"
+local login_msg = require "login_msg"
 local assert = assert
+local x_pcall = x_pcall
 
 local gate
 
 local g_fd_agent_map = {}
 local g_player_map = {}
+local login_lock_map = {}
 
 local function del_agent(fd)
 	local agent = g_fd_agent_map[fd]
@@ -27,7 +31,7 @@ local function del_agent(fd)
 		agent.hall_client:mod_call('disconnect',player_id)
 	end
 
-	g_fd_agent_map[player_id] = nil
+	g_fd_agent_map[fd] = nil
 
 	if agent.fd > 0 then
 		--通知网关关闭
@@ -37,7 +41,35 @@ local function del_agent(fd)
 	log.info("del_agent ",fd)
 end
 
-local function login_check(fd,packname,tab)
+local function check_join(req,fd,packname,agent,player_id)
+	--登录检查
+	if req.password ~= '123456' then
+		log.error("login err ",req)
+		return false,errorcode.LOGIN_PASS_ERR,"pass err"
+	else
+		local old_agent = g_player_map[player_id]
+		local hall_client = nil
+		if old_agent then
+			hall_client = old_agent.hall_client
+			del_agent(old_agent.fd)
+		else
+			hall_client = contriner_client:new("hall_m",nil,function() return false end)
+			hall_client:set_mod_num(player_id)
+		end
+		
+		local ok,errcode,errmsg = hall_client:mod_call("join",player_id,req,fd,gate)
+		if ok then
+			agent.hall_client = hall_client
+			agent.player_id = player_id
+		else
+			log.error("join hall err ",player_id)
+			return false,errcode,errmsg
+		end
+	end
+	return true
+end
+
+local function login(fd,packname,req)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
 		log.error("login_check not agent err ",agent)
@@ -47,46 +79,36 @@ local function login_check(fd,packname,tab)
 	agent.login_time_out:cancel()
 
 	if not packname then
-		log.error("unpack err ",packname,tab)
+		log.error("unpack err ",packname,req)
 		return
 	end
 
 	if packname ~= '.login.LoginReq' then
 		log.error("login_check msg err ",fd)
-		return
+		return false,errorcode.NOT_LOGIN,"please login"
 	end
 
-	--登录检查
-	if tab.password ~= '123456' then
-		log.error("login err ",tab)
-		pbnet_util.send(fd,'.error.ErrorMsg',{
-			code = errorcode.LOGIN_PASS_ERR,
-			reqcmd = packname,
-			msg = "login pass err"
-		})
-		return
+	local player_id = req.player_id
+	if not player_id then
+		log.error("req err ",fd,req)
+		return false,errorcode.REQ_PARAM_ERR,"not player_id"
+	end
+
+	if login_lock_map[player_id] then
+		log.error("repeat login ",player_id)
+		return false,errorcode.REPAET_LOGIN,"repeat login"
+	end
+
+	login_lock_map[player_id] = true
+	local isok,joinret,code,errmsg = x_pcall(check_join,req,fd,packname,agent,player_id)
+	login_lock_map[player_id] = false
+	if not isok or not joinret then
+		log.error("login err ",joinret,code,errmsg)
+		return joinret,code,errmsg
 	else
-		local old_agent = g_player_map[tab.player_id]
-		local hall_client = nil
-		if old_agent then
-			hall_client = old_agent.hall_client
-			del_agent(old_agent.fd)
-		else
-			hall_client = contriner_client:new("hall_m",nil,function() return false end)
-			hall_client:set_mod_num(tab.player_id)
-		end
-		
-		if hall_client:mod_call("join",tab.player_id,tab,fd,gate) then
-			agent.hall_client = hall_client
-			agent.player_id = tab.player_id
-			pbnet_util.send(fd,'.login.LoginRes',{player_id = tab.player_id})
-		else
-			log.error("join hall err ",tab.player_id)
-			return
-		end
+		login_msg.login_res(fd,player_id)
+		return true
 	end
-
-	return true
 end
 
 local CMD = {}
@@ -166,15 +188,17 @@ skynet.start(function()
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
 		unpack = pbnet_util.unpack,
-		dispatch = function(fd,source,packname,tab)
+		dispatch = function(fd,source,packname,req)
 			skynet.ignoreret()
 			local agent = g_fd_agent_map[fd]
 			if not agent then
-				log.warn("dispatch not agent ",fd)
+				log.error("dispatch not agent ",fd)
 				return
 			end
 
-			if not agent.queue(login_check,fd,packname,tab) then
+			local isok,errcode,msg = agent.queue(login,fd,packname,req)
+			if not isok then
+				errors_msg.errors(fd,errcode,msg,packname)
 				agent.queue(del_agent,fd)
 			end
 		end,
