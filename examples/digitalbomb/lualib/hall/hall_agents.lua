@@ -69,6 +69,8 @@ function M.disconnect(player_id)
 
 	local room_server = agent.room_server
 	local table_id = agent.table_id
+
+	log.error("disconnect:",room_server,player_id,table_id)
 	skynet.send(room_server,'lua','disconnect',player_id,table_id)
 end
 
@@ -107,6 +109,10 @@ function M.send_request(fd,packname,tab)
 	local player_id = agent.player_id
 
 	skynet.send(room_server,'lua','request',player_id,table_id,packname,tab)
+end
+
+function M.get_agent(fd)
+	return g_fd_map[fd]
 end
 
 function M.is_empty()
