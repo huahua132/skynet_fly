@@ -30,7 +30,6 @@ end
 
 local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr','lua','query',key)
-	skynet.error("query ",t[key],g_name_id_list_map[key],g_mod_svr_version_map[key])
 	assert(t[key],"query err " .. key)
 	if not g_is_watch_map[key] then
 		g_is_watch_map[key] = true
@@ -79,7 +78,6 @@ local function get_mod(t)
     local id_list = t.cur_id_list
     local len = #id_list
 	local mod = t.mod_num or SELF_ADDRESS
-	skynet.error("get_name_mod:",mod,t.mod_num,SELF_ADDRESS)
     return id_list[mod % len + 1]
 end
 
@@ -126,6 +124,22 @@ end
 function M:set_mod_num(num)
 	assert(type(num) == 'number')
 	self.mod_num = num
+end
+
+function M:get_mod_server_id()
+	return get_mod(self)
+end
+
+function M:get_balance_server_id()
+	return get_balance(self)
+end
+
+function M:get_mod_server_id_by_name()
+	return get_name_mod(self)
+end
+
+function M:get_balance_server_id_by_name()
+	return get_name_balance(self)
 end
 
 function M:mod_send(...)
