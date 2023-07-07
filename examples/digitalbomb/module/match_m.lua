@@ -28,7 +28,7 @@ local function matching_table()
 		table.insert(table_num_map[player_num],t_info)
 	end
 
-	log.info("matching_table",g_table_map,table_num_map)
+	--log.info("matching_table",g_table_map,table_num_map)
 
 	for i = MAX_PLAYER_NUM - 1,0,-1 do
 		local t_list = table_num_map[i]

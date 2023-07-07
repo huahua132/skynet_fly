@@ -4,17 +4,22 @@ local pbnet_util = require "pbnet_util"
 local hall_agents = require "hall_agents"
 local timer = require "timer"
 
-local function dispatch(fd,source,packname,tab)
+local CMD = {}
+
+local function dispatch(fd,source,packname,req)
 	skynet.ignoreret()
 	if not packname then
-		log.error("unpack err ",packname,tab)
+		log.error("unpack err ",packname,req)
 		return
 	end
-	log.info('dispatch:',fd,source,packname,tab)
-	hall_agents.send_request(fd,packname,tab)
-end
+	log.info('dispatch:',fd,source,packname,req)
 
-local CMD = {}
+	if packname == '.login.LoginOutReq' then
+		CMD.goout()
+	else
+		hall_agents.send_request(fd,packname,req)
+	end
+end
 
 function CMD.join(player_id,player_info,fd,gate)
 	log.info("join:",player_id,player_info,fd,gate)
