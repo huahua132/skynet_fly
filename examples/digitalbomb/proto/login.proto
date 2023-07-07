@@ -1,0 +1,19 @@
+package login;
+
+message LoginReq {
+	optional string account = 1;
+	optional string password = 2;
+	optional int32 player_id = 3;
+}
+
+message LoginRes {
+	optional int32 player_id = 1;
+}
+
+message LoginOutReq {
+	optional int32 player_id = 1;
+}
+
+message LoginOutRes {
+	optional int32 player_id = 1;
+}
