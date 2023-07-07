@@ -2,7 +2,10 @@ local skynet = require "skynet"
 local log = require "log"
 local pbnet_util = require "pbnet_util"
 local hall_agents = require "hall_agents"
+local errors_msg = require "errors_msg"
+local login_msg = require "login_msg"
 local timer = require "timer"
+local errorcode = require "errorcode"
 
 local CMD = {}
 
@@ -15,7 +18,18 @@ local function dispatch(fd,source,packname,req)
 	log.info('dispatch:',fd,source,packname,req)
 
 	if packname == '.login.LoginOutReq' then
-		CMD.goout()
+		local agent = hall_agents.get_agent(fd)
+		if not agent then
+			log.error("LoginOutReq not agent ",fd,packname)
+			return
+		end
+		
+		local ok,errorcode,errormsg = CMD.goout(agent.player_id)
+		if not ok then
+			errors_msg.errors(fd,errorcode,errormsg,packname)
+		else
+			login_msg.login_out_res(fd,agent.player_id)
+		end
 	else
 		hall_agents.send_request(fd,packname,req)
 	end
