@@ -1,0 +1,7 @@
+package game;
+
+message EnterCast {
+    optional int32 player_id = 1;
+    optional string nickname = 2;
+}
+
