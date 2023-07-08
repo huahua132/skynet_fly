@@ -81,7 +81,8 @@ function M:cancel()
 end
 
 --延长定时器
-function M:extend(millsecond)
+--ex_expire 延长时间 比如之前是1秒  ex_expire等于1秒，如果定时器还没有触发会延长一秒再触发
+function M:extend(ex_expire)
 	if self.is_cancel or self.is_over then
 		return false
 	end
@@ -93,11 +94,11 @@ function M:extend(millsecond)
 	local pre_args = self.args
 	local pre_expire_time = self.expire_time
 
-	local expire = pre_expire + millsecond
+	local expire = pre_expire + ex_expire
 	self:cancel()
 	self = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
 	self.cur_times = pre_cur_times
-	self.expire_time = time_help.skynet_int_time() + (pre_expire_time - time_help.skynet_int_time()) + millsecond
+	self.expire_time = time_help.skynet_int_time() + (pre_expire_time - time_help.skynet_int_time()) + ex_expire
 
 	return true
 end
