@@ -5,4 +5,5 @@ return {
 	REQ_PARAM_ERR = 3,  --请求参数错误
 	REPAET_LOGIN = 4,   --重复请求登录
 	TABLE_FULL = 5,     --房间爆满
+	TABLE_ENTER_ERR = 6,--坐下失败
 }

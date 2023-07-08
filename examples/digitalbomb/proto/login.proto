@@ -4,6 +4,7 @@ message LoginReq {
 	optional string account = 1;
 	optional string password = 2;
 	optional int32 player_id = 3;
+	optional int32 nickname = 4;
 }
 
 message LoginRes {
