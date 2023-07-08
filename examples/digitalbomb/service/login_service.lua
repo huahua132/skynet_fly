@@ -21,7 +21,7 @@ local login_lock_map = {}
 local function del_agent(fd)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.error("del_agent fd err ",fd)
+		log.info("del_agent not agent ",fd)
 		return
 	end
 
@@ -43,6 +43,7 @@ end
 
 local function check_join(req,fd,packname,agent,player_id)
 	--登录检查
+	local login_res,errcode,errmsg
 	if req.password ~= '123456' then
 		log.error("login err ",req)
 		return false,errorcode.LOGIN_PASS_ERR,"pass err"
@@ -57,16 +58,17 @@ local function check_join(req,fd,packname,agent,player_id)
 			hall_client:set_mod_num(player_id)
 		end
 		
-		local ok,errcode,errmsg = hall_client:mod_call("join",player_id,req,fd,gate)
-		if ok then
+		login_res,errcode,errmsg = hall_client:mod_call("join",player_id,req,fd,gate)
+		if login_res then
 			agent.hall_client = hall_client
 			agent.player_id = player_id
+			g_player_map[player_id] = agent
 		else
 			log.error("join hall err ",player_id)
 			return false,errcode,errmsg
 		end
 	end
-	return true
+	return login_res
 end
 
 local function login(fd,packname,req)
@@ -100,13 +102,13 @@ local function login(fd,packname,req)
 	end
 
 	login_lock_map[player_id] = true
-	local isok,joinret,code,errmsg = x_pcall(check_join,req,fd,packname,agent,player_id)
+	local isok,login_res,code,errmsg = x_pcall(check_join,req,fd,packname,agent,player_id)
 	login_lock_map[player_id] = false
-	if not isok or not joinret then
-		log.error("login err ",joinret,code,errmsg)
-		return joinret,code,errmsg
+	if not isok or not login_res then
+		log.error("login err ",login_res,code,errmsg)
+		return login_res,code,errmsg
 	else
-		login_msg.login_res(fd,player_id)
+		login_msg.login_res(fd,login_res)
 		return true
 	end
 end

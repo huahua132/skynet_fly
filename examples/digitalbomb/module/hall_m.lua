@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local log = require "log"
+local pb_util = require "pb_util"
 local pbnet_util = require "pbnet_util"
 local hall_agents = require "hall_agents"
 local errors_msg = require "errors_msg"
@@ -51,6 +52,7 @@ function CMD.goout(player_id)
 end
 
 function CMD.start()
+	pb_util.load('./proto')
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
@@ -63,8 +65,12 @@ end
 
 function CMD.exit()
 	timer:new(timer.minute,0,function()
+		
 		if hall_agents.is_empty() then
+			log.info("hall_agents.is_empty can exit")
 			skynet.exit()
+		else
+			log.info("not hall_agents.is_empty can`t exit",hall_agents.get_all_agent_info)
 		end
 	end)
 end

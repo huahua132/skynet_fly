@@ -80,7 +80,7 @@ function M.recv(fd,dispatch)
 			while total_msg:len() > 0 do
 				local one_pack = unpack_msg()
 				if not one_pack then break end
-				skynet.fork(dispatch,pb_util.unpack(one_pack))
+				skynet.fork(dispatch,fd,pb_util.unpack(one_pack))
 			end
 		end
 

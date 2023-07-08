@@ -37,11 +37,9 @@ function M.join(player_id,player_info,fd,gate)
 	return agent.queue(function()
 		if not agent.match_client then
 			agent.match_client = contriner_client:new("match_m",nil,function() return false end)
-			local room_server,table_id = agent.match_client:mod_call('match',player_id,player_info,fd,skynet.self())
+			local room_server,table_id,errmsg = agent.match_client:mod_call('match',player_id,player_info,fd,skynet.self())
 			if not room_server then
-				return false
-			else
-				return true
+				return false,table_id,errmsg
 			end
 
 			agent.room_server = room_server
@@ -49,11 +47,17 @@ function M.join(player_id,player_info,fd,gate)
 		else
 			local room_server = agent.room_server
 			local table_id = agent.table_id
-			skynet.send(room_server,'lua','reconnect',player_id,table_id,fd)
+			skynet.send(room_server,'lua','reconnect',table_id,player_id,fd)
 		end
 
-		pcall(skynet.call,agent.gate,'forward',fd)
-		return true
+		pcall(skynet.call,agent.gate,'lua','forward',fd)
+		return {
+			player_id = agent.player_id,
+			hall_server_id = skynet.self(),
+			match_server_id = agent.match_client:get_mod_server_id(),
+			room_server_id = agent.room_server,
+			table_id = agent.table_id,
+		}
 	end)
 end
 
@@ -71,7 +75,7 @@ function M.disconnect(player_id)
 	local table_id = agent.table_id
 
 	log.error("disconnect:",room_server,player_id,table_id)
-	skynet.send(room_server,'lua','disconnect',player_id,table_id)
+	skynet.send(room_server,'lua','disconnect',table_id,player_id)
 end
 
 function M.goout(player_id)
@@ -117,6 +121,10 @@ end
 
 function M.is_empty()
 	return not next(g_player_map)
+end
+
+function M.get_all_agent_info()
+	return g_player_map,g_fd_map
 end
 
 return M
