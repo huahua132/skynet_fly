@@ -149,7 +149,7 @@ function CMD.start()
 end
 
 function CMD.exit()
-	timer:new(timer.second * 60,0,function()
+	timer:new(timer.minute,0,function()
 		if not next(g_player_map) then
 			skynet.exit()
 		end
