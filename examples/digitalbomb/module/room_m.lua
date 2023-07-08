@@ -40,7 +40,7 @@ function CMD.leave(table_id,player_id)
 	assert(g_table_map[table_id])
 
 	local t_info = g_table_map[table_id]
-	local player_map = t_info[player_id]
+	local player_map = t_info.player_map
 
 	assert(player_map[player_id])
 
@@ -48,7 +48,7 @@ function CMD.leave(table_id,player_id)
 	if not next(player_map) then
 		g_table_map[table_id] = nil
 	end
-
+	log.info("g_table_map:",g_table_map)
 	return true
 end
 
@@ -56,7 +56,7 @@ function CMD.disconnect(table_id,player_id)
 	log.info("disconnect:",table_id,player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
-	local player_map = t_info[player_id]
+	local player_map = t_info.player_map
 	assert(player_map[player_id])
 
 	local player = player_map[player_id]
@@ -68,7 +68,7 @@ function CMD.reconnect(table_id,player_id,new_fd)
 	log.info("reconnect:",table_id,player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
-	local player_map = t_info[player_id]
+	local player_map = t_info.player_map
 	assert(player_map[player_id])
 
 	local player = player_map[player_id]
@@ -88,7 +88,10 @@ end
 function CMD.exit()
 	timer:new(timer.minute,0,function()
 		if not next(g_table_map) then
+			log.info("g_table_map.is_empty can exit")
 			skynet.exit()
+		else
+			log.info("not g_table_map.is_empty can`t exit")
 		end
 	end)
 end

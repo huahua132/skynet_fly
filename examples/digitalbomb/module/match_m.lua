@@ -3,15 +3,17 @@ local contriner_client = require "contriner_client"
 local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local timer = require "timer"
+local errorcode = require "errorcode"
 
 local assert = assert
 local pairs = pairs
 local table = table
 local ipairs = ipairs
 local next = next
-
-local g_alloc_table_id = 1
-local MAX_TABLE_ID = 10000
+local MAX_TABLE = 10                                     --最大桌子数
+local g_alloc_table_id = skynet.self() * MAX_TABLE + 1
+local INIT_TABLE_ID = g_alloc_table_id
+local MAX_TABLE_ID = INIT_TABLE_ID + MAX_TABLE - 1
 local MAX_PLAYER_NUM = 2
 
 local g_table_map = {}
@@ -43,7 +45,7 @@ local function matching_table()
 end
 
 local function alloc_table_id()
-	log.info("alloc_table_id")
+	log.info("alloc_table_id",g_alloc_table_id)
 	local table_id = nil
 	local cur_start_id = g_alloc_table_id
 	while not table_id do
@@ -52,7 +54,7 @@ local function alloc_table_id()
 		end
 		g_alloc_table_id = g_alloc_table_id + 1
 		if g_alloc_table_id > MAX_TABLE_ID then
-			g_alloc_table_id = 1
+			g_alloc_table_id = INIT_TABLE_ID
 		end
 		if g_alloc_table_id == cur_start_id then
 			break
@@ -66,7 +68,7 @@ local function create_table()
 	local table_id = alloc_table_id()
 	if not table_id then
 		log.error("alloc_table_id err ",table_id)
-		return
+		return nil,errorcode.TABLE_FULL,"not table"
 	end
 
 	local room_client = contriner_client:new("room_m",nil,function() return false end)
@@ -80,12 +82,13 @@ local function create_table()
 		max_player_num = MAX_PLAYER_NUM,
 	}
 	
-	if skynet.call(room_server_id,'lua','create_table',table_id) then
+	local ok,errocode,errormsg = skynet.call(room_server_id,'lua','create_table',table_id) 
+	if ok then
 		g_table_map[table_id] = new_table
 		return new_table
 	else
 		log.error("create table err ",table_id)
-		return
+		return nil,errocode,errormsg
 	end
 end
 
@@ -96,20 +99,21 @@ function CMD.match(player_id,player_info,fd,hall_server_id)
 	assert(not g_player_map[player_id])
 	return queue(function()
 		local t_info = matching_table()
+		local ok,errcode,errmsg
 		if not t_info then
-			t_info = create_table()
+			t_info,errcode,errmsg = create_table()
 			if not t_info then
-				log.fatal("create_table err ")
-				return
+				log.fatal("create_table err ",errcode,errmsg)
+				return nil,errcode,errmsg
 			end
 		end
 
 		local room_server_id = t_info.room_server_id
 		local table_id = t_info.table_id
-
-		if not skynet.call(room_server_id,'lua','enter',table_id,player_id,player_info,fd,hall_server_id) then
-			log.error("enter table fail ",player_id)
-			return
+		ok,errcode,errmsg = skynet.call(room_server_id,'lua','enter',table_id,player_id,player_info,fd,hall_server_id)
+		if not ok then
+			log.error("enter table fail ",player_id,errcode,errmsg)
+			return nil,errcode,errmsg
 		else
 			g_player_map[player_id] = t_info
 			local player_list = t_info.player_list
@@ -138,7 +142,11 @@ function CMD.leave(player_id)
 					break
 				end
 			end
-			log.info("leave succ ",room_server_id,table_id)
+			if #player_list <= 0 then
+				g_table_map[table_id] = nil 
+			end
+			g_player_map[player_id] = nil
+			log.info("leave succ ",room_server_id,table_id,g_table_map)
 			return true
 		end
 	end)
@@ -151,7 +159,10 @@ end
 function CMD.exit()
 	timer:new(timer.minute,0,function()
 		if not next(g_player_map) then
+			log.info("g_player_map.is_empty can exit")
 			skynet.exit()
+		else
+			log.info("not g_player_map.is_empty can`t exit",g_player_map)
 		end
 	end)
 end
