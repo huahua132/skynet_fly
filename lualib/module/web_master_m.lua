@@ -228,7 +228,7 @@ function CMD.exit()
 	agent_client:broadcast('exit')
 	log.error("web master exit end!",listen_fd)
 
-	timer:new(timer.second * 60,0,function()
+	timer:new(timer.minute,0,function()
 		if not next(fd_agent_map) then
 			skynet.exit()
 		end

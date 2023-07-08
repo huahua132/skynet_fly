@@ -187,7 +187,7 @@ function CMD.exit()
 	end
 	log.error("web_agent_module exit end!")
 
-	timer:new(timer.second * 60,0,function()
+	timer:new(timer.minute,0,function()
 		if not next(fd_info_map) then
 			skynet.exit()
 		end

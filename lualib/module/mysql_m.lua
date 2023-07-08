@@ -47,7 +47,7 @@ function CMD.query(sql_str)
 end
 
 function CMD.exit()
-	timer:new(timer.second * 60,0,function()
+	timer:new(timer.minute,0,function()
 		if g_querying_cnt <= 0 then
 			if g_ti then
 				g_ti:cancel()
