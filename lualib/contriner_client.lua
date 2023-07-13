@@ -101,6 +101,15 @@ local function switch_svr(t)
 	end
 end
 
+--[[
+	函数作用域：M 的成员函数
+	函数名称: new
+	描述:创建一个skynet内部rpc调用对象
+	参数:
+		- module_name (string): 模块名称，需要send或者call通信的模块名称
+		- instance_name (string): 实例名称，它是模块的二级分类
+		- can_switch_func (function): 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服
+]]
 function M:new(module_name,instance_name,can_switch_func)
 	assert(module_name)
 	if not can_switch_func then
@@ -120,33 +129,71 @@ function M:new(module_name,instance_name,can_switch_func)
     return t
 end
 
---设置mod映射访问的数字 如果没有设置，默认使用 自身服务id % 服务数量
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：set_mod_num
+	描述：设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
+	参数：
+		- num (number): 设置所有用mod发消息的模除以模块服务的数量作为下标映射，没有设置的情况下，默认 用自身服务id
+]]
 function M:set_mod_num(num)
 	assert(type(num) == 'number')
 	self.mod_num = num
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：get_mod_server_id
+	描述: 获取通过mod取到的对应服务id
+]]
 function M:get_mod_server_id()
 	return get_mod(self)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：get_balance_server_id
+	描述: 获取通过balance取到的对应服务id，balance是简单轮询负载均衡，如果有服务id列表[1,2,3,4]，5次的结果是1,2,3,4,1
+]]
 function M:get_balance_server_id()
 	return get_balance(self)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：get_mod_server_id_by_name
+	描述: 在instance_name二级分类中，获取通过mod取到的对应服务id,mod是简单hash映射
+	如果有服务id列表[1,2,3,4]，设置mod_num等于3，instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 每次调用结果都是2
+]]
 function M:get_mod_server_id_by_name()
 	return get_name_mod(self)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：get_balance_server_id_by_name
+	描述: 在instance_name二级分类中，获取通过balance取到的对应服务id,balance是简单轮询负载均衡
+	如果有服务id列表[1,2,3,4]，设置instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 5次的结果是1,2,1,2,1
+]]
 function M:get_balance_server_id_by_name()
 	return get_name_balance(self)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：mod_send
+	描述: mod hash映射一个服务id，并send skynet lua消息
+]]
 function M:mod_send(...)
 	switch_svr(self)
 	skynet.send(get_mod(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：mod_call
+	描述: mod hash映射一个服务id，并call skynet lua消息
+]]
 function M:mod_call(...)
 	switch_svr(self)
 	return skynet.call(get_mod(self),'lua',...)
