@@ -16,7 +16,7 @@ function M.send(fd,name,tab)
 
 	local msg,err = pb_util.pack(name,tab)
 	if not msg then
-		log.error("pb_util.pack err ",msg)
+		log.error("pb_util.pack err ",name,tab,err)
 		return
 	end
 

@@ -27,6 +27,7 @@ local function dispatch(fd,source,packname,req)
 		
 		local ok,errorcode,errormsg = CMD.goout(agent.player_id)
 		if not ok then
+			log.error("dispatch err ",errorcode,errormsg)
 			errors_msg.errors(fd,errorcode,errormsg,packname)
 		else
 			login_msg.login_out_res(fd,agent.player_id)
