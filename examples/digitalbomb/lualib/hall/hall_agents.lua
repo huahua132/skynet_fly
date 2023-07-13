@@ -100,19 +100,19 @@ function M.goout(player_id)
 	end)
 end
 
-function M.send_request(fd,packname,tab)
+function M.send_request(fd,packname,req)
 	local agent = g_fd_map[fd]
 	if not agent then
-		log.error("send_request not agent ",fd,packname,tab)
+		log.error("send_request not agent ",fd,packname,req)
 		return
 	end
 
-	log.info("send_request:",fd,packname,tab)
+	log.info("send_request:",fd,packname,req)
 	local room_server = agent.room_server
 	local table_id = agent.table_id
 	local player_id = agent.player_id
 
-	skynet.send(room_server,'lua','request',player_id,table_id,packname,tab)
+	skynet.send(room_server,'lua','request',table_id,player_id,packname,req)
 end
 
 function M.get_agent(fd)

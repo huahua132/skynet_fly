@@ -135,6 +135,31 @@ local function reload_reconnet_test(mod_name)
 	assert(not next(def_t))
 end
 
+--玩游戏
+local function player_game()
+	local fd
+	fd = connnect(function(_,packname,res)
+		log.info("player_game:",packname,res)
+
+		if packname == '.game.NextDoingCast' then
+			if res.doing_player_id ~= g_config.player_id then
+				return
+			end
+
+			skynet.sleep(300,500)
+			local min_num = res.min_num
+			local max_num = res.max_num
+
+			local opt_num = math.random(min_num,max_num)
+			pbnet_util.send(fd,'.game.DoingReq',{
+				opt_num = opt_num,
+			})
+		end
+	end)
+
+	return fd
+end
+
 function CMD.start(config)
 	pb_util.load('./proto')
 	g_config = config
@@ -150,7 +175,8 @@ function CMD.start(config)
 
 	--reload_reconnet_test('hall_m')
 	--reload_reconnet_test('match_m')
-	reload_reconnet_test('room_m')
+	--reload_reconnet_test('room_m')
+	player_game()
 	return true
 end
 

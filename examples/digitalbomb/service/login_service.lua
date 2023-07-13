@@ -200,6 +200,7 @@ skynet.start(function()
 
 			local isok,errcode,msg = agent.queue(login,fd,packname,req)
 			if not isok then
+				log.error("login req err ",fd,errcode,msg,packname)
 				errors_msg.errors(fd,errcode,msg,packname)
 				agent.queue(del_agent,fd)
 			end
