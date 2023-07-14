@@ -200,6 +200,36 @@ return function(table_id,player_num,ROOM_CMD)
 			m_doing_seat_id = m_game_seat_id_list[m_doing_index]
 			next_doing_cast()
 			return true
+		end,
+
+		game_status_req = function(player,args)
+			local player_id = player.player_info.player_id
+			local seat_id = m_player_seat_map[player_id]
+			if not seat_id then
+				log.error("not in table ",player_id)
+				return
+			end
+
+			local seater = m_seat_list[seat_id]
+			local doing_seat_player = nil
+			local doing_player_id = 0
+			local doing_seat_id = 0
+			if m_seat_list[m_doing_seat_id] then
+				doing_seat_player = m_seat_list[m_doing_seat_id]:get_player()
+				doing_player_id = doing_seat_player.player_info.player_id
+				doing_seat_id = m_doing_seat_id
+			end
+			
+			seater:send_msg('.game.GameStatusRes',{
+				game_state = m_game_state,
+				next_doing = {
+					doing_player_id = doing_player_id,
+					doing_seat_id = doing_seat_id,
+					min_num = m_mine_min,
+					max_num = m_mine_max,
+				}
+			})
+			return true
 		end
     }
 end

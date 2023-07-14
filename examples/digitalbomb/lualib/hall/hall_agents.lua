@@ -26,7 +26,7 @@ function M.join(player_id,player_info,fd,gate)
 		g_player_map[player_id] = agent
 	else
 		if agent.is_goout then
-			log.fatal("退出中 ....",player_id)
+			log.fatal("exiting ....",player_id)
 			return 
 		end
 		g_fd_map[agent.fd] = nil
