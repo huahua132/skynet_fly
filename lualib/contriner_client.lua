@@ -192,43 +192,78 @@ end
 --[[
 	函数作用域：M:new 对象的成员函数
 	函数名称：mod_call
-	描述: mod hash映射一个服务id，并call skynet lua消息
+	描述: mod hash在module_name列表中映射一个服务id，并call skynet lua消息
 ]]
 function M:mod_call(...)
 	switch_svr(self)
 	return skynet.call(get_mod(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：balance_send
+	描述:  balance简单负载均衡 skynet send lua消息
+]]
 function M:balance_send(...)
 	switch_svr(self)
 	return skynet.send(get_balance(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：balance_call
+	描述:  balance简单负载均衡 skynet call lua消息
+]]
 function M:balance_call(...)
 	switch_svr(self)
 	return skynet.call(get_balance(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：mod_send_by_name
+	描述:  mod hash在instance_name服务列表中映射一个服务id skynet send lua消息
+]]
 function M:mod_send_by_name(...)
 	switch_svr(self)
 	skynet.send(get_name_mod(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：mod_call_by_name
+	描述:  mod hash在instance_name服务列表中映射一个服务id skynet call lua消息
+]]
 function M:mod_call_by_name(...)
 	switch_svr(self)
 	return skynet.call(get_name_mod(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：balance_send_by_name
+	描述:  简单负载均衡在instance_name服务列表中轮询服务id skynet send lua消息
+]]
 function M:balance_send_by_name(...)
 	switch_svr(self)
 	skynet.send(get_name_balance(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：balance_call_by_name
+	描述:  简单负载均衡在instance_name服务列表中轮询服务id skynet call lua消息
+]]
 function M:balance_call_by_name(...)
 	switch_svr(self)
 	return skynet.call(get_name_balance(self),'lua',...)
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：broadcast
+	描述:  广播在module_name服务列表中的服务id skynet send lua消息
+]]
 function M:broadcast(...)
 	switch_svr(self)
 	local id_list = self.cur_id_list
@@ -237,6 +272,11 @@ function M:broadcast(...)
 	end
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：broadcast_by_name
+	描述:  广播在instance_name服务列表中的服务id skynet send lua消息
+]]
 function M:broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cur_name_id_list = self.cur_name_id_list

@@ -47,12 +47,15 @@ register = function(t)
 	end
 end
 
---创建定时器
 --[[
-	expire 过期时间 100等于1秒
-	times       注册次数 0 表示循环注册
-	callback    回调函数
-	...         回调参数
+	函数作用域：M 对象的成员函数
+	函数名称：new
+	描述:  创建一个定时器对象
+	参数:
+		- expire (number): 过期时间 100等于1秒
+		- times (number): 次数，0表示循环触发
+		- callback (function): 回调函数
+		- ...  回调参数
 ]]
 function M:new(expire,times,callback,...)
 	assert(expire >= 0)
@@ -75,13 +78,22 @@ function M:new(expire,times,callback,...)
 	return t
 end
 
---取消定时器
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：cancel
+	描述:  取消定时器
+]]
 function M:cancel()
 	self.is_cancel = true
 end
 
---延长定时器
---ex_expire 延长时间 比如之前是1秒  ex_expire等于1秒，如果定时器还没有触发会延长一秒再触发
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：extend
+	描述:  延长定时器
+	参数:
+		- ex_expire (number): 延长时间 100等于1秒
+]]
 function M:extend(ex_expire)
 	if self.is_cancel or self.is_over then
 		return false
@@ -103,9 +115,13 @@ function M:extend(ex_expire)
 	return true
 end
 
+--秒
 M.second = 100
+--分钟
 M.minute = M.second * 60
+--小时
 M.hour = M.minute * 60
+--一天
 M.day = M.hour * 24
 
 return M
