@@ -14,7 +14,13 @@ local string = string
 local g_sha_map = {}
 
 local M = {}
-
+--[[
+	函数作用域：M的成员函数
+	函数名称：new_client
+	描述:新建一个在share_config_m 中写的key为redis表的名为db_name的连接配置
+	参数：
+		- db_name (string): 连接配置名称
+]]
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
@@ -30,7 +36,15 @@ function M.new_client(db_name)
 	return conn
 end
 
-
+--[[
+	函数作用域：M的成员函数
+	函数名称：script_run
+	描述:运行redis脚本命令
+	参数：
+		- conn (redis_conn): new_client返回的连接对象
+		- script_str (string)：redis lua 脚本
+		- ...       脚本传递参数
+]]
 function M.script_run(conn,script_str,...)
 	assert(conn)
 	assert(type(script_str) == 'string','script_str not string')
@@ -51,6 +65,19 @@ function M.script_run(conn,script_str,...)
 	return ret
 end
 
+--[[
+	函数作用域：M的成员函数
+	函数名称：new_watch
+	描述:redis订阅
+	参数：
+		- db_name (string): 连接的redis名称
+		- subscribe_list (table): 订阅的固定key
+		- psubscribe_list (table): 订阅的匹配key
+		- call_back (function): 消息回调函数
+
+	返回值
+		- 取消订阅函数
+]]
 function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
