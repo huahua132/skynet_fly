@@ -7,7 +7,6 @@
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
 
 ## 关于热更新方案
-===
 
 [热更新方案二的实现](https://huahua132.github.io/2023/05/22/think/reload/)
 运行 **examples/hot_module2** 示例
@@ -17,7 +16,6 @@
 运行 **examples/hot_module4** 示例
 
 ## 快速开始 (运行examples/webapp)
-===
 
 1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo) 
     - `make build`
@@ -46,7 +44,6 @@
 **恭喜你成功了**
 
 ## 数字炸弹游戏
-==
 
 如果你觉得第一个没意思，可以跑一下hot_module5，它是一个数字炸弹的游戏，简单实验了有状态服务的热更可行性。
 执行方式同快速开始。
