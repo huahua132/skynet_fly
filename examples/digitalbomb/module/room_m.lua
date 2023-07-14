@@ -123,6 +123,8 @@ function CMD.request(table_id,player_id,packname,req)
 	local isok,errcode,errmsg
 	if packname == '.game.DoingReq' then
 		isok,errcode,errmsg = t_info.game_table.play(player,req)
+	elseif packname == '.game.GameStatusReq' then
+		isok,errcode,errmsg = t_info.game_table.game_status_req(player,req)
 	end
 
 	if not isok then

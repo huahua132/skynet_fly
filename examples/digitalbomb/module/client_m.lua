@@ -136,20 +136,43 @@ local function reload_reconnet_test(mod_name)
 end
 
 --玩游戏
-local function player_game()
+local function player_game(login_res)
+	login_res = login_res or {}
 	local fd
 	fd = connnect(function(_,packname,res)
-		log.info("player_game:",packname,res)
+		log.info("player_game:",fd,packname,res)
 
 		if packname == '.game.NextDoingCast' then
 			if res.doing_player_id ~= g_config.player_id then
 				return
 			end
-
-			skynet.sleep(300,500)
+			log.error("NextDoingCast sleep 1 ",coroutine.running())
+			skynet.sleep(math.random(300,500))
+			log.error("NextDoingCast sleep 2 ",coroutine.running())
 			local min_num = res.min_num
 			local max_num = res.max_num
 
+			local opt_num = math.random(min_num,max_num)
+			pbnet_util.send(fd,'.game.DoingReq',{
+				opt_num = opt_num,
+			})
+		elseif packname == '.login.LoginRes' then
+			log.error("发送状态请求")
+			for k,v in pairs(res) do
+				login_res[k] = v
+			end
+			pbnet_util.send(fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+		elseif packname == '.game.GameStatusRes' then
+			local next_doing = res.next_doing
+			if next_doing.doing_player_id ~= g_config.player_id then
+				return
+			end
+			log.error("GameStatusRes sleep 1 ",coroutine.running())
+			skynet.sleep(math.random(300,500))
+			log.error("GameStatusRes sleep 2 ",coroutine.running())
+			local min_num = next_doing.min_num
+			local max_num = next_doing.max_num
+			
 			local opt_num = math.random(min_num,max_num)
 			pbnet_util.send(fd,'.game.DoingReq',{
 				opt_num = opt_num,
@@ -160,23 +183,71 @@ local function player_game()
 	return fd
 end
 
+--玩游戏过程中重连
+local function player_game_reconnect()
+	local fd = player_game()
+
+	--玩个5秒断开
+	skynet.sleep(500)
+	--重新连接
+	log.info("重新连接:",g_config)
+	local fd = player_game()
+end
+
+--游戏开始-热更-重连-再重开游戏
+local function player_reload_reconnect(mod_name)
+	local begin_login_res = {}
+	local reconnect_login_res = {}
+	local restart_login_res = {}
+	local fd = player_game(begin_login_res)
+
+	--玩个3秒断开
+	skynet.sleep(300)
+	--热更
+	log.info("热更:",mod_name)
+	skynet.call('.contriner_mgr','lua','load_module',mod_name)
+	--重新连接
+	skynet.sleep(200)
+	log.info("重新连接:",g_config)
+	local fd = player_game(reconnect_login_res)
+
+	--上一把断开后
+	socket.onclose(fd,function()
+		--重新开始
+		log.info("重开游戏",g_config)
+		skynet.sleep(100)
+		local fd = player_game(restart_login_res)
+
+		socket.onclose(fd,function()
+			log.error("test over ",begin_login_res,reconnect_login_res,restart_login_res)
+		end)
+	end)
+end
+
 function CMD.start(config)
 	pb_util.load('./proto')
 	g_config = config
 
-	--repeat_connect_test()
-	--repeat_loginout_test()
+	skynet.fork(function()
+		--repeat_connect_test()
+		--repeat_loginout_test()
 
-	--reconnecttest()
+		--reconnecttest()
 
-	--reload_switch_test('hall_m')
-	--reload_switch_test('match_m')
-	--reload_switch_test('room_m')
+		--reload_switch_test('hall_m')
+		--reload_switch_test('match_m')
+		--reload_switch_test('room_m')
 
-	--reload_reconnet_test('hall_m')
-	--reload_reconnet_test('match_m')
-	--reload_reconnet_test('room_m')
-	player_game()
+		--reload_reconnet_test('hall_m')
+		--reload_reconnet_test('match_m')
+		--reload_reconnet_test('room_m')
+		--player_game()
+		--player_game_reconnect()
+		--player_reload_reconnect('hall_m')
+		--player_reload_reconnect('match_m')
+		player_reload_reconnect('room_m')
+	end)
+	
 	return true
 end
 
