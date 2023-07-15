@@ -11,13 +11,16 @@ return {
 					port = 8001,
 					maxclient = 2048,
 				},
-				check_module = "login_check",
+				check_plug = "login_check",
 			}
 		}
 	},
 	hall_m = {
 		launch_seq = 2,
 		launch_num = 6,
+		default_arg = {
+			hall_plug = "hall_plug",
+		}
 	},
 	match_m = {
 		launch_seq = 3,

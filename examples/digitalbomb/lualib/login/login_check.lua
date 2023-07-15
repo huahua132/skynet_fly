@@ -44,7 +44,7 @@ local function check_join(req,fd,player_id)
 			hall_client = contriner_client:new("hall_m",nil,function() return false end)
 			hall_client:set_mod_num(player_id)
 		end
-		login_res,errcode,errmsg = hall_client:mod_call("join",player_id,req,fd,g_gate)
+		login_res,errcode,errmsg = hall_client:mod_call("connect",player_id,req,fd,g_gate)
 		if login_res then
 			g_player_map[player_id] = {
 				player_id = player_id,

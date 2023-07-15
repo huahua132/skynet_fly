@@ -1,14 +1,12 @@
 local skynet = require "skynet"
 local log = require "log"
-local pb_util = require "pb_util"
-local pbnet_util = require "pbnet_util"
-local hall_agents = require "hall_agents"
-local errors_msg = require "errors_msg"
-local login_msg = require "login_msg"
 local timer = require "timer"
-local errorcode = require "errorcode"
+
+local assert = assert
 
 local CMD = {}
+
+local hall_plug = nil
 
 local function dispatch(fd,source,packname,req)
 	skynet.ignoreret()
@@ -18,46 +16,42 @@ local function dispatch(fd,source,packname,req)
 	end
 	log.info('dispatch:',fd,source,packname,req)
 
-	if packname == '.login.LoginOutReq' then
-		local agent = hall_agents.get_agent(fd)
-		if not agent then
-			log.error("LoginOutReq not agent ",fd,packname)
-			return
-		end
-		
-		local ok,errorcode,errormsg = CMD.goout(agent.player_id)
-		if not ok then
-			log.error("dispatch err ",errorcode,errormsg)
-			errors_msg.errors(fd,errorcode,errormsg,packname)
-		else
-			login_msg.login_out_res(fd,agent.player_id)
-		end
-	else
-		hall_agents.send_request(fd,packname,req)
-	end
+	hall_plug.dispatch(fd,packname,req)
 end
 
-function CMD.join(player_id,player_info,fd,gate)
-	log.info("join:",player_id,player_info,fd,gate)
-	return hall_agents.join(player_id,player_info,fd,gate)
+function CMD.connect(player_id,player_info,fd,gate)
+	log.info("connect:",player_id,player_info,fd,gate)
+	return hall_plug.connect(player_id,player_info,fd,gate)
 end
 
 function CMD.disconnect(player_id)
 	log.info("disconnect:",player_id)
-	return hall_agents.disconnect(player_id)
+	return hall_plug.disconnect(player_id)
 end
 
 function CMD.goout(player_id)
 	log.info("goout:",player_id)
-	return hall_agents.goout(player_id)
+	return hall_plug.goout(player_id)
 end
 
-function CMD.start()
-	pb_util.load('./proto')
+function CMD.start(config)
+	assert(config.hall_plug,"not hall_plug")
+
+	hall_plug = require(config.hall_plug)
+	assert(hall_plug.init,"not init")             --初始化
+	assert(hall_plug.unpack,"not unpack")         --解包函数
+	assert(hall_plug.dispatch,"not dispatch")     --消息分发
+	assert(hall_plug.connect,"not connect")       --连接大厅
+	assert(hall_plug.disconnect,"not disconnect") --掉线
+	assert(hall_plug.goout,"not goout")           --退出
+	assert(hall_plug.empty,"not empty")           --判断是否为空
+	assert(hall_plug.info,"not info")             --大厅信息
+
+	hall_plug.init()
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
-		unpack = pbnet_util.unpack,
+		unpack = hall_plug.unpack,
 		dispatch = dispatch,
 	}
 
@@ -67,11 +61,11 @@ end
 function CMD.exit()
 	timer:new(timer.minute,0,function()
 		
-		if hall_agents.is_empty() then
-			log.info("hall_agents.is_empty can exit")
+		if hall_plug.empty() then
+			log.info("hall_plug.is_empty can exit")
 			skynet.exit()
 		else
-			log.info("not hall_agents.is_empty can`t exit",hall_agents.get_all_agent_info)
+			log.info("not hall_plug.is_empty can`t exit",hall_plug.info)
 		end
 	end)
 end

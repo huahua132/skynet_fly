@@ -8,7 +8,7 @@ local assert = assert
 local x_pcall = x_pcall
 
 local gate
-local check_module = nil
+local check_plug = nil
 
 local g_fd_agent_map = {}
 local g_player_map = {}
@@ -23,7 +23,7 @@ local function del_agent(fd)
 	local player_id = agent.player_id
 	
 	if player_id and g_player_map[player_id] then
-		check_module.disconnect(fd,player_id)
+		check_plug.disconnect(fd,player_id)
 	end
 
 	g_fd_agent_map[fd] = nil
@@ -43,7 +43,7 @@ function CMD.goout(player_id)
 
 	log.error("goout:",player_id)
 	g_player_map[player_id] = nil
-	check_module.login_out(player_id)
+	check_plug.login_out(player_id)
 end
 
 local SOCKET = {}
@@ -54,7 +54,7 @@ function SOCKET.open(fd, addr)
 		fd = fd,
 		addr = addr,
 		queue = queue(),
-		login_time_out = timer:new(check_module.time_out,1,del_agent,fd)
+		login_time_out = timer:new(check_plug.time_out,1,del_agent,fd)
 	}
 	g_fd_agent_map[fd] = agent
 	skynet.send(gate,'lua','forward',fd)
@@ -111,19 +111,19 @@ skynet.start(function()
 	local confclient = contriner_client:new("share_config_m")
 	local loginconf = confclient:mod_call('query','loginconf')
 	assert(loginconf.gateconf,"not gateconf")
-	assert(loginconf.check_module,"not check_module")
+	assert(loginconf.check_plug,"not check_plug")
 
-	check_module = require (loginconf.check_module)
-	assert(check_module.unpack,"check_module not unpack")
-	assert(check_module.check,"check_module not check")
-	assert(check_module.login_out,"check_module not login_out")
-	assert(check_module.disconnect,"check_module not disconnect")
-	assert(check_module.init,"check_module not init")
-	assert(check_module.time_out,"check_module not time_out")
+	check_plug = require (loginconf.check_plug)
+	assert(check_plug.unpack,"check_plug not unpack")
+	assert(check_plug.check,"check_plug not check")
+	assert(check_plug.login_out,"check_plug not login_out")
+	assert(check_plug.disconnect,"check_plug not disconnect")
+	assert(check_plug.init,"check_plug not init")
+	assert(check_plug.time_out,"check_plug not time_out")
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
-		unpack = check_module.unpack,
+		unpack = check_plug.unpack,
 		dispatch = function(fd,source,...)
 			skynet.ignoreret()
 			local agent = g_fd_agent_map[fd]
@@ -138,7 +138,7 @@ skynet.start(function()
 				return
 			end
 
-			local player_id = agent.queue(check_module.check,fd,...)
+			local player_id = agent.queue(check_plug.check,fd,...)
 			if not player_id then
 				agent.queue(del_agent,fd)
 			else
@@ -151,7 +151,7 @@ skynet.start(function()
 	}
 
 	gate = skynet.newservice('gate')
-	check_module.init(gate)
+	check_plug.init(gate)
 	skynet.call(gate,'lua','open',loginconf.gateconf)	
 	skynet.register('.login')
 end)
