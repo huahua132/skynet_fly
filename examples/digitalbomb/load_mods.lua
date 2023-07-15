@@ -25,6 +25,10 @@ return {
 	match_m = {
 		launch_seq = 3,
 		launch_num = 1,
+		default_arg = {
+			match_plug = "match_plug",
+			MAX_TABLES = 10000,
+		}
 	},
 
 	room_m = {
