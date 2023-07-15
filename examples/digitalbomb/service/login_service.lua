@@ -1,22 +1,17 @@
 local skynet = require "skynet"
 require "skynet.manager"
-local contriner_client = require "contriner_client"
-local pb_util = require "pb_util"
-local pbnet_util = require "pbnet_util"
 local timer = require "timer"
 local log = require "log"
 local queue = require "skynet.queue"
-local errorcode = require "errorcode"
-local errors_msg = require "errors_msg"
-local login_msg = require "login_msg"
+local contriner_client = require "contriner_client"
 local assert = assert
 local x_pcall = x_pcall
 
 local gate
+local check_module = nil
 
 local g_fd_agent_map = {}
 local g_player_map = {}
-local login_lock_map = {}
 
 local function del_agent(fd)
 	local agent = g_fd_agent_map[fd]
@@ -26,9 +21,9 @@ local function del_agent(fd)
 	end
 
 	local player_id = agent.player_id
-
-	if agent.hall_client then
-		agent.hall_client:mod_call('disconnect',player_id)
+	
+	if player_id and g_player_map[player_id] then
+		check_module.disconnect(fd,player_id)
 	end
 
 	g_fd_agent_map[fd] = nil
@@ -41,78 +36,6 @@ local function del_agent(fd)
 	log.info("del_agent ",fd)
 end
 
-local function check_join(req,fd,packname,agent,player_id)
-	--登录检查
-	local login_res,errcode,errmsg
-	if req.password ~= '123456' then
-		log.error("login err ",req)
-		return false,errorcode.LOGIN_PASS_ERR,"pass err"
-	else
-		local old_agent = g_player_map[player_id]
-		local hall_client = nil
-		if old_agent then
-			hall_client = old_agent.hall_client
-			del_agent(old_agent.fd)
-		else
-			hall_client = contriner_client:new("hall_m",nil,function() return false end)
-			hall_client:set_mod_num(player_id)
-		end
-		
-		login_res,errcode,errmsg = hall_client:mod_call("join",player_id,req,fd,gate)
-		if login_res then
-			agent.hall_client = hall_client
-			agent.player_id = player_id
-			g_player_map[player_id] = agent
-		else
-			log.error("join hall err ",player_id)
-			return false,errcode,errmsg
-		end
-	end
-	return login_res
-end
-
-local function login(fd,packname,req)
-	local agent = g_fd_agent_map[fd]
-	if not agent then
-		log.error("login_check not agent err ",agent)
-		return
-	end
-
-	agent.login_time_out:cancel()
-
-	if not packname then
-		log.error("unpack err ",packname,req)
-		return
-	end
-
-	if packname ~= '.login.LoginReq' then
-		log.error("login_check msg err ",fd)
-		return false,errorcode.NOT_LOGIN,"please login"
-	end
-
-	local player_id = req.player_id
-	if not player_id then
-		log.error("req err ",fd,req)
-		return false,errorcode.REQ_PARAM_ERR,"not player_id"
-	end
-
-	if login_lock_map[player_id] then
-		log.error("repeat login ",player_id)
-		return false,errorcode.REPAET_LOGIN,"repeat login"
-	end
-
-	login_lock_map[player_id] = true
-	local isok,login_res,code,errmsg = x_pcall(check_join,req,fd,packname,agent,player_id)
-	login_lock_map[player_id] = false
-	if not isok or not login_res then
-		log.error("login err ",login_res,code,errmsg)
-		return login_res,code,errmsg
-	else
-		login_msg.login_res(fd,login_res)
-		return true
-	end
-end
-
 local CMD = {}
 
 function CMD.goout(player_id)
@@ -120,6 +43,7 @@ function CMD.goout(player_id)
 
 	log.error("goout:",player_id)
 	g_player_map[player_id] = nil
+	check_module.login_out(player_id)
 end
 
 local SOCKET = {}
@@ -130,7 +54,7 @@ function SOCKET.open(fd, addr)
 		fd = fd,
 		addr = addr,
 		queue = queue(),
-		login_time_out = timer:new(timer.second * 5,1,del_agent,fd)
+		login_time_out = timer:new(check_module.time_out,1,del_agent,fd)
 	}
 	g_fd_agent_map[fd] = agent
 	skynet.send(gate,'lua','forward',fd)
@@ -173,8 +97,6 @@ function CMD.socket(cmd,...)
 end
 
 skynet.start(function()
-	pb_util.load('./proto')
-
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
@@ -186,32 +108,50 @@ skynet.start(function()
 		end
 	end)
 
+	local confclient = contriner_client:new("share_config_m")
+	local loginconf = confclient:mod_call('query','loginconf')
+	assert(loginconf.gateconf,"not gateconf")
+	assert(loginconf.check_module,"not check_module")
+
+	check_module = require (loginconf.check_module)
+	assert(check_module.unpack,"check_module not unpack")
+	assert(check_module.check,"check_module not check")
+	assert(check_module.login_out,"check_module not login_out")
+	assert(check_module.disconnect,"check_module not disconnect")
+	assert(check_module.init,"check_module not init")
+	assert(check_module.time_out,"check_module not time_out")
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
-		unpack = pbnet_util.unpack,
-		dispatch = function(fd,source,packname,req)
+		unpack = check_module.unpack,
+		dispatch = function(fd,source,...)
 			skynet.ignoreret()
 			local agent = g_fd_agent_map[fd]
 			if not agent then
-				log.error("dispatch not agent ",fd)
+				log.info("dispatch not agent ",fd)
 				return
 			end
 
-			local isok,errcode,msg = agent.queue(login,fd,packname,req)
-			if not isok then
-				log.error("login req err ",fd,errcode,msg,packname)
-				errors_msg.errors(fd,errcode,msg,packname)
+			--避免重复登录，登录成功之后把消息转发到agent那边去，这里只处理登录
+			if agent.is_login then
+				log.info("repeat login ",fd)
+				return
+			end
+
+			local player_id = agent.queue(check_module.check,fd,...)
+			if not player_id then
 				agent.queue(del_agent,fd)
+			else
+				agent.login_time_out:cancel()
+				agent.player_id = player_id
+				agent.is_login = true
+				g_player_map[player_id] = agent
 			end
 		end,
 	}
 
-	local confclient = contriner_client:new("share_config_m")
-	local gateconf = confclient:mod_call('query','gate')
-
 	gate = skynet.newservice('gate')
-	skynet.call(gate,'lua','open',gateconf)
-
+	check_module.init(gate)
+	skynet.call(gate,'lua','open',loginconf.gateconf)	
 	skynet.register('.login')
 end)

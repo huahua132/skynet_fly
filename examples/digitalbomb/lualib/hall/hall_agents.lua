@@ -61,14 +61,14 @@ function M.join(player_id,player_info,fd,gate)
 	end)
 end
 
-function M.disconnect(player_id)
-	local agent = g_player_map[player_id]
+function M.disconnect(fd,player_id)
+	local agent = g_fd_map[fd]
 	if not agent then 
-		log.fatal("disconnect not agent ",player_id)
+		log.error("disconnect not agent ",fd,player_id)
 		return
 	end
 
-	g_fd_map[agent.fd] = nil
+	g_fd_map[fd] = nil
 	agent.fd = 0
 
 	local room_server = agent.room_server
