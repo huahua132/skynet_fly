@@ -3,10 +3,15 @@ return {
 		launch_seq = 1,
 		launch_num = 1,
 		default_arg = {
-			gate = {
-				address = '127.0.0.1',
-				port = 8001,
-				maxclient = 2048,
+			--login_service用的配置
+			loginconf = {
+				--gate连接配置
+				gateconf = {
+					address = '127.0.0.1',
+					port = 8001,
+					maxclient = 2048,
+				},
+				check_module = "login_check",
 			}
 		}
 	},

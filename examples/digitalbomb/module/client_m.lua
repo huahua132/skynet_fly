@@ -243,9 +243,9 @@ function CMD.start(config)
 		--reload_reconnet_test('room_m')
 		--player_game()
 		--player_game_reconnect()
-		--player_reload_reconnect('hall_m')
+		player_reload_reconnect('hall_m')
 		--player_reload_reconnect('match_m')
-		player_reload_reconnect('room_m')
+		--player_reload_reconnect('room_m')
 	end)
 	
 	return true
