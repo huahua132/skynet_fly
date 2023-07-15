@@ -4,6 +4,10 @@ local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local queue = require "skynet.queue"
 local timer = require "timer"
+local pbnet_util = require "pbnet_util"
+local pb_util = require "pb_util"
+local errors_msg = require "errors_msg"
+local login_msg = require "login_msg"
 local pcall = pcall
 local next = next
 
@@ -12,7 +16,37 @@ local g_fd_map = {}
 
 local M = {}
 
-function M.join(player_id,player_info,fd,gate)
+M.unpack = pbnet_util.unpack
+
+function M.init()
+	pb_util.load("./proto")
+end
+
+function M.dispatch(fd,packname,req)
+	local agent = M.get_agent(fd)
+	if not agent then
+		log.error("dispatch not agent ",fd,packname)
+		return
+	end
+	if packname == '.login.LoginOutReq' then
+		local ok,errorcode,errormsg = M.goout(agent.player_id)
+		if not ok then
+			log.error("dispatch err ",errorcode,errormsg)
+			errors_msg.errors(fd,errorcode,errormsg,packname)
+		else
+			login_msg.login_out_res(fd,agent.player_id)
+		end
+	else
+		log.info("send_request:",fd,packname,req)
+		local room_server = agent.room_server
+		local table_id = agent.table_id
+		local player_id = agent.player_id
+
+		skynet.send(room_server,'lua','request',table_id,player_id,packname,req)
+	end
+end
+
+function M.connect(player_id,player_info,fd,gate)
 	local agent = g_player_map[player_id]
 
 	if not agent then
@@ -100,30 +134,15 @@ function M.goout(player_id)
 	end)
 end
 
-function M.send_request(fd,packname,req)
-	local agent = g_fd_map[fd]
-	if not agent then
-		log.error("send_request not agent ",fd,packname,req)
-		return
-	end
-
-	log.info("send_request:",fd,packname,req)
-	local room_server = agent.room_server
-	local table_id = agent.table_id
-	local player_id = agent.player_id
-
-	skynet.send(room_server,'lua','request',table_id,player_id,packname,req)
-end
-
 function M.get_agent(fd)
 	return g_fd_map[fd]
 end
 
-function M.is_empty()
+function M.empty()
 	return not next(g_player_map)
 end
 
-function M.get_all_agent_info()
+function M.info()
 	return g_player_map,g_fd_map
 end
 
