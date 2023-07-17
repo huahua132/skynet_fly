@@ -3,7 +3,7 @@ local pb_util = require "pb_util"
 local util = require "util"
 local log = require "log"
 local GAME_STATE_ENUM = require "GAME_STATE"
-local seater = require "seater"
+local seater = require "seater_pb"
 local errorcode = require "errorcode"
 local errors_msg = require "errors_msg"
 

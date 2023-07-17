@@ -2,16 +2,17 @@ local log = require "log"
 local skynet = require "skynet"
 local timer = require "timer"
 local socket = require "socket"
-local pbnet_util = require "pbnet_util"
 local pb_util = require "pb_util"
 local util = require "util"
+
+local net_util = nil
 
 local CMD = {}
 
 local g_config
 
 local function dispatch(fd,packname,res)
-	log.info("dispatch:",fd,packname,res)
+	log.info("dispatch:",g_config.net_util,fd,packname,res)
 end
 
 local function connnect(handle)
@@ -27,8 +28,8 @@ local function connnect(handle)
 		player_id = g_config.player_id,
 	}
 
-	pbnet_util.recv(fd,handle or dispatch)
-	pbnet_util.send(fd,'.login.LoginReq',login_req)
+	net_util.recv(fd,handle or dispatch)
+	net_util.send(fd,'.login.LoginReq',login_req)
 	return fd
 end
 
@@ -36,7 +37,7 @@ local function loginout(fd)
 	local login_out_req = {
 		player_id = g_config.player_id,
 	}
-	pbnet_util.send(fd,'.login.LoginOutReq',login_out_req)
+	net_util.send(fd,'.login.LoginOutReq',login_out_req)
 end
 
 --重复登录测试
@@ -67,7 +68,7 @@ local function reload_switch_test(mod_name)
 	local login_res = nil
 	local out_wi = nil
 	local fd = connnect(function(_,packname,res)
-		log.info("reload_switch_test dispatch1:",packname,res)
+		log.info("reload_switch_test dispatch1:",g_config.net_util,packname,res)
 		if packname == '.login.LoginRes' then
 			skynet.wakeup(wi)
 			login_res = res
@@ -102,7 +103,7 @@ local function reload_reconnet_test(mod_name)
 	local wi = coroutine.running()
 	local login_res = nil
 	local fd = connnect(function(_,packname,res)
-		log.info("reload_reconnet_test dispatch1:",packname,res)
+		log.info("reload_reconnet_test dispatch1:",g_config.net_util,packname,res)
 		if packname == '.login.LoginRes' then
 			skynet.wakeup(wi)
 			login_res = res
@@ -122,7 +123,7 @@ local function reload_reconnet_test(mod_name)
 	local new_login_res = nil
 	local wi = coroutine.running()
 	local fd = connnect(function(_,packname,res)
-		log.info("reload_reconnet_test dispatch2:",packname,res)
+		log.info("reload_reconnet_test dispatch2:",g_config.net_util,packname,res)
 		if packname == '.login.LoginRes' then
 			skynet.wakeup(wi)
 			new_login_res = res
@@ -140,7 +141,7 @@ local function player_game(login_res)
 	login_res = login_res or {}
 	local fd
 	fd = connnect(function(_,packname,res)
-		log.info("player_game:",fd,packname,res)
+		log.info("player_game:",fd,g_config.net_util,packname,res)
 
 		if packname == '.game.NextDoingCast' then
 			if res.doing_player_id ~= g_config.player_id then
@@ -153,7 +154,7 @@ local function player_game(login_res)
 			local max_num = res.max_num
 
 			local opt_num = math.random(min_num,max_num)
-			pbnet_util.send(fd,'.game.DoingReq',{
+			net_util.send(fd,'.game.DoingReq',{
 				opt_num = opt_num,
 			})
 		elseif packname == '.login.LoginRes' then
@@ -161,7 +162,7 @@ local function player_game(login_res)
 			for k,v in pairs(res) do
 				login_res[k] = v
 			end
-			pbnet_util.send(fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			net_util.send(fd,'.game.GameStatusReq',{player_id = g_config.player_id})
 		elseif packname == '.game.GameStatusRes' then
 			local next_doing = res.next_doing
 			if next_doing.doing_player_id ~= g_config.player_id then
@@ -174,7 +175,7 @@ local function player_game(login_res)
 			local max_num = next_doing.max_num
 			
 			local opt_num = math.random(min_num,max_num)
-			pbnet_util.send(fd,'.game.DoingReq',{
+			net_util.send(fd,'.game.DoingReq',{
 				opt_num = opt_num,
 			})
 		end
@@ -228,6 +229,8 @@ function CMD.start(config)
 	pb_util.load('./proto')
 	g_config = config
 
+	net_util = require (config.net_util)
+	
 	skynet.fork(function()
 		--repeat_connect_test()
 		--repeat_loginout_test()
@@ -243,9 +246,9 @@ function CMD.start(config)
 		--reload_reconnet_test('room_m')
 		--player_game()
 		--player_game_reconnect()
-		player_reload_reconnect('hall_m')
+		--player_reload_reconnect('hall_m')
 		--player_reload_reconnect('match_m')
-		--player_reload_reconnect('room_m')
+		player_reload_reconnect('room_m')
 	end)
 	
 	return true
