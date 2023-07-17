@@ -1,17 +1,15 @@
 local log = require "log"
 local skynet = require "skynet"
 local timer = require "timer"
-local game_table = require "game_table"
-local pb_util = require "pb_util"
-local errors_msg = require "errors_msg"
 
 local assert = assert
 local next = next
 local pairs = pairs
 
-local g_player_num = 2
-
 local g_table_map = {}
+local g_room_conf = nil
+
+local room_plug = nil 
 
 local ROOM_CMD = {}
 
@@ -36,7 +34,7 @@ function CMD.create_table(table_id)
 	assert(not g_table_map[table_id])
 	g_table_map[table_id] = {
 		player_map = {},
-		game_table = game_table(table_id,g_player_num,ROOM_CMD),
+		game_table = room_plug.table_creator(table_id,g_room_conf,ROOM_CMD),
 	}
 	return true
 end
@@ -97,6 +95,8 @@ function CMD.disconnect(table_id,player_id)
 
 	local player = player_map[player_id]
 	player.fd = 0
+
+	t_info.game_table.disconnect(player)
 	return true
 end
 
@@ -109,6 +109,8 @@ function CMD.reconnect(table_id,player_id,new_fd)
 
 	local player = player_map[player_id]
 	player.fd = new_fd
+
+	t_info.game_table.reconnect(player)
 	return true
 end
 
@@ -120,22 +122,30 @@ function CMD.request(table_id,player_id,packname,req)
 	assert(player_map[player_id])
 	local player = player_map[player_id]
 
-	local isok,errcode,errmsg
-	if packname == '.game.DoingReq' then
-		isok,errcode,errmsg = t_info.game_table.play(player,req)
-	elseif packname == '.game.GameStatusReq' then
-		isok,errcode,errmsg = t_info.game_table.game_status_req(player,req)
-	end
-
-	if not isok then
-		log.error("request err ",errcode,errmsg,packname)
-		errors_msg.errors(player.fd,errcode,errmsg,packname)
-	end
+	t_info.game_table.handler(player,packname,req)
 	return true
 end
 
-function CMD.start()
-	pb_util.load('./proto')
+function CMD.start(config)
+	
+	assert(config.room_plug, "not room_plug")
+	assert(config.room_conf,"not room_conf")
+
+	g_room_conf = config.room_conf
+	
+	room_plug = require (config.room_plug)
+	assert(room_plug.init,"not room_plug init")            --初始化
+	assert(room_plug.table_creator,"not table_creator")    --桌子建造者
+
+	local tmp_table = room_plug.table_creator(1,g_room_conf,ROOM_CMD)
+
+	assert(tmp_table.enter,"table_creator not enter")      --坐下
+	assert(tmp_table.leave,"table_creator not leave")      --离开
+	assert(tmp_table.disconnect,"table_creator not disconnect") --掉线
+	assert(tmp_table.reconnect,"table_creator not reconnect") --重连
+	assert(tmp_table.handler,"table_creator not handler")    --消息处理
+
+	room_plug.init()
 	return true
 end
 

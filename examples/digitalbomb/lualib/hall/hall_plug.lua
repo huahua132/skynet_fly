@@ -60,7 +60,7 @@ function M.connect(player_id,player_info,fd,gate)
 		g_player_map[player_id] = agent
 	else
 		if agent.is_goout then
-			log.fatal("exiting ....",player_id)
+			log.error("exiting ....",player_id)
 			return 
 		end
 		g_fd_map[agent.fd] = nil
