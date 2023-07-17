@@ -22,7 +22,6 @@ local g_table_map = {}
 local g_player_map = {}
 
 local function alloc_table_id()
-	log.info("alloc_table_id",g_alloc_table_id)
 	local table_id = nil
 	local cur_start_id = g_alloc_table_id
 	while not table_id do
@@ -42,10 +41,9 @@ local function alloc_table_id()
 end
 
 local function create_table()
-	log.info("create_table")
 	local table_id,num_id = alloc_table_id()
 	if not table_id then
-		log.error("alloc_table_id err ",table_id)
+		log.info("alloc_table_id err ",table_id)
 		return match_plug.tablefull()
 	end
 
@@ -66,15 +64,13 @@ local function create_table()
 		g_table_map[table_id] = new_table
 		return table_id
 	else
-		log.error("create table err ",table_id)
 		return nil,errocode,errormsg
 	end
 end
 
 local CMD = {}
 
-function CMD.match(player_id,player_info,fd,hall_server_id)
-	log.info("match:",player_id,player_info,fd,hall_server_id)
+function CMD.match(player_id,fd,hall_server_id)
 	assert(not g_player_map[player_id])
 	return queue(function()
 		local table_id = match_plug.match(player_id)
@@ -82,7 +78,7 @@ function CMD.match(player_id,player_info,fd,hall_server_id)
 		if not table_id then
 			table_id,errcode,errmsg = create_table()
 			if not table_id then
-				log.fatal("create_table err ",errcode,errmsg)
+				log.info("create_table err ",errcode,errmsg)
 				return nil,errcode,errmsg
 			end
 		end
@@ -90,9 +86,9 @@ function CMD.match(player_id,player_info,fd,hall_server_id)
 		local t_info = g_table_map[table_id]
 		local room_server_id = t_info.room_server_id
 		local table_id = t_info.table_id
-		ok,errcode,errmsg = skynet.call(room_server_id,'lua','enter',table_id,player_id,player_info,fd,hall_server_id)
+		ok,errcode,errmsg = skynet.call(room_server_id,'lua','enter',table_id,player_id,fd,hall_server_id)
 		if not ok then
-			log.error("enter table fail ",player_id,errcode,errmsg)
+			log.info("enter table fail ",player_id,errcode,errmsg)
 			return nil,errcode,errmsg
 		else
 			g_player_map[player_id] = t_info
@@ -100,22 +96,20 @@ function CMD.match(player_id,player_info,fd,hall_server_id)
 			table.insert(player_list,player_id)
 
 			match_plug.entertable(table_id,player_id)
-			log.info("match succ ",room_server_id,table_id)
 			return room_server_id,table_id
 		end
 	end)
 end
 
 function CMD.leave(player_id)
-	log.info("leave:",player_id)
 	local t_info = assert(g_player_map[player_id])
 	return queue(function()
 		local room_server_id = t_info.room_server_id
 		local table_id = t_info.table_id
-
-		if not skynet.call(room_server_id,'lua','leave',table_id,player_id) then
-			log.error("leave table fail ",table_id,player_id)
-			return
+		local ok,errcode,errmsg = skynet.call(room_server_id,'lua','leave',table_id,player_id)
+		if not ok then
+			log.info("leave table fail ",table_id,player_id,errcode,errmsg)
+			return nil,errcode,errmsg
 		else
 			local player_list = t_info.player_list
 			for i = #player_list,1,-1 do
@@ -130,7 +124,6 @@ function CMD.leave(player_id)
 				match_plug.dismisstable(table_id)
 			end
 			g_player_map[player_id] = nil
-			log.info("leave succ ",room_server_id,table_id,g_table_map)
 			return true
 		end
 	end)

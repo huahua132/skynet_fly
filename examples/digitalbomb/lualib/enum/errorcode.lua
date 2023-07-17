@@ -6,4 +6,6 @@ return {
 	REPAET_LOGIN = 4,   --重复请求登录
 	TABLE_FULL = 5,     --房间爆满
 	TABLE_ENTER_ERR = 6,--坐下失败
+	LOGINING = 7,       --登录中
+	playing = 8,        --游戏进行中
 }
