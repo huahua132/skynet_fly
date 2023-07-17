@@ -37,7 +37,7 @@ function M.dispatch(fd,packname,req,CMD)
 		log.error("dispatch err ",errorcode,errormsg)
 		errors_msg.errors(fd,errorcode,errormsg,packname)
 	else
-		login_msg.login_out_res(fd,agent.player_id)
+		login_msg.login_out_res(fd,{player_id = agent.player_id})
 	end
 		
 	return true
