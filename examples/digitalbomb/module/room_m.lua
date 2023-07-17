@@ -13,7 +13,7 @@ local room_plug = nil
 
 local ROOM_CMD = {}
 
-function ROOM_CMD.game_over(table_id)
+function ROOM_CMD.kick_out_all(table_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -30,7 +30,6 @@ end
 local CMD = {}
 
 function CMD.create_table(table_id)
-	log.info("create_table:",table_id)
 	assert(not g_table_map[table_id])
 	g_table_map[table_id] = {
 		player_map = {},
@@ -39,8 +38,7 @@ function CMD.create_table(table_id)
 	return true
 end
 
-function CMD.enter(table_id,player_id,player_info,fd,hall_server_id)
-	log.info("enter:",table_id,player_id,player_info,fd,hall_server_id)
+function CMD.enter(table_id,player_id,fd,hall_server_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -48,7 +46,7 @@ function CMD.enter(table_id,player_id,player_info,fd,hall_server_id)
 	assert(not player_map[player_id])
 
 	player_map[player_id] = {
-		player_info = player_info,
+		player_id = player_id,
 		fd = fd,
 		hall_server_id = hall_server_id,
 	}
@@ -64,64 +62,62 @@ function CMD.enter(table_id,player_id,player_info,fd,hall_server_id)
 end
 
 function CMD.leave(table_id,player_id)
-	log.info("leave:",table_id,player_id)
 	assert(g_table_map[table_id])
 
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 
 	assert(player_map[player_id])
-	local player = player_map[player_id]
-	player_map[player_id] = nil
-	if not next(player_map) then
-		g_table_map[table_id] = nil
-	end
 
+	local player = player_map[player_id]
 	local isok,errcode,errmsg = t_info.game_table.leave(player)
 	if not isok then
 		return isok,errcode,errmsg
 	end
 
-	log.info("g_table_map:",g_table_map)
+	player_map[player_id] = nil
+	if not next(player_map) then
+		g_table_map[table_id] = nil
+	end
+
 	return true
 end
 
-function CMD.disconnect(table_id,player_id)
-	log.info("disconnect:",table_id,player_id)
+function CMD.disconnect(fd,table_id,player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 	assert(player_map[player_id])
 
 	local player = player_map[player_id]
+	if player.fd ~= fd then
+		log.warn("disconnect ",player.fd,fd)
+		return
+	end
 	player.fd = 0
-
 	t_info.game_table.disconnect(player)
 	return true
 end
 
-function CMD.reconnect(table_id,player_id,new_fd)
-	log.info("reconnect:",table_id,player_id)
+function CMD.reconnect(fd,table_id,player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 	assert(player_map[player_id])
 
 	local player = player_map[player_id]
-	player.fd = new_fd
+	player.fd = fd
 
 	t_info.game_table.reconnect(player)
 	return true
 end
 
 function CMD.request(table_id,player_id,packname,req)
-	log.info("request:",table_id,player_id,packname,req)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 	assert(player_map[player_id])
 	local player = player_map[player_id]
-
 	t_info.game_table.handler(player,packname,req)
 	return true
 end
@@ -134,16 +130,16 @@ function CMD.start(config)
 	g_room_conf = config.room_conf
 	
 	room_plug = require (config.room_plug)
-	assert(room_plug.init,"not room_plug init")            --初始化
-	assert(room_plug.table_creator,"not table_creator")    --桌子建造者
+	assert(room_plug.init,"not room_plug init")                 --初始化
+	assert(room_plug.table_creator,"not table_creator")         --桌子建造者
 
 	local tmp_table = room_plug.table_creator(1,g_room_conf,ROOM_CMD)
 
-	assert(tmp_table.enter,"table_creator not enter")      --坐下
-	assert(tmp_table.leave,"table_creator not leave")      --离开
+	assert(tmp_table.enter,"table_creator not enter")           --坐下
+	assert(tmp_table.leave,"table_creator not leave")           --离开
 	assert(tmp_table.disconnect,"table_creator not disconnect") --掉线
-	assert(tmp_table.reconnect,"table_creator not reconnect") --重连
-	assert(tmp_table.handler,"table_creator not handler")    --消息处理
+	assert(tmp_table.reconnect,"table_creator not reconnect")   --重连
+	assert(tmp_table.handler,"table_creator not handler")       --消息处理
 
 	room_plug.init()
 	return true
@@ -155,7 +151,7 @@ function CMD.exit()
 			log.info("g_table_map.is_empty can exit")
 			skynet.exit()
 		else
-			log.info("not g_table_map.is_empty can`t exit")
+			log.info("not g_table_map.is_empty can`t exit",g_table_map)
 		end
 	end)
 end

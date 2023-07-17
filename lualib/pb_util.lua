@@ -3,7 +3,7 @@ local protoc = require "protoc"
 local pb = require "pb"
 
 local string = string
-local pcall = pcall
+local x_pcall = x_pcall
 local assert = assert
 
 local M = {}
@@ -33,7 +33,7 @@ function M.encode(name,tab)
 		return nil,"encode not exists " .. name
 	end
 
-	return pcall(pb.encode,name,tab)
+	return x_pcall(pb.encode,name,tab)
 end
 
 function M.decode(name,pstr)
@@ -43,7 +43,7 @@ function M.decode(name,pstr)
 		return nil,"decode not exists " .. name
 	end
 
-	return pcall(pb.decode,name,pstr)
+	return x_pcall(pb.decode,name,pstr)
 end
 
 function M.pack(name,tab)

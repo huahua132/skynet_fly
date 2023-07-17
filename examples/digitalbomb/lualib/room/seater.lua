@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local SEAT_STATE = require "SEAT_STATE"
 local pbnet_util = require "pbnet_util"
+local log = require "log"
 local setmetatable = setmetatable
 local assert = assert
 
@@ -34,7 +35,8 @@ function M:is_empty()
 end
 
 function M:is_can_leave()
-	return self.state ~= SEAT_STATE.playing
+	--return self.state ~= SEAT_STATE.playing
+	return true
 end
 
 function M:send_msg(packname,pack)
@@ -44,6 +46,8 @@ function M:send_msg(packname,pack)
 
 	if self.player.fd > 0 then
 		pbnet_util.send(self.player.fd,packname,pack)
+	else
+		log.info("send_msg not fd ",self.player_id)
 	end
 end
 

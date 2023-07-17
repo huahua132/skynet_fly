@@ -55,7 +55,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 		local player = m_seat_list[m_doing_seat_id]:get_player()
 		local args = {
 			doing_seat_id = m_doing_seat_id,
-			doing_player_id = player.player_info.player_id,
+			doing_player_id = player.player_id,
 			min_num = m_mine_min,
 			max_num = m_mine_max,
 		}
@@ -104,7 +104,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 				seater:game_over()
 			end
 		end
-		ROOM_CMD.game_over(m_table_id)
+		ROOM_CMD.kick_out_all(m_table_id)
 		return true
 	end
 -----------------------------------------------------------------------
@@ -121,7 +121,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 				return
 			end
 			
-			local player_id = player.player_info.player_id
+			local player_id = player.player_id
 			local seat_id = m_player_seat_map[player_id]
 			if seat_id ~= m_doing_seat_id then
 				log.info("不是该玩家操作 ",player_id)
@@ -165,7 +165,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 		end,
 
 		['GameStatusReq'] = function(player,args)
-			local player_id = player.player_info.player_id
+			local player_id = player.player_id
 			local seat_id = m_player_seat_map[player_id]
 			if not seat_id then
 				log.error("not in table ",player_id)
@@ -178,10 +178,10 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 			local doing_seat_id = 0
 			if m_seat_list[m_doing_seat_id] then
 				doing_seat_player = m_seat_list[m_doing_seat_id]:get_player()
-				doing_player_id = doing_seat_player.player_info.player_id
+				doing_player_id = doing_seat_player.player_id
 				doing_seat_id = m_doing_seat_id
 			end
-			
+			log.error("send_msg GameStatusRes",player)
 			seater:send_msg('.game.GameStatusRes',{
 				game_state = m_game_state,
 				next_doing = {
@@ -201,7 +201,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 
     return {
         enter = function(player)
-            local player_id = player.player_info.player_id
+            local player_id = player.player_id
             assert(not m_player_seat_map[player_id])
             
             local alloc_seat_id = nil
@@ -216,14 +216,13 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
             end
 
             if not alloc_seat_id then
-                log.info("进入房间失败 ",player.player_info.player_id)
+                log.info("进入房间失败 ",player.player_id)
                 return nil,errorcode.TABLE_ENTER_ERR,"enter err"
             end
           
 			broadcast('.game.EnterCast',{
 				player_id = player_id,
 				seat_id = alloc_seat_id,
-				nickname = player.player_info.nickname,
 			})
             if m_enter_num >= 2 then
                 skynet.fork(game_start)
@@ -233,7 +232,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
         end,
 
 		leave = function(player)
-			local player_id = player.player_info.player_id
+			local player_id = player.player_id
 			local seat_id = m_player_seat_map[player_id]
 			if not seat_id then
 				log.error("not in table ",player_id)
@@ -242,7 +241,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 
 			local seater = m_seat_list[seat_id]
 			if not seater:is_can_leave() then
-				return false
+				return false,errorcode.playing,"playing..."
 			else
 				seater:leave()
 				m_enter_num = m_enter_num - 1
@@ -252,7 +251,6 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 			broadcast('.game.LeaveCast',{
 				player_id = player_id,
 				seat_id = seat_id,
-				nickname = player.player_info.nickname,
 			})
 			log.info("离开房间成功 ",player_id)
 
@@ -260,11 +258,11 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 		end,
 
 		disconnect = function(player)
-
+			log.error("disconnect:",m_seat_list)
 		end,
 
 		reconnect = function(player)
-			
+			log.error("reconnect:",m_seat_list)
 		end,
 
 		handler = function(player,packname,req)
