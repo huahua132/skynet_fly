@@ -15,7 +15,7 @@
 [热更新方案三的实现](https://huahua132.github.io/2023/05/22/think/reload/)
 运行 **examples/hot_module4** 示例
 
-## 快速开始 (运行examples/webapp)
+## 快速开始 http服务 (运行examples/webapp)
 
 1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo) 
     - `make build`
@@ -43,15 +43,47 @@
 
 **恭喜你成功了**
 
-## 数字炸弹游戏
+## 快速开始 游戏服务 (运行examples/digitalbomb)
 
-如果你觉得第一个没意思，可以跑一下hot_module5，它是一个数字炸弹的游戏，简单实验了有状态服务的热更可行性。
-执行方式同快速开始。
+* **构建服务**
+	- `cd examples/digitalbomb/`
+	- `sh ../../binshell/make_server.sh ../../ digitalbomb 4`
+
+* **运行服务**
+	`sh script/run.sh`
+
 
 基于tcp长连接实现不停服更新 `digitalbomb` 数字炸弹游戏。
 除了登录 `login` 服务不能热更。
 `hall` 大厅。
 `match` 匹配。
 `room` 房间都是可行的。
-有兴趣可以去跑一下看看效果。
 内置了客户端，可以直接看到效果。
+
+* **业务解耦**
+	对**登录**，**大厅**，**匹配**，**游戏**，还有协议都完成了解耦，开发新游戏只需要实现对应的插件接口即可。
+
+* **切换示例**
+	把digitalbomb游戏由pb协议转换到跑json协议。
+
+	修改由命令生成好的配置文件 mod_config.lua
+
+client_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
+
+hall_m 配置的 hall_plug由`hall_plug_pb` 改为 `hall_plug_json`
+
+match_m 配置的 match_plug由`match_plug_pb` 改为 `match_plug_json`
+
+room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
+
+执行 `sh script/restart.sh` 
+
+* **热更新**
+	client_m 表写了测试用例，可以用来验证热更新。
+	也可以通过`script/reload.sh`的方式，不过你先修改好文件，然后开始执行。
+
+* **游戏热更新原理**
+	新服替换旧服务的方案。
+	旧连接跟旧服务通信。
+	新连接跟新服务通信。
+	适合用于玩一把游戏就退出的微服务架构。
