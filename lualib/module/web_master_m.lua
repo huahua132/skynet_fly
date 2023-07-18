@@ -3,7 +3,7 @@ local skynet = require "skynet"
 local socket = require "skynet.socket"
 local log = require "log"
 local cache_help = require "cache_help"
-local util = require "util"
+local string_util = require "string_util"
 local contriner_client = require "contriner_client"
 local timer = require "timer"
 
@@ -194,7 +194,7 @@ function CMD.start(args)
 	agent_client = contriner_client:new("web_agent_m")
 
 	socket.start(listen_fd, function(fd, addr)
-		local addrs = util.string_split(addr,':')
+		local addrs = string_util.split(addr,':')
 		local ip,port = addrs[1],addrs[2]
 		if not ip or not port then
 			socket.close_fd(fd)

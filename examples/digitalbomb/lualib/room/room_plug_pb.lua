@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local pb_util = require "pb_util"
-local util = require "util"
+local string_util = require "string_util"
 local log = require "log"
 local GAME_STATE_ENUM = require "GAME_STATE"
 local seater = require "seater_pb"
@@ -266,7 +266,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 		end,
 
 		handler = function(player,packname,req)
-			local pack_req = util.string_split(packname,'.')
+			local pack_req = string_util.split(packname,'.')
 			assert(#pack_req == 2,"packname err " .. packname)
 			local package = pack_req[1]
 			local msg_name = pack_req[2]

@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local time_help = require "time_help"
+local time_util = require "time_util"
 local log = require "log"
 local type = type
 local math = math
@@ -20,7 +20,7 @@ local function time_out_func(t)
 	t.cur_times = t.cur_times + 1
 
 	if t.times == 0 or t.cur_times < t.times then
-		t.expire_time = time_help.skynet_int_time() + t.expire
+		t.expire_time = time_util.skynet_int_time() + t.expire
 		skynet.fork(register,t)
 	else
 		t.is_over = true
@@ -35,7 +35,7 @@ end
 register = function(t)
 	while not t.is_cancel do
 		local expire_time = t.expire_time
-		local remain_time = expire_time - time_help.skynet_int_time()
+		local remain_time = expire_time - time_util.skynet_int_time()
 		if remain_time > CHECK_INVAL_TIME then
 			--为了防止大于 1 分钟的定时器出现大量注册又注销，创建过多的无效携程和定时器事件
 			skynet.sleep(CHECK_INVAL_TIME)
@@ -70,7 +70,7 @@ function M:new(expire,times,callback,...)
 		is_cancel = false,
 		is_over = false,
 		cur_times = 0,
-		expire_time = time_help.skynet_int_time() + expire
+		expire_time = time_util.skynet_int_time() + expire
 	}
 
 	skynet.fork(register,t)
@@ -110,7 +110,7 @@ function M:extend(ex_expire)
 	self:cancel()
 	self = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
 	self.cur_times = pre_cur_times
-	self.expire_time = time_help.skynet_int_time() + (pre_expire_time - time_help.skynet_int_time()) + ex_expire
+	self.expire_time = time_util.skynet_int_time() + (pre_expire_time - time_util.skynet_int_time()) + ex_expire
 
 	return true
 end

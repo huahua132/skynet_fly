@@ -7,10 +7,11 @@ assert(svr_name,'缺少 svr_name')
 assert(cmd,"缺少命令")
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
-package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
+package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 
 local lfs = require "lfs"
-local util = require "util"
+local file_util = require "file_util"
+local table_util = require "table_util"
 local json = require "cjson"
 debug_port = nil
 local skynet_cfg_path = string.format("%s_config",svr_name)
@@ -59,7 +60,7 @@ function CMD.check_reload()
 	local mod_config = require "mod_config"
 
 	local module_info_map = {}
-	for f_name,f_path,f_info in util.diripairs(module_info_dir) do
+	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
 		local m_name = string.sub(f_name,1,#f_name - 9)
 		if mod_config[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
 			local f_tb = loadfile(f_path)()
@@ -104,9 +105,9 @@ function CMD.check_reload()
 		for module_name,module_cfg in pairs(mod_config) do
 			local old_module_cfg = old_mod_confg[module_name]
 			if old_module_cfg then
-			local def_des = util.check_def_table(module_cfg,old_module_cfg)
+			local def_des = table_util.check_def_table(module_cfg,old_module_cfg)
 			if next(def_des) then
-				need_reload_module[module_name] = util.def_tostring(def_des)
+				need_reload_module[module_name] = table_util.def_tostring(def_des)
 			end
 			else
 			need_reload_module[module_name] = "relaunch module"

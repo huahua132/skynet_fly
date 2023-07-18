@@ -1,4 +1,4 @@
-local util = require "util"
+local file_util = require "file_util"
 local protoc = require "protoc"
 local pb = require "pb"
 
@@ -11,7 +11,7 @@ local M = {}
 local g_loaded = {}
 
 function M.load(rootpath)
-	for file_name,file_path,file_info in util.diripairs(rootpath) do
+	for file_name,file_path,file_info in file_util.diripairs(rootpath) do
 		if string.find(file_name,".proto",nil,true) then
 			protoc:loadfile(file_path)
 		end
