@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local util = require "util"
+local table_util = require "table_util"
 local string = string
 local debug_getinfo = debug.getinfo
 local MODULE_NAME = MODULE_NAME
@@ -30,7 +30,7 @@ local function create_log_func(level_name)
 
 		local log_str = ""
 		for i = 1,#msgs do
-			log_str = log_str .. util.dump(msgs[i]) .. ' '
+			log_str = log_str .. table_util.dump(msgs[i]) .. ' '
 		end
 
 		local server_name = SERVICE_NAME
