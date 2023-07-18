@@ -43,17 +43,17 @@ local black_ip_map = {}
 --连接建立之前检查
 local function check_addr(ip,port,fd)
 	if fd_agent_map[fd] then
-		log.fatal("rpeat fd:",fd)
+		log.warn("rpeat fd:",fd)
 		return false
 	end
 
 	if client_num >= max_client then
-		log.fatal("client_num full",max_client)
+		log.warn("client_num full",max_client)
 		return false
 	end
 
 	if limit_conn_sum_map[ip] and limit_conn_sum_map[ip] >= second_conn_limit then
-		log.fatal("connect so frequently ",ip,limit_conn_sum_map[ip],second_conn_limit)
+		log.warn("connect so frequently ",ip,limit_conn_sum_map[ip],second_conn_limit)
 		return false
 	end
 
@@ -61,12 +61,12 @@ local function check_addr(ip,port,fd)
 	local lock_kick_num = lock_kick_num_map[ip] or 0
 	local keep_live_num = keep_live_list and #keep_live_list or 0
 	if lock_kick_num >= keep_live_limit then
-		log.fatal("beyond keep live limit ",keep_live_num,lock_kick_num,keep_live_limit,client_num)
+		log.warn("beyond keep live limit ",keep_live_num,lock_kick_num,keep_live_limit,client_num)
 		return false
 	end
 
 	if black_ip_map[ip] then
-		log.fatal("black_ip ",ip)
+		log.warn("black_ip ",ip)
 		return false
 	end
 	return true
@@ -104,14 +104,14 @@ local function connect_succ(ip,port,fd,agent_id)
 		if rm_fd then
 			local rm_fd_agent_id = fd_agent_map[rm_fd]
 			if not rm_fd_agent_id then
-			log.fatal("connect_succ rm_fd_agent_id err",rm_fd)
+			log.warn("connect_succ rm_fd_agent_id err",rm_fd)
 			else
 			lock_kick_map[rm_fd] = true
 			lock_kick_num_map[ip] = lock_kick_num_map[ip] + 1
 			skynet.send(rm_fd_agent_id,'lua','socket','close',rm_fd)
 			end
 		else
-			log.fatal("connect_succ beyond keep_live_limit err")
+			log.warn("connect_succ beyond keep_live_limit err")
 		end
 	end
 
@@ -174,8 +174,8 @@ end
 
 function CMD.start(args)
 	max_client = args.max_client or 2048
-	second_conn_limit = args.second_conn_limit or 60
-	keep_live_limit = args.keep_live_limit or 50
+	second_conn_limit = args.second_conn_limit or 60         --相同ip一秒内建立连接数量限制
+	keep_live_limit = args.keep_live_limit or 50			 --相同ip保持连接数量限制
 	assert(not listen_fd)
 	local host = args.host or "0.0.0.0"
 	local port = tonumber(args.port)
@@ -198,13 +198,13 @@ function CMD.start(args)
 		local ip,port = addrs[1],addrs[2]
 		if not ip or not port then
 			socket.close_fd(fd)
-			log.fatal("connect err ",addr,ip,port)
+			log.warn("connect err ",addr,ip,port)
 			return
 		end
 
 		if not check_addr(ip,port,fd) then
 			socket.close_fd(fd)
-			log.fatal("unsafe addr ",addr)
+			log.warn("unsafe addr ",addr)
 			return
 		end
 		local agent_id = agent_client:balance_call('socket','enter',fd,ip,port,SELF_ADDRESS)

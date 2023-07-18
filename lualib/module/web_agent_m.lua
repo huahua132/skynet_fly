@@ -97,7 +97,7 @@ local function handle_func(req)
 
 	local req_cnt = req_cnt_map[fd]
 	if req_cnt > second_req_limit then
-		log.fatal("request so buzy ",fd,req_cnt,second_req_limit)
+		log.warn("request so buzy ",fd,req_cnt,second_req_limit)
 		return 400
 	end
 	return web.dispatch(req)
@@ -116,7 +116,7 @@ end
 
 function SOCKET.enter(fd, ip,port,master_id)
 	if enter_cache:get_cache(fd) then
-		log.fatal("repeat enter fd:",fd,ip,port)
+		log.warn("repeat enter fd:",fd,ip,port)
 	end
 
 	enter_map[fd] = ip
@@ -130,7 +130,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 
 	local is_ok,handle = pcall(handle_web,fd, ip, port, protocol, handle_func)
 	if not is_ok then
-		log.fatal("handle_web err ",handle)
+		log.warn("handle_web err ",handle)
 		clear_fd(fd)
 		skynet.fork(socket.close,fd)
 		return
@@ -142,7 +142,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 	skynet.fork(function()
 		while keep_alive do
 			if socket.disconnected(fd) or socket.invalid(fd) then
-				log.fatal("disconnect:fd",fd,socket.disconnected(fd),socket.invalid(fd))
+				log.warn("disconnect:fd",fd,socket.disconnected(fd),socket.invalid(fd))
 				break
 			end
 
@@ -150,7 +150,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 
 			local is_ok,ret = pcall(handle.read_request)
 			if not is_ok then
-				log.fatal("read_request err ",ret)
+				log.warn("read_request err ",ret)
 				break
 			end
 
@@ -159,7 +159,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 
 			local is_ok,ret = x_pcall(handle.handle_response)
 			if not is_ok then
-				log.fatal("handle_response err ",ret)
+				log.error("handle_response err ",ret)
 				break
 			end
 
@@ -195,8 +195,8 @@ function CMD.exit()
 end
 
 function CMD.start(args)
-	keep_alive_time = args.keep_alive_time or 300
-	second_req_limit = args.second_req_limit or 100
+	keep_alive_time = args.keep_alive_time or 300       --保活时间
+	second_req_limit = args.second_req_limit or 100     --一秒请求数量限制
 	protocol = args.protocol
 	local lua_file = args.dispatch
 	web = require(lua_file)
