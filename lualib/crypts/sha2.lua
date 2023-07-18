@@ -70,7 +70,7 @@ local function get_precision(one)
    -- "one" must be either float 1.0 or integer 1
    -- returns bits_precision, is_integer
    -- This function works correctly with all floating point datatypes (including non-IEEE-754)
-   local k, n, m, prev_n = 0, one, one
+   local k, n, m, prev_n = 0, one, one, nil
    while true do
       k, prev_n, n, m = k + 1, n, n + n + 1, m + m + k % 2
       if k > 256 or n - (n - 1) ~= 1 or m - (m - 1) ~= 1 or n == m then
@@ -4326,7 +4326,7 @@ do
    end
 
    for idx = 1, 24 do
-      local lo, m = 0
+      local lo, m = 0, nil
       for _ = 1, 6 do
          m = m and m * m * 2 or 1
          lo = lo + next_bit() * m
@@ -5412,7 +5412,8 @@ local function blake3(message, key, digest_size_in_bytes, message_flags, K, retu
       message_flags = message_flags + 16  -- flag:KEYED_HASH
    end
    local tail, H, chunk_index, blocks_in_chunk, stack_size, stack = "", {}, 0, 0, 0, {}
-   local final_H_in, final_block_length, chunk_by_chunk_output, result, wide_output = K
+   local final_H_in = K
+   local final_block_length, chunk_by_chunk_output, result, wide_output
    local final_compression_flags = 3      -- flags:CHUNK_START,CHUNK_END
 
    local function feed_blocks(str, offs, size)
@@ -5536,7 +5537,8 @@ local function blake3(message, key, digest_size_in_bytes, message_flags, K, retu
             digest_size_in_bytes = math_min(2^53, digest_size_in_bytes)
             wide_output = digest_size_in_bytes > 32
             if chunk_by_chunk_output then
-               local pos, cached_block_no, cached_block = 0.0
+               local pos = 0.0
+			   local cached_block_no, cached_block
 
                local function get_next_part_of_digest(arg1, arg2)
                   if arg1 == "seek" then
