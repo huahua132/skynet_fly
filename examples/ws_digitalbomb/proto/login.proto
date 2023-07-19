@@ -1,0 +1,24 @@
+package login;
+
+message LoginReq {
+	optional string account = 1;
+	optional string password = 2;
+	optional int32 player_id = 3;
+	optional int32 nickname = 4;
+}
+
+message LoginRes {
+	optional int32 player_id = 1;
+	optional int32 hall_server_id = 2;  //大厅服id
+	optional int32 match_server_id = 3; //匹配服id
+	optional int32 room_server_id = 4;  //房间服id
+	optional string table_id = 5;        //桌子id
+}
+
+message LoginOutReq {
+	optional int32 player_id = 1;
+}
+
+message LoginOutRes {
+	optional int32 player_id = 1;
+}

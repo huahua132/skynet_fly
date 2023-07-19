@@ -28,7 +28,7 @@ local function dispatch(fd,source,packname,req)
 		return
 	end
 
-	if not hall_plug.dispatch(fd,packname,req,CMD) then
+	if not hall_plug.dispatch(agent.gate,fd,packname,req,CMD) then
 		local room_server = agent.room_server
 		local table_id = agent.table_id
 		local player_id = agent.player_id
@@ -41,7 +41,7 @@ local function dispatch(fd,source,packname,req)
 
 end
 
-function CMD.connect(fd,player_id,gate)
+function CMD.connect(gate,fd,player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
 	 	agent = {
@@ -57,28 +57,29 @@ function CMD.connect(fd,player_id,gate)
 			return 
 		end
 		agent.fd = fd
+		agent.gate = gate
 	end
 
 	g_fd_map[fd] = agent
 	return agent.queue(function()
 		if not agent.match_client then
 			agent.match_client = contriner_client:new("match_m",nil,function() return false end)
-			local room_server,table_id,errmsg = agent.match_client:mod_call('match',player_id,fd,skynet.self())
+			local room_server,table_id,errmsg = agent.match_client:mod_call('match',gate,fd,player_id,skynet.self())
 			if not room_server then
 				return false,table_id,errmsg
 			end
 
 			agent.room_server = room_server
 			agent.table_id = table_id
-			hall_plug.connect(fd,player_id)
+			hall_plug.connect(gate,fd,player_id)
 		else
 			local room_server = agent.room_server
 			local table_id = agent.table_id
-			skynet.send(room_server,'lua','reconnect',fd,table_id,player_id)
-			hall_plug.reconnect(fd,player_id)
+			skynet.send(room_server,'lua','reconnect',gate,fd,table_id,player_id)
+			hall_plug.reconnect(gate,fd,player_id)
 		end
 
-		pcall(skynet.call,agent.gate,'lua','forward',fd)
+		pcall(skynet.call,gate,'lua','forward',fd)
 		return {
 			player_id = agent.player_id,
 			hall_server_id = skynet.self(),
@@ -89,7 +90,7 @@ function CMD.connect(fd,player_id,gate)
 	end)
 end
 
-function CMD.disconnect(fd,player_id)
+function CMD.disconnect(gate,fd,player_id)
 	local agent = g_fd_map[fd]
 	if not agent then 
 		log.error("disconnect not agent ",fd,player_id)
@@ -102,17 +103,18 @@ function CMD.disconnect(fd,player_id)
 		log.warn("disconnect agent is reconnect ",fd,agent.fd,player_id)
 		return
 	end
-
+	
 	agent.fd = 0
+	agent.gate = 0
 
 	local room_server = agent.room_server
 	local table_id = agent.table_id
 
 	if g_player_map[player_id] then
-		skynet.send(room_server,'lua','disconnect',fd,table_id,player_id)
+		skynet.send(room_server,'lua','disconnect',gate,fd,table_id,player_id)
 	end
 
-	hall_plug.disconnect(fd,player_id)
+	hall_plug.disconnect(gate,fd,player_id)
 end
 
 function CMD.goout(player_id)

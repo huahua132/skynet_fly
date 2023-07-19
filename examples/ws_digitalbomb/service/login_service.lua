@@ -7,7 +7,6 @@ local contriner_client = require "contriner_client"
 local assert = assert
 local x_pcall = x_pcall
 
-local gate
 local check_plug = nil
 
 local g_fd_agent_map = {}
@@ -15,13 +14,19 @@ local g_player_map = {}
 local g_login_lock_map = {}
 
 local function close_fd(fd)
-	skynet.send(gate,'lua','kick',fd)
+	local agent = g_fd_agent_map[fd]
+	if not agent then
+		log.info("close_fd not agent ",fd)
+		return
+	end
+
+	skynet.send(agent.gate,'lua','kick',fd)
 end
 
 local CMD = {}
 
 function CMD.goout(player_id)
-	assert(g_player_map[player_id])
+	local agent = assert(g_player_map[player_id])
 
 	g_player_map[player_id] = nil
 	check_plug.login_out(player_id)
@@ -29,10 +34,11 @@ end
 
 local SOCKET = {}
 
-function SOCKET.open(fd, addr)
+function SOCKET.open(gate, fd, addr)
 	local agent = {
 		fd = fd,
 		addr = addr,
+		gate = gate,
 		queue = queue(),
 		login_time_out = timer:new(check_plug.time_out,1,close_fd,fd)
 	}
@@ -55,23 +61,9 @@ function SOCKET.close(fd)
 	local player = g_player_map[player_id]
 	if player then
 		local hall_client = player.hall_client
-		hall_client:mod_send('disconnect',fd,player_id)
-		check_plug.disconnect(fd,player_id)
+		hall_client:mod_send('disconnect',agent.gate,fd,player_id)
+		check_plug.disconnect(agent.gate,fd,player_id)
 	end
-end
-
-function SOCKET.error(fd, msg)
-	local agent = g_fd_agent_map[fd]
-	if not agent then
-		log.warn("error not agent ",fd)
-		return
-	end
-
-	close_fd(fd)
-end
-
-function SOCKET.warning(fd, size)
-	log.info('SOCKET.warning:',fd,size)
 end
 
 function SOCKET.data(msg)
@@ -84,49 +76,50 @@ function CMD.socket(cmd,...)
 	f(...)
 end
 
-local function connect_hall(fd,player_id)
+local function connect_hall(gate,fd,player_id)
 	local old_agent = g_player_map[player_id]
 	local hall_client = nil
 	if old_agent then
 		hall_client = old_agent.hall_client
-		check_plug.repeat_login(old_agent.fd,player_id)
+		check_plug.repeat_login(old_agent.gate,old_agent.fd,player_id)
 		close_fd(old_agent.fd)
 	else
 		hall_client = contriner_client:new("hall_m",nil,function() return false end)
 		hall_client:set_mod_num(player_id)
 	end
 	
-	local ret,errcode,errmsg = hall_client:mod_call("connect",fd,player_id,gate)
+	local ret,errcode,errmsg = hall_client:mod_call("connect",gate,fd,player_id)
 	if not ret then
-		check_plug.login_failed(fd,player_id,errcode,errmsg)
+		check_plug.login_failed(gate,fd,player_id,errcode,errmsg)
 		return
 	end
 
 	g_player_map[player_id] = {
 		player_id = player_id,
 		hall_client = hall_client,
+		gate = gate,
 		fd = fd,
 	}
 
-	check_plug.login_succ(fd,player_id,ret)
+	check_plug.login_succ(gate,fd,player_id,ret)
 	return true
 end
 
-local function check_func(fd,...)
-	local player_id,errcode,errmsg = check_plug.check(fd,...)
+local function check_func(gate,fd,...)
+	local player_id,errcode,errmsg = check_plug.check(gate,fd,...)
 	if not player_id then
-		check_plug.login_failed(fd,player_id,errcode,errmsg)
+		check_plug.login_failed(gate,fd,player_id,errcode,errmsg)
 		return
 	end
 
 	if g_login_lock_map[player_id] then
 		--正在登入中
-		check_plug.logining(fd,player_id)
+		check_plug.logining(gate,fd,player_id)
 		return
 	end
 	
 	g_login_lock_map[player_id] = true
-	local isok,err = x_pcall(connect_hall,fd,player_id)
+	local isok,err = x_pcall(connect_hall,gate,fd,player_id)
 	g_login_lock_map[player_id] = nil
 	if not isok then
 		log.fatal("connect_hall failed ",err)
@@ -150,7 +143,7 @@ skynet.start(function()
 
 	local confclient = contriner_client:new("share_config_m")
 	local loginconf = confclient:mod_call('query','loginconf')
-	assert(loginconf.gateconf,"not gateconf")
+	assert(loginconf.ws_gateconf,"not ws_gateconf")
 	assert(loginconf.check_plug,"not check_plug")
 
 	check_plug = require (loginconf.check_plug)
@@ -184,7 +177,7 @@ skynet.start(function()
 				return
 			end
 			
-			local player_id = agent.queue(check_func,fd,...)
+			local player_id = agent.queue(check_func,agent.gate,fd,...)
 			if not player_id then
 				close_fd(fd)
 			else
@@ -195,8 +188,8 @@ skynet.start(function()
 		end,
 	}
 
-	gate = skynet.newservice('gate')
+	local gate = skynet.newservice('ws_gate')
 	check_plug.init()
-	skynet.call(gate,'lua','open',loginconf.gateconf)	
+	skynet.call(gate,'lua','open',loginconf.ws_gateconf)	
 	skynet.register('.login')
 end)
