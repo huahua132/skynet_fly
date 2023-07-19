@@ -36,7 +36,7 @@ function M.unpack(msg,sz)
 	
 	local packname,tab = json_util.unpack(msgstr)
 	if not packname then
-		log.fatal("unpack err ",tab)
+		log.error("unpack err ",tab)
 		return
 	end
 

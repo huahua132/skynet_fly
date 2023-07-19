@@ -1,6 +1,7 @@
 local log = require "log"
 local skynet = require "skynet"
 local timer = require "timer"
+local websocket = require "websocket"
 local socket = require "socket"
 local pb_util = require "pb_util"
 local table_util = require "table_util"
@@ -16,7 +17,7 @@ local function dispatch(fd,packname,res)
 end
 
 local function connnect(handle)
-	local fd = socket.open('127.0.0.1',8001)
+	local fd = websocket.connect("ws://127.0.0.1:8001")
 	if not fd then
 		log.error("connect faild ")
 		return
@@ -29,7 +30,7 @@ local function connnect(handle)
 	}
 
 	net_util.recv(fd,handle or dispatch)
-	net_util.send(fd,'.login.LoginReq',login_req)
+	net_util.send(nil,fd,'.login.LoginReq',login_req)
 	return fd
 end
 
@@ -37,7 +38,7 @@ local function loginout(fd)
 	local login_out_req = {
 		player_id = g_config.player_id,
 	}
-	net_util.send(fd,'.login.LoginOutReq',login_out_req)
+	net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
 end
 
 --重复登录测试
@@ -58,7 +59,7 @@ end
 local function reconnecttest()
 	local fd = connnect()
 	skynet.sleep(100)
-	socket.close()
+	websocket.close(fd)
 	fd = connnect()
 end
 
@@ -114,10 +115,11 @@ local function reload_reconnet_test(mod_name)
 	skynet.call('.contriner_mgr','lua','load_module',mod_name)
 
 	local close_wi = coroutine.running()
+
 	socket.onclose(fd,function()
 		skynet.wakeup(close_wi)
 	end)
-	socket.close(fd)
+	websocket.close(fd)
 	skynet.wait(close_wi)
 
 	local new_login_res = nil
@@ -154,7 +156,7 @@ local function player_game(login_res)
 			local max_num = res.max_num
 
 			local opt_num = math.random(min_num,max_num)
-			net_util.send(fd,'.game.DoingReq',{
+			net_util.send(nil,fd,'.game.DoingReq',{
 				opt_num = opt_num,
 			})
 		elseif packname == '.login.LoginRes' then
@@ -162,7 +164,7 @@ local function player_game(login_res)
 			for k,v in pairs(res) do
 				login_res[k] = v
 			end
-			net_util.send(fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
 		elseif packname == '.game.GameStatusRes' then
 			local next_doing = res.next_doing
 			if next_doing.doing_player_id ~= g_config.player_id then
@@ -175,7 +177,7 @@ local function player_game(login_res)
 			local max_num = next_doing.max_num
 			
 			local opt_num = math.random(min_num,max_num)
-			net_util.send(fd,'.game.DoingReq',{
+			net_util.send(nil,fd,'.game.DoingReq',{
 				opt_num = opt_num,
 			})
 		end
@@ -246,9 +248,9 @@ function CMD.start(config)
 		--reload_reconnet_test('room_m')
 		--player_game()
 		--player_game_reconnect()
-		--player_reload_reconnect('hall_m')
+		player_reload_reconnect('hall_m')
 		--player_reload_reconnect('match_m')
-		player_reload_reconnect('room_m')
+		--player_reload_reconnect('room_m')
 	end)
 	
 	return true

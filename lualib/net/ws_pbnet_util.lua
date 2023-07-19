@@ -1,15 +1,16 @@
 local log = require "log"
-local socket = require "socket"
-local netpack = require "netpack"
 local pb_util = require "pb_util"
 local skynet = require "skynet"
+local websocket = require "websocket"
+local socket = require "socket"
 local pcall = pcall
 local assert = assert
+local string = string
 
 local M = {}
 
---给fd发送socket消息
-function M.send(fd,name,tab)
+--给fd发送socket binary消息
+function M.send(gate,fd,name,tab)
 	assert(fd)
 	assert(name)
 	assert(tab)
@@ -20,20 +21,37 @@ function M.send(fd,name,tab)
 		return
 	end
 
-	return socket.write(fd,netpack.pack(msg))
+	--大端2字节表示包长度
+	local send_buffer = string.pack(">I2",msg:len()) .. msg
+
+	if not gate then
+		if websocket.is_close(fd) then
+			log.warn("send exists fd ",fd)
+		else
+			websocket.write(fd,send_buffer,"binary")
+		end
+	else
+		skynet.send(gate,'lua','send_binary',fd,send_buffer)
+	end
 end
 
 --解包
 function M.unpack(msg,sz)
 	assert(msg)
-	assert(sz)
-
 	local msgstr = skynet.tostring(msg,sz)
 	if sz < 2 then
-		log.info("unpack invalid msg ",msgstr,sz)
-		return nil
+		log.info("unpack invalid msg ",msg,sz)
+		return
 	end
 	
+	local msgsz = (msgstr:byte(1) << 8) + msgstr:byte(2)
+	msgstr = msgstr:sub(3)
+	sz = msgstr:len()
+	if msgsz ~= sz then
+		log.info("unpack invalid msg ",msgsz,sz)
+		return
+	end
+
 	local packname,tab = pb_util.unpack(msgstr)
 	if not packname then
 		log.error("unpack err ",tab)
@@ -42,6 +60,7 @@ function M.unpack(msg,sz)
 
 	return packname,tab
 end
+
 
 --读取
 function M.recv(fd,dispatch)
@@ -70,7 +89,7 @@ function M.recv(fd,dispatch)
 
 	skynet.fork(function()
 		while not is_cancel do
-			local ok,msg = pcall(socket.read,fd)
+			local ok,msg = pcall(websocket.read,fd)
 			if not ok or msg == false then
 				log.error("read faild ",fd,msg)
 				break
@@ -84,7 +103,7 @@ function M.recv(fd,dispatch)
 			end
 		end
 
-		socket.close(fd)
+		websocket.close(fd)
 	end)
 
 	return function() 
