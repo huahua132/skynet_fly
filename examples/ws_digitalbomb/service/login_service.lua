@@ -8,6 +8,7 @@ local assert = assert
 local x_pcall = x_pcall
 
 local check_plug = nil
+local SELF_ADDRESS = nil
 
 local g_fd_agent_map = {}
 local g_player_map = {}
@@ -88,7 +89,7 @@ local function connect_hall(gate,fd,player_id)
 		hall_client:set_mod_num(player_id)
 	end
 	
-	local ret,errcode,errmsg = hall_client:mod_call("connect",gate,fd,player_id)
+	local ret,errcode,errmsg = hall_client:mod_call("connect",gate,fd,player_id,SELF_ADDRESS)
 	if not ret then
 		check_plug.login_failed(gate,fd,player_id,errcode,errmsg)
 		return
@@ -130,6 +131,8 @@ local function check_func(gate,fd,...)
 end
 
 skynet.start(function()
+	SELF_ADDRESS = skynet.self()
+
 	skynet.dispatch('lua',function(session,source,cmd,...)
 		local f = CMD[cmd]
 		assert(f,'cmd no found :'..cmd)
@@ -187,9 +190,7 @@ skynet.start(function()
 			end
 		end,
 	}
-
 	local gate = skynet.newservice('ws_gate')
 	check_plug.init()
-	skynet.call(gate,'lua','open',loginconf.ws_gateconf)	
-	skynet.register('.login')
+	skynet.call(gate,'lua','open',loginconf.ws_gateconf)
 end)

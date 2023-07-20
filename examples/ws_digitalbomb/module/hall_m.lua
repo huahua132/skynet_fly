@@ -8,6 +8,7 @@ local assert = assert
 local pcall = pcall
 local next = next
 
+local SELF_ADDRESS = nil
 local g_player_map = {}
 local g_fd_map = {}
 
@@ -29,11 +30,11 @@ local function dispatch(fd,source,packname,req)
 	end
 
 	if not hall_plug.dispatch(agent.gate,fd,packname,req,CMD) then
-		local room_server = agent.room_server
+		local room_server_id = agent.room_server_id
 		local table_id = agent.table_id
 		local player_id = agent.player_id
-		if room_server then
-			skynet.send(room_server,'lua','request',table_id,player_id,packname,req)
+		if room_server_id then
+			skynet.send(room_server_id,'lua','request',table_id,player_id,packname,req)
 		else
 			log.info("dorp package ",packname,req)
 		end
@@ -41,13 +42,14 @@ local function dispatch(fd,source,packname,req)
 
 end
 
-function CMD.connect(gate,fd,player_id)
+function CMD.connect(gate,fd,player_id,watchdog)
 	local agent = g_player_map[player_id]
 	if not agent then
 	 	agent = {
 			player_id = player_id,
 			fd = fd,
 			gate = gate,
+			watchdog = watchdog,
 			queue = queue(),
 		}
 		g_player_map[player_id] = agent
@@ -64,27 +66,27 @@ function CMD.connect(gate,fd,player_id)
 	return agent.queue(function()
 		if not agent.match_client then
 			agent.match_client = contriner_client:new("match_m",nil,function() return false end)
-			local room_server,table_id,errmsg = agent.match_client:mod_call('match',gate,fd,player_id,skynet.self())
-			if not room_server then
+			local room_server_id,table_id,errmsg = agent.match_client:mod_call('match',gate,fd,player_id,SELF_ADDRESS)
+			if not room_server_id then
 				return false,table_id,errmsg
 			end
 
-			agent.room_server = room_server
+			agent.room_server_id = room_server_id
 			agent.table_id = table_id
 			hall_plug.connect(gate,fd,player_id)
 		else
-			local room_server = agent.room_server
+			local room_server_id = agent.room_server_id
 			local table_id = agent.table_id
-			skynet.send(room_server,'lua','reconnect',gate,fd,table_id,player_id)
+			skynet.send(room_server_id,'lua','reconnect',gate,fd,table_id,player_id)
 			hall_plug.reconnect(gate,fd,player_id)
 		end
 
 		pcall(skynet.call,gate,'lua','forward',fd)
 		return {
 			player_id = agent.player_id,
-			hall_server_id = skynet.self(),
+			hall_server_id = SELF_ADDRESS,
 			match_server_id = agent.match_client:get_mod_server_id(),
-			room_server_id = agent.room_server,
+			room_server_id = agent.room_server_id,
 			table_id = agent.table_id,
 		}
 	end)
@@ -107,11 +109,11 @@ function CMD.disconnect(gate,fd,player_id)
 	agent.fd = 0
 	agent.gate = 0
 
-	local room_server = agent.room_server
+	local room_server_id = agent.room_server_id
 	local table_id = agent.table_id
 
 	if g_player_map[player_id] then
-		skynet.send(room_server,'lua','disconnect',gate,fd,table_id,player_id)
+		skynet.send(room_server_id,'lua','disconnect',gate,fd,table_id,player_id)
 	end
 
 	hall_plug.disconnect(gate,fd,player_id)
@@ -141,13 +143,14 @@ function CMD.goout(player_id)
 
 		g_player_map[player_id] = nil
 		skynet.send(agent.gate,'lua','kick',agent.fd)
-		skynet.send('.login','lua','goout',player_id)
+		skynet.send(agent.watchdog,'lua','goout',player_id)
 		hall_plug.goout(player_id)
 		return true
 	end)
 end
 
 function CMD.start(config)
+	SELF_ADDRESS = skynet.self()
 	assert(config.hall_plug,"not hall_plug")
 
 	hall_plug = require(config.hall_plug)
