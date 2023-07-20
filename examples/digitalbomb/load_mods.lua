@@ -6,6 +6,7 @@ return {
 		default_arg = {
 			--login_service用的配置
 			loginconf = {
+				gateservice = "gate", --gate 或者 wsgate
 				--gate连接配置
 				gateconf = {
 					address = '127.0.0.1',
@@ -18,7 +19,7 @@ return {
 	},
 
 	--大厅服
-	hall_m = {
+	room_game_hall_m = {
 		launch_seq = 2,
 		launch_num = 6,
 		default_arg = {
@@ -27,7 +28,7 @@ return {
 	},
 
 	--匹配服
-	match_m = {
+	room_game_match_m = {
 		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
@@ -37,7 +38,7 @@ return {
 	},
 
 	--房间服
-	room_m = {
+	room_game_room_m = {
 		launch_seq = 4,
 		launch_num = 6,
 		default_arg = {
@@ -53,8 +54,8 @@ return {
 		launch_seq = 5,
 		launch_num = 2,
 		mod_args = {
-			{account = "skynet",password = '123456',player_id = 10000,net_util = "pbnet_util"},
-			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = "pbnet_util"},
+			{account = "skynet",password = '123456',player_id = 10000,net_util = "pbnet_util",protocol = "socket"},
+			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = "pbnet_util",protocol = "socket"},
 		}
 	}
 }

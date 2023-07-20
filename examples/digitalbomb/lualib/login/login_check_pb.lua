@@ -25,7 +25,7 @@ M.unpack = pbnet_util.unpack
 
 --登录检测函数 packname,req是解包函数返回的
 --登入成功后返回玩家id
-function M.check(fd,packname,req)
+function M.check(gate,fd,packname,req)
 	if not packname then
 		log.error("unpack err ",packname,req)
 		return false
@@ -50,14 +50,14 @@ function M.check(fd,packname,req)
 end
 
 --登录失败
-function M.login_failed(fd,player_id,errcode,errmsg)
-	errors_msg.errors(fd,errcode,errmsg)
+function M.login_failed(gate,fd,player_id,errcode,errmsg)
+	errors_msg.errors(gate,fd,errcode,errmsg)
 end
 
 --登录成功
-function M.login_succ(fd,player_id,login_res)
-	log.info("login_succ:",fd,player_id,login_res)
-	login_msg.login_res(fd,login_res)
+function M.login_succ(gate,fd,player_id,login_res)
+	log.info("login_succ:",gate,fd,player_id,login_res)
+	login_msg.login_res(gate,fd,login_res)
 end
 
 --登出回调
@@ -66,18 +66,18 @@ function M.login_out(player_id)
 end
 
 --掉线回调
-function M.disconnect(fd,player_id)
+function M.disconnect(gate,fd,player_id)
 	log.info('disconnect:',fd,player_id)
 end
 
 --正在登录中
-function M.logining(fd,player_id)
-	errors_msg.errors(fd,errorcode.LOGINING,"logining please waiting...")
+function M.logining(gate,fd,player_id)
+	errors_msg.errors(gate,fd,errorcode.LOGINING,"logining please waiting...")
 end
 
 --重复登录
-function M.repeat_login(fd,player_id)
-	errors_msg.errors(fd,errorcode.REPAET_LOGIN,"repeat_login")
+function M.repeat_login(gate,fd,player_id)
+	errors_msg.errors(gate,fd,errorcode.REPAET_LOGIN,"repeat_login")
 end
 
 return M

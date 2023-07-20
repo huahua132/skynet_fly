@@ -3,7 +3,7 @@ local errorcode = require "errorcode"
 
 local M = {}
 
-function M.errors(fd,code,msg,packname)
+function M.errors(gate,fd,code,msg,packname)
 	if not code then
 		code = errorcode.UNKOWN_ERR
 		msg = "unkown err"
@@ -14,7 +14,7 @@ function M.errors(fd,code,msg,packname)
 		packname = packname,
 	}
 
-	pbnet_util.send(fd,'.errors.Error',error)
+	pbnet_util.send(gate,fd,'.errors.Error',error)
 end
 
 return M

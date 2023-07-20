@@ -45,7 +45,7 @@ function M:send_msg(packname,pack)
 	end
 
 	if self.player.fd > 0 then
-		pbnet_util.send(self.player.fd,packname,pack)
+		pbnet_util.send(self.player.gate,self.player.fd,packname,pack)
 	else
 		log.info("send_msg not fd ",self.player_id)
 	end
