@@ -4,8 +4,8 @@ return {
 		launch_seq = 1,
 		launch_num = 1,
 		default_arg = {
-			--login_service用的配置
-			loginconf = {
+			--room_game_login用的配置
+			room_game_login = {
 				gateservice = "gate", --gate 或者 wsgate
 				--gate连接配置
 				gateconf = {

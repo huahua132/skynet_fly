@@ -149,13 +149,13 @@ skynet.start(function()
 	end)
 
 	local confclient = contriner_client:new("share_config_m")
-	local loginconf = confclient:mod_call('query','loginconf')
+	local room_game_login = confclient:mod_call('query','room_game_login')
 
-	assert(loginconf.gateservice,"not gateservice")
-	assert(loginconf.gateconf,"not gateconf")
-	assert(loginconf.check_plug,"not check_plug")
+	assert(room_game_login.gateservice,"not gateservice")
+	assert(room_game_login.gateconf,"not gateconf")
+	assert(room_game_login.check_plug,"not check_plug")
 
-	check_plug = require (loginconf.check_plug)
+	check_plug = require (room_game_login.check_plug)
 	assert(check_plug.init,"check_plug not init")				   --初始化
 	assert(check_plug.unpack,"check_plug not unpack")              --解包函数
 	assert(check_plug.check,"check_plug not check")				   --登录检查
@@ -196,7 +196,7 @@ skynet.start(function()
 			end
 		end,
 	}
-	g_gate = skynet.newservice(loginconf.gateservice)
+	g_gate = skynet.newservice(room_game_login.gateservice)
 	check_plug.init()
-	skynet.call(g_gate,'lua','open',loginconf.gateconf)
+	skynet.call(g_gate,'lua','open',room_game_login.gateconf)
 end)
