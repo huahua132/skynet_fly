@@ -1,3 +1,4 @@
+local netpack_base = require "netpack_base"
 local file_util = require "file_util"
 local protoc = require "protoc"
 local pb = require "pb"
@@ -17,6 +18,7 @@ function M.load(rootpath)
 		end
 	end
 
+	--记录加载过的message名称
 	for name,basename,type in pb.types() do
 		if not string.find(name,".google.protobuf",nil,true) then
 			g_loaded[name] = true
@@ -46,33 +48,8 @@ function M.decode(name,pstr)
 	return x_pcall(pb.decode,name,pstr)
 end
 
-function M.pack(name,tab)
-	assert(name)
-	assert(tab)
-	if not g_loaded[name] then
-		return nil,"pack not exists " .. name
-	end
-	
-	local ok,pbstr = M.encode(name,tab)
-	if not ok then
-		return nil,pbstr
-	end
+M.pack = netpack_base.create_pack(M.encode)
 
-	local pbmsgbuff = string.pack(">I2",name:len()) .. name .. pbstr
-	return pbmsgbuff
-end
-
-function M.unpack(pbmsgbuff)
-	assert(pbmsgbuff)
-	local name_sz = (pbmsgbuff:byte(1) << 8) + pbmsgbuff:byte(2)
-	local packname = pbmsgbuff:sub(3,3 + name_sz - 1)
-	local pack_str = pbmsgbuff:sub(3 + name_sz)
-	local ok,tab = M.decode(packname,pack_str)
-	if not ok then
-		return nil,tab
-	end
-
-	return packname,tab
-end
+M.unpack = netpack_base.create_unpack(M.decode)
 
 return M

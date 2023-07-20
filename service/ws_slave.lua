@@ -125,7 +125,7 @@ end
 
 function CMD.send_text(_, fd, msg)
 	if websocket.is_close(fd) then
-		log.warn("send exists fd ",fd)
+		log.warn("send not exists fd ",fd)
 	else
 		websocket.write(fd,msg,"text")
 	end
@@ -133,7 +133,7 @@ end
 
 function CMD.send_binary(_,fd, msg)
 	if websocket.is_close(fd) then
-		log.warn("send exists fd ",fd)
+		log.warn("send not exists fd ",fd)
 	else
 		websocket.write(fd,msg,"binary")
 	end

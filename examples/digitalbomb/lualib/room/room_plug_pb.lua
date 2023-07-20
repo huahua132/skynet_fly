@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local pb_util = require "pb_util"
+local pb_netpack = require "pb_netpack"
 local string_util = require "string_util"
 local log = require "log"
 local GAME_STATE_ENUM = require "GAME_STATE"
@@ -21,7 +21,7 @@ local MINE_MAX = 100
 local M = {}
 
 function M.init()
-	pb_util.load('./proto')
+	pb_netpack.load('./proto')
 end
 
 function M.table_creator(table_id,room_conf,ROOM_CMD)
