@@ -15,7 +15,7 @@ skynet.start(function()
 			skynet.call(cmgr,'lua','load_module',mod_name)
 		end
 	end
-	skynet.uniqueservice("login_service")
+	skynet.uniqueservice("room_game_login")
 
 	if mod_config['client_m'] then
 		skynet.call(cmgr,'lua','load_module','client_m')

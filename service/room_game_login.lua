@@ -10,6 +10,8 @@ local x_pcall = x_pcall
 local check_plug = nil
 local SELF_ADDRESS = nil
 
+local g_gate = nil
+
 local g_fd_agent_map = {}
 local g_player_map = {}
 local g_login_lock_map = {}
@@ -35,7 +37,9 @@ end
 
 local SOCKET = {}
 
-function SOCKET.open(gate, fd, addr)
+--ws_gate会传入gate
+function SOCKET.open(fd, addr,gate)
+	gate = gate or g_gate
 	local agent = {
 		fd = fd,
 		addr = addr,
@@ -85,7 +89,7 @@ local function connect_hall(gate,fd,player_id)
 		check_plug.repeat_login(old_agent.gate,old_agent.fd,player_id)
 		close_fd(old_agent.fd)
 	else
-		hall_client = contriner_client:new("hall_m",nil,function() return false end)
+		hall_client = contriner_client:new("room_game_hall_m",nil,function() return false end)
 		hall_client:set_mod_num(player_id)
 	end
 	
@@ -146,7 +150,9 @@ skynet.start(function()
 
 	local confclient = contriner_client:new("share_config_m")
 	local loginconf = confclient:mod_call('query','loginconf')
-	assert(loginconf.ws_gateconf,"not ws_gateconf")
+
+	assert(loginconf.gateservice,"not gateservice")
+	assert(loginconf.gateconf,"not gateconf")
 	assert(loginconf.check_plug,"not check_plug")
 
 	check_plug = require (loginconf.check_plug)
@@ -190,7 +196,7 @@ skynet.start(function()
 			end
 		end,
 	}
-	local gate = skynet.newservice('ws_gate')
+	g_gate = skynet.newservice(loginconf.gateservice)
 	check_plug.init()
-	skynet.call(gate,'lua','open',loginconf.ws_gateconf)
+	skynet.call(g_gate,'lua','open',loginconf.gateconf)
 end)

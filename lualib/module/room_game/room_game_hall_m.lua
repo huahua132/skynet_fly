@@ -65,7 +65,7 @@ function CMD.connect(gate,fd,player_id,watchdog)
 	g_fd_map[fd] = agent
 	return agent.queue(function()
 		if not agent.match_client then
-			agent.match_client = contriner_client:new("match_m",nil,function() return false end)
+			agent.match_client = contriner_client:new("room_game_match_m",nil,function() return false end)
 			local room_server_id,table_id,errmsg = agent.match_client:mod_call('match',gate,fd,player_id,SELF_ADDRESS)
 			if not room_server_id then
 				return false,table_id,errmsg

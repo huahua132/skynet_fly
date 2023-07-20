@@ -47,7 +47,7 @@ local function create_table()
 		return match_plug.tablefull()
 	end
 
-	local room_client = contriner_client:new("room_m",nil,function() return false end)
+	local room_client = contriner_client:new("room_game_room_m",nil,function() return false end)
 	room_client:set_mod_num(num_id)
 	local room_server_id = room_client:get_mod_server_id()
 	local new_table = {

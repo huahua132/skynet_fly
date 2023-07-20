@@ -17,7 +17,12 @@ local function dispatch(fd,packname,res)
 end
 
 local function connnect(handle)
-	local fd = websocket.connect("ws://127.0.0.1:8001")
+	local fd
+	if g_config.protocol == 'websocket' then
+		fd = websocket.connect("ws://127.0.0.1:8001")
+	else
+		fd = socket.open('127.0.0.1',8001)
+	end
 	if not fd then
 		log.error("connect faild ")
 		return
@@ -41,6 +46,14 @@ local function loginout(fd)
 	net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
 end
 
+local function close(fd)
+	if g_config.protocol == 'websocket' then
+		websocket.close(fd)
+	else
+		socket.close()
+	end
+end
+
 --重复登录测试
 local function repeat_connect_test()
 	connnect()
@@ -59,7 +72,7 @@ end
 local function reconnecttest()
 	local fd = connnect()
 	skynet.sleep(100)
-	websocket.close(fd)
+	close()
 	fd = connnect()
 end
 
@@ -119,7 +132,7 @@ local function reload_reconnet_test(mod_name)
 	socket.onclose(fd,function()
 		skynet.wakeup(close_wi)
 	end)
-	websocket.close(fd)
+	close(fd)
 	skynet.wait(close_wi)
 
 	local new_login_res = nil
@@ -239,18 +252,18 @@ function CMD.start(config)
 
 		--reconnecttest()
 
-		--reload_switch_test('hall_m')
-		--reload_switch_test('match_m')
-		--reload_switch_test('room_m')
+		--reload_switch_test('room_game_hall_m')
+		--reload_switch_test('room_game_match_m')
+		--reload_switch_test('room_game_room_m')
 
-		--reload_reconnet_test('hall_m')
-		--reload_reconnet_test('match_m')
-		--reload_reconnet_test('room_m')
+		--reload_reconnet_test('room_game_hall_m')
+		--reload_reconnet_test('room_game_match_m')
+		--reload_reconnet_test('room_game_room_m')
 		--player_game()
 		--player_game_reconnect()
-		player_reload_reconnect('hall_m')
-		--player_reload_reconnect('match_m')
-		--player_reload_reconnect('room_m')
+		player_reload_reconnect('room_game_hall_m')
+		--player_reload_reconnect('room_game_match_m')
+		--player_reload_reconnect('room_game_room_m')
 	end)
 	
 	return true
