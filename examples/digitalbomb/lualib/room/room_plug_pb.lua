@@ -281,7 +281,7 @@ function M.table_creator(table_id,room_conf,ROOM_CMD)
 
 			if not isok then
 				log.error("request err ",errcode,errmsg,packname)
-				errors_msg.errors(player.fd,errcode,errmsg,packname)
+				errors_msg.errors(player.gate,player.fd,errcode,errmsg,packname)
 			end
 		end,
     }

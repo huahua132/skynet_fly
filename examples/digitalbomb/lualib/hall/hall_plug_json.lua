@@ -21,7 +21,7 @@ function M.init()
 	
 end
 
-function M.dispatch(fd,packname,req,CMD)
+function M.dispatch(gate,fd,packname,req,CMD)
 	local agent = g_fd_map[fd]
 	if not agent then
 		log.error("dispatch not agent ",fd,packname)
@@ -34,15 +34,15 @@ function M.dispatch(fd,packname,req,CMD)
 	local ok,errorcode,errormsg = CMD.goout(agent.player_id)
 	if not ok then
 		log.error("dispatch err ",errorcode,errormsg)
-		errors_msg_json.errors(fd,errorcode,errormsg,packname)
+		errors_msg_json.errors(gate,fd,errorcode,errormsg,packname)
 	else
-		login_msg_json.login_out_res(fd,{player_id = agent.player_id})
+		login_msg_json.login_out_res(gate,fd,{player_id = agent.player_id})
 	end
 		
 	return true
 end
 
-function M.connect(fd,player_id)
+function M.connect(gate,fd,player_id)
 	log.info("hall_plug connect ",fd,player_id)
 	assert(not g_fd_map[fd])
 	g_fd_map[fd] = {
@@ -50,13 +50,13 @@ function M.connect(fd,player_id)
 	}
 end
 
-function M.disconnect(fd,player_id)
+function M.disconnect(gate,fd,player_id)
 	log.info("hall_plug disconnect ",fd,player_id)
 	assert(g_fd_map[fd])
 	g_fd_map[fd] = nil
 end
 
-function M.reconnect(fd,player_id)
+function M.reconnect(gate,fd,player_id)
 	log.info("hall_plug reconnect ",fd,player_id)
 	assert(not g_fd_map[fd])
 	g_fd_map[fd] = {
