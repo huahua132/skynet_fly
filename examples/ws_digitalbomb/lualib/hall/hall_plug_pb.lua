@@ -5,7 +5,7 @@ local contriner_client = require "contriner_client"
 local queue = require "skynet.queue"
 local timer = require "timer"
 local ws_pbnet_util = require "ws_pbnet_util"
-local pb_util = require "pb_util"
+local pb_netpack = require "pb_netpack"
 local errors_msg = require "errors_msg"
 local login_msg = require "login_msg"
 local pcall = pcall
@@ -19,7 +19,7 @@ local M = {}
 M.unpack = ws_pbnet_util.unpack
 
 function M.init()
-	pb_util.load("./proto")
+	pb_netpack.load("./proto")
 end
 
 function M.dispatch(gate,fd,packname,req,CMD)

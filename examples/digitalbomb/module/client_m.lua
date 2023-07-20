@@ -2,7 +2,7 @@ local log = require "log"
 local skynet = require "skynet"
 local timer = require "timer"
 local socket = require "socket"
-local pb_util = require "pb_util"
+local pb_netpack = require "pb_netpack"
 local table_util = require "table_util"
 
 local net_util = nil
@@ -226,7 +226,7 @@ local function player_reload_reconnect(mod_name)
 end
 
 function CMD.start(config)
-	pb_util.load('./proto')
+	pb_netpack.load('./proto')
 	g_config = config
 
 	net_util = require (config.net_util)
