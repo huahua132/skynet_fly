@@ -14,7 +14,7 @@ local M = {}
 --基于skynet gate 的消息发送
 -------------------------------------------------------
 function M.create_gate_send(pack)
-	return function(fd,name,tab)
+	return function(gate,fd,name,tab)
 		assert(fd)
 		assert(name)
 		assert(tab)
