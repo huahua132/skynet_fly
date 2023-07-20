@@ -1,7 +1,15 @@
 # skynet_fly
 ---
-
 致力于服务端对skynet的最佳实践
+
+# skynet_fly简介
+	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
+	使用skynet_fly的好处：
+	* 支持不停服更新。
+	* 一键生成skynet的配置文件和skynet_fly的配置文件以及配套shell脚本。
+	* 对匹配房间类游戏做了gate,ws_gate的基础设施封装以及pb,json协议的支持，开发游戏只需要实现相关业务逻辑。
+	* 对redis,mysql,timer,log 使用封装。
+	* 后续支持rpc调用，以及服务发现。
 
 * [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
@@ -70,11 +78,11 @@
 
 client_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
-hall_m 配置的 hall_plug由`hall_plug_pb` 改为 `hall_plug_json`
+room_game_hall_m 配置的 hall_plug由`hall_plug_pb` 改为 `hall_plug_json`
 
-match_m 配置的 match_plug由`match_plug_pb` 改为 `match_plug_json`
+room_game_match_m 配置的 match_plug由`match_plug_pb` 改为 `match_plug_json`
 
-room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
+room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 
 执行 `sh script/restart.sh` 
 
@@ -87,3 +95,4 @@ room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 	旧连接跟旧服务通信。
 	新连接跟新服务通信。
 	适合用于玩一把游戏就退出的微服务架构。
+
