@@ -96,3 +96,4 @@ room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 	适合用于玩一把游戏就退出的微服务架构。
 
 ## 自己动手，实现一个猜拳游戏
+[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/room_game)
