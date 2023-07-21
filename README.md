@@ -49,7 +49,6 @@
     - 再次访问网站就更新了。
     - 也可以观察webapp/server.log
 
-**恭喜你成功了**
 
 ## 快速开始 游戏服务 (运行examples/digitalbomb)
 
@@ -96,3 +95,4 @@ room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 	新连接跟新服务通信。
 	适合用于玩一把游戏就退出的微服务架构。
 
+## 自己动手，实现一个猜拳游戏

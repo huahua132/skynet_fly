@@ -13,7 +13,7 @@ return {
 					port = 8001,
 					maxclient = 2048,
 				},
-				check_plug = "login_check_pb",
+				login_plug = "login_check_pb",
 			}
 		}
 	},
