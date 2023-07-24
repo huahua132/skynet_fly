@@ -16,6 +16,7 @@ local file_util = require "file_util"
 
 local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
+local common_path = "../../common"
 
 local config = {
 	thread = thread,
@@ -37,18 +38,16 @@ local config = {
 
 	lua_cpath = skynet_fly_path .. "luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
 
-	--luaservice 约束服务只能放在 server根目录 || server->service || skynet_fly->service || skynet->service
+	--luaservice 约束服务只能放在 server根目录 || server->service || common->service || skynet_fly->service || skynet->service
 	luaservice = server_path .. "?.lua;" .. 
  			 server_path .. "service/?.lua;" .. 
 			  skynet_fly_path .. "service/?.lua;" .. 
+			  common_path .. "service/?.lua;" ..
 			 skynet_path .. "service/?.lua;",
 
 	lua_path = "",
 }
 
---路径优先级  服务 > skynet_fly > skynet
-
---lua_path server [非service的目录] skynet_fly[lualib 目录下所有文件] skynet[lualib 下所有文件] 自动生成路径
 config.lua_path = file_util.create_luapath(skynet_fly_path)
 
 local config_path = server_path .. '/' .. svr_name .. '_config.lua'
