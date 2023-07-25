@@ -9,7 +9,8 @@
 	* 一键生成skynet的配置文件和skynet_fly的配置文件以及配套shell脚本。
 	* 对匹配房间类游戏做了gate,ws_gate的基础设施封装以及pb,json协议的支持，开发游戏只需要实现相关业务逻辑。
 	* 对redis,mysql,timer,log 使用封装。
-	* 后续支持rpc调用，以及服务发现。
+	* 基于skynet cluster封装出简单易用的远程rpc调用。
+	* 后续支持服务发现。
 
 * [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
@@ -97,3 +98,8 @@ room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 
 ## 自己动手，实现一个石头剪刀布游戏
 [文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/room_game)
+
+## 如何远程rpc调用
+
+具体使用例子可以参照`examples/cluster_client` `examples/cluster_server_1` `examples/cluster_server_2`
+[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/cluster_rpc/)

@@ -5,7 +5,7 @@ local cluster_client = require "cluster_client"
 local CMD = {}
 
 function CMD.start()
-	local cli = cluster_client:new("cluster_server","test_m")
+	local cli = cluster_client:new("cluster_server","test_m") --访问cluster_server的test_m模板
 
 	cli:one_balance_send("hello","one_balance_send")
 	cli:one_mod_send("hello","one_mod_send")
