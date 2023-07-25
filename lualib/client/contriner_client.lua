@@ -54,7 +54,7 @@ local function get_balance(t)
     if t.balance > len then
         t.balance = 1
     end
-    
+
     return id_list[balance]
 end
 
@@ -94,10 +94,14 @@ end
 
 local function switch_svr(t)
 	if t.can_switch_func() then
+		local old_t = t.cur_id_list
 		t.cur_id_list = g_mod_svr_ids_map[t.module_name]
 		t.cur_name_id_list = g_name_id_list_map[t.module_name]
-		t.balance = 1
-		t.name_balance = 1
+
+		if old_t ~= t.cur_id_list then
+			t.balance = 1
+			t.name_balance = 1
+		end
 	end
 end
 
@@ -140,7 +144,17 @@ function M:set_mod_num(num)
 	assert(type(num) == 'number')
 	self.mod_num = num
 end
-
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：set_instance_name
+	描述：设置二级名称
+	参数：
+		- name (string): 
+]]
+function M:set_instance_name(name)
+	assert(type(name) == 'string')
+	self.instance_name = name
+end
 --[[
 	函数作用域：M:new 对象的成员函数
 	函数名称：get_mod_server_id
