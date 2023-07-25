@@ -16,7 +16,7 @@ local file_util = require "file_util"
 
 local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
-local common_path = "../../common"
+local common_path = "../../common/"
 
 local config = {
 	thread = thread,

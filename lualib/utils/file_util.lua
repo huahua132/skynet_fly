@@ -53,41 +53,41 @@ function M.create_luapath(skynet_fly_path)
 	local common_path = '../../common'
 
 	--server下非service文件夹
-	local lua_path = server_path .. '?.lua;\n'
+	local lua_path = server_path .. '?.lua;'
 	for file_name,file_path,file_info in M.diripairs(server_path) do
 		if file_info.mode == 'directory' and file_name ~= 'service' then
-			lua_path = lua_path .. file_path .. '/?.lua;\n'
+			lua_path = lua_path .. file_path .. '/?.lua;'
 		end
 	end
 
 	--server上上级目录common所有文件夹
-	lua_path = lua_path .. common_path .. '?.lua;\n'
+	lua_path = lua_path .. common_path .. '?.lua;'
 	for file_name,file_path,file_info in M.diripairs(common_path) do
 		if file_info.mode == 'directory' and file_name ~= 'service' then
-			lua_path = lua_path .. file_path .. '/?.lua;\n'
+			lua_path = lua_path .. file_path .. '/?.lua;'
 		end
 	end
 
 	--skynet_fly lualib下所有文件夹
-	lua_path = lua_path .. skynet_fly_path .. '/lualib/?.lua;\n'
+	lua_path = lua_path .. skynet_fly_path .. '/lualib/?.lua;'
 	for file_name,file_path,file_info in M.diripairs(skynet_fly_path .. '/lualib') do
 		if file_info.mode == 'directory' then
-			lua_path = lua_path .. file_path .. '/?.lua;\n'
+			lua_path = lua_path .. file_path .. '/?.lua;'
 		end
 	end
 
 	--skynet_fly 3rd下所以文件夹
 	for file_name,file_path,file_info in M.diripairs(skynet_fly_path .. '/3rd') do
 		if file_info.mode == 'directory' then
-			lua_path = lua_path .. file_path .. '/?.lua;\n'
+			lua_path = lua_path .. file_path .. '/?.lua;'
 		end
 	end
 
 	--skynet lualib下所以文件夹
-	lua_path = lua_path .. skynet_path .. '/lualib/?.lua;\n'
+	lua_path = lua_path .. skynet_path .. '/lualib/?.lua;'
 	for file_name,file_path,file_info in M.diripairs(skynet_path .. '/lualib') do
 		if file_info.mode == 'directory' then
-			lua_path = lua_path .. file_path .. '/?.lua;\n'
+			lua_path = lua_path .. file_path .. '/?.lua;'
 		end
 	end
 
