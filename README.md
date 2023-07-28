@@ -30,7 +30,7 @@
     - `make build`
 2. 构建skynet_config, mod_config, webapp运维脚本
     - `cd examples/webapp/`
-    - `sh ../../binshell/make_server.sh ../../ webapp 4`
+    - `sh ../../binshell/make_server.sh ../../`
     - 如果一些顺利的话将会生成script文件夹，文件夹下有:
       - `run.sh` 运行并配置日志分割
       - `stop.sh` 停止
@@ -55,7 +55,7 @@
 
 * **构建服务**
 	- `cd examples/digitalbomb/`
-	- `sh ../../binshell/make_server.sh ../../ digitalbomb 4`
+	- `sh ../../binshell/make_server.sh ../../`
 
 * **运行服务**
 	`sh script/run.sh`

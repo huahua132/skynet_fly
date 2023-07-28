@@ -1,10 +1,12 @@
 local assert = assert
 local ARGV = {...}
 local skynet_fly_path = ARGV[1]
-local svr_name = ARGV[2]
-local thread = tonumber(ARGV[3]) or 4
 assert(skynet_fly_path,'缺少 skynet_fly_path')
-assert(svr_name,'缺少 svr_name')
+
+package.cpath = skynet_fly_path .. "/luaclib/?.so;"
+package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
+local file_util = require "file_util"
+local svr_name = file_util.get_cur_dir_name()
 
 local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
@@ -26,3 +28,4 @@ local file = io.open(file_path,'w+')
 assert(file)
 file:write(shell_str)
 file:close()
+print("make " .. file_path)
