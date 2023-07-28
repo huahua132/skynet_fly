@@ -1,12 +1,15 @@
 local skynet = require "skynet"
 local cluster = require "cluster"
 local contriner_client = require "contriner_client"
+local rpc_redis = require "rpc_redis"
 local log = require "log"
+local timer = require "timer"
 
 local assert = assert
 local tonumber = tonumber
 local setmetatable = setmetatable
 local type = type
+local string = string
 
 local g_svr_name = skynet.getenv("svr_name")
 local g_svr_id = tonumber(skynet.getenv("svr_id"))
@@ -117,13 +120,22 @@ skynet.start(function()
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','cluster_server')
 	assert(conf.host,"not host")
+	
+	local register = conf.register
+	if register == 'redis' then --注册到redis
+		local rpccli = rpc_redis:new()
+		--一秒写一次
+		timer:new(timer.second,0,function()
+			rpccli:register(g_svr_name,g_svr_id,conf.host)
+		end)
+	end
 
 	cluster.register("cluster_server",skynet.self())
 	cluster.reload{[g_svr_name] = conf.host,['__nowaiting'] = true}
 
 	local addr,port = cluster.open(g_svr_name)
 	if addr then
-		log.error("open cluster_server succ ",g_svr_name,conf.host,addr,port)
+		log.error("open cluster_server succ ",g_svr_name,conf.host,addr,port,register)
 	else
 		log.fatal("open cluster_server err ",g_svr_name,conf.host)
 	end

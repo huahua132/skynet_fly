@@ -72,11 +72,30 @@ local function script_test()
 	log.info("script_test test over !!!")
 end
 
+--过期key监听测试
+--需要在redis.conf配置中开启 notify-keyspace-events Ex
+local function expired_key_watch_test()
+	log.info("expired_key_watch_test start !!!")
+	local sub_list = {
+		"__keyspace@0__:test**"
+	}
+
+	local cancel = redis.new_watch("game",{},sub_list,function(msg,key,pkey)
+		log.info("expired_key_watch_test:",msg,key,pkey)
+	end)
+
+	local gamecli = redis.new_client("game")
+	gamecli:set("testkey","testvalue","EX",2)
+	gamecli:set("testkeyddd","testvalue","EX",2)
+	gamecli:set("tkey","testvalue","EX",2)
+end
+
 function CMD.start()
 	log.info("redis_test_m start !!!")
-	client_test()
-	watch_test()
-	script_test()
+	--client_test()
+	--watch_test()
+	--script_test()
+	expired_key_watch_test()
 	return true
 end
 
