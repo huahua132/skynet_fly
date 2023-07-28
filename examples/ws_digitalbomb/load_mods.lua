@@ -6,7 +6,7 @@ return {
 		default_arg = {
 			--room_game_login用的配置
 			room_game_login = {
-				gateservice = "ws_gate", --gate 或者 wsgate
+				gateservice = "ws_gate", --gate 或者 ws_gate
 				--gate连接配置
 				gateconf = {
 					address = '127.0.0.1',
