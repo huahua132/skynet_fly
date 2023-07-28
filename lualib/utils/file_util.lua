@@ -1,4 +1,5 @@
 local lfs = require "lfs"
+local string_util = require "string_util"
 
 local tinsert = table.insert
 local tremove = table.remove
@@ -101,6 +102,13 @@ function M.readallfile(file_path)
 	local str = file:read("*all")
 	file:close()
 	return str
+end
+
+--获取当前目录文件夹名称
+function M.get_cur_dir_name()
+	local curdir = lfs.currentdir()
+	local strsplit = string_util.split(curdir,'/')
+	return strsplit[#strsplit]
 end
 
 return M
