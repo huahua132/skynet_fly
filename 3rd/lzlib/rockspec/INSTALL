@@ -1,0 +1,23 @@
+Installation
+------------
+
+    luarocks build lzlib-git-1.rockspec
+
+
+Troubleshooting
+---------------
+
+* Error: Could not find expected file libz.a, or libz.so, or libz.so.*
+  for ZLIB -- you may have to install ZLIB in your system and/or pass
+  ZLIB_DIR or ZLIB_LIBDIR to the luarocks command. Example: luarocks
+  install lzlib ZLIB_DIR=/usr/local
+
+  lzlib has a dependency on zlib, and currently (on Linux) LuaRocks
+  checks .so file existence by searching for the file in two hardcoded
+  paths, /usr/lib and /usr/local/lib. (instead of reading
+  /etc/ld.so.conf)
+
+  Try to locate libz.so, libz.a or libz.dll and re-run the command
+  with ZLIB_LIBDIR=/path/to/libz.so. In my case on Ubuntu 12.04 :
+
+    luarocks build --local lzlib-git-1.rockspec ZLIB_LIBDIR=/lib/x86_64-linux-gnu/

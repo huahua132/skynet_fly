@@ -1,0 +1,58 @@
+PROJECT = 'zlib'
+
+IF=choose
+J=path.join
+
+if LUA_VER == '5.2' then
+  LUA_NEED = 'lua52'
+  LUA_DIR  = ENV.LUA_DIR_5_2 or ENV.LUA_DIR
+  LUA_RUNNER = 'lua52'
+else
+  LUA_NEED = 'lua'
+  LUA_DIR  = ENV.LUA_DIR
+  LUA_RUNNER = 'lua'
+end
+
+DYNAMIC  = DYNAMIC or false
+
+ZLIB_NEED = IF(DYNAMIC, 'zlib-static-md', 'zlib-static-mt')
+
+INSTALL_DIR = INSTALL_DIR or J(LUA_DIR,'libs',PROJECT)
+
+build = c.shared{PROJECT, 
+  -- base     = 'src',
+  src      = '*.c',
+  needs    = { LUA_NEED, ZLIB_NEED },
+  dynamic  = DYNAMIC,
+  strip    = true,
+  defines  = IF(MSVC, "STRUCT_INT=__int64"),
+  libflags = IF(MSVC, "/EXPORT:luaopen_" .. PROJECT),
+}
+
+target('build', build)
+
+install = target('install', {
+  file.group{odir=J(INSTALL_DIR, 'share');src = build };
+  file.group{odir=J(INSTALL_DIR, 'share');src = 'gzip.lua' };
+  file.group{odir=J(INSTALL_DIR, 'test'); src = 'test_*.lua'};
+})
+
+local function run(file, cwd)
+  print()
+  print("run " .. file)
+  if not TESTING then
+    if cwd then lake.chdir(cwd) end
+    os.execute( LUA_RUNNER .. ' ' .. file )
+    if cwd then lake.chdir("<") end
+    print()
+  end
+end
+
+target('test', install, function()
+  local test_dir = J(INSTALL_DIR,'test')
+  run(J(test_dir,'test_zlib3.lua'), test_dir)
+  run(J(test_dir,'test_zlib2.lua'), test_dir)
+  run(J(test_dir,'test_prologue.lua'), test_dir)
+  run(J(test_dir,'test_gzip.lua'), test_dir)
+end)
+
