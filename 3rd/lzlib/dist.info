@@ -1,0 +1,15 @@
+--- This file is part of LuaDist project
+
+name = "lzlib"
+version = "0.4.2"
+
+desc = "Lua bindings to the ZLib compression library"
+author = "Tiago Dionizio"
+url = "http://luaforge.net/projects/lzlib/"
+license = "MIT/X11"
+maintainer = "Peter Drahoš"
+
+depends = {
+	"lua >= 5.1, < 5.4",
+	"zlib >=1.2.3"
+}

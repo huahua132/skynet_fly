@@ -1,0 +1,42 @@
+0.4-work3 2010-11-19
+====================
+Compatibility with lua 5.2.
+
+
+0.4-work2 2008-11-07
+====================
+Fix: In the stream interface, the write callback was always being called with
+two parameters even if the callback only needed one.
+Thanks to Ignacio Burgueño for reporting the problem and providing a patch.
+
+
+0.4-work1 2008-04-08
+====================
+Unstable version of streaming interface. Many things need to me tested
+properly, and code needs to be polished.
+
+This adds an interface to zlib deflate/inflate streams similar to the io
+file objects.
+
+Check README file for more information.
+
+gzip module is now a pure lua module.
+
+Warning: minimal tests provided... need to change that.
+
+
+0.3 2008-01-28
+==============
+This release makes the zlib/gzip bindings compatible with the latest
+version of Lua (5.1) and now uses the package system to load the library.
+It also fixes some incompatibilities that showed up with the changes
+made to the Lua auxiliary library.
+
+0.2 2004-07-22
+==============
+
+
+0.1 2003-12-09
+==============
+
+First released version.

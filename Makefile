@@ -21,7 +21,7 @@ $(CSERVICE_PATH) :
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
-LUA_CLIB = lfs cjson pb
+LUA_CLIB = lfs cjson pb zlib chat_filter
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -36,6 +36,12 @@ $(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd
 
 $(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
+
+$(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
+	$(CC) -g -Werror -I$(LUA_INC) -Wall -pedantic -O0 -fPIC -shared -lz -I3rd/lzlib -L$(LUA_INC)  $^ -o $@
+
+$(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
 
 build: \
  	$(LUA_CLIB_PATH) \

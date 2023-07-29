@@ -1,0 +1,112 @@
+*************************************************************************
+* Author    : Tiago Dionizio <tiago.dionizio@gmail.com>                 *
+* Library   : lzlib - Lua 5.1 interface to access zlib library functions*
+*                                                                       *
+* Permission is hereby granted, free of charge, to any person obtaining *
+* a copy of this software and associated documentation files (the       *
+* "Software"), to deal in the Software without restriction, including   *
+* without limitation the rights to use, copy, modify, merge, publish,   *
+* distribute, sublicense, and/or sell copies of the Software, and to    *
+* permit persons to whom the Software is furnished to do so, subject to *
+* the following conditions:                                             *
+*                                                                       *
+* The above copyright notice and this permission notice shall be        *
+* included in all copies or substantial portions of the Software.       *
+*                                                                       *
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       *
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    *
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  *
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,  *
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     *
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                *
+*************************************************************************
+
+To use this library you need zlib library.
+You can get it from http://www.gzip.org/zlib/
+
+
+Loading the library:
+
+    If you built the library as a loadable package
+        [local] zlib = require 'zlib'
+
+    If you compiled the package statically into your application, call
+    the function "luaopen_zlib(L)". It will create a table with the zlib
+    functions and leave it on the stack.
+
+-- zlib functions --
+
+zlib.version()
+	returns zlib version
+
+zlib.adler32([int adler32, string buffer])
+	Without any parameters, returns the inicial adler32 value.
+
+	Call to update the adler32 value, adler is the current value, buffer is passed
+	to adler32 zlib function and the updated value is returned.
+
+zlib.crc32([int crc32, string buffer])
+	Same as zlib.adler32.
+
+zlib.compress(string buffer [, int level] [, int method] [, int windowBits] [, int memLevel] [, int strategy])
+	Return a string containing the compressed buffer according to the given parameters.
+
+zlib.decompress(string buffer [, int windowBits])
+	Return the decompressed stream after processing the given buffer.
+
+
+zlib.deflate(
+	sink: function | { write: function [, close: function, flush: function ] },
+	compression level, [Z_DEFAILT_COMPRESSION]
+	method, [Z_DEFLATED]
+	windowBits, [15]
+	memLevel, [8]
+	strategy, [Z_DEFAULT_STRATEGY]
+	dictionary, [""]
+)
+	Return a deflate stream.
+
+	stream:read((number | '*l' | '*a')*)
+		Return a value for each given parameter. Returns a line when
+		no format is specified.
+
+	stream:lines()
+		Return iterator that returns a line each time it is called, or nil
+		on end of file.
+
+	stream:close()
+		Close the stream.
+
+zlib.inflate(
+	source: string | function | { read: function, close: function },
+	windowBits: number, [15]
+	dictionary, [""]
+)
+	Return an inflate stream.
+
+
+deflate and inflate streams can be used almost like a normal file:
+
+	stream:write(...)
+		Write each parameter into the sream.
+
+	stream:read([option [, ...]])
+		Read from the stream, each parameter corresponds to
+			a return value.
+		
+		With no arguments, it reads a line.
+		Parameters are interpreted as follows:
+		  number - reads the specified number of bytes
+		  'a' - reads the remaining bytes
+		  'l' - reads a line
+
+	stream:lines(...)
+		Returns an iterator that returns a new line each time
+			it is called.
+
+	stream:flush(['sync' | 'full' | 'finish'])
+		Flush output for deflate streams.
+
+	stream:close()
+		Close the stream.
