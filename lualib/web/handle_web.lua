@@ -74,9 +74,9 @@ local function do_request(fd, ip,port, protocol, handle)
               ip       = ip,
               addr     = port,
             }
-            local code,bodyfunc = handle(req)
+            local code,bodyfunc,rspheader = handle(req)
             if code == 200 then
-              do_response(fd, interface.write, code, bodyfunc, header)
+              do_response(fd, interface.write, code, bodyfunc,rspheader)
               return true
             else
               do_response(fd, interface.write, code)
