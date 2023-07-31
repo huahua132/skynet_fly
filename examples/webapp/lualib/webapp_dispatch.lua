@@ -19,7 +19,7 @@ local html = [[
 ]]
 
 function M.dispatch(req)
-	log.error("dispatch:",skynet.self())
+	log.error("dispatch:",req,skynet.self())
 	return 200,html
 end
 
