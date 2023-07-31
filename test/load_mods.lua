@@ -96,8 +96,13 @@ return {
 	-- 	launch_num = 1,
 	-- },
 
-	chat_filter_test_m = {
-		launch_seq = 8,
+	-- chat_filter_test_m = {
+	-- 	launch_seq = 8,
+	-- 	launch_num = 1,
+	-- }
+
+	rax_test_m = {
+		launch_seq = 9,
 		launch_num = 1,
 	}
 }
