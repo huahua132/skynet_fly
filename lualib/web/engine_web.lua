@@ -80,7 +80,6 @@ end
 
 function M.dispatch(app)
 	return function(req)
-		log.error(req)
 		log.debug("dispatch request. addr:", req.ip .. ':' .. req.port, ", fd:", req.fd)
 		local c = context:new(app,req)
 		if not c then

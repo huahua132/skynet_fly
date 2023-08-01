@@ -1,7 +1,6 @@
 local log = require "log"
 local request = require "request_web"
 local response = require "response_web"
-local file_util = require "file_util"
 local puremagic = require "puremagic"
 local HTTP_STATUS = require "HTTP_STATUS"
 
@@ -46,16 +45,6 @@ function M:next()
     end
 end
 
--- M:send(text, status, content_type)
-function M:send(...)
-    self.res:send(...)
-end
-
--- M:send_json({AA="BB"})
-function M:send_json(...)
-    self.res:send_json(...)
-end
-
 local static_root_path = "./static/"
 local filecache = setmetatable({}, { __mode = "kv"  })
 local function read_filecache(_, filepath)
@@ -69,18 +58,22 @@ local function read_filecache(_, filepath)
     if f then
         local content = f:read "a"
         f:close()
-        local mimetype = puremagic.via_content(content, filepath)
-        filecache[filepath] = { content, mimetype }
+		if content then
+			local mimetype = puremagic.via_content(content, filepath)
+			filecache[filepath] = { content, mimetype }
+		else
+			filecache[filepath] = {}
+		end
     else
         filecache[filepath] = {}
     end
     return filecache[filepath]
 end
 
-M.static_file = setmetatable({}, { __index = read_filecache })
+local static_file = setmetatable({}, { __index = read_filecache })
 
 function M:file(filepath)
-    local ret = file_util.static_file[filepath]
+    local ret = static_file[filepath]
     local content = ret[1]
     local mimetype = ret[2]
     if not content then
@@ -90,7 +83,7 @@ function M:file(filepath)
         return
     end
     log.debug("file. filepath:", filepath, ", mimetype:", mimetype)
-	self:set_text_rsp(content,HTTP_STATUS.OK,mimetype)
+	self.res:set_rsp(content,HTTP_STATUS.OK,mimetype)
 end
 
 return M

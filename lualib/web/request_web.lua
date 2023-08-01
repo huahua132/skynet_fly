@@ -44,8 +44,6 @@ function M:new(req)
         body = body,
         body_raw = req.body,
         url = url,
-        origin_uri = url,
-        uri = url,
         headers = req.headers, -- request headers
         code = req.code,
         fd = req.fd,
