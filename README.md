@@ -52,7 +52,7 @@
     - 再次访问网站就更新了。
     - 也可以观察webapp/server.log
 
-http服务已经接入了涵曦wlua,扩展了路由和中间件模式，完整示例请看运行examples/webapp 源码。
+http服务已经接入了涵曦的[wlua](https://github.com/hanxi/wlua),扩展了路由和中间件模式，完整示例请看运行examples/webapp 源码。
 默认webapp运行的是`webapp_dispatch.lua`，想要切换其他示例，只需要更改`mod_config.lua`中的dispatch即可。
 ```lua
 return {
