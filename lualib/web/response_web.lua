@@ -39,8 +39,8 @@ end
 
 function M:set_json_rsp(lua_table)
     local text = json.encode(lua_table)
-    log.debug("set_json_rsp:", text)
     self:set_content_type("application/json")
+	self.status = HTTP_STATUS.OK
 	self.body = text
 end
 
