@@ -1,6 +1,7 @@
 local lfs = require "lfs"
 local string_util = require "string_util"
 
+local string = string
 local tinsert = table.insert
 local tremove = table.remove
 local assert = assert
@@ -110,5 +111,20 @@ function M.get_cur_dir_name()
 	local strsplit = string_util.split(curdir,'/')
 	return strsplit[#strsplit]
 end
+
+function M.path_join(a,b)
+    if a:sub(-1) == "/" then
+        if b:sub(1, 1) == "/" then
+            return a .. b:sub(2)
+        end
+        return a .. b
+    end
+    if b:sub(1, 1) == '/' then
+        return a .. b
+    end
+    return string.format("%s/%s", a, b)
+end
+
+
 
 return M

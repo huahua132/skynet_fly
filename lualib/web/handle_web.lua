@@ -2,6 +2,7 @@ local skynet       = require "skynet"
 local socket       = require "skynet.socket"
 local sockethelper = require "http.sockethelper"
 local httpd        = require "http.httpd"
+local HTTP_STATUS = require "HTTP_STATUS"
 local log = require "log"
 local error = error
 local string = string
@@ -58,11 +59,11 @@ local function do_request(fd, ip,port, protocol, handle)
 
     handle_response = function()
       if code then
-        if code ~= 200 then
+        if code ~= HTTP_STATUS.OK then
           do_response(fd, interface.write, code)
         else
           if header.upgrade == "websocket" then
-            do_response(fd, interface.write, 400)
+            do_response(fd, interface.write, HTTP_STATUS.Bad_Request)
           else
             local req = {
               fd       = fd,
@@ -72,10 +73,10 @@ local function do_request(fd, ip,port, protocol, handle)
               header   = header,
               body     = body,
               ip       = ip,
-              addr     = port,
+              port     = port,
             }
             local code,bodyfunc,rspheader = handle(req)
-            if code == 200 then
+            if code == HTTP_STATUS.OK then
               do_response(fd, interface.write, code, bodyfunc,rspheader)
               return true
             else

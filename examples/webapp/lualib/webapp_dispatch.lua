@@ -1,26 +1,27 @@
 local skynet = require "skynet"
 local log = require "log"
+local engine_web = require "engine_web"
+local HTTP_STATUS = require "HTTP_STATUS"
+
 local string = string
 local M = {}
 
-local html = [[
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>文档标题</title>
-</head>
- 
-<body>
-	hello skynet_fly!!!
-</body>
- 
-</html>
-]]
+local app = engine_web:default()
+--请求处理
+M.dispatch = engine_web.dispatch(app)
 
-function M.dispatch(req)
-	log.error("dispatch:",req,skynet.self())
-	return 200,html
+--初始化
+function M.init()
+	app:get("/",function(c)
+		c.res:set_rsp("hello skynet_fly",HTTP_STATUS.OK)
+	end)
+
+	app:run()
+end
+
+--服务退出
+function M.exit()
+
 end
 
 return M

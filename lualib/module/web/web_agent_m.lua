@@ -189,6 +189,7 @@ function CMD.exit()
 
 	timer:new(timer.minute,0,function()
 		if not next(fd_info_map) then
+			web.exit()
 			skynet.exit()
 		end
 	end)
@@ -209,8 +210,11 @@ function CMD.start(args)
 	end
 
 	assert(web,"not dispatch")
-	assert(web.dispatch,"not dispatch func")
+	assert(web.init,"not web init func")
+	assert(web.dispatch,"not web dispatch func")
+	assert(web.exit,"not web exit func")
 	check_time_out_loop()
+	web.init()
 	return true
 end
 
