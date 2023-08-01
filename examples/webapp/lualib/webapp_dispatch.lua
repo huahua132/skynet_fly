@@ -11,7 +11,7 @@ local M = {}
 ]]
 
 --默认使用logger中间件
-local app = engine_web:default()
+local app = engine_web:new()
 --请求处理
 M.dispatch = engine_web.dispatch(app)
 

@@ -394,6 +394,30 @@ function M.exit()
 end
 ```
 
+* **Benchmark**
+`skynet_fly`
+```
+30 threads and 1000 connections
+Thread Stats   Avg      Stdev     Max   +/- Stdev
+Latency    43.07ms    5.32ms 423.34ms   95.72%
+Req/Sec   761.97     93.59     1.00k    82.94%
+680746 requests in 30.10s, 52.60MB read
+Requests/sec:  22619.75
+Transfer/sec:      1.75MB
+```
+`gin`
+```
+30 threads and 1000 connections
+Thread Stats   Avg      Stdev     Max   +/- Stdev
+Latency    10.91ms   10.15ms 421.71ms   82.49%
+Req/Sec     3.43k     1.09k   30.39k    77.92%
+3051430 requests in 30.11s, 325.93MB read
+Requests/sec: 101354.20
+Transfer/sec:     10.83MB
+```
+
+gin还是快啊
+
 ## 快速开始 游戏服务 (运行examples/digitalbomb)
 
 * **构建服务**
