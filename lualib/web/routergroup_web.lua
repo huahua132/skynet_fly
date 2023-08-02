@@ -14,7 +14,6 @@ local mt = { __index = M }
 local abort_index = 63
 
 function M:new(app, base_path)
-    log.debug("routergroup new")
     local instance = {
         app = app,
         base_path = base_path,
@@ -24,13 +23,11 @@ function M:new(app, base_path)
 end
 
 function M:calculate_absolute_path(relative_path)
-    log.debug("calculate_absolute_path", self.base_path, relative_path)
     return file_util.path_join(self.base_path, relative_path)
 end
 
 function M:combine_handlers(handlers)
     local n = #self.handlers
-    log.debug("combine_handlers. n:", n)
     assert(n+#handlers < abort_index, "too many handlers")
 
     local merged_handlers = {}
@@ -81,7 +78,6 @@ end
 -- M:static_dir("/static", "./")
 function M:static_dir(relative_path, static_path)
     local function static_dir_handler(c)
-        log.debug("static_dir_handler. c.params:", json.encode(c.params))
         local fpath = file_util.path_join(static_path, c.params.filepath)
         c:file(fpath)
     end

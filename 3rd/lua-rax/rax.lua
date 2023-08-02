@@ -2,6 +2,7 @@ local rax_core = require "rax.core"
 
 local function gc_free(self)
     rax_core.destroy(self.tree)
+	rax_core.stop(self.tree_it)
 end
 
 local M = { VERSION = '0.0.1' }
