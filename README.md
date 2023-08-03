@@ -395,6 +395,7 @@ end
 ```
 
 * **Benchmark**
+
 `skynet_fly`
 ```
 30 threads and 1000 connections
@@ -468,4 +469,5 @@ room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 ## 如何远程rpc调用
 
 具体使用例子可以参照`examples/cluster_client` `examples/cluster_server_1` `examples/cluster_server_2`
-[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/cluster_rpc/)
+
+[文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
