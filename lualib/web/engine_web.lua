@@ -11,7 +11,7 @@ local setmetatable = setmetatable
 local pairs = pairs
 
 local M = {}
-local mt = { __index = M }
+local mt = { __index = M}
 
 function M:new()
     local instance = {
@@ -79,7 +79,7 @@ end
 
 function M.dispatch(app)
 	return function(req)
-		local c = context:new(app,req)
+		local c <close> = context:new(app,req)
 		if not c then
 			log.warn("dispatch request failed addr:",req.ip .. ':' .. req.port,", fd:",req.fd)
 			return HTTP_STATUS.Internal_Server_Error

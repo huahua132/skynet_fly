@@ -3,15 +3,19 @@ local request = require "request_web"
 local response = require "response_web"
 local puremagic = require "puremagic"
 local HTTP_STATUS = require "HTTP_STATUS"
+local table_pool = require "table_pool":new(2048)
 
 local setmetatable = setmetatable
 local iopen = io.open
 
 local M = {}
-local mt = { __index = M }
+local mt = { __index = M,__close = function(t)
+	t.res:close()
+	table_pool:release(t)
+end}
 
-function M:new(app, req)
-    local req = request:new(req)
+function M:new(app, oldreq)
+    local req = request:new(oldreq)
     if not req then
         return
     end
@@ -24,16 +28,16 @@ function M:new(app, req)
     if handlers then
         found = true
     end
-    local instance = {
-        app = app,
-        req = req,
-        res = res,
-        index = 0,
-        handlers = handlers or {},
-        params = params,
-        found = found,
-    }
-    return setmetatable(instance, mt)
+	local t = table_pool:get()
+	t.app = app
+	t.req = req
+	t.res = res
+	t.index = 0
+	t.handlers = handlers or {}
+	t.params = params
+	t.found = found
+
+    return setmetatable(t, mt)
 end
 
 function M:next()
