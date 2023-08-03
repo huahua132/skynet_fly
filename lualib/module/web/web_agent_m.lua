@@ -224,4 +224,9 @@ function CMD.start(args)
 	return true
 end
 
+
+skynet.info_func(function()
+	log.error("web_agent_module:",fd_info_map)
+end)
+
 return CMD
