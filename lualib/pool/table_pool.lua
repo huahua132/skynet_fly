@@ -1,5 +1,3 @@
-local log = require "log"
-
 local M = {}
 local mt = {__index = M}
 
