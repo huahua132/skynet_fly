@@ -1,4 +1,4 @@
-return {
+local M <const> = {
 	Continue = 100,
 	Switching_Protocols = 101,
 	OK = 200,
@@ -40,3 +40,5 @@ return {
 	Gateway_Time_out = 504,
 	HTTP_Version_not_supported = 505,
 }
+
+return M

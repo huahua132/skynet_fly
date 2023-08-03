@@ -1,21 +1,25 @@
 local httpd = require "httpd"
 local sockethelper = require "sockethelper"
 local HTTP_STATUS = require "HTTP_STATUS"
+local table_pool = require "table_pool":new(2048)
 local log = require "log"
 local json = require "cjson"
 
 local setmetatable = setmetatable
 
 local M = {}
-local mt = { __index = M }
+local mt = { __index = M}
 
 function M:new()
-    local instance = {
-        resp_header = {}, -- TODO:
-        status = HTTP_STATUS.OK,
-		body = "",
-    }
-    return setmetatable(instance, mt)
+	local t = table_pool:get()
+	t.resp_header = t.resp_header or {}
+	t.status = HTTP_STATUS.OK
+	t.body = ""
+    return setmetatable(t, mt)
+end
+
+function M:close()
+	table_pool:release(self)
 end
 
 function M:get_header(header_key)

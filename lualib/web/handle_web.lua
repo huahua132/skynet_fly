@@ -3,6 +3,7 @@ local socket       = require "skynet.socket"
 local sockethelper = require "http.sockethelper"
 local httpd        = require "http.httpd"
 local HTTP_STATUS = require "HTTP_STATUS"
+local table_pool = require "table_pool":new(2048)
 local log = require "log"
 local error = error
 local string = string
@@ -51,12 +52,12 @@ local function do_request(fd, ip,port, protocol, handle)
 	end
 	local is_close = false
 	local code, url, method, header, body
-	local req = {
-		fd = fd,
-		protocol = protocol,
-		ip = ip,
-		port = port,
-	}
+	local req = table_pool:get()
+	req.fd = fd
+	req.protocol = protocol
+	req.ip = ip
+	req.port = port
+
   	return {
     	read_request = function()
 			code, url, method, header, body = httpd.read_request(interface.read, 8192)
@@ -100,6 +101,7 @@ local function do_request(fd, ip,port, protocol, handle)
 			if interface.close then
 				interface.close()
 			end
+			table_pool:release(req)
 		end
 	}
 end

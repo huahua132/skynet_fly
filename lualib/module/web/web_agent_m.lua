@@ -4,6 +4,7 @@ local handle_web = require "handle_web"
 local socket = require "skynet.socket"
 local log = require "log"
 local cache_help = require "cache_help"
+local table_pool = require "table_pool":new(2048)
 local timer = require "timer"
 
 local table  = table
@@ -110,6 +111,10 @@ function CMD.socket(cmd,...)
 end
 
 local function clear_fd(fd)
+	local ot = fd_info_map[fd]
+	if ot then
+		table_pool:release(ot)
+	end
 	fd_info_map[fd] = nil
 	enter_map[fd] = nil
 end
@@ -122,11 +127,12 @@ function SOCKET.enter(fd, ip,port,master_id)
 	enter_map[fd] = ip
 	enter_cache:set_cache(fd,ip)
 	local conn_time = os.time()
-		fd_info_map[fd] = {
-		pre_msg_time = conn_time,
-		state = FD_STATE.connecting,
-		keep_alive = true,
-	}
+
+	local new_fd_info = table_pool:get()
+	new_fd_info.pre_msg_time = conn_time
+	new_fd_info.state = FD_STATE.connecting
+	new_fd_info.keep_alive = true
+	fd_info_map[fd] = new_fd_info
 
 	local is_ok,handle = pcall(handle_web,fd, ip, port, protocol, handle_func)
 	if not is_ok then
