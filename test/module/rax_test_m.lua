@@ -20,6 +20,8 @@ function CMD.start()
 		local data, params = route:match(path, method)
 		log.info("match result. data:", data)
 		log.info("params:", params)
+
+		log.error("test_match:",data,ret,params,path,method)
 		assert(data == ret, "match failed")
 		log.info("match", path, "ok")
 		log.info("--- end match", path, "\n")
