@@ -12,20 +12,21 @@ local parse_url = urllib.parse
 local M = {}
 local mt = { __index = M }
 
+local PARSE_BODY_FUNC = {}
+PARSE_BODY_FUNC['application/x-www-form-urlencoded'] = parse_query
+PARSE_BODY_FUNC['application/json'] = json.decode
+
 -- new request: init args/body etc from http request
 function M:new(req)
-    log.debug("req. url:", req.url, ", method:", req.method, ", header:", req.header)
 	local header = req.header
 	local body = req.body
 	local url = req.url
     local content_type = header['content-type']
     -- the post request have Content-Type header set
-    if content_type then
-        if sfind(content_type, "application/x-www-form-urlencoded", 1, true) then
-            body = parse_query(body)
-        elseif sfind(content_type, "application/json", 1, true) then
-            body = json.decode(body)
-        end
+
+	local parse_func = PARSE_BODY_FUNC[content_type]
+    if parse_func then
+        body = parse_func(body)
     -- the post request have no Content-Type header set will be parsed as x-www-form-urlencoded by default
     else
         body = parse_query(body)
@@ -37,20 +38,11 @@ function M:new(req)
         query = parse_query(query_str)
     end
 
-    return {
-        path = path,
-        method = req.method,
-        query = query,
-        body = body,
-        body_raw = req.body,
-        url = url,
-        headers = req.headers, -- request headers
-        code = req.code,
-        fd = req.fd,
-		ip = req.ip,
-		port = req.port,
-		protocol = req.protocol,
-    }
+	req.path = path
+	req.query = query
+	req.body_raw = req.body
+	req.body = body
+    return req
 end
 
 return M
