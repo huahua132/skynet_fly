@@ -15,7 +15,7 @@ assert(skynet_fly_path,'not skynet_fly_path')
 local file_util = loadfile(skynet_fly_path .. '/lualib/utils/file_util.lua')()
 assert(file_util,'can`t load file_util')
 
-local log = loadfile(skynet_fly_path .. 'lualib/log.lua')()
+local log = loadfile(skynet_fly_path .. '/lualib/log.lua')()
 assert(log,"not log file")
 
 package.path = file_util.create_luapath(skynet_fly_path)
