@@ -1,0 +1,37 @@
+= changelog
+
+== from 0.4.0 to 0.4.1
+
+* fix: removed luacheck lint errors
+
+== from 0.3.0 to 0.4.0
+
+* removed unnecessary check
+* changed error handling
+** the returned error value is now a message
+** can potentially break existing code - please check your code!
+
+== from 0.2.0 to 0.3.0
+
+* fix: updated outdated README example for crockford
+* added the examples as tests for the crockford examples
+* improved from functions
+** added the possibility to ignore characters in the encoded string
+** handles now unknown characters in the encoded string without a crash
+
+== from 0.1.1 to 0.2.0
+
+* fix: supports now for unit tests busted 2.0
+* added the functions from_url64 / to_url64 and from_z85 / to_z85
+* removed the mapping for U and u in from crockford
+* internal:
+** travis.ci support
+** 80 lines width
+** busted 2.0 support
+** switched from MarkDown to AsciiDoc
+
+== from 0.1.0 to 0.1.1
+
+* fix: divider_string & number_to_bit should be local‎
+* better README
+* internal: divided the unit tests into separate files

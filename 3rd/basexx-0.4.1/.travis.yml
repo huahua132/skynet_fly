@@ -1,0 +1,29 @@
+language: python
+
+sudo: false
+
+env:
+   matrix:
+      - LUA="lua=5.1"
+      - LUA="lua=5.2"
+      - LUA="lua=5.3"
+      - LUA="luajit=2.0"
+      - LUA="luajit=2.1"
+
+branches:
+   only:
+      - master
+
+before_install:
+   - pip install hererocks
+   - hererocks base -r^ --$LUA
+   - export PATH=$PATH:$PWD/base/bin
+   - luarocks install busted
+
+script:
+   - busted -v
+
+notifications:
+   email:
+      on_success: change
+      on_failure: always
