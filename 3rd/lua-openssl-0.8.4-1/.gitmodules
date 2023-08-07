@@ -1,0 +1,6 @@
+[submodule "deps/auxiliar"]
+	path = deps/auxiliar
+	url = https://github.com/zhaozg/lua-auxiliar.git
+[submodule "deps/lua-compat"]
+	path = deps/lua-compat
+	url = https://github.com/keplerproject/lua-compat-5.3.git

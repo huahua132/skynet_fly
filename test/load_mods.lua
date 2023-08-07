@@ -101,8 +101,13 @@ return {
 	-- 	launch_num = 1,
 	-- }
 
-	rax_test_m = {
-		launch_seq = 9,
+	-- rax_test_m = {
+	-- 	launch_seq = 9,
+	-- 	launch_num = 1,
+	-- },
+
+	openssl_test_m = {
+		launch_seq = 10,
 		launch_num = 1,
 	}
 }

@@ -21,7 +21,7 @@ $(CSERVICE_PATH) :
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
-LUA_CLIB = lfs cjson pb zlib chat_filter rax
+LUA_CLIB = lfs cjson pb zlib chat_filter rax openssl
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -46,11 +46,23 @@ $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_
 $(LUA_CLIB_PATH)/rax.so : 3rd/lua-rax/rax.c 3rd/lua-rax/lua_rax.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-rax
 
+# 递归查找 3rd/lua-openssl-0.8.4-1 目录及其子目录下的所有 .c 文件和 .h 文件
+SRCS := $(shell find 3rd/lua-openssl-0.8.4-1 -name '*.c')
+HDRS := $(shell find 3rd/lua-openssl-0.8.4-1 -name '*.h')
+INCS := $(sort $(dir $(HDRS)))  # 获取所有子目录路径
+CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
+
+TLS_LIB=/usr/bin/openssl
+TLS_INC=/usr/include/openssl
+
+$(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -L$(TLS_LIB) -I$(TLS_INC) -lssl
+
 build: \
  	$(LUA_CLIB_PATH) \
 	$(foreach v,$(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so)
 	$(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
-	cd skynet && $(MAKE) linux TLS_MODULE=ltls
+	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 clean:
 	cd skynet && $(MAKE) clean

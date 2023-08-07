@@ -44,6 +44,7 @@ local config = {
 			 skynet_path .. "service/?.lua;",
 
 	lua_path = "",
+	enablessl = true,
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
