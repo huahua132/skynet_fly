@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master", "ci" ]
+    tags:
+      - v?[0-9].[0-9]+.[0-9]+-[0-9]+
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        luarocks_version: [3.8.0]
+        lua_version: [luajit2.1, lua5.1, lua5.2, lua5.3, lua5.4]
+        openssl_version: [openssl-1.0.2u, openssl-1.1.1v, openssl-3.0.10, openssl-3.1.2]
+    env:
+      MACOSX_DEPLOYMENT_TARGET: 10.12
+      LUAROCKS: ${{ matrix.luarocks_version }}
+      LUA: ${{ matrix.lua_version }}
+      SSL: ${{ matrix.openssl_version }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Setup
+      run:
+        .github/shell/setup_lua.sh && .github/shell/setup_ssl.sh
+
+    - name: Build
+      run:
+        .github/shell/build.sh
+
+    - name: Test
+      run:
+        PKG_CONFIG_PATH=$HOME/.usr/lib64/pkgconfig:$HOME/.usr/lib/pkgconfig PATH=$HOME/.usr/bin:$PATH LD_LIBRARY_PATH=$HOME/.usr/lib64:$HOME/.usr/lib make test
+
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build]
+    runs-on: ubuntu-latest
+    env:
+      WITH_LUA_ENGINE: LuaJIT
+      LUA: luajit2.1
+      LUAROCKS: 3.8.0
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+
+    - name: Setup
+      run:
+        .github/shell/setup_lua.sh
+
+    - name: Package
+      run:
+        .github/shell/make_rockspec.sh ${{ steps.get_version.outputs.VERSION }}
+
+    - name: Github Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        files: openssl-${{ steps.get_version.outputs.VERSION }}.tar.gz
+        draft: false
+        prerelease: false
+
+    - name: Luarocks Release
+      # lua-cjson is required for luarocks upload
+      run: |
+        export PATH=$HOME/.usr/bin:$PATH
+        export LUA_CPATH=$HOME/.usr/lib/lua/5.1/?.so
+        luarocks install lua-cjson
+        luarocks build
+        luarocks test
+        luarocks upload openssl-${{ steps.get_version.outputs.VERSION }}.rockspec --api-key=${{ secrets.LUAROCKS_TOKEN }}

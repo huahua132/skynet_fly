@@ -1,0 +1,116 @@
+= basexx
+
+image::https://api.travis-ci.org/aiq/basexx.png[travis]
+
+A Lua library for base2, base16, base32, base64, base85 decoding and encoding of data strings.
+
+== API
+
+For every supported format has basexx a *_from_* and *_to_* function.
+
+The *_from_* functions have two parameters:
+
+* *str* which represent the encoded string that should be decoded
+* *ignore* is an optional set of characters that should be ignored in the string, see the *_from_bit_* and *_from_hex_* examples
+
+The *_from_* functions return a string if the string can be decoded, otherwise *_nil_* and an error message.
+
+The *_to_* functions have just one parameter:
+
+* *str* the data string that should be encoded
+
+The *_to_z85_* function can return *_nil_* and an error message, all other functions return allways the encoded string.
+
+=== from_bit / to_bit
+
+Converts a byte string to a bitfield string.
+
+* 0, O and o maps to the same value
+* 1, I, i, L and l maps to the same value
+
+[source,lua]
+----
+basexx.to_bit( "ACDC" ) --> 01000001010000110100010001000011
+basexx.from_bit( "01000001010000110100010001000011" ) --> ACDC
+basexx.from_bit( "o1ooooo1o1oooo11" ) --> AC
+basexx.from_bit( "Oioooooi Oiooooii\n", " \n" ) --> AC
+----
+
+=== from_hex / to_hex
+
+Converts a byte string to a uppercase http://tools.ietf.org/html/rfc3548#section-6[hex] data string.
+
+[source,lua]
+----
+basexx.to_hex( "Hello world!" ) --> 48656C6C6F20776F726C6421
+basexx.from_hex( "4865-6C6C 6F20-776F 726C-6421", "- " ) --> Hello world!
+basexx.from_hex( "48656c6c6f20776f726c6421" ) --> Hello world!
+----
+
+=== from_base32 / to_base32
+
+Converts a byte string to a http://tools.ietf.org/html/rfc3548#section-5[base32(_rfc3548)] uppercase data string.
+
+* It's case insensitive
+
+[source,lua]
+----
+basexx.to_base32( "chunky bacon!" ) --> MNUHK3TLPEQGEYLDN5XCC===
+basexx.from_base32( "MNUHK3TLPEQGEYLDN5XCC===" ) --> chunky bacon!
+----
+
+=== from_crockford / to_crockford
+
+Converts a byte string to a http://www.crockford.com/wrmg/base32.html[base32(_crockford_)] uppercase data string. The optional check value is not implemented. 
+
+* It's case insensitive
+* 1, I, i, L and l maps to the same value
+* 0, O and o maps to the same value
+
+[source,lua]
+----
+string.lower( basexx.to_crockford( "Hello World" ) ) --> 91jprv3f41bpywkccg
+basexx.from_crockford( "axqqeb10d5t20wk5c5p6ry90exqq4tvk44" ) --> Wow, it really works!
+----
+
+=== from_base64 / to_base64
+
+Converts a byte string to a https://tools.ietf.org/html/rfc4648#section-4[base64] data string.
+
+[source,lua]
+----
+basexx.to_base64( "Man") --> TWFu
+basexx.from_base64( "TWFu" ) --> Man
+----
+
+=== from_url64 / to_url64
+
+Same as above, but uses a https://tools.ietf.org/html/rfc4648#section-5[URL Safe base64] alphabet and no padding.
+
+=== from_z85 / to_z85
+
+Converts a byte string to a http://rfc.zeromq.org/spec:32[base85(ZeroMQ)] data string.
+to_z85 expects only a binary string that length is divisible by 4 with no remainder, and from_z85 expects only printable a string that length is divisible by 5 with no remainder.
+
+[source,lua]
+----
+basexx.to_z85( "1234" ) --> f!$Kw
+basexx.from_z85( "f!$Kw" ) --> 1234
+----
+
+== Installation
+
+To install the version 0.4.1 of basexx use LuaRocks with the following line.
+
+----
+luarocks install basexx
+----
+
+
+If you want to use the current development version, clone this repository and use
+LuaRocks with the following command.
+
+----
+luarocks make dist/basexx-scm-0.rockspec
+----
+

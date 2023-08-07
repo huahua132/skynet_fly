@@ -106,7 +106,11 @@ return {
 	-- 	launch_num = 1,
 	-- },
 
-	openssl_test_m = {
+	-- openssl_test_m = {
+	-- 	launch_seq = 10,
+	-- 	launch_num = 1,
+	-- }
+	jwt_test_m = {
 		launch_seq = 10,
 		launch_num = 1,
 	}
