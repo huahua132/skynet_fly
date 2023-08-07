@@ -31,15 +31,15 @@ local config = {
 	svr_name = svr_name,
 	debug_port = 8888,
 	skynet_fly_path = skynet_fly_path,
-	preload = skynet_fly_path .. 'lualib/preload.lua',
-	cpath = skynet_fly_path .. "cservice/?.so;" .. skynet_path .. "cservice/?.so;",
+	preload = skynet_fly_path .. '/lualib/preload.lua',
+	cpath = skynet_fly_path .. "/cservice/?.so;" .. skynet_path .. "cservice/?.so;",
 
-	lua_cpath = skynet_fly_path .. "luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
+	lua_cpath = skynet_fly_path .. "/luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
 
 	--luaservice 约束服务只能放在 server根目录 || server->service || common->service || skynet_fly->service || skynet->service
 	luaservice = server_path .. "?.lua;" .. 
  			 server_path .. "service/?.lua;" .. 
-			  skynet_fly_path .. "service/?.lua;" .. 
+			  skynet_fly_path .. "/service/?.lua;" .. 
 			  common_path .. "service/?.lua;" ..
 			 skynet_path .. "service/?.lua;",
 
