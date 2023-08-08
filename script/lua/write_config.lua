@@ -21,7 +21,7 @@ local config = {
 	start = "main",
 	harbor = 0,
 	profile = true,
-	lualoader	= skynet_path.."lualib/loader.lua",
+	lualoader	= skynet_fly_path.."/lualib/loader.lua",
 	bootstrap 	= "snlua bootstrap",        --the service for bootstrap
 	logger 		= "server.log",
 	loglevel    = "info",
@@ -31,7 +31,7 @@ local config = {
 	svr_name = svr_name,
 	debug_port = 8888,
 	skynet_fly_path = skynet_fly_path,
-	preload = skynet_fly_path .. '/lualib/preload.lua',
+	preload = skynet_fly_path .. '/lualib/preload.lua;',
 	cpath = skynet_fly_path .. "/cservice/?.so;" .. skynet_path .. "cservice/?.so;",
 
 	lua_cpath = skynet_fly_path .. "/luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
