@@ -521,6 +521,24 @@ cmd_setenv(struct skynet_context * context, const char * param) {
 }
 
 static const char *
+cmd_resetenv(struct skynet_context * context, const char * param) {
+	size_t sz = strlen(param);
+	char key[sz+1];
+	int i;
+	for (i=0;param[i] != ' ' && param[i];i++) {
+		key[i] = param[i];
+	}
+	if (param[i] == '\0')
+		return NULL;
+
+	key[i] = '\0';
+	param += i+1;
+
+	skynet_resetenv(key,param);
+	return NULL;
+}
+
+static const char *
 cmd_starttime(struct skynet_context * context, const char * param) {
 	uint32_t sec = skynet_starttime();
 	sprintf(context->result,"%u",sec);
@@ -653,6 +671,7 @@ static struct command_func cmd_funcs[] = {
 	{ "LAUNCH", cmd_launch },
 	{ "GETENV", cmd_getenv },
 	{ "SETENV", cmd_setenv },
+	{ "RESETENV", cmd_resetenv },
 	{ "STARTTIME", cmd_starttime },
 	{ "ABORT", cmd_abort },
 	{ "MONITOR", cmd_monitor },
