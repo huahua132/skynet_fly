@@ -11,7 +11,7 @@ local tunpack = table.unpack
 
 local M = {}
 
-local CHECK_INVAL_TIME = 6000 --ms
+local CHECK_INVAL_TIME = 6000 --60s
 local mata = {__index = M}
 local register
 
