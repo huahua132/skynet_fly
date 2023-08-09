@@ -26,6 +26,7 @@
 * [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
 * [lua-rax](https://github.com/hanxi/lua-rax)last
 * [luafilesystem](https://github.com/lunarmodules/luafilesystem)1.8.0
+* [luajwtjitsi](https://github.com/jitsi/luajwtjitsi)3.0  自己适配了lua-openssl
 * [lzlib](https://github.com/LuaDist/lzlib)0.4.3
 
 ## 关于热更新方案
