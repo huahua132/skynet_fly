@@ -1,4 +1,4 @@
- local skynet = require "skynet"
+local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local redis = require "skynet.db.redis"
 local string_util = require "string_util"
