@@ -52,7 +52,7 @@ end
 function M.create_luapath(skynet_fly_path)
 	local server_path = './'
 	local skynet_path = skynet_fly_path .. '/skynet'
-	local common_path = '../../common'
+	local common_path = '../../common/'
 
 	--server下非service文件夹
 	local lua_path = server_path .. '?.lua;'
