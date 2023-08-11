@@ -16,7 +16,7 @@ local function keep_alive()
 		if g_db_conn then
 			local ok,ret = pcall(g_db_conn.ping,g_db_conn)
 		else
-			log.fatal("keep_alive not conn")
+			log.error("keep_alive not conn")
 		end
 	end)
 end
@@ -25,7 +25,7 @@ function CMD.start(config)
 	g_db_conf = config.db_conf
 	local ok,conn = pcall(mysql.connect,g_db_conf)
 	if not ok then
-		log.fatal("connect faild ",conn,g_db_conf)
+		log.error("connect faild ",conn,g_db_conf)
 		return
 	end
 
@@ -39,7 +39,7 @@ function CMD.query(sql_str)
 	local ok,ret = pcall(g_db_conn.query,g_db_conn,sql_str)
 	g_querying_cnt = g_querying_cnt - 1
 	if not ok then
-		log.fatal("query faild ",g_db_conf.host,g_db_conf.port,g_db_conf.database,sql_str)
+		log.error("query faild ",g_db_conf.host,g_db_conf.port,g_db_conf.database,sql_str)
 		return nil
 	end
 

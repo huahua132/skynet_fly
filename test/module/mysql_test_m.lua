@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "log"
 local contriner_client = require "contriner_client"
 local timer = require "timer"
+local mysqlf = require "mysqlf"
 
 local CMD = {}
 
@@ -19,6 +20,10 @@ function CMD.start()
 
 	local hall_client = contriner_client:new("mysql_m","hall")
 	log.info("hall select:",hall_client:balance_call_by_name("query",sql_str))
+
+	local fcli = mysqlf:new("hall")
+	log.info("fcli hall select:",fcli:query(sql_str))
+
 	log.error("mysql_test_m over!!!")
 
 	return true
