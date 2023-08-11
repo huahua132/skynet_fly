@@ -123,6 +123,7 @@ function M.new_client(db_name)
 		conn = false
 	}
 	setmetatable(t_conn,mt)
+	t_conn:get("ping")       --尝试调一下
 	return t_conn
 end
 
