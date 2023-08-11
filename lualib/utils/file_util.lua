@@ -5,6 +5,7 @@ local string = string
 local tinsert = table.insert
 local tremove = table.remove
 local assert = assert
+local tostring = tostring
 local io = io
 
 local M = {}
@@ -99,7 +100,7 @@ end
 --打开并读取文件
 function M.readallfile(file_path)
 	local file = io.open(file_path,'r')
-	assert(file)
+	assert(file,"can`t open file_path " .. tostring(file_path))
 	local str = file:read("*all")
 	file:close()
 	return str
