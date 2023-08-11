@@ -1,6 +1,7 @@
-local skynet = require "skynet"
+ local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local redis = require "skynet.db.redis"
+local string_util = require "string_util"
 local sha2 = require "sha2"
 local log = require "log"
 
@@ -8,12 +9,102 @@ local setmetatable = setmetatable
 local assert = assert
 local pcall = pcall
 local ipairs = ipairs
+local pairs = pairs
 local type = type
 local string = string
+local select = select
+local tunpack = table.unpack
+local debug_getinfo = debug.getinfo
 
 local g_sha_map = {}
 
 local M = {}
+local command = {}     --自定义命令函数
+
+local cmdfuncs = {}    --命令函数缓存
+
+--[[
+	函数作用域：M的成员函数
+	函数名称：script_run
+	描述:运行redis脚本命令
+	参数：
+		- self (redis_conn): new_client返回的连接对象
+		- script_str (string)：redis lua 脚本
+		- ...       脚本传递参数
+]]
+function command:script_run(script_str,...)
+	local conn = self.conn
+	assert(conn,"not connect redis ")
+	assert(type(script_str) == 'string','script_str not string')
+
+	local sha = g_sha_map[script_str]
+	if not sha then
+		sha = sha2.sha1(script_str)
+		g_sha_map[script_str] = sha
+	end
+
+	local isok,ret = pcall(conn.evalsha,conn,...)
+	if not isok then
+		if string.find(ret,"NOSCRIPT",nil,true) then
+			ret = conn:eval(script_str,...)
+		end
+	end
+	
+	return ret
+end
+
+local function get_line_info()
+	local info = debug_getinfo(3,"Sl")
+	local lineinfo = info.short_src .. ":" .. info.currentline
+end
+
+--给redis命令施加保护执行
+local mt = {
+	__index = function(t,k)
+		local f = cmdfuncs[k]
+		if f then
+			t[k] = f
+			return f
+		end
+
+		local f = function (self,...)
+			if not self.conn then
+				local ok,conn = pcall(redis.connect,self.conf)
+				if not ok then
+					log.error("connect redis err ",get_line_info(),conn,k,self.conf)
+					return
+				else
+					self.conn = conn
+				end
+			end
+
+			local cmd = command[k]
+			if cmd then
+				local ret = {pcall(cmd,self,...)}
+				local isok = ret[1]
+				local err = ret[2]
+				if not isok then
+					log.error("call redis command faild ",get_line_info(),err,k,...)
+					return
+				else
+					return select(2,tunpack(ret))
+				end
+			else
+				local isok,ret = pcall(self.conn[k],self.conn,...)
+				if not isok then
+					log.error("call redis faild ",get_line_info(),ret,k,...)
+					return
+				end
+				return ret
+			end
+		end
+
+	t[k] = f
+	--缓存命令函数
+	cmdfuncs[k] = f
+	return f
+end}
+
 --[[
 	函数作用域：M的成员函数
 	函数名称：new_client
@@ -27,44 +118,27 @@ function M.new_client(db_name)
 	assert(conf_map and conf_map[db_name],"not redis conf")
 
 	local conf = conf_map[db_name]
-	local ok,conn = pcall(redis.connect,conf)
-	if not ok then
-		log.fatal("redisf new_client err ",conn,conf)
-		return nil
-	end
-
-	return conn
+	local t_conn = {
+		conf = conf,
+		conn = false
+	}
+	setmetatable(t_conn,mt)
+	return t_conn
 end
 
 --[[
 	函数作用域：M的成员函数
-	函数名称：script_run
-	描述:运行redis脚本命令
+	函数名称：add_command
+	描述:增加自定义command命令
 	参数：
-		- conn (redis_conn): new_client返回的连接对象
-		- script_str (string)：redis lua 脚本
-		- ...       脚本传递参数
+		- M (table): 定义的函数模块
 ]]
-function M.script_run(conn,script_str,...)
-	assert(conn)
-	assert(type(script_str) == 'string','script_str not string')
-
-	local sha = g_sha_map[script_str]
-	if not sha then
-		sha = sha2.sha1(script_str)
-		g_sha_map[script_str] = sha
+function M.add_command(M)
+	for k,func in pairs(M) do
+		assert(not command[k],"command is exists " .. k)
+		command[k] = func
 	end
-
-	local ok,ret = pcall(conn.evalsha,conn,sha,...)
-	if not ok then
-		if string.find(ret,"NOSCRIPT",nil,true) then
-			ret = conn:eval(script_str,...)
-		end
-	end
-	
-	return ret
 end
-
 --[[
 	函数作用域：M的成员函数
 	函数名称：new_watch
@@ -84,46 +158,54 @@ function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
 	assert(conf_map and conf_map[db_name],"not redis conf")
 	local conf = conf_map[db_name]
 
-	local ok,watch = pcall(redis.watch,conf)
-	if not ok then
-		log.fatal("redisf new_watch err ",conf)
-		return nil
-	end
-
-	for _,key in ipairs(subscribe_list) do
-		watch:subscribe(key)
-	end
-
-	for _,key in ipairs(psubscribe_list) do
-		watch:psubscribe(key)
-	end
-
 	local is_cancel = false
+	local ok,watch
 
 	skynet.fork(function()
+		while not watch and not is_cancel do
+			ok,watch = pcall(redis.watch,conf)
+			if not ok then
+				log.error("redisf connect watch err ",conf)
+			end
+			skynet.sleep(100)
+		end
+		for _,key in ipairs(subscribe_list) do
+			if not is_cancel then
+				watch:subscribe(key)
+			end
+		end
+
+		for _,key in ipairs(psubscribe_list) do
+			if not is_cancel then
+				watch:psubscribe(key)
+			end
+		end
+
 		while not is_cancel do
 			local ok,msg,key,psubkey = pcall(watch.message,watch)
 			if ok then
 				call_back(msg,key,psubkey)
 			else
 				if not is_cancel then
-					log.fatal("watch.message err :",msg,key,psubkey)
+					log.error("watch.message err :",msg,key,psubkey)
 				end
-				break
 			end
 		end
 	end)
 
 	return function()
-		for _,key in ipairs(subscribe_list) do
-			watch:unsubscribe(key)
-		end
-	
-		for _,key in ipairs(psubscribe_list) do
-			watch:punsubscribe(key)
-		end
-		watch:disconnect()
 		is_cancel = true
+		if watch then
+			for _,key in ipairs(subscribe_list) do
+				watch:unsubscribe(key)
+			end
+		
+			for _,key in ipairs(psubscribe_list) do
+				watch:punsubscribe(key)
+			end
+			watch:disconnect()
+			watch = nil
+		end
 		return true
 	end
 end
