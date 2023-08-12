@@ -116,9 +116,9 @@ end
 
 function CMD.query(source,module_name)
 	assert(module_name,'not module_name')
-	assert(g_id_list_map[module_name])
-	assert(g_name_id_list_map[module_name])
-	assert(g_version_map[module_name])
+	assert(g_id_list_map[module_name],"not exists " .. module_name)
+	assert(g_name_id_list_map[module_name],"not exists " .. module_name)
+	assert(g_version_map[module_name],"not exists " .. module_name)
 
 	local id_list = g_id_list_map[module_name]
 	local name_id_list = g_name_id_list_map[module_name]
@@ -130,8 +130,8 @@ end
 function CMD.watch(source,module_name,version)
     assert(module_name,'not module_name')
 	assert(version,"not version")
-	assert(g_id_list_map[module_name])
-	assert(g_version_map[module_name])
+	assert(g_id_list_map[module_name],"not exists " .. module_name)
+	assert(g_version_map[module_name],"not exists " .. module_name)
 
 	local id_list = g_id_list_map[module_name]
 	local name_id_list = g_name_id_list_map[module_name]
@@ -149,8 +149,8 @@ end
 
 function CMD.unwatch(source,module_name)
 	assert(module_name,'not module_name')
-	assert(g_id_list_map[module_name])
-	assert(g_version_map[module_name])
+	assert(g_id_list_map[module_name],"not exists " .. module_name)
+	assert(g_version_map[module_name],"not exists " .. module_name)
 
 	local id_list = g_id_list_map[module_name]
 	local name_id_list = g_name_id_list_map[module_name]
