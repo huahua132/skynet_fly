@@ -16,7 +16,7 @@ local function dispatch(fd,packname,res)
 	log.info("dispatch:",g_config.net_util,fd,packname,res)
 end
 
-local function connnect(handle)
+local function connnect(handle,player_id)
 	local fd
 	if g_config.protocol == 'websocket' then
 		fd = websocket.connect("ws://127.0.0.1:8001")
@@ -31,7 +31,7 @@ local function connnect(handle)
 	local login_req = {
 		account = g_config.account,
 		password = g_config.password,
-		player_id = g_config.player_id,
+		player_id = player_id or g_config.player_id,
 	}
 
 	net_util.recv(fd,handle or dispatch)
@@ -240,6 +240,24 @@ local function player_reload_reconnect(mod_name)
 	end)
 end
 
+--websocket 连接测试
+local function websocket_test()
+	local fd_list = {}
+	for i = 1,3000 do
+		local fd = connnect(nil,i)
+		if fd then
+			table.insert(fd_list,fd)
+		end
+	end
+	log.error("connect over")
+	skynet.sleep(500)
+
+	for _,fd in ipairs(fd_list) do
+		websocket.close(fd)
+	end
+	log.error("disconnect over")
+end
+
 function CMD.start(config)
 	pb_netpack.load('./proto')
 	g_config = config
@@ -261,9 +279,10 @@ function CMD.start(config)
 		--reload_reconnet_test('room_game_room_m')
 		--player_game()
 		--player_game_reconnect()
-		player_reload_reconnect('room_game_hall_m')
+		--player_reload_reconnect('room_game_hall_m')
 		--player_reload_reconnect('room_game_match_m')
 		--player_reload_reconnect('room_game_room_m')
+		websocket_test()
 	end)
 	
 	return true
