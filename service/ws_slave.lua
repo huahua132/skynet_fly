@@ -40,6 +40,7 @@ local g_conn_map = {}
 local SELF_ADDRESS = nil
 
 local function closed(fd)
+	if not g_conn_map[fd] then return end
 	g_conn_map[fd] = nil
 	skynet.send(g_gate,'lua','closed',fd)
 	skynet.send(g_watchdog,'lua','socket','close', fd)
