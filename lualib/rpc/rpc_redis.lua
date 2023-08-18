@@ -17,7 +17,6 @@ function M:new()
 	local t = {
 		cli = cli
 	}
-	assert(cli,"can`t connect redis",g_db_name)
 	setmetatable(t,meta)
 	return t
 end
