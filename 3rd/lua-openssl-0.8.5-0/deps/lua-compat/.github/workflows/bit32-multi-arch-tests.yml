@@ -1,0 +1,51 @@
+name: bit32-multi-arch-tests
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+jobs:
+  bit32-test:
+    runs-on: ubuntu-latest
+    name: bit32 tests on ${{ matrix.luaVersion }} ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        luaVersion: ["5.1.5", "5.4.1"]
+        luaRocksVersion: ["3.3.1"]
+        arch: ["armv7", "aarch64"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: lua-cache
+        with:
+          path: .install/${{ matrix.arch }}/lua-${{ matrix.luaVersion }}
+          key: lua-on-linux-${{ matrix.arch }}-${{ matrix.luaVersion }}
+      - uses: uraimo/run-on-arch-action@v2.0.7
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ubuntu20.04
+          githubToken: ${{ github.token }}
+          setup: |
+            mkdir -p ".install/${{ matrix.arch }}"
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y curl unzip build-essential libreadline-dev libncurses-dev
+            rm -rf /var/lib/apt/lists/*
+          run: |
+            v() {
+              echo -n -e "\033[36m" >&2
+              echo -n "# $*" >&2
+              echo -e "\033[0m" >&2
+              "$@"
+            }
+            if [ "${{ steps.lua-cache.outputs.cache-hit }}" != true ]; then
+              (set -o pipefail; cd ".install/${{ matrix.arch }}" && v curl --fail --silent --location "http://www.lua.org/ftp/lua-${{ matrix.luaVersion }}.tar.gz" | tar xzpf -)
+              (cd ".install/${{ matrix.arch }}/lua-${{ matrix.luaVersion }}" && v make linux)
+            fi
+            (cd ".install/${{ matrix.arch }}/lua-${{ matrix.luaVersion }}" && v make install)
+            (set -o pipefail; cd .install && v curl --fail --silent --location "http://luarocks.org/releases/luarocks-${{ matrix.luaRocksVersion }}.tar.gz" | tar xzpf -)
+            (cd ".install/luarocks-${{ matrix.luaRocksVersion }}" && v ./configure && v make bootstrap)
+            eval "$(luarocks path)"
+            v luarocks make rockspecs/bit32-scm-1.rockspec
+            v lua tests/test-bit32.lua
+
