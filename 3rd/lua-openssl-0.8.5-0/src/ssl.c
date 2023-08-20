@@ -69,7 +69,13 @@ static int openssl_ssl_ctx_new(lua_State*L)
   const char* ciphers;
   SSL_CTX* ctx;
 
-  if (0);
+  if (strcmp(meth, "SSLv23") == 0)
+    method = SSLv23_method();
+  else if (strcmp(meth, "SSLv23_server") == 0)
+    method = SSLv23_server_method();
+  else if (strcmp(meth, "SSLv23_client") == 0)
+    method = SSLv23_client_method();
+
 #if OPENSSL_VERSION_NUMBER > 0x10100000L
   else if (strcmp(meth, "TLS") == 0)
     method = TLS_method();
@@ -84,13 +90,7 @@ static int openssl_ssl_ctx_new(lua_State*L)
     method = DTLS_server_method();
   else if (strcmp(meth, "DTLS_client") == 0)
     method = DTLS_client_method();
-#else
-  else if (strcmp(meth, "SSLv23") == 0)
-    method = SSLv23_method();
-  else if (strcmp(meth, "SSLv23_server") == 0)
-    method = SSLv23_server_method();
-  else if (strcmp(meth, "SSLv23_client") == 0)
-    method = SSLv23_client_method();
+#endif
 
 #ifndef OPENSSL_NO_DTLS1_2_METHOD
   else if (strcmp(meth, "DTLSv1_2") == 0)
@@ -118,6 +118,7 @@ static int openssl_ssl_ctx_new(lua_State*L)
   else if (strcmp(meth, "TLSv1_2_client") == 0)
     method = TLSv1_2_client_method();
 #endif
+
 #ifndef OPENSSL_NO_TLS1_1_METHOD
   else if (strcmp(meth, "TLSv1_1") == 0)
     method = TLSv1_1_method();
@@ -126,6 +127,7 @@ static int openssl_ssl_ctx_new(lua_State*L)
   else if (strcmp(meth, "TLSv1_1_client") == 0)
     method = TLSv1_1_client_method();
 #endif
+
 #ifndef OPENSSL_NO_TLS1_METHOD
   else if (strcmp(meth, "TLSv1") == 0)
     method = TLSv1_method();
@@ -134,6 +136,7 @@ static int openssl_ssl_ctx_new(lua_State*L)
   else if (strcmp(meth, "TLSv1_client") == 0)
     method = TLSv1_client_method();
 #endif
+
 #ifndef OPENSSL_NO_SSL3_METHOD
   else if (strcmp(meth, "SSLv3") == 0)
     method = SSLv3_method();
@@ -141,7 +144,6 @@ static int openssl_ssl_ctx_new(lua_State*L)
     method = SSLv3_server_method();
   else if (strcmp(meth, "SSLv3_client") == 0)
     method = SSLv3_client_method();
-#endif
 #endif
 
 #ifdef LOAD_SSL_CUSTOM
@@ -517,6 +519,52 @@ static int openssl_ssl_ctx_options(lua_State*L)
   }
   return 1;
 }
+
+/***
+get min_proto_version and max_proto_version
+@function version
+@treturn[1] integer min_proto_version
+@treturn[2] integer man_proto_version
+*/
+
+/***
+set min_proto_version and max_proto_version
+@function options
+@tparam integer min
+@tparam integer max
+@treturn boolean result or fail
+*/
+#if OPENSSL_VERSION_NUMBER > 0x10100000L
+static int openssl_ssl_ctx_version(lua_State*L)
+{
+  SSL_CTX* ctx = CHECK_OBJECT(1, SSL_CTX, "openssl.ssl_ctx");
+  int ret;
+  int minv = SSL_CTX_get_min_proto_version(ctx);
+  int maxv = SSL_CTX_get_max_proto_version(ctx);
+
+  if (lua_isnone(L, 2))
+  {
+    lua_pushinteger(L, minv);
+    lua_pushinteger(L, maxv);
+    return 2;
+  }
+
+  minv = luaL_optinteger(L, 2, minv);
+  maxv = luaL_optinteger(L, 3, maxv);
+  luaL_argcheck(L, minv <= maxv, 3, "max version can't less than min");
+
+  ret = SSL_CTX_set_min_proto_version(ctx, minv);
+  if (ret == 1)
+    ret = SSL_CTX_set_min_proto_version(ctx, maxv);
+
+  if (ret==1)
+  {
+    lua_pushvalue(L, 1);
+    return 1;
+  }
+  return openssl_pushresult(L, ret);
+}
+#endif
 
 /***
 get quit_shutdown is set or not
@@ -1614,6 +1662,9 @@ static luaL_Reg ssl_ctx_funcs[] =
   {"mode",            openssl_ssl_ctx_mode},
   {"timeout",         openssl_ssl_ctx_timeout},
   {"options",         openssl_ssl_ctx_options},
+#if OPENSSL_VERSION_NUMBER > 0x10100000L
+  {"version",         openssl_ssl_ctx_version},
+#endif
 #if OPENSSL_VERSION_NUMBER > 0x1010100FL && !defined(LIBRESSL_VERSION_NUMBER)
   {"num_tickets",     openssl_ssl_ctx_num_tickets},
 #endif

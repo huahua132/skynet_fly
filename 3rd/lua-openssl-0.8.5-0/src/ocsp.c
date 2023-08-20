@@ -183,8 +183,15 @@ static int openssl_ocsp_request_read(lua_State *L)
   BIO *bio = load_bio_object(L, 1);
   int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored"-Wincompatible-function-pointer-types"
+#endif
   OCSP_REQUEST *req = pem ? PEM_read_bio_OCSP_REQUEST(bio, NULL, NULL)
                           : d2i_OCSP_REQUEST_bio(bio, NULL);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
   BIO_free(bio);
 
   if (req)
@@ -352,8 +359,15 @@ static int openssl_ocsp_response_read(lua_State *L)
   int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
   int ret = 0;
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored"-Wincompatible-function-pointer-types"
+#endif
   OCSP_RESPONSE *res = pem ? PEM_read_bio_OCSP_RESPONSE(bio, NULL, NULL)
                            : d2i_OCSP_RESPONSE_bio(bio, NULL);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
   if (res)
   {
     PUSH_OBJECT(res, "openssl.ocsp_response");

@@ -286,6 +286,9 @@ function TestSSL:testSNI()
       assert(ctx:use(pkey, cert))
       certs[#certs + 1] = cert
     end
+    if ctx.version then
+      ctx:version(0x303, 0x303)
+    end
     ctx:set_session_callback(
       function(s, ss)
         -- add
