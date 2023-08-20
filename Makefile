@@ -47,8 +47,8 @@ $(LUA_CLIB_PATH)/rax.so : 3rd/lua-rax/rax.c 3rd/lua-rax/lua_rax.c | $(LUA_CLIB_P
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-rax
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
-SRCS := $(shell find 3rd/lua-openssl -name '*.c')
-HDRS := $(shell find 3rd/lua-openssl -name '*.h')
+SRCS := $(shell find 3rd/lua-openssl-0.8.5-0 -name '*.c')
+HDRS := $(shell find 3rd/lua-openssl-0.8.5-0 -name '*.h')
 INCS := $(sort $(dir $(HDRS)))  # 获取所有子目录路径
 CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
 

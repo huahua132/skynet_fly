@@ -43,4 +43,4 @@ tmp/
 /src/custom.c
 /src/custom.h
 .nvimrc
-openssl.*
+
