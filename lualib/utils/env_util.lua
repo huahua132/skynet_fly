@@ -30,11 +30,11 @@ function M.add_after_load(path)
 	end
 	old_after_load = old_after_load .. path .. ";"
 
-	skynet.resetenv('after_load',old_after_load)
+	skynet.resetenv('afterload',old_after_load)
 end
 
 function M.get_after_load()
-	return skynet.getenv('after_load')
+	return skynet.getenv('afterload')
 end
 
 return M
