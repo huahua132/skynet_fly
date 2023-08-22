@@ -23,6 +23,7 @@ function CMD.start()
 	log.info("pb.decode:",pb_netpack.decode(".login.LoginReq",pb_str))
 
 	log.error("proto_test_m start!!!")
+	return true
 end
 
 function CMD.exit()
