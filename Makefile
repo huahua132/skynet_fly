@@ -12,6 +12,9 @@ LUA_INC ?= skynet/3rd/lua
 CFLAGS = -g -O0 -Wall -I$(LUA_INC)
 SHARED := -fPIC --shared
 
+TLS_LIB=/usr/bin/openssl
+TLS_INC=/usr/include/openssl
+
 $(LUA_CLIB_PATH) :
 	mkdir $(LUA_CLIB_PATH)
 
@@ -58,9 +61,6 @@ SRCS := $(shell find 3rd/lua-openssl-0.8.5-0 -name '*.c')
 HDRS := $(shell find 3rd/lua-openssl-0.8.5-0 -name '*.h')
 INCS := $(sort $(dir $(HDRS)))  # 获取所有子目录路径
 CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
-
-TLS_LIB=/usr/bin/openssl
-TLS_INC=/usr/include/openssl
 
 $(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -L$(TLS_LIB) -I$(TLS_INC) -lssl
