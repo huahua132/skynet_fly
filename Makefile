@@ -11,6 +11,7 @@ CSERVICE_PATH ?= cservice
 LUA_INC ?= skynet/3rd/lua
 CFLAGS = -g -O0 -Wall -I$(LUA_INC)
 SHARED := -fPIC --shared
+skynet := skynet/skynet
 
 TLS_LIB=/usr/bin/openssl
 TLS_INC=/usr/include/openssl
@@ -21,13 +22,11 @@ $(LUA_CLIB_PATH) :
 $(CSERVICE_PATH) :
 	mkdir $(CSERVICE_PATH)
 
-.PHONY : skynet updateskynet
+skynet/Makefile :
+	git submodule update --init
+	chmod -R 744 skynet
 
-skynet : skynet/skynet
-	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
-
-updateskynet :
-	rm -rf skynet && git submodule update --init
+$(skynet) : skynet/Makefile
 	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 #新增的c module服务
@@ -70,7 +69,7 @@ CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
 $(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -L$(TLS_LIB) -I$(TLS_INC) -lssl
 
-build: \
+build: $(skynet) \
  	$(LUA_CLIB_PATH) \
 	$(foreach v,$(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so)
 	$(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
