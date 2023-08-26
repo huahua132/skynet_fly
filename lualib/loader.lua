@@ -42,8 +42,13 @@ end
 local skynet = require "skynet"
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 local env_util = loadfile(skynet_fly_path .. '/lualib/utils/env_util.lua')()
-local pre_load = env_util.get_pre_load()
-local after_load = env_util.get_after_load()
+local pre_load = nil
+local after_load = nil
+
+if SERVICE_NAME ~= "fly_bootstrap" then
+	pre_load = env_util.get_pre_load()
+	after_load = env_util.get_after_load()
+end
 
 if pre_load then
 	for pat in string.gmatch(pre_load, "([^;]+);*") do
