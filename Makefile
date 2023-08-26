@@ -18,6 +18,9 @@ $(LUA_CLIB_PATH) :
 $(CSERVICE_PATH) :
 	mkdir $(CSERVICE_PATH)
 
+skynet/Makefile :
+	git submodule update --init
+
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
