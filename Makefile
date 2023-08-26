@@ -21,8 +21,13 @@ $(LUA_CLIB_PATH) :
 $(CSERVICE_PATH) :
 	mkdir $(CSERVICE_PATH)
 
-skynet/Makefile :
-	git submodule update --init
+.PHONY : skynet updateskynet
+
+skynet : skynet/skynet
+	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
+
+updateskynet :
+	rm -rf skynet && git submodule update --init
 	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 #新增的c module服务
