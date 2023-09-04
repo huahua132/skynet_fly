@@ -15,4 +15,4 @@ fi
 
 shell_path="${skynet_fly_path}/script/shell"
 
-sh ${shell_path}/make_server.sh ${skynet_fly_path}
+bash ${shell_path}/make_server.sh ${skynet_fly_path}
