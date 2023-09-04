@@ -13,9 +13,7 @@ local lua_path = skynet_path .. '/3rd/lua/lua'
 local server_path = "./"
 
 local shell_str = "#!bin/bash\n"
-shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s get_list | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s |\n")
-shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s check_reload | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s check_reload | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs -r -t -L2 sh script/reload.sh \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s check_kill_mod | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs -r -t -L1 sh script/kill_mod.sh \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
