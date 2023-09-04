@@ -27,7 +27,6 @@ skynet/Makefile :
 	chmod -R 744 skynet
 
 $(skynet) : skynet/Makefile
-	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 #新增的c module服务
 CSERVICE = 
@@ -73,6 +72,7 @@ build: $(skynet) \
  	$(LUA_CLIB_PATH) \
 	$(foreach v,$(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so)
 	$(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
+	cd skynet && $(MAKE) linux TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 clean:
 	cd skynet && $(MAKE) clean

@@ -14,10 +14,10 @@ local svr_name = file_util.get_cur_dir_name()
 
 local shell_str = "#!bin/bash\n"
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s get_list | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s |\n")
+shell_str = shell_str .. string.format("xargs curl --http0.9 -s |\n")
 shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s find_server_id contriner_mgr 2 | \\\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s call kill_module $1 | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s")
+shell_str = shell_str .. string.format("xargs curl --http0.9 -s")
 
 local shell_path = server_path .. '/script/'
 
