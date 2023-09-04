@@ -3,3 +3,10 @@
 *.vscode
 *.log
 *.pid
+examples/*/script
+examples/*/*_config.lua*
+examples/*/module_info
+
+test/script
+test/*_config.lua*
+test/module_info

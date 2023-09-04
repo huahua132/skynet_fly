@@ -1,2 +1,2 @@
 #!/bin/bash
-sh ../binshell/make_server.sh ../
+../binshell/make_server.sh ../
