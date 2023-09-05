@@ -13,7 +13,7 @@ local table_util = require "table_util"
 local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
 
-local mod_config_path = server_path .. '/' .. 'mod_config.lua'
+local mod_config_path = server_path  .. 'mod_config.lua'
 
 local old_mod_config = loadfile(mod_config_path)
 
@@ -24,6 +24,7 @@ if not old_mod_config then
 	assert(mod_config)
     file:write(table_util.table_to_luafile("M",mod_config))
     file:close()
+    print("make " .. mod_config_path)
 else
     local new = require "load_mods"
     local old = old_mod_config()
@@ -32,4 +33,5 @@ else
 	local new_file = io.open(mod_config_path,'w+')
 	new_file:write(table_util.table_to_luafile("M",mod_config))
     new_file:close()
+    print("remake " .. mod_config_path)
 end

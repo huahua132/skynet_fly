@@ -16,7 +16,7 @@ local shell_str = "#!bin/bash\n"
 shell_str = shell_str .. string.format("%s/skynet %s_config.lua\n",skynet_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_mod_config_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 
-local shell_path = server_path .. '/script/'
+local shell_path = server_path .. 'script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")

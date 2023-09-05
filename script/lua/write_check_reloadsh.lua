@@ -19,7 +19,7 @@ shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s check
 shell_str = shell_str .. string.format("xargs -r -t -L1 sh script/kill_mod.sh \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_mod_config_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 
-local shell_path = server_path .. '/script/'
+local shell_path = server_path .. 'script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")

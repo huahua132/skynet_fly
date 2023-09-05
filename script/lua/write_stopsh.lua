@@ -15,7 +15,7 @@ local lua_path = skynet_path .. '/3rd/lua/lua'
 local shell_str = "#!bin/bash\n"
 shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua\n",svr_name)
 
-local shell_path = server_path .. '/script/'
+local shell_path = server_path .. 'script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")
