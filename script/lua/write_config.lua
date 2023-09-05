@@ -49,7 +49,7 @@ local config = {
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
 
-local config_path = server_path .. '/' .. svr_name .. '_config.lua'
+local config_path = server_path .. svr_name .. '_config.lua'
 
 local old_config = loadfile(config_path)
 
