@@ -6,3 +6,4 @@
 #apt-get install openssl
 #apt-get install libssl-dev
 #apt-get install autoconf automake libtool
+#apt-get install curl
