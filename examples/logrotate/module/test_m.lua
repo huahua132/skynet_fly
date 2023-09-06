@@ -7,7 +7,9 @@ local os = os
 local CMD = {}
 
 function CMD.start(config)
-    timer:new(timer.second,0,log.info,"test log ",os.date("%Y%m%d",os.time()))
+    timer:new(timer.second,0,function() 
+        log.info("test log ",os.date("%Y%m%d",os.time()))
+    end)
     return true
 end
 
