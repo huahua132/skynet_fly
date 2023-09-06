@@ -30,6 +30,6 @@ function M.day_time(day,hour,min,sec)
 	date.min = min
 	date.sec = sec
 	return os.time(date)
-  end
+end
 
 return M
