@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local socket = require "socket"
 local log = require "log"
+local skynet_util = require "skynet_util"
 local assert = assert
 local string = string
 
@@ -63,14 +64,5 @@ function CMD.closed(_,fd)
 end
 
 skynet.start(function()
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-	
-		if session == 0 then
-			f(source,...)
-		else
-			skynet.retpack(f(source,...))
-		end
-	end)
+	skynet_util.lua_dispatch(CMD,{},true)
 end)

@@ -24,6 +24,7 @@ lua_path = server_path .. "?.lua;" ..
 		   server_path .. "module/?.lua;" ..
 		   server_path .. "lualib/?.lua;" ..
 		   root_path .. "lualib/?.lua;" ..
+		   root_path .. "lualib/utils/?.lua;" ..
 		   skynet_path .. "lualib/?.lua;" ..
 		   skynet_path .. "lualib/compat10/?.lua;" ..
 		   skynet_path .. "lualib/http/?.lua;" ..

@@ -4,6 +4,7 @@ local timer = require "timer"
 local log = require "log"
 local queue = require "skynet.queue"
 local contriner_client = require "contriner_client"
+local skynet_util = require "skynet_util"
 local assert = assert
 local x_pcall = x_pcall
 
@@ -136,17 +137,7 @@ end
 
 skynet.start(function()
 	SELF_ADDRESS = skynet.self()
-
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-	
-		if session == 0 then
-			f(...)
-		else
-			skynet.retpack(f(...))
-		end
-	end)
+	skynet_util.lua_dispatch(CMD,{})
 
 	local confclient = contriner_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')

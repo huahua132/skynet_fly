@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local cache = require "skynet.codecache"
+local skynet_util = require "skynet_util"
 cache.mode "OFF"
 local assert = assert
 local tonumber = tonumber
@@ -29,14 +30,5 @@ function CMD.exit(list)
 end
 
 skynet.start(function()
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-	
-		if session == 0 then
-			f(...)
-		else
-			skynet.retpack(f(...))
-		end
-	end)
+	skynet_util.lua_dispatch(CMD,{})
 end)
