@@ -4,6 +4,7 @@ local contriner_client = require "contriner_client"
 local rpc_redis = require "rpc_redis"
 local log = require "log"
 local timer = require "timer"
+local skynet_util = require "skynet_util"
 
 local assert = assert
 local tonumber = tonumber
@@ -106,16 +107,7 @@ function CMD.broadcast_by_name(module_name,instance_name,...)
 end
 
 skynet.start(function()
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-	
-		if session == 0 then
-			f(...)
-		else
-			skynet.retpack(f(...))
-		end
-	end)
+	skynet_util.lua_dispatch(CMD,{})
 
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','cluster_server')

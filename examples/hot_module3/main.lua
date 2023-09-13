@@ -1,8 +1,8 @@
-local skynet = require "contriner_client_2"
+local skynet = require "contriner_client"
 skynet.start(function()
 	--id 重用测试
 	skynet.error("start hot_module3!!!>>>>>>>>>>>>>>>>>")
-	local cmgr = skynet.uniqueservice('contriner_mgr_2')
+	local cmgr = skynet.uniqueservice('contriner_mgr')
 
 	local id_list,server_1_version = skynet.call(cmgr,'lua','load_module',"server_m",1)
 	local server_1_id = id_list[1]

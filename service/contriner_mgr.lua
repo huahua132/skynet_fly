@@ -1,4 +1,5 @@
 local skynet = require "skynet.manager"
+local skynet_util = require "skynet_util"
 local log = require "log"
 
 local loadfile = loadfile
@@ -166,12 +167,5 @@ end
 
 skynet.start(function()
 	skynet.register('.contriner_mgr')
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-		local r1,r2,r3 = f(source,...)
-		if r1 ~= NORET then
-			skynet_ret(skynet_pack(r1,r2,r3))
-		end
-	end)
+	skynet_util.lua_dispatch(CMD,NORET,true)
 end)

@@ -1,4 +1,5 @@
 local skynet = require "skynet.manager"
+local skynet_util = require "skynet_util"
 local assert = assert
 local ipairs = ipairs
 local table = table
@@ -41,14 +42,6 @@ end
 
 skynet.start(function()
 	skynet.register('.contriner_mgr')
-	skynet.dispatch('lua',function(session,source,cmd,...)
-		local f = CMD[cmd]
-		assert(f,'cmd no found :'..cmd)
-
-		if session == 0 then
-			f(...)
-		else
-			skynet.retpack(f(...))
-		end
-	end)
+	
+	skynet_util.lua_dispatch(CMD,{})
 end)
