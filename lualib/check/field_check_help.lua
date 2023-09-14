@@ -1,11 +1,11 @@
-local log = require "logger"
+local log = require "log"
 local type = type
 local pairs = pairs
 local ipairs = ipairs
 local pcall = pcall
 local next = next
 local assert = assert
-local table_clone = table.copy
+
 -------------------------------------
 --[[
   描述 字段
@@ -23,13 +23,13 @@ local M = {}
 
 function M.check_args(value, check_des, base_map, args_name)
   if type(value) == "nil" then
-    log.fatal("check_args err is a nil value", args_name)
+    log.error("check_args err is a nil value", args_name)
     return false
   end
   if check_des._unpack then
     local ok,ret = pcall(check_des._unpack,value)
     if not ok then
-      log.fatal("check_args unpack err ",value,args_name)
+      log.error("check_args unpack err ",value,args_name)
       return false
     else
       value = ret
@@ -38,11 +38,11 @@ function M.check_args(value, check_des, base_map, args_name)
 
   local _begin_func = check_des._begin_func
   if not _begin_func then
-    log.fatal("check_args not _begin_func ", args_name, check_des)
+    log.error("check_args not _begin_func ", args_name, check_des)
     return false
   end
   if not _begin_func(value) then
-    log.fatal("check_args _begin_func err ", value, args_name)
+    log.error("check_args _begin_func err ", value, args_name)
     return false
   end
 
@@ -50,7 +50,7 @@ function M.check_args(value, check_des, base_map, args_name)
   if type(value) == 'table' then
     check_ret_map = {}
     if not check_des._repeat_field and not check_des._map_field then
-      log.fatal("check_args not _check_field ", args_name)
+      log.error("check_args not _check_field ", args_name)
       return false
     end
     if check_des._repeat_field then
