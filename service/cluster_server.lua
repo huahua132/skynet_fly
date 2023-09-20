@@ -129,6 +129,6 @@ skynet.start(function()
 	if addr then
 		log.error("open cluster_server succ ",g_svr_name,conf.host,addr,port,register)
 	else
-		log.fatal("open cluster_server err ",g_svr_name,conf.host)
+		log.error("open cluster_server err ",g_svr_name,conf.host)
 	end
 end)

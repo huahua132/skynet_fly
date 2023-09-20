@@ -98,8 +98,8 @@ function M:set_cache(key,value)
 	return false
 	end
 	if self.cache_cnt >= self.cache_limit then
-	log.fatal("set_cache cache limit ",key,self.cache_limit)
-	return false
+		log.error("set_cache cache limit ",key,self.cache_limit)
+		return false
 	end
 
 	self:add(key,value)

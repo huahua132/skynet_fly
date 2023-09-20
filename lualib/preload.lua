@@ -30,7 +30,7 @@ function xx_pcall(f,...)
 	local ret = {x_pcall(f,...)}
 	local isok = tremove(ret,1)
 	if not isok then
-		log.fatal(ret[1])
+		log.error(ret[1])
 		return
 	end
 

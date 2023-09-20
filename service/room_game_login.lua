@@ -128,7 +128,7 @@ local function check_func(gate,fd,...)
 	local isok,err = x_pcall(connect_hall,gate,fd,player_id)
 	g_login_lock_map[player_id] = nil
 	if not isok then
-		log.fatal("connect_hall failed ",err)
+		log.error("connect_hall failed ",err)
 		return
 	end
 	
