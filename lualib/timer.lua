@@ -28,7 +28,7 @@ local function time_out_func(t)
 
 	local is_ok,err = x_pcall(t.callback,tunpack(t.args))
 	if not is_ok then
-		log.fatal("time_out_func err ",err,t.callback,t.args)
+		log.error("time_out_func err ",err,t.callback,t.args)
 	end
 end
 

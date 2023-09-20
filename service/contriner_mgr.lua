@@ -77,7 +77,7 @@ function CMD.load_module(source,module_name)
 		local args = mod_args[i] or default_arg
 
 		if not skynet_call(server_id,'lua','start',args) then
-			log.fatal("load_module err ",module_name,args)
+			log.error("load_module err ",module_name,args)
 			return
 		end
 		local instance_name = args.instance_name
