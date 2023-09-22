@@ -118,22 +118,40 @@ function M.update_args(old_t,new_t,check_ret_map,check_des)
     end
   end
 
-  for k,v in pairs(new_t) do
+  local k_map = {}
+  for k,_ in pairs(new_t) do
+    k_map[k] = true
+  end
+
+  for k,_ in pairs(old_t) do
+    k_map[k] = true
+  end
+
+  for k,_ in pairs(k_map) do
     local check_field = check_des._repeat_field
     if not check_field then
       check_field = check_des._map_field[k]
     end
-    if type(v) == 'table' then
-      if type(old_t[k]) == 'nil' then
-        old_t[k] = {}
-      end
-      if (M.update_args(old_t[k],v,check_ret_map[k],check_field)) then
-        is_update = true
-      end
+
+    local nv = new_t[k]
+    local ov = old_t[k]
+
+    local nt = type(nv)
+    local ot = type(ov)
+    if nt ~= ot then
+      is_update = true
+      old_t[k] = nv
     else
-      if (type(old_t[k]) == 'nil' or old_t[k] ~= v) and check_ret_map[k] and (not is_have_fail or check_field._keep_update) then
-        is_update = true
-        old_t[k] = v
+      if nt == 'table' then
+        if (M.update_args(ov,nv,check_ret_map[k],check_field)) then
+          is_update = true
+        end
+      else
+        --有keep_update 同层数自己check没事，其他check有问题也得更新
+        if nv ~= ov and check_ret_map[k] and (not is_have_fail or check_field._keep_update) then
+          is_update = true
+          old_t[k] = nv
+        end
       end
     end
   end
