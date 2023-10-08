@@ -41,7 +41,7 @@ function M.match(player_id) --匹配
 	return nil
 end
 
-function M.createtable(table_id) --创建桌子
+function M.createtable(table_name, table_id, create_player_id) --创建桌子
 	log.info("createtable:",table_id)
 	assert(not g_table_map[table_id],"repeat table_id")
 	g_table_map[table_id] = {
@@ -99,7 +99,11 @@ function M.dismisstable(table_id) --解散桌子
 end
 
 function M.tablefull()
-	return nil,errorcode.TABLE_FULL,"not table"
+	return nil,errorcode.TABLE_FULL,"table full"
+end
+
+function M.table_not_exists()
+	return nil,errorcode.TABLE_NOT_EXISTS,"not table"
 end
 
 return M

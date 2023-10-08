@@ -173,10 +173,18 @@ local function player_game(login_res)
 				opt_num = opt_num,
 			})
 		elseif packname == '.login.LoginRes' then
-			log.error("发送状态请求")
+			log.error("请求匹配")
 			for k,v in pairs(res) do
 				login_res[k] = v
 			end
+			if res.table_server_id ~= 0 then
+				log.error("发送状态请求2")
+				net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			else
+				net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+			end
+		elseif packname == '.login.matchRes' then
+			log.error("发送状态请求")
 			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
 		elseif packname == '.game.GameStatusRes' then
 			local next_doing = res.next_doing
@@ -253,17 +261,17 @@ function CMD.start(config)
 		--reconnecttest()
 
 		--reload_switch_test('room_game_hall_m')
-		--reload_switch_test('room_game_match_m')
-		--reload_switch_test('room_game_room_m')
+		--reload_switch_test('room_game_alloc_m')
+		--reload_switch_test('room_game_table_m')
 
 		--reload_reconnet_test('room_game_hall_m')
-		--reload_reconnet_test('room_game_match_m')
-		--reload_reconnet_test('room_game_room_m')
+		--reload_reconnet_test('room_game_alloc_m')
+		--reload_reconnet_test('room_game_table_m')
 		--player_game()
 		--player_game_reconnect()
 		player_reload_reconnect('room_game_hall_m')
-		--player_reload_reconnect('room_game_match_m')
-		--player_reload_reconnect('room_game_room_m')
+		--player_reload_reconnect('room_game_alloc_m')
+		--player_reload_reconnect('room_game_table_m')
 	end)
 	
 	return true

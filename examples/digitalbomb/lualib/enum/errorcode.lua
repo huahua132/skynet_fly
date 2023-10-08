@@ -8,4 +8,5 @@ return {
 	TABLE_ENTER_ERR = 6,--坐下失败
 	LOGINING = 7,       --登录中
 	playing = 8,        --游戏进行中
+	TABLE_NOT_EXISTS = 9, --桌子不存在
 }

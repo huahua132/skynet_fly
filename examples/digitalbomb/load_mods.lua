@@ -27,23 +27,24 @@ return {
 		}
 	},
 
-	--匹配服
-	room_game_match_m = {
+	--桌子分配服
+	room_game_alloc_m = {
 		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
-			match_plug = "match_plug_pb",
+			match_plug = "alloc_plug_pb",
 			MAX_TABLES = 10000,
 		}
 	},
 
-	--房间服
-	room_game_room_m = {
+	--桌子服
+	room_game_table_m = {
 		launch_seq = 4,
 		launch_num = 6,
 		default_arg = {
-			room_plug = "room_plug_pb",
-			room_conf = {
+			instance_name = "default",
+			table_plug = "table_plug_pb",
+			table_conf = {
 				player_num = 2,
 			}
 		}

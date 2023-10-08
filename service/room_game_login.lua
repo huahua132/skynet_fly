@@ -7,6 +7,7 @@ local contriner_client = require "contriner_client"
 local skynet_util = require "skynet_util"
 local assert = assert
 local x_pcall = x_pcall
+local pairs = pairs
 
 local login_plug = nil
 local SELF_ADDRESS = nil
@@ -16,6 +17,10 @@ local g_gate = nil
 local g_fd_agent_map = {}
 local g_player_map = {}
 local g_login_lock_map = {}
+
+----------------------------------------------------------------------------------
+--private
+----------------------------------------------------------------------------------
 
 local function close_fd(fd)
 	local agent = g_fd_agent_map[fd]
@@ -27,6 +32,90 @@ local function close_fd(fd)
 	skynet.send(agent.gate,'lua','kick',fd)
 end
 
+local function connect_hall(gate,fd,player_id)
+	local old_agent = g_player_map[player_id]
+	local hall_client = nil
+	if old_agent then
+		hall_client = old_agent.hall_client
+		login_plug.repeat_login(player_id)
+		close_fd(old_agent.fd)
+	else
+		hall_client = contriner_client:new("room_game_hall_m",nil,function() return false end)
+		hall_client:set_mod_num(player_id)
+	end
+	
+	local ret,errcode,errmsg = hall_client:mod_call("connect",gate,fd,player_id,SELF_ADDRESS)
+	if not ret then
+		login_plug.login_failed(player_id,errcode,errmsg)
+		return
+	end
+
+	g_player_map[player_id] = {
+		player_id = player_id,
+		hall_client = hall_client,
+		gate = gate,
+		fd = fd,
+	}
+
+	login_plug.login_succ(player_id,ret)
+	return true
+end
+
+local function check_func(gate,fd,...)
+	local player_id,errcode,errmsg = login_plug.check(...)
+	if not player_id then
+		login_plug.login_failed(player_id,errcode,errmsg)
+		return
+	end
+
+	if g_login_lock_map[player_id] then
+		--正在登入中
+		login_plug.logining(player_id)
+		return
+	end
+	
+	g_login_lock_map[player_id] = true
+	local isok,err = x_pcall(connect_hall,gate,fd,player_id)
+	g_login_lock_map[player_id] = nil
+	if not isok then
+		log.error("connect_hall failed ",err)
+		return
+	end
+	
+	return player_id
+end
+
+----------------------------------------------------------------------------------
+--interface
+----------------------------------------------------------------------------------
+local interface = {}
+
+--发送消息
+function interface:send_msg(player_id,packname,pack_body)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.info("send msg not agent ",player_id)
+		return
+	end
+	login_plug.send(agent.gate,agent.fd,packname,pack_body)
+end
+
+--发送消息给部分玩家
+function interface:send_msg_by_player_list(player_list,packname,pack_body)
+	for i = 1,#player_list do
+		interface:send_msg(player_list[i],packname,pack_body)
+	end
+end
+
+--广播发送消息
+function interface:broad_cast_msg(packname,pack_body)
+	for player_id,_ in pairs(g_player_map) do
+		interface:send_msg(player_id,packname,pack_body)
+	end
+end
+----------------------------------------------------------------------------------
+--CMD
+----------------------------------------------------------------------------------
 local CMD = {}
 
 function CMD.goout(player_id)
@@ -34,6 +123,7 @@ function CMD.goout(player_id)
 
 	g_player_map[player_id] = nil
 	login_plug.login_out(player_id)
+	close_fd(agent.fd)
 end
 
 local SOCKET = {}
@@ -67,8 +157,8 @@ function SOCKET.close(fd)
 	local player = g_player_map[player_id]
 	if player then
 		local hall_client = player.hall_client
+		login_plug.disconnect(player_id)
 		hall_client:mod_send('disconnect',agent.gate,fd,player_id)
-		login_plug.disconnect(agent.gate,fd,player_id)
 	end
 end
 
@@ -80,59 +170,6 @@ function CMD.socket(cmd,...)
 	assert(SOCKET[cmd],'not cmd '.. cmd)
 	local f = SOCKET[cmd]
 	f(...)
-end
-
-local function connect_hall(gate,fd,player_id)
-	local old_agent = g_player_map[player_id]
-	local hall_client = nil
-	if old_agent then
-		hall_client = old_agent.hall_client
-		login_plug.repeat_login(old_agent.gate,old_agent.fd,player_id)
-		close_fd(old_agent.fd)
-	else
-		hall_client = contriner_client:new("room_game_hall_m",nil,function() return false end)
-		hall_client:set_mod_num(player_id)
-	end
-	
-	local ret,errcode,errmsg = hall_client:mod_call("connect",gate,fd,player_id,SELF_ADDRESS)
-	if not ret then
-		login_plug.login_failed(gate,fd,player_id,errcode,errmsg)
-		return
-	end
-
-	g_player_map[player_id] = {
-		player_id = player_id,
-		hall_client = hall_client,
-		gate = gate,
-		fd = fd,
-	}
-
-	login_plug.login_succ(gate,fd,player_id,ret)
-	return true
-end
-
-local function check_func(gate,fd,...)
-	local player_id,errcode,errmsg = login_plug.check(gate,fd,...)
-	if not player_id then
-		login_plug.login_failed(gate,fd,player_id,errcode,errmsg)
-		return
-	end
-
-	if g_login_lock_map[player_id] then
-		--正在登入中
-		login_plug.logining(gate,fd,player_id)
-		return
-	end
-	
-	g_login_lock_map[player_id] = true
-	local isok,err = x_pcall(connect_hall,gate,fd,player_id)
-	g_login_lock_map[player_id] = nil
-	if not isok then
-		log.error("connect_hall failed ",err)
-		return
-	end
-	
-	return player_id
 end
 
 skynet.start(function()
@@ -149,6 +186,7 @@ skynet.start(function()
 	login_plug = require (room_game_login.login_plug)
 	assert(login_plug.init,"login_plug not init")				   --初始化
 	assert(login_plug.unpack,"login_plug not unpack")              --解包函数
+	assert(login_plug.send,"login_plug not send")                  --发包函数
 	assert(login_plug.check,"login_plug not check")				   --登录检查
 	assert(login_plug.login_succ,"login_plug not login_succ")	   --登录成功
 	assert(login_plug.login_failed,"login_plug not login_failed")  --登录失败
@@ -187,7 +225,7 @@ skynet.start(function()
 			end
 		end,
 	}
+	login_plug.init(interface)
 	g_gate = skynet.newservice(room_game_login.gateservice)
-	login_plug.init()
 	skynet.call(g_gate,'lua','open',room_game_login.gateconf)
 end)
