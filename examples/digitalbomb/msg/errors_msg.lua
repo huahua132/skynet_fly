@@ -1,9 +1,20 @@
 local pbnet_util = require "pbnet_util"
 local errorcode = require "errorcode"
 
-local M = {}
+local setmetatable = setmetatable 
 
-function M.errors(gate,fd,code,msg,packname)
+local M = {}
+local meta = {__index = M}
+
+function M:new(agent_mgr)
+	local t = {
+		agent_mgr = agent_mgr
+	}
+	setmetatable(t,meta)
+	return t
+end
+
+function M:errors(player_id,code,msg,packname)
 	if not code then
 		code = errorcode.UNKOWN_ERR
 		msg = "unkown err"
@@ -14,7 +25,7 @@ function M.errors(gate,fd,code,msg,packname)
 		packname = packname,
 	}
 
-	pbnet_util.send(gate,fd,'.errors.Error',error)
+	self.agent_mgr:send_msg(player_id,'.errors.Error',error)
 end
 
 return M
