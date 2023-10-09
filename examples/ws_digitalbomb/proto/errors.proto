@@ -1,7 +1,0 @@
-package errors;
-
-message Error {
-	optional int32 code = 1;           //错误码
-	optional string msg = 2;		   //错误信息补充
-	optional string reqname = 3;	   //错误请求包名
-}
