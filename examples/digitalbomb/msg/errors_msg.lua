@@ -1,4 +1,3 @@
-local pbnet_util = require "pbnet_util"
 local errorcode = require "errorcode"
 
 local setmetatable = setmetatable 

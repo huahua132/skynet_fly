@@ -8,6 +8,7 @@ local assert = assert
 local next = next
 
 local g_table_map = {}
+local g_cant_enter_map = {}
 local MAX_PLAYER_NUM = 2
 
 local M = {}
@@ -24,7 +25,9 @@ function M.match(player_id) --匹配
 		if not table_num_map[player_num] then
 			table_num_map[player_num] = {}
 		end
-		table.insert(table_num_map[player_num],t_info)
+		if not g_cant_enter_map[table_id] then
+			table.insert(table_num_map[player_num],t_info)
+		end
 	end
 
 	--log.info("matching_table",g_table_map,table_num_map)
@@ -41,7 +44,7 @@ function M.match(player_id) --匹配
 	return nil
 end
 
-function M.createtable(table_id) --创建桌子
+function M.createtable(table_name, table_id, create_player_id) --创建桌子
 	log.info("createtable:",table_id)
 	assert(not g_table_map[table_id],"repeat table_id")
 	g_table_map[table_id] = {
@@ -66,6 +69,9 @@ function M.entertable(table_id,player_id)  --进入桌子
 	end
 
 	table.insert(t_info.player_list,player_id)
+	if #t_info.player_list == MAX_PLAYER_NUM then
+		g_cant_enter_map[table_id] = true
+	end
 end
 
 function M.leavetable(table_id,player_id)  --离开桌子
@@ -95,11 +101,16 @@ function M.dismisstable(table_id) --解散桌子
 
 	assert(not next(player_list),"dismisstable exists player " .. #player_list)
 
+	g_cant_enter_map[table_id] = nil
 	g_table_map[table_id] = nil
 end
 
 function M.tablefull()
-	return nil,errorcode.TABLE_FULL,"not table"
+	return nil,errorcode.TABLE_FULL,"table full"
+end
+
+function M.table_not_exists()
+	return nil,errorcode.TABLE_NOT_EXISTS,"not table"
 end
 
 return M

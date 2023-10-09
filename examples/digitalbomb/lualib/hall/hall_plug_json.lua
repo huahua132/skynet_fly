@@ -5,62 +5,75 @@ local contriner_client = require "contriner_client"
 local queue = require "skynet.queue"
 local timer = require "timer"
 local jsonet_util = require "jsonet_util"
-local errors_msg_json = require "errors_msg_json"
-local login_msg_json = require "login_msg_json"
+local errors_msg = require "errors_msg"
+local login_msg = require "login_msg"
 local pcall = pcall
 local next = next
 local assert = assert
 
 local g_fd_map = {}
+local g_agent_mgr = nil
 
 local M = {}
 
 M.unpack = jsonet_util.unpack
+M.send = jsonet_util.send
 
-function M.init()
-	
-end
-
-function M.dispatch(gate,fd,packname,req,CMD)
-	local agent = g_fd_map[fd]
-	if not agent then
-		log.error("dispatch not agent ",fd,packname)
-		return
-	end
-	if packname ~= '.login.LoginOutReq' then
-		return false
-	end
-
-	local ok,errorcode,errormsg = CMD.goout(agent.player_id)
+local function login_out_req(player_id,packname,pack_body)
+	local ok,errorcode,errormsg = g_agent_mgr:goout(player_id)
 	if not ok then
 		log.error("dispatch err ",errorcode,errormsg)
-		errors_msg_json.errors(gate,fd,errorcode,errormsg,packname)
+		errors_msg:errors(player_id,errorcode,errormsg,packname)
 	else
-		login_msg_json.login_out_res(gate,fd,{player_id = agent.player_id})
+		login_msg:login_out_res(player_id,{player_id = player_id})
 	end
-		
-	return true
 end
 
-function M.connect(gate,fd,player_id)
-	log.info("hall_plug connect ",fd,player_id)
-	assert(not g_fd_map[fd])
-	g_fd_map[fd] = {
-		player_id = player_id
+local function match_req(player_id,packname,pack_body)
+	local ok,errorcode,errormsg = g_agent_mgr:match_join(player_id,pack_body.table_name)
+	if not ok then
+		log.error("dispatch err ",errorcode,errormsg)
+		errors_msg:errors(player_id,errorcode,errormsg,packname)
+	else
+		login_msg:match_res(player_id,{table_id = errorcode})
+	end
+end
+
+local function server_info_req(player_id,packname,pack_body)
+	local server_info = {
+		player_id = player_id,
+		hall_server_id = g_agent_mgr:get_hall_server_id(),
+		alloc_server_id = g_agent_mgr:get_alloc_server_id(player_id),
+		table_server_id = g_agent_mgr:get_table_server_id(player_id),
+		table_id = g_agent_mgr:get_table_id(player_id),
+	}
+	login_msg:server_info_res(player_id,server_info)
+end
+
+function M.init(agent_mgr)
+	g_agent_mgr = agent_mgr
+	errors_msg = errors_msg:new(agent_mgr)
+	login_msg = login_msg:new(agent_mgr)
+	g_agent_mgr:handle('.login.LoginOutReq',login_out_req)
+	g_agent_mgr:handle('.login.matchReq',match_req)
+	g_agent_mgr:handle('.login.serverInfoReq',server_info_req)
+end
+
+function M.connect(player_id)
+	log.info("hall_plug connect ",player_id)
+	return {
+		player_id = player_id,
 	}
 end
 
-function M.disconnect(gate,fd,player_id)
-	log.info("hall_plug disconnect ",fd,player_id)
-	assert(g_fd_map[fd])
-	g_fd_map[fd] = nil
+function M.disconnect(player_id)
+	log.info("hall_plug disconnect ",player_id)
 end
 
-function M.reconnect(gate,fd,player_id)
-	log.info("hall_plug reconnect ",fd,player_id)
-	assert(not g_fd_map[fd])
-	g_fd_map[fd] = {
-		player_id = player_id
+function M.reconnect(player_id)
+	log.info("hall_plug reconnect ",player_id)
+	return {
+		player_id = player_id,
 	}
 end
 

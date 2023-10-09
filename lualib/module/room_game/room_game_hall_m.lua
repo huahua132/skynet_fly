@@ -69,15 +69,14 @@ local function join(agent, player_id, table_name, table_id)
 end
 --离开桌子
 local function leave(agent)
-	local isok,errcode,errmsg 
+	local isok,errcode,errmsg
+	isok = true
 	local alloc_client = agent.alloc_client           --走匹配的
 	local alloc_server_id = agent.alloc_server_id     --直接进入房间的
 	if alloc_client then
 		isok,errcode,errmsg = alloc_client:mod_call('leave',agent.player_id)
 	elseif alloc_server_id then
 		isok,errcode,errmsg = xx_pcall(skynet.call,alloc_server_id,'leave',agent.player_id)
-	else
-		assert(1 == 2,"not alloc server")
 	end
 
 	if not isok then
@@ -137,6 +136,9 @@ local function connect(agent,is_reconnect)
 	return login_res
 end
 
+local function clean_agent(player_id)
+	g_player_map[player_id] = nil
+end
 --登出
 local function goout(agent)
 	local player_id = agent.player_id
@@ -145,10 +147,9 @@ local function goout(agent)
 		log.error("can`t leave !!! ",player_id,errcode,errmsg)
 		return nil,errcode,errmsg
 	end
-
-	g_player_map[player_id] = nil
-	skynet.send(agent.watchdog,'lua','goout',player_id)
 	hall_plug.goout(player_id)
+	skynet.send(agent.watchdog,'lua','goout',player_id)
+	skynet.fork(clean_agent,player_id)
 	return true
 end
 
@@ -251,7 +252,7 @@ end
 function interface:send_msg(player_id,packname,pack_body)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.info("send msg not agent ",player_id)
+		log.info("send msg not agent ",player_id,packname)
 		return
 	end
 	hall_plug.send(agent.gate,agent.fd,packname,pack_body)

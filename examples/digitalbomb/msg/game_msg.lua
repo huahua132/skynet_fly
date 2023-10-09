@@ -1,5 +1,3 @@
-local pbnet_util = require "pbnet_util"
-
 local setmetatable = setmetatable
 
 local agent_mgr = nil

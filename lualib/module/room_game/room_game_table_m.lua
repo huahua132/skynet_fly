@@ -35,7 +35,7 @@ local function send_msg(table_id,player_id,packname,pack_body)
 	local player_map = t_info.player_map
     local player = player_map[player_id]
 	if not player then
-		log.info("send msg not player ",player_id)
+		log.info("send msg not player ",player_id,packname)
 		return
 	end
     table_plug.send(player.gate,player.fd,packname,pack_body)

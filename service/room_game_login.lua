@@ -94,7 +94,7 @@ local interface = {}
 function interface:send_msg(player_id,packname,pack_body)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.info("send msg not agent ",player_id)
+		log.info("send msg not agent ",player_id,packname)
 		return
 	end
 	login_plug.send(agent.gate,agent.fd,packname,pack_body)
