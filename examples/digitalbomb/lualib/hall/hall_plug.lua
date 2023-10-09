@@ -4,7 +4,7 @@ local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local queue = require "skynet.queue"
 local timer = require "timer"
-local pbnet_util = require "pbnet_util"
+local module_cfg = require "module_info".get_cfg()
 local pb_netpack = require "pb_netpack"
 local errors_msg = require "errors_msg"
 local login_msg = require "login_msg"
@@ -17,8 +17,8 @@ local g_agent_mgr = nil
 
 local M = {}
 
-M.unpack = pbnet_util.unpack
-M.send = pbnet_util.send
+M.unpack = require(module_cfg.net_util).unpack
+M.send = require(module_cfg.net_util).send
 
 local function login_out_req(player_id,packname,pack_body)
 	local ok,errorcode,errormsg = g_agent_mgr:goout(player_id)

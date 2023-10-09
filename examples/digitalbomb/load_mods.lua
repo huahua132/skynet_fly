@@ -13,7 +13,8 @@ return {
 					port = 8001,
 					maxclient = 2048,
 				},
-				login_plug = "login_check_pb",
+				login_plug = "login_check",
+				net_util = "pbnet_util",
 			}
 		}
 	},
@@ -23,7 +24,8 @@ return {
 		launch_seq = 2,
 		launch_num = 6,
 		default_arg = {
-			hall_plug = "hall_plug_pb",
+			hall_plug = "hall_plug",
+			net_util = "pbnet_util",
 		}
 	},
 
@@ -32,7 +34,7 @@ return {
 		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
-			match_plug = "alloc_plug_pb",
+			match_plug = "alloc_plug",
 			MAX_TABLES = 10000,
 		}
 	},
@@ -43,7 +45,8 @@ return {
 		launch_num = 6,
 		default_arg = {
 			instance_name = "default",
-			table_plug = "table_plug_pb",
+			table_plug = "table_plug",
+			net_util = "pbnet_util",
 			table_conf = {
 				player_num = 2,
 			}

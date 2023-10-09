@@ -1,7 +1,6 @@
 local log = require "log"
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
-local pbnet_util = require "pbnet_util"
 local pb_netpack = require "pb_netpack"
 local timer = require "timer"
 local errorcode = require "errorcode"
@@ -15,12 +14,15 @@ local agent_mgr = nil
 
 local M = {}
 
+local confclient = contriner_client:new("share_config_m")
+local room_game_login = confclient:mod_call('query','room_game_login')
+
 --登录检测的超时时间
 M.time_out = timer.second * 5
 --解包函数
-M.unpack = pbnet_util.unpack
+M.unpack = require(room_game_login.net_util).unpack
 --发包函数
-M.send = pbnet_util.send
+M.send = require(room_game_login.net_util).send
 
 function M.init(agent_mgr)
 	agent_mgr = agent_mgr
