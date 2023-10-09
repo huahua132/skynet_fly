@@ -1,5 +1,3 @@
-local pbnet_util = require "pbnet_util"
-
 local setmetatable = setmetatable
 
 local agent_mgr = nil
@@ -25,6 +23,10 @@ end
 
 function M:match_res(player_id,match_res)
 	self.agent_mgr:send_msg(player_id,'.login.matchRes',match_res)
+end
+
+function M:server_info_res(player_id,server_info_res)
+	self.agent_mgr:send_msg(player_id,'.login.serverInfoRes',server_info_res)
 end
 
 return M

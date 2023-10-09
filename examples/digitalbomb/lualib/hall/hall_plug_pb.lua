@@ -40,12 +40,24 @@ local function match_req(player_id,packname,pack_body)
 	end
 end
 
+local function server_info_req(player_id,packname,pack_body)
+	local server_info = {
+		player_id = player_id,
+		hall_server_id = g_agent_mgr:get_hall_server_id(),
+		alloc_server_id = g_agent_mgr:get_alloc_server_id(player_id),
+		table_server_id = g_agent_mgr:get_table_server_id(player_id),
+		table_id = g_agent_mgr:get_table_id(player_id),
+	}
+	login_msg:server_info_res(player_id,server_info)
+end
+
 function M.init(agent_mgr)
 	g_agent_mgr = agent_mgr
 	errors_msg = errors_msg:new(agent_mgr)
 	login_msg = login_msg:new(agent_mgr)
 	g_agent_mgr:handle('.login.LoginOutReq',login_out_req)
 	g_agent_mgr:handle('.login.matchReq',match_req)
+	g_agent_mgr:handle('.login.serverInfoReq',server_info_req)
 	pb_netpack.load("./proto")
 end
 
@@ -53,10 +65,6 @@ function M.connect(player_id)
 	log.info("hall_plug connect ",player_id)
 	return {
 		player_id = player_id,
-		hall_server_id = g_agent_mgr:get_hall_server_id(),
-		alloc_server_id = g_agent_mgr:get_alloc_server_id(player_id),
-		table_server_id = g_agent_mgr:get_table_server_id(player_id),
-		table_id = g_agent_mgr:get_table_id(player_id),
 	}
 end
 
@@ -68,10 +76,6 @@ function M.reconnect(player_id)
 	log.info("hall_plug reconnect ",player_id)
 	return {
 		player_id = player_id,
-		hall_server_id = g_agent_mgr:get_hall_server_id(),
-		alloc_server_id = g_agent_mgr:get_alloc_server_id(player_id),
-		table_server_id = g_agent_mgr:get_table_server_id(player_id),
-		table_id = g_agent_mgr:get_table_id(player_id),
 	}
 end
 

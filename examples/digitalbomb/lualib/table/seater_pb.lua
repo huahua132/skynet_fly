@@ -1,4 +1,3 @@
-local skynet = require "skynet"
 local SEAT_STATE = require "SEAT_STATE"
 local log = require "log"
 local setmetatable = setmetatable

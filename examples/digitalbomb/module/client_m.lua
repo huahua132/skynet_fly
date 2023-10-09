@@ -81,11 +81,16 @@ local function reload_switch_test(mod_name)
 	local wi = coroutine.running()
 	local login_res = nil
 	local out_wi = nil
-	local fd = connnect(function(_,packname,res)
+	local fd
+	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch1:",g_config.net_util,packname,res)
 		if packname == '.login.LoginRes' then
-			skynet.wakeup(wi)
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+		elseif packname == '.login.serverInfoRes' then
 			login_res = res
+			skynet.wakeup(wi)
+		elseif packname == '.login.matchRes' then
+			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
 		elseif packname == '.login.LoginOutRes' then
 			skynet.wakeup(out_wi)
 		end
@@ -98,11 +103,15 @@ local function reload_switch_test(mod_name)
 	skynet.wait(out_wi)
 	local new_login_res = nil
 	local wi = coroutine.running()
-	local fd = connnect(function(_,packname,res)
+	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch2:",packname,res)
 		if packname == '.login.LoginRes' then
-			skynet.wakeup(wi)
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+		elseif packname == '.login.serverInfoRes' then
 			new_login_res = res
+			skynet.wakeup(wi)
+		elseif packname == '.login.matchRes' then
+			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
 		end
 	end)
 	skynet.wait(wi)
@@ -173,20 +182,17 @@ local function player_game(login_res)
 				opt_num = opt_num,
 			})
 		elseif packname == '.login.LoginRes' then
-			log.error("请求匹配")
+			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+		elseif packname == '.login.serverInfoRes' then
 			for k,v in pairs(res) do
 				login_res[k] = v
-			end
-			if res.table_server_id ~= 0 then
-				log.error("发送状态请求2")
-				net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-			else
-				net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
 			end
 		elseif packname == '.login.matchRes' then
 			log.error("发送状态请求")
 			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
 		elseif packname == '.game.GameStatusRes' then
+			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
 			local next_doing = res.next_doing
 			if next_doing.doing_player_id ~= g_config.player_id then
 				return
@@ -269,9 +275,9 @@ function CMD.start(config)
 		--reload_reconnet_test('room_game_table_m')
 		--player_game()
 		--player_game_reconnect()
-		player_reload_reconnect('room_game_hall_m')
+		--player_reload_reconnect('room_game_hall_m')
 		--player_reload_reconnect('room_game_alloc_m')
-		--player_reload_reconnect('room_game_table_m')
+		player_reload_reconnect('room_game_table_m')
 	end)
 	
 	return true
