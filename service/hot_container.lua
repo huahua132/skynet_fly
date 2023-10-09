@@ -2,8 +2,6 @@ local skynet = require "skynet"
 local cache = require "skynet.codecache"
 cache.mode "OFF"
 
-local skynet_util = require "skynet_util"
-
 local assert = assert
 local tonumber = tonumber
 local table = table
@@ -13,8 +11,6 @@ MODULE_NAME = ARGV[1]
 local INDEX = tonumber(ARGV[2])
 local LAUNCH_TIME = ARGV[3]
 assert(MODULE_NAME)
-
-local log = require "log"
 
 local new_loaded = {}
 
@@ -33,6 +29,9 @@ local MODULE_NAME = MODULE_NAME
 
 local CMD = require(MODULE_NAME)
 local write_mod_required = require "write_mod_required"
+local skynet_util = require "skynet_util"
+local log = require "log"
+local module_info = require "module_info"
 
 local module_start = CMD.start
 local module_exit = CMD.exit
@@ -47,8 +46,15 @@ skynet.exit = function()
 	old_skynet_exit()
 end
 
-function CMD.start(...)
-	local ret = {module_start(...)}
+function CMD.start(cfg)
+	module_info.set_cfg(cfg)
+	module_info.set_base_info {
+		module_name = MODULE_NAME,
+		index = INDEX,
+		launch_time = LAUNCH_TIME,
+		launch_timestamp = ARGV[4],
+	}
+	local ret = {module_start(cfg)}
 	if INDEX == 1 then
 		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)

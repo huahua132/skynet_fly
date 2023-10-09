@@ -1,8 +1,9 @@
 local skynet = require "skynet"
-local jsonet_util = require "jsonet_util"
+local pb_netpack = require "pb_netpack"
+local module_cfg = require "module_info".get_cfg()
 local log = require "log"
 local GAME_STATE_ENUM = require "GAME_STATE"
-local seater = require "seater_pb"
+local seater = require "seater"
 local errorcode = require "errorcode"
 local errors_msg = require "errors_msg"
 local game_msg = require "game_msg"
@@ -23,12 +24,13 @@ local MINE_MAX = 100
 
 local M = {}
 
-M.send = jsonet_util.send
+M.send = require(module_cfg.net_util).send
 
 function M.init(table_conf,agent_mgr)
 	g_table_conf = table_conf
 	g_agent_mgr = agent_mgr
 	assert(g_table_conf.player_num,"not player_num")
+	pb_netpack.load('./proto')
 end
 
 function M.table_creator(table_id)
