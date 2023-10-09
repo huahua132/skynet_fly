@@ -14,7 +14,7 @@ local ipairs = ipairs
 local table = table
 local math = math
 
-local g_table_conf = nil
+local g_table_conf = module_cfg.table_conf
 local g_agent_mgr = nil
 
 --======================enum=================================
@@ -26,8 +26,7 @@ local M = {}
 
 M.send = require(module_cfg.net_util).send
 
-function M.init(table_conf,agent_mgr)
-	g_table_conf = table_conf
+function M.init(agent_mgr)
 	g_agent_mgr = agent_mgr
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')

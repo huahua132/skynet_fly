@@ -207,7 +207,7 @@ function CMD.start(config)
 	assert(table_plug.table_creator,"not table_creator")          --桌子建造者
     assert(table_plug.send,"not send")                           --消息发送函数
 
-    table_plug.init(config.table_conf,interface)
+    table_plug.init(interface)
 	local tmp_table = table_plug.table_creator(1,config.instance_name)
 
 	assert(tmp_table.enter,"table_creator not enter")           --坐下
