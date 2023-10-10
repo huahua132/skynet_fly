@@ -71,6 +71,7 @@ function M.table_creator(table_id)
 --state
 -----------------------------------------------------------------------
 	local function game_start()
+		m_agent_mgr:call_alloc("update_state",GAME_STATE_ENUM.playing)
 		m_game_state = GAME_STATE_ENUM.playing
 		m_game_seat_id_list = {}
 
@@ -95,13 +96,15 @@ function M.table_creator(table_id)
 
 	local function game_over(player_id)
 		log.info("游戏结束！！！")
+		m_agent_mgr:call_alloc("update_state",GAME_STATE_ENUM.over)
+		m_game_state = GAME_STATE_ENUM.over
 		local args = {
 			lose_player_id = player_id,
 			mine = m_mine,
 		}
 
 		m_game_msg:broad_game_over(args)
-		m_game_state = GAME_STATE_ENUM.over
+
 
 		for seat_id,seater in ipairs(m_seat_list) do
 			if not seater:is_empty() then

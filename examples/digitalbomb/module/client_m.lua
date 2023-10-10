@@ -54,6 +54,13 @@ local function close(fd)
 	end
 end
 
+--掉线测试
+local function disconnect_test()
+	local fd = connnect()
+	skynet.sleep(100)
+	close(fd)
+end
+
 --重复登录测试
 local function repeat_connect_test()
 	connnect()
@@ -72,7 +79,7 @@ end
 local function reconnecttest()
 	local fd = connnect()
 	skynet.sleep(100)
-	close()
+	close(fd)
 	fd = connnect()
 end
 
@@ -207,6 +214,8 @@ local function player_game(login_res)
 			net_util.send(nil,fd,'.game.DoingReq',{
 				opt_num = opt_num,
 			})
+		elseif packname == '.game.GameOverCast' then
+			loginout(fd)
 		end
 	end)
 
@@ -261,6 +270,7 @@ function CMD.start(config)
 	net_util = require (config.net_util)
 	
 	skynet.fork(function()
+		--disconnect_test()
 		--repeat_connect_test()
 		--repeat_loginout_test()
 
@@ -268,7 +278,7 @@ function CMD.start(config)
 
 		--reload_switch_test('room_game_hall_m')
 		--reload_switch_test('room_game_alloc_m')
-		--reload_switch_test('room_game_table_m')
+		reload_switch_test('room_game_table_m')
 
 		--reload_reconnet_test('room_game_hall_m')
 		--reload_reconnet_test('room_game_alloc_m')
@@ -277,7 +287,7 @@ function CMD.start(config)
 		--player_game_reconnect()
 		--player_reload_reconnect('room_game_hall_m')
 		--player_reload_reconnect('room_game_alloc_m')
-		player_reload_reconnect('room_game_table_m')
+		--player_reload_reconnect('room_game_table_m')
 	end)
 	
 	return true

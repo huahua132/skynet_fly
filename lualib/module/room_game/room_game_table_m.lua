@@ -6,6 +6,7 @@ local assert = assert
 local next = next
 local pairs = pairs
 local setmetatable = setmetatable
+local tostring = tostring
 
 local g_table_map = {}
 local g_config = nil
@@ -13,29 +14,83 @@ local table_plug = nil
 -------------------------------------------------------------------------------
 --private
 -------------------------------------------------------------------------------
+local function get_table_info(table_id)
+	if not g_table_map[table_id] then
+		log.warn("get_table_info not exists table_id = ",table_id)
+		return
+	end
+	return g_table_map[table_id]
+end
+
+local function get_player_info(table_id,player_id)
+	if not g_table_map[table_id] then
+		log.warn("get_player_info not exists table_id = ",table_id)
+		return
+	end
+	local t_info = g_table_map[table_id]
+	local player_map = t_info.player_map
+
+	if not player_map[player_id] then
+		log.warn("get_player_info not exists player_id = ",player_id)
+		return
+	end
+
+	return player_map[player_id]
+end
+
 --踢出所有玩家
 local function kick_out_all(table_id)
-	assert(g_table_map[table_id])
+	if not g_table_map[table_id] then
+		log.warn("kick_out_all not exists table_id = ",table_id)
+		return
+	end
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 
 	for player_id,player in pairs(player_map) do
-		local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','goout',player_id)
+		local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id)
 		if not isok then
-			log.error("leave err ",player_id,err,errmsg)
+			log.warn("kick_player err ",player_id,err,errmsg)
 		end
 	end
 	return true
 end
 
+--踢出单个玩家
+local function kick_player(table_id,player_id)
+	local player = get_player_info(table_id,player_id)
+	if not player then
+		log.warn("kick_player not exists ",table_id,player_id)
+		return false
+	end
+
+	local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id)
+	if not isok then
+		log.warn("kick_player err ",player_id,err,errmsg)
+		return false
+	end
+	return true
+end
+
+local function is_online(table_id,player_id)
+	local player = get_player_info(table_id,player_id)
+	if not player then
+		log.warn("is_online not exists ",table_id,player_id)
+		return
+	end
+
+	return player.fd ~= 0
+end
+
 --发送消息
 local function send_msg(table_id,player_id,packname,pack_body)
-    assert(g_table_map[table_id])
-    local t_info = g_table_map[table_id]
-	local player_map = t_info.player_map
-    local player = player_map[player_id]
+    local player = get_player_info(table_id,player_id)
 	if not player then
-		log.info("send msg not player ",player_id,packname)
+		log.warn("send_msg not exists player ",table_id,player_id)
+		return
+	end
+	if not is_online(table_id,player_id) then
+		log.info("send msg not online ",table_id,player_id)
 		return
 	end
     table_plug.send(player.gate,player.fd,packname,pack_body)
@@ -50,11 +105,18 @@ end
 
 --广播发送消息
 local function broad_cast_msg(table_id,packname,pack_body)
-    assert(g_table_map[table_id])
+	if not g_table_map[table_id] then
+		log.warn("broad_cast_msg not exists table_id = ",table_id)
+		return
+	end
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
-	for player_id,_ in pairs(player_map) do
-		send_msg(table_id,player_id,packname,pack_body)
+	for player_id,player in pairs(player_map) do
+		if player.fd ~= 0 then
+			table_plug.send(player.gate,player.fd,packname,pack_body)
+		else
+			log.info("send msg not online ",table_id,player_id)
+		end
 	end
 end
 -------------------------------------------------------------------------------
@@ -74,6 +136,10 @@ end
 function interface:kick_out_all()
     return kick_out_all(self.table_id)
 end
+--踢出单个玩家
+function interface:kick_player(player_id)
+	return kick_player(self.table_id,player_id)
+end
 --给玩家发消息
 function interface:send_msg(player_id,packname,pack_body)
     return send_msg(self.table_id,player_id,packname,pack_body)
@@ -86,18 +152,61 @@ end
 function interface:broad_cast_msg(packname,pack_body)
     return broad_cast_msg(self.table_id,packname,pack_body)
 end
+--用send的方式给大厅发消息
+function interface:send_hall(player_id,cmd,...)
+	local table_id = self.table_id
+	local player = get_player_info(table_id,player_id)
+	if not player then
+		log.warn("send_hall not exists player ",table_id,player_id)
+		return
+	end
+	skynet.send(player.hall_server_id,'lua',cmd,player_id,...)
+end
+--用call的方式给大厅服发消息
+function interface:call_hall(player_id,cmd,...)
+	local table_id = self.table_id
+	local player = get_player_info(table_id,player_id)
+	if not player then
+		log.warn("call_hall not exists player ",table_id,player_id)
+		return
+	end
+
+	return skynet.call(player.hall_server_id,'lua',cmd,player_id,...)
+end
+--用send的方式给分配服发消息
+function interface:send_alloc(cmd,...)
+	local table_id = self.table_id
+	local t_info = get_table_info(table_id)
+	if not t_info then
+		log.warn("send_alloc not exists t_info ",table_id)
+		return
+	end
+	skynet.send(t_info.alloc_server_id,'lua',cmd,table_id,...)
+end
+--用call的方式给分配服发消息
+function interface:call_alloc(cmd,...)
+	local table_id = self.table_id
+	local t_info = get_table_info(table_id)
+	if not t_info then
+		log.warn("call_alloc not exists player ",table_id)
+		return
+	end
+
+	return skynet.call(t_info.alloc_server_id,'lua',cmd,table_id,...)
+end
 -------------------------------------------------------------------------------
 --CMD
 -------------------------------------------------------------------------------
 local CMD = {}
 --创建房间
-function CMD.create_table(table_id)
+function CMD.create_table(table_id,alloc_server_id)
 	assert(not g_table_map[table_id])
 	g_table_map[table_id] = {
+		alloc_server_id = alloc_server_id,
 		player_map = {},
 		game_table = table_plug.table_creator(table_id,g_config.instance_name),
 	}
-	return true
+	return true,g_config
 end
 
 --进入房间
@@ -112,7 +221,7 @@ function CMD.enter(table_id,player_id,gate,fd,hall_server_id)
 		player_id = player_id,
 		fd = fd,
 		gate = gate,
-		hall_server_id = hall_server_id,
+		hall_server_id = hall_server_id,     --大厅服id
 	}
 
 	local player = player_map[player_id]
@@ -216,6 +325,12 @@ function CMD.start(config)
 	assert(tmp_table.reconnect,"table_creator not reconnect")   --重连
     assert(tmp_table.handle,"table_creator not handle")         --消息处理
 
+	if table_plug.register_cmd then
+		for name,func in pairs(table_plug.register_cmd) do
+			assert(not CMD[name],"repeat cmd " .. name)
+			CMD[name] = func
+		end
+	end
 	
 	return true
 end

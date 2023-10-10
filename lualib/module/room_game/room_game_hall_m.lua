@@ -6,6 +6,7 @@ local timer = require "timer"
 local queue = require "queue"
 local contriner_client = require "contriner_client"
 local string_util = require "string_util"
+local time_util = require "time_util"
 
 local assert = assert
 local pcall = pcall
@@ -89,6 +90,21 @@ local function leave(agent)
 	agent.table_id = nil
 	return true
 end
+
+local function handle_msg(agent,packname,pack_body)
+	local func = g_handle_map[packname]
+	if not func then
+		local table_server_id = agent.table_server_id
+		local table_id = agent.table_id
+		if not table_server_id then
+			log.info("dorp package ",packname,pack_body)
+		else
+			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,packname,pack_body)
+		end
+	else
+		func(agent.player_id,packname,pack_body)
+	end
+end
 --消息分发
 local function dispatch(fd,source,packname,pack_body)
 	skynet.ignoreret()
@@ -102,18 +118,8 @@ local function dispatch(fd,source,packname,pack_body)
 		log.error("dispatch not agent ",fd,packname,pack_body)
 		return
 	end
-	local func = g_handle_map[packname]
-	if not func then
-		local table_server_id = agent.table_server_id
-		local table_id = agent.table_id
-		if not table_server_id then
-			log.info("dorp package ",packname,pack_body)
-		else
-			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,packname,pack_body)
-		end
-	else
-		agent.queue(func,agent.player_id,packname,pack_body)
-	end
+	
+	agent.queue(handle_msg,agent,packname,pack_body)
 end
 --连接大厅
 local function connect(agent,is_reconnect)
@@ -132,7 +138,6 @@ local function connect(agent,is_reconnect)
 		end
 	end
 
-	pcall(skynet.call,gate,'lua','forward',fd)
 	return login_res
 end
 
@@ -218,7 +223,7 @@ function interface:join(player_id,table_name,table_id)
 	return ret,errcode,errmsg
 end
 --离开房间
-function interface:leave(player_id)
+function interface:leave_table(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
 		log.warn("leave agent not exists ",player_id)
@@ -247,12 +252,25 @@ end
 function interface:handle(packname,func)
 	g_handle_map[packname] = func
 end
+--是否在线
+function interface:is_online(player_id)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.info("is_online not agent ",player_id)
+		return false
+	end
 
+	return agent.fd ~= 0
+end
 --发送消息
 function interface:send_msg(player_id,packname,pack_body)
 	local agent = g_player_map[player_id]
 	if not agent then
 		log.info("send msg not agent ",player_id,packname)
+		return
+	end
+	if not interface:is_online(player_id) then
+		log.info("send msg not online ",player_id,packname)
 		return
 	end
 	hall_plug.send(agent.gate,agent.fd,packname,pack_body)
@@ -320,6 +338,8 @@ end
 ----------------------------------------------------------------------------------
 
 function CMD.connect(gate,fd,player_id,watchdog)
+	--先设置转发，成功后再建立连接管理映射，不然存在建立连接，客户端立马断开的情况，掉线无法通知到此服务
+	skynet.call(gate,'lua','forward',fd) --设置转发不成功，此处会断言，以下就不会执行了，就当它没有来连接过
 	local agent = g_player_map[player_id]
 	local is_reconnect = false
 	if not agent then
@@ -330,6 +350,7 @@ function CMD.connect(gate,fd,player_id,watchdog)
 			watchdog = watchdog,
 			queue = queue(),
 			hall_server_id = SELF_ADDRESS,
+			dis_conn_time = 0,         --掉线时间
 		}
 		g_player_map[player_id] = agent
 	else
@@ -363,6 +384,7 @@ function CMD.disconnect(gate,fd,player_id)
 	
 	agent.fd = 0
 	agent.gate = 0
+	agent.dis_conn_time = time_util.skynet_int_time()
 
 	hall_plug.disconnect(player_id)
 	local table_server_id = agent.table_server_id
@@ -372,6 +394,11 @@ function CMD.disconnect(gate,fd,player_id)
 	end
 end
 
+function CMD.leave_table(player_id)
+	return interface:leave_table(player_id)
+end
+
+--登出
 function CMD.goout(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
@@ -402,6 +429,29 @@ function CMD.start(config)
 	assert(hall_plug.disconnect,"not disconnect") --掉线
 	assert(hall_plug.reconnect,"not reconnect")   --重连
 	assert(hall_plug.goout,"not goout")           --退出
+	assert(hall_plug.disconn_time_out,"not disconn_time_out") --掉线超时清理时间
+
+	if hall_plug.register_cmd then
+		for name,func in pairs(hall_plug.register_cmd) do
+			assert(not CMD[name],"repeat cmd " .. name)
+			CMD[name] = func
+		end
+	end
+
+	--检查掉线超时，掉线超时还没有重新连接的需要清理
+	timer:new(timer.minute,0,function()
+		local cur_time = time_util.skynet_int_time()
+		for _,agent in pairs(g_player_map) do
+			if not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then
+				log.info("disconn_time_out ",agent.player_id)
+				--尝试登出
+				local isok,errorcode,errormsg = interface:goout(agent.player_id)
+				if not isok then
+					log.warn("disconn_time_out goout err ",errorcode,errormsg)
+				end
+			end
+		end
+	end)
 
 	hall_plug.init(interface)
 	skynet.register_protocol {

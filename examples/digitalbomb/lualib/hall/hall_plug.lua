@@ -19,6 +19,7 @@ local M = {}
 
 M.unpack = require(module_cfg.net_util).unpack
 M.send = require(module_cfg.net_util).send
+M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
 local function login_out_req(player_id,packname,pack_body)
 	local ok,errorcode,errormsg = g_agent_mgr:goout(player_id)
