@@ -52,19 +52,17 @@ local function create_table(table_name, create_player_id)
 
 	local room_client = contriner_client:new("room_game_table_m",table_name,function() return false end)
 	room_client:set_mod_num(num_id)
-	local room_server_id = room_client:get_mod_server_id()
-	local new_table = {
-		room_client = room_client,
-		room_server_id = room_server_id,
-		table_id = table_id,
-		player_list = {},
-	}
-
-	match_plug.createtable(table_name,table_id,create_player_id)
-	
-	local ok,errocode,errormsg = skynet.call(room_server_id,'lua','create_table',table_id) 
+	local table_server_id = room_client:get_mod_server_id()
+	local ok,errocode,errormsg = skynet.call(table_server_id,'lua','create_table',table_id,SELF_ADDRESS) 
 	if ok then
-		g_table_map[table_id] = new_table
+		g_table_map[table_id] = {
+			room_client = room_client,
+			table_server_id = table_server_id,
+			table_id = table_id,
+			player_list = {},
+		}
+		local config = errocode
+		match_plug.createtable(table_name,table_id,config,create_player_id)
 		return table_id
 	else
 		return nil,errocode,errormsg
@@ -76,9 +74,9 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
     if not t_info then
         return match_plug.table_not_exists()
     end
-    local room_server_id = t_info.room_server_id
+    local table_server_id = t_info.table_server_id
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = skynet.call(room_server_id,'lua','enter',table_id,player_id,gate,fd,hall_server_id)
+    local ok,errcode,errmsg = skynet.call(table_server_id,'lua','enter',table_id,player_id,gate,fd,hall_server_id)
     if not ok then
         log.info("enter table fail ",player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -88,7 +86,7 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
         table.insert(player_list,player_id)
 
         match_plug.entertable(table_id,player_id)
-        return room_server_id,table_id
+        return table_server_id,table_id
     end
 end
 
@@ -109,9 +107,9 @@ end
 
 local function leave(player_id)
     local t_info = assert(g_player_map[player_id])
-    local room_server_id = t_info.room_server_id
+    local table_server_id = t_info.table_server_id
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = skynet.call(room_server_id,'lua','leave',table_id,player_id)
+    local ok,errcode,errmsg = skynet.call(table_server_id,'lua','leave',table_id,player_id)
     if not ok then
         log.info("leave table fail ",table_id,player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -132,6 +130,11 @@ local function leave(player_id)
         return true
     end
 end
+----------------------------------------------------------------------------------
+--interface
+----------------------------------------------------------------------------------
+local interface = {}
+
 ----------------------------------------------------------------------------------
 --CMD
 ----------------------------------------------------------------------------------
@@ -173,7 +176,14 @@ function CMD.start(config)
 	assert(match_plug.leavetable,"not leavetable")     --离开桌子
 	assert(match_plug.dismisstable,"not dismisstable") --解散桌子
 
-	match_plug.init()
+	if match_plug.register_cmd then
+		for name,func in pairs(match_plug.register_cmd) do
+			assert(not CMD[name],"repeat cmd " .. name)
+			CMD[name] = func
+		end
+	end
+
+	match_plug.init(interface)
 	return true
 end
 

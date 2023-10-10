@@ -28,7 +28,6 @@ local function close_fd(fd)
 		log.info("close_fd not agent ",fd)
 		return
 	end
-
 	skynet.send(agent.gate,'lua','kick',fd)
 end
 
@@ -90,11 +89,26 @@ end
 ----------------------------------------------------------------------------------
 local interface = {}
 
+function interface:is_online(player_id)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.info("is_online not agent ",player_id)
+		return
+	end
+
+	return agent.fd ~= 0
+end
+
 --发送消息
 function interface:send_msg(player_id,packname,pack_body)
 	local agent = g_player_map[player_id]
 	if not agent then
 		log.info("send msg not agent ",player_id,packname)
+		return
+	end
+	
+	if not interface:is_online(player_id) then
+		log.info("send msg not online ",player_id)
 		return
 	end
 	login_plug.send(agent.gate,agent.fd,packname,pack_body)
@@ -131,6 +145,9 @@ local SOCKET = {}
 --ws_gate会传入gate
 function SOCKET.open(fd, addr,gate)
 	gate = gate or g_gate
+	--先设置转发，成功后再建立连接管理映射，不然存在建立连接，客户端立马断开的情况，掉线无法通知到此服务
+	skynet.call(gate,'lua','forward',fd) --设置转发不成功，此处会断言，以下就不会执行了，就当它没有来连接过
+
 	local agent = {
 		fd = fd,
 		addr = addr,
@@ -139,7 +156,6 @@ function SOCKET.open(fd, addr,gate)
 		login_time_out = timer:new(login_plug.time_out,1,close_fd,fd)
 	}
 	g_fd_agent_map[fd] = agent
-	skynet.send(gate,'lua','forward',fd)
 end
 
 function SOCKET.close(fd)
@@ -148,7 +164,6 @@ function SOCKET.close(fd)
 		log.warn("close not agent ",fd)
 		return
 	end
-
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
 	agent.login_time_out:cancel()
@@ -196,6 +211,13 @@ skynet.start(function()
 	
 	assert(login_plug.logining,"login_plug not logining")          --正在登录中
 	assert(login_plug.repeat_login,"login_plug not repeat_login")  --重复登录
+	
+	if login_plug.register_cmd then
+		for name,func in pairs(login_plug.register_cmd) do
+			assert(not CMD[name],"repeat cmd " .. name)
+			CMD[name] = func
+		end
+	end
 
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
