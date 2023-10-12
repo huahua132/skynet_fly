@@ -1,14 +1,38 @@
 local contriner_client = require "contriner_client"
 local timer = require "timer"
 local log = require "log"
+local skynet = require "skynet"
+
+contriner_client:register("B_m")
+contriner_client:set_week_visitor("B_m")
+
 local CMD = {}
+
 function CMD.start()
-    timer:new(timer.second * 5,0,CMD.send_msg_to_b)
+    timer:new(timer.second * 10,0,CMD.send_msg_to_b)
     return true
 end
 
-function CMD.exit()
+function CMD.before_eixt()
+    log.error("即将退出")
+end
 
+function CMD.exit()
+    log.error("退出")
+    return true
+end
+
+function CMD.fix_exit()
+    log.error("确认要退出")
+end
+
+function CMD.cancel_exit()
+    log.error("取消退出")
+end
+
+function CMD.check_exit()
+    log.error("检查退出")
+    return true
 end
 
 function CMD.send_msg_to_b()

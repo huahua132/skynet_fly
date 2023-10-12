@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local module_info = require "module_info"
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
@@ -13,18 +14,24 @@ local skynet_exit = skynet.exit
 
 local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
+local is_close_swtich = false
+local is_ready = true   --是否准备好了
 
 local g_mod_svr_version_map = {}
 local g_name_id_list_map = {}
 local g_is_watch_map = {}
+local g_register_map = {}    --注册表
+local g_week_visitor_map = {} --弱访问者
 
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		local id_list,name_id_list,version = skynet.call('.contriner_mgr','lua','watch',key,old_version)
-		t[key] = id_list
-		g_mod_svr_version_map[key] = version
-		g_name_id_list_map[key] = name_id_list
+		if not is_close_swtich then
+			t[key] = id_list
+			g_mod_svr_version_map[key] = version
+			g_name_id_list_map[key] = name_id_list
+		end
 	end
 end
 
@@ -45,6 +52,23 @@ skynet.exit = function()
 	end
 	return skynet_exit()
 end
+
+--查询所有服务的地址
+skynet.init(function()
+	local module_base = module_info.get_base_info()
+	local log = require "log"
+	skynet.fork(function()
+		for mod_name,_ in pairs(g_register_map) do
+			local id_list = g_mod_svr_ids_map[mod_name]
+			log.info("mod_name:",mod_name, id_list)
+			for _,id in ipairs(id_list) do
+				if id ~= SELF_ADDRESS then
+					skynet.call(id,'lua','ping',SELF_ADDRESS,module_base.module_name)
+				end
+			end
+		end
+	end)
+end)
 
 local function get_balance(t)
     local id_list = t.cur_id_list
@@ -93,6 +117,8 @@ local function get_name_mod(t)
 end
 
 local function switch_svr(t)
+	if is_close_swtich then return end
+
 	if t.can_switch_func() then
 		local old_t = t.cur_id_list
 		t.cur_id_list = g_mod_svr_ids_map[t.module_name]
@@ -104,7 +130,50 @@ local function switch_svr(t)
 		end
 	end
 end
+--[[
+	关闭服务切换
+]]
+function M:close_switch()
+	is_close_swtich = true
+end
 
+--[[
+	开启服务切换
+]]
+function M:open_switch()
+	is_close_swtich = false
+end
+--[[
+	模块必须全部启动好了才能查询访问其他服务
+]]
+function M:open_ready()
+	is_ready = true
+end
+
+function M:close_ready()
+	is_ready = false
+end
+
+--注册
+function M:register(...)
+	local mod_name_list = {...}
+	for _,mod_name in ipairs(mod_name_list) do
+		g_register_map[mod_name] = true
+	end
+end
+
+--设置弱访问者
+function M:set_week_visitor(...)
+	local mod_name_list = {...}
+	for _,mod_name in ipairs(mod_name_list) do
+		g_week_visitor_map[mod_name] = true
+	end
+end
+
+--是否弱访问者
+function M:is_week_visitor(module_name)
+	return g_week_visitor_map[module_name]
+end
 --[[
 	函数作用域：M 的成员函数
 	函数名称: new
@@ -115,6 +184,8 @@ end
 		- can_switch_func (function): 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服
 ]]
 function M:new(module_name,instance_name,can_switch_func)
+	assert(g_register_map[module_name],"not register")
+	assert(is_ready,"not is ready")
 	assert(module_name)
 	if not can_switch_func then
 		can_switch_func = default_can_switch
