@@ -42,15 +42,47 @@ function CMD.find_server_id()
 end
 
 function CMD.reload()
-	local module_name = assert(ARGV[4])
-	local server_id = assert(ARGV[5])
-	
+	local file = io.open("./tmp_reload_cmd.txt",'w+')
+	assert(file)
 	local mod_config = require "mod_config"
-	local mod_cfg = mod_config[module_name]
-	assert(mod_cfg,"not mod_cfg")
-
-	local reload_url = string.format('%s/call/%s/"load_module","%s"',get_host(),server_id,module_name)
+	local server_id = assert(ARGV[4])
+	local mod_name_str = ""
+	for i = 5,#ARGV do
+		local module_name = ARGV[i]
+		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
+		assert(mod_config[module_name])
+	end
+	local reload_url = string.format('%s/call/%s/"load_modules"%s',get_host(),server_id,mod_name_str)
+	file:write(string.format("'%s'",reload_url))
+	file:close()
 	print(string.format("'%s'",reload_url))
+end
+
+function CMD.handle_reload_result()
+	local is_ok = false
+	for i = 4,#ARGV do
+		local str = ARGV[i]
+		if str == "ok" then
+			is_ok = true
+			break
+		end
+	end
+
+	if not is_ok then
+		--执行失败
+		print("reload faild")
+	else
+		--执行成功
+		print("reload succ")
+		os.remove('tmp_reload_cmd.txt')
+	end
+end
+
+function CMD.try_again_reload()
+	local is_ok,str = pcall(file_util.readallfile,'./tmp_reload_cmd.txt')
+	if is_ok then
+		print(str)
+	end
 end
 
 function CMD.check_reload()
@@ -117,7 +149,6 @@ function CMD.check_reload()
 
 	for module_name,change_file in pairs(need_reload_module) do
 		print(module_name)
-		print(change_file)
 	end
 end
 

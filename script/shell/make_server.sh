@@ -20,3 +20,4 @@ ${lua} ${script_path}/write_killmodsh.lua ${skynet_fly_path}
 ${lua} ${script_path}/write_stopsh.lua ${skynet_fly_path}
 ${lua} ${script_path}/write_restartsh.lua ${skynet_fly_path}
 ${lua} ${script_path}/write_create_logrotate.lua ${skynet_fly_path}
+${lua} ${script_path}/write_try_again_reloadsh.lua ${skynet_fly_path}

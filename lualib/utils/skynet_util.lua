@@ -20,7 +20,7 @@ function M.lua_dispatch(cmd_func,not_ret,is_need_src)
     
     skynet.dispatch('lua',function(session,source,cmd,...)
         local f = cmd_func[cmd]
-        assert(f,'cmd no found :'..cmd .. 'from : ' .. source)
+        assert(f,'cmd no found :'..cmd .. ' from : ' .. source)
 
         if session == 0 then
             if is_need_src then
