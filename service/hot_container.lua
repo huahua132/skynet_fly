@@ -66,7 +66,7 @@ module_info.set_base_info {
 }
 
 skynet.exit = function()
-	log.info("mod exit ",MODULE_NAME,INDEX,LAUNCH_TIME)
+	log.info("mod exit ",MODULE_NAME,INDEX,LAUNCH_DATE)
 	old_skynet_exit()
 end
 
@@ -79,13 +79,13 @@ local function check_exit()
 	if not is_fix_check_exit then
 		is_fix_check_exit = module_check_exit()
 	end
-	log.error("check_exit:",is_fix_check_exit,g_source_map)
+	log.info("check_exit:",is_fix_check_exit,g_source_map)
 	if is_fix_check_exit and not next(g_source_map) then
 		--真正退出
 		if module_exit() then
-			timer:new(timer.second,1,skynet.exit)
+			timer:new(timer.minute * 10,1,skynet.exit)
 		else
-			log.warn("warning " .. MODULE_NAME .. ' not exit')
+			log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 		end
 		check_timer:cancel()
 	end
@@ -104,7 +104,7 @@ end
 
 --退出
 function CMD.exit()
-	check_timer = timer:new(timer.second * 5,0,check_exit)
+	check_timer = timer:new(timer.minute * 10,0,check_exit)
 	module_fix_exit() --确定要退出
 end
 
@@ -122,22 +122,18 @@ end
 
 --ping报道，用于记录来访地址
 function CMD.ping(source,module_name) 
-	log.error("ping:",source,module_name)
 	if not module_name then
 		--不是可热更服务，不用管
 		return
 	end
 
 	if contriner_client:is_week_visitor(module_name) then
-		log.info("is_week_visitor ",module_name)
 		return
 	end
 
-	g_source_map[source] = true
+	g_source_map[source] = module_name
 	skynet.fork(function()
-		log.info("monitor_exit begin:",source)
 		skynet.call('.monitor_exit','lua','watch',source)
-		log.info("monitor_exit end:",source)
 		g_source_map[source] = nil
 	end)
 	return "pong"
