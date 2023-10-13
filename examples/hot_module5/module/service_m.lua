@@ -179,17 +179,19 @@ function CMD.start(config)
 	return true
 end
 
+function CMD.check_exit()
+	if seat_mgr.enter_len() <= 0 then
+		log.info("桌子没有人了，可以退出 ",seat_mgr.enter_len())
+		return true
+	else
+		log.info("桌子还有人不能退出 ",seat_mgr.enter_len())
+		return false
+	end
+end
+
 function CMD.exit()
 	IS_CLOSE = true
-	while true do
-		if seat_mgr.enter_len() <= 0 then
-			log.info("桌子没有人了，可以退出 ",seat_mgr.enter_len())
-			skynet.exit()
-		end
-
-		log.info("桌子还有人不能退出 ",seat_mgr.enter_len())
-		skynet.sleep(500)
-	end
+	return true
 end
 --======================CMD==================================
 

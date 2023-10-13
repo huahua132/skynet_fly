@@ -9,8 +9,8 @@ function CMD.start()
     return true
 end
 
-function CMD.before_exit()
-    log.error("即将退出")
+function CMD.herald_exit()
+    log.error("预告退出")
 end
 
 function CMD.exit()
@@ -31,8 +31,8 @@ function CMD.check_exit()
     return true
 end
 
--- function CMD.hello()
---     return "HEELO AAA"
--- end
+function CMD.hello()
+    return "HEELO AAA"
+end
 
 return CMD

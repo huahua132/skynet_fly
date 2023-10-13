@@ -73,7 +73,7 @@ end
 local function kill_modules(...)
 	local module_name_list = {...}
 	for _,module_name in ipairs(module_name_list) do
-		call_module(module_name,"before_exit")
+		call_module(module_name,"herald_exit")
 		call_module(module_name,"exit")
 		
 		g_name_id_list_map[module_name] = nil
@@ -95,7 +95,7 @@ local function load_modules(...)
 
 	--通知旧服务即将要退出了
 	for _,module_name in ipairs(module_name_list) do
-		call_module(module_name,"before_exit")
+		call_module(module_name,"herald_exit")
 	end
 
 	--启动新服务

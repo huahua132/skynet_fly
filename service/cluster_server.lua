@@ -5,7 +5,9 @@ local rpc_redis = require "rpc_redis"
 local log = require "log"
 local timer = require "timer"
 local skynet_util = require "skynet_util"
+local mod_config = require "mod_config"
 
+local pairs = pairs
 local assert = assert
 local tonumber = tonumber
 local setmetatable = setmetatable
@@ -16,6 +18,7 @@ local g_svr_name = skynet.getenv("svr_name")
 local g_svr_id = tonumber(skynet.getenv("svr_id"))
 
 local g_client_map = setmetatable({},{__index = function(t,key)
+	contriner_client:register(key) --不是可热更服务什么时候注册都可以
 	t[key] = contriner_client:new(key)
 	return t[key]
 end})
@@ -109,6 +112,7 @@ end
 skynet.start(function()
 	skynet_util.lua_dispatch(CMD,{})
 
+	contriner_client:register("share_config_m")
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','cluster_server')
 	assert(conf.host,"not host")

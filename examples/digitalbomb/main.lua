@@ -1,25 +1,12 @@
 local skynet = require "skynet"
-local mod_config = require "mod_config"
-local table_util = require "table_util"
+local contriner_launcher = require "contriner_launcher"
 
 skynet.start(function()
 	skynet.error("start digitalbomb!!!>>>>>>>>>>>>>>>>>")
-	local cmgr = skynet.uniqueservice('contriner_mgr')
+	local delay_run = contriner_launcher.run()
 
-	skynet.newservice("debug_console", skynet.getenv('debug_port'))
-	
-	for mod_name,mod_cfg in table_util.sort_ipairs(mod_config,function(a,b)
-		return a.launch_seq < b.launch_seq
-	end) do
-		if mod_name ~= "client_m" then
-			skynet.call(cmgr,'lua','load_module',mod_name)
-		end
-	end
 	skynet.uniqueservice("room_game_login")
 
-	if mod_config['client_m'] then
-		skynet.call(cmgr,'lua','load_module','client_m')
-	end
-
+	delay_run()
 	skynet.exit()
 end)

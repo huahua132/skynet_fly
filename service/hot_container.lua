@@ -44,12 +44,12 @@ local timer = require "timer"
 
 local NOT_FUNC = function() return true end
 
-local module_start = CMD.start
-local module_exit = CMD.exit
-local module_before_exit = CMD.before_exit or NOT_FUNC
-local module_cancel_exit = CMD.cancel_exit or NOT_FUNC
-local module_check_exit = CMD.check_exit or NOT_FUNC
-local module_fix_exit = CMD.fix_exit or NOT_FUNC
+local module_start = CMD.start                             --开始
+local module_exit = CMD.exit							   --退出
+local module_herald_exit = CMD.herald_exit or NOT_FUNC	   --预告退出
+local module_cancel_exit = CMD.cancel_exit or NOT_FUNC	   --取消退出
+local module_check_exit = CMD.check_exit or NOT_FUNC	   --检查退出
+local module_fix_exit = CMD.fix_exit or NOT_FUNC		   --确认退出
 assert(module_start,MODULE_NAME .. " not start func")
 assert(module_exit,MODULE_NAME .. " not exit func")
 
@@ -98,7 +98,7 @@ function CMD.start(cfg)
 		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
-	skynet.fork(contriner_client.open_ready)
+	contriner_client.open_ready()
 	return ret
 end
 
@@ -109,9 +109,9 @@ function CMD.exit()
 end
 
 --退出之前
-function CMD.before_exit()
+function CMD.herald_exit()
 	contriner_client:close_switch()
-	module_before_exit()
+	module_herald_exit()
 end
 
 --取消退出

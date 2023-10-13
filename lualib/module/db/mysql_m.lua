@@ -46,18 +46,18 @@ function CMD.query(sql_str)
 	return ret
 end
 
+function CMD.check_exit()
+	return g_querying_cnt <= 0
+end
+
 function CMD.exit()
-	timer:new(timer.minute,0,function()
-		if g_querying_cnt <= 0 then
-			if g_ti then
-				g_ti:cancel()
-			end
-			if g_db_conn then
-				g_db_conn:disconnect()
-			end
-			skynet.exit()
-		end
-	end)
+	if g_ti then
+		g_ti:cancel()
+	end
+	if g_db_conn then
+		g_db_conn:disconnect()
+	end
+	return true
 end
 
 return CMD

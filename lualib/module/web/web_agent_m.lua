@@ -15,6 +15,7 @@ local assert = assert
 local os = os
 local pairs = pairs
 local x_pcall = x_pcall
+local next = next
 
 local FD_STATE = {
   connecting = 1,    --连接中
@@ -185,22 +186,6 @@ function SOCKET.close(fd)
 	close_fd(fd)
 end
 
-function CMD.exit()
-	log.error("web_agent_module exit begin!")
-	for fd,info in pairs(fd_info_map) do
-		log.error("web_agent_module exit id:",fd)
-		skynet.fork(close_fd,fd)
-	end
-	log.error("web_agent_module exit end!")
-
-	timer:new(timer.minute,0,function()
-		if not next(fd_info_map) then
-			web.exit()
-			skynet.exit()
-		end
-	end)
-end
-
 function CMD.start(args)
 	keep_alive_time = args.keep_alive_time or 300       --保活时间
 	second_req_limit = args.second_req_limit or 100     --一秒请求数量限制
@@ -224,6 +209,26 @@ function CMD.start(args)
 	return true
 end
 
+--检查退出
+function CMD.check_exit()
+	return not next(fd_info_map)
+end
+
+--确认退出
+function CMD.fix_exit()
+	log.error("web_agent_module exit begin!")
+	for fd,info in pairs(fd_info_map) do
+		log.error("web_agent_module exit id:",fd)
+		skynet.fork(close_fd,fd)
+	end
+	log.error("web_agent_module exit end!")
+end
+
+--执行退出
+function CMD.exit()
+	web.exit()
+	return true
+end
 
 skynet.info_func(function()
 	log.error("web_agent_module:",fd_info_map)

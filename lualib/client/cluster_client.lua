@@ -7,6 +7,8 @@ local assert = assert
 local type = type
 local xx_pcall = xx_pcall
 
+contriner_client:register("cluster_client_m")
+
 local M = {}
 local meta = {__index = M}
 local cluster_client = nil

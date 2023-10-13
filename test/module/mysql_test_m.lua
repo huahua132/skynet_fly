@@ -30,7 +30,7 @@ function CMD.start()
 end
 
 function CMD.exit()
-	timer:new(timer.minute,1,skynet.exit)
+	return true
 end
 
 return CMD

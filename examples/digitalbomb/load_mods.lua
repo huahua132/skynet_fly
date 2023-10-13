@@ -57,6 +57,7 @@ return {
 	client_m = {
 		launch_seq = 5,
 		launch_num = 2,
+		delay_run = true,       --延迟运行
 		mod_args = {
 			{account = "skynet",password = '123456',player_id = 10000,net_util = "pbnet_util",protocol = "socket"},
 			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = "pbnet_util",protocol = "socket"},
