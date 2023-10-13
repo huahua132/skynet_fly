@@ -16,6 +16,8 @@ local select = select
 local tunpack = table.unpack
 local debug_getinfo = debug.getinfo
 
+contriner_client:register('share_config_m')
+
 local g_sha_map = {}
 
 local M = {}

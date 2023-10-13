@@ -1,5 +1,4 @@
 local skynet = require "skynet"
-local timer = require "timer"
 
 local g_config = nil
 local CMD = {}
@@ -14,7 +13,7 @@ function CMD.query(k)
 end
 
 function CMD.exit()
-	timer:new(timer.minute,1,skynet.exit)
+	return true
 end
 
 return CMD

@@ -158,7 +158,7 @@ function CMD.start()
 end
 
 function CMD.exit()
-
+	return true
 end
 
 return CMD

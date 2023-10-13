@@ -7,6 +7,8 @@ local string_util = require "string_util"
 local contriner_client = require "contriner_client"
 local timer = require "timer"
 
+contriner_client:register("web_agent_m")
+
 local table  = table
 local string = string
 local pairs = pairs
@@ -18,6 +20,7 @@ local tonumber = tonumber
 local next = next
 local pcall = pcall
 
+local g_config = nil
 local agent_client
 local SELF_ADDRESS
 local listen_fd
@@ -173,6 +176,7 @@ function SOCKET.closed(fd,ip,port)
 end
 
 function CMD.start(args)
+	g_config = args
 	max_client = args.max_client or 2048
 	second_conn_limit = args.second_conn_limit or 60         --相同ip一秒内建立连接数量限制
 	keep_live_limit = args.keep_live_limit or 50			 --相同ip保持连接数量限制
@@ -191,9 +195,10 @@ function CMD.start(args)
 	listen_fd = socket.listen(host, port)
 	log.error(string.format("Listening %s://%s:%s max_client[%s] id[%s]", protocol, host, port, max_client,listen_fd))
 
-	agent_client = contriner_client:new("web_agent_m")
-
 	socket.start(listen_fd, function(fd, addr)
+		if not agent_client then
+			agent_client = contriner_client:new("web_agent_m")
+		end
 		local addrs = string_util.split(addr,':')
 		local ip,port = addrs[1],addrs[2]
 		if not ip or not port then
@@ -218,21 +223,27 @@ function CMD.start(args)
 	return true
 end
 
-function CMD.before_exit()
+--预告退出
+function CMD.herald_exit()
 	--这里关闭监听，新服务会重启监听
 	socket.close(listen_fd)
+	listen_fd = nil
 end
 
-function CMD.exit()
-	log.error("web master exit begin!",listen_fd)
-	agent_client:broadcast('exit')
-	log.error("web master exit end!",listen_fd)
+--取消退出
+function CMD.cancel_exit()
+	log.error("取消退出")
+	CMD.start(g_config)
+end
 
-	timer:new(timer.minute,0,function()
-		if not next(fd_agent_map) then
-			skynet.exit()
-		end
-	end)
+--检查退出
+function CMD.check_exit()
+	return not next(fd_agent_map)
+end
+
+--退出
+function CMD.exit()
+	return true
 end
 
 return CMD

@@ -164,7 +164,7 @@ end
 
 function CMD.exit()
     IS_EXIT = true
-    timer:new(timer.minute,1,skynet.exit)
+    return tremove
 end
 
 return CMD

@@ -172,15 +172,6 @@ function CMD.call_all(svr_name,...)
 	return res
 end
 
-function CMD.before_exit()
-	local node_map = g_config.node_map
-	for svr_name,node in pairs(node_map) do
-		for svr_id,host in pairs(node) do
-			del_node(svr_name,svr_id,host)
-		end
-	end
-end
-
 function CMD.start(config)
 	g_config = config
 	local node_map = config.node_map
@@ -189,35 +180,37 @@ function CMD.start(config)
 
 	local watch = config.watch
 
-	if watch == 'redis' then
-		--redis服务发现方式
-		local rpccli = rpc_redis:new()
-		for svr_name,node in pairs(node_map) do
-			g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name,function(event,name,id,host)
-				if event == 'set' then            --设置
-					local old_host = get_node_host(name,id)
-					if old_host ~= host then
+	skynet.fork(function()
+		if watch == 'redis' then
+			--redis服务发现方式
+			local rpccli = rpc_redis:new()
+			for svr_name,node in pairs(node_map) do
+				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name,function(event,name,id,host)
+					if event == 'set' then            --设置
+						local old_host = get_node_host(name,id)
+						if old_host ~= host then
+							del_node(name,id)
+							add_node(name,id,host)
+							log.error("change cluster node :",name,id,old_host,host)
+						end
+					elseif event == 'expired' then    --过期
 						del_node(name,id)
-						add_node(name,id,host)
-						log.error("change cluster node :",name,id,old_host,host)
+						log.error("down cluster node :",name,id)
+					elseif event == 'get_failed' then --拿不到配置，通常是因为redis挂了，或者key被意外删除，或者redis出现性能瓶颈了
+						del_node(name,id)
+						log.error("get_failed cluster node :",name,id)
 					end
-				elseif event == 'expired' then    --过期
-					del_node(name,id)
-					log.error("down cluster node :",name,id)
-				elseif event == 'get_failed' then --拿不到配置，通常是因为redis挂了，或者key被意外删除，或者redis出现性能瓶颈了
-					del_node(name,id)
-					log.error("get_failed cluster node :",name,id)
+				end)
+			end
+		else
+			--本机配置方式
+			for svr_name,node in pairs(node_map) do
+				for svr_id,host in pairs(node) do
+					add_node(svr_name,svr_id,host)
 				end
-			end)
-		end
-	else
-		--本机配置方式
-		for svr_name,node in pairs(node_map) do
-			for svr_id,host in pairs(node) do
-				add_node(svr_name,svr_id,host)
 			end
 		end
-	end
+	end)
 	
 	return true
 end
@@ -227,7 +220,7 @@ function CMD.exit()
 	for _,cancel in pairs(g_redis_watch_cancel_map) do
 		cancel()
 	end
-	timer:new(timer.second,1,skynet.exit)
+	return true
 end
 
 return CMD

@@ -24,7 +24,7 @@ function CMD.start(config)
 end
 
 function CMD.exit()
-
+	return true
 end
 
 return CMD

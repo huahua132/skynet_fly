@@ -5,6 +5,8 @@ local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local timer = require "timer"
 
+contriner_client:register("room_game_table_m")
+
 local assert = assert
 local pairs = pairs
 local table = table
@@ -187,15 +189,18 @@ function CMD.start(config)
 	return true
 end
 
+function CMD.check_exit()
+	if not next(g_player_map) then
+		log.info("g_player_map.is_empty can exit")
+		return true
+	else
+		log.info("not g_player_map.is_empty can`t exit",g_player_map)
+		return false
+	end
+end
+
 function CMD.exit()
-	timer:new(timer.minute,0,function()
-		if not next(g_player_map) then
-			log.info("g_player_map.is_empty can exit")
-			skynet.exit()
-		else
-			log.info("not g_player_map.is_empty can`t exit",g_player_map)
-		end
-	end)
+	return true
 end
 
 return CMD

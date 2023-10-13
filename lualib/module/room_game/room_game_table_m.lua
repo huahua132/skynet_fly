@@ -335,15 +335,18 @@ function CMD.start(config)
 	return true
 end
 
+function CMD.check_exit()
+	if not next(g_table_map) then
+		log.info("g_table_map.is_empty can exit")
+		return true
+	else
+		log.info("not g_table_map.is_empty can`t exit",g_table_map)
+		return false
+	end
+end
+
 function CMD.exit()
-	timer:new(timer.minute,0,function()
-		if not next(g_table_map) then
-			log.info("g_table_map.is_empty can exit")
-			skynet.exit()
-		else
-			log.info("not g_table_map.is_empty can`t exit",g_table_map)
-		end
-	end)
+	return true
 end
 
 return CMD

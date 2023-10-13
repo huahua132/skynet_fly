@@ -13,8 +13,8 @@ function CMD.start()
     return true
 end
 
-function CMD.before_eixt()
-    log.error("即将退出")
+function CMD.herald_exit()
+    log.error("预告退出")
 end
 
 function CMD.exit()
@@ -36,9 +36,9 @@ function CMD.check_exit()
 end
 
 function CMD.send_msg_to_b()
-    -- local b_client = contriner_client:new("B_m")      --用于访问B服务
-    -- local ret = b_client:mod_call("hello")
-    -- log.info("send_msg_to_b:",ret)
+    local b_client = contriner_client:new("B_m")      --用于访问B服务
+    local ret = b_client:mod_call("hello")
+    log.info("send_msg_to_b:",ret)
 end
 
 return CMD

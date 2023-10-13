@@ -9,6 +9,8 @@ local assert = assert
 local x_pcall = x_pcall
 local pairs = pairs
 
+contriner_client:register("share_config_m","room_game_hall_m")
+
 local login_plug = nil
 local SELF_ADDRESS = nil
 

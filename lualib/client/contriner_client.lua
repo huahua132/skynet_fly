@@ -56,11 +56,9 @@ end
 --查询所有服务的地址
 skynet.init(function()
 	local module_base = module_info.get_base_info()
-	local log = require "log"
 	skynet.fork(function()
 		for mod_name,_ in pairs(g_register_map) do
 			local id_list = g_mod_svr_ids_map[mod_name]
-			log.info("mod_name:",mod_name, id_list)
 			for _,id in ipairs(id_list) do
 				if id ~= SELF_ADDRESS then
 					skynet.call(id,'lua','ping',SELF_ADDRESS,module_base.module_name)

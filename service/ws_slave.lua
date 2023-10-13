@@ -89,7 +89,6 @@ function HANDLER.pong(fd)
 end
 
 function HANDLER.close(fd, code, reason)
-	log.info("ws close:",fd, code ,reason)
 	closed(fd)
 end
 

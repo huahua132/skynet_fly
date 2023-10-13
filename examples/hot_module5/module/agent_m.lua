@@ -3,6 +3,8 @@ local contriner_client = require "contriner_client"
 local log = require "log"
 local assert = assert
 
+contriner_client:register("service_m")
+
 local CMD = {}
 local g_seat_id = nil   --座位号
 local g_player = nil
@@ -61,26 +63,29 @@ function CMD.server(server_id,cmd,args)
 end
 
 function CMD.start(player)
-	client = contriner_client:new("service_m",nil,function()
-		return not g_seat_id  --没有坐下的情况下可以切换到新服务
+	skynet.fork(function()
+		client = contriner_client:new("service_m",nil,function()
+			return not g_seat_id  --没有坐下的情况下可以切换到新服务
+		end)
+	
+		player.gate = skynet.self()
+		g_player = player
+	
+		log.info("start ",player.player_id)
+		local seat_id = client:mod_call('client','enter',player)
+		if seat_id then
+			log.info("enter succ ",player.player_id)
+			g_seat_id = seat_id
+		else
+			log.info("enter faild ",player)
+		end
 	end)
-
-	player.gate = skynet.self()
-	g_player = player
-
-	log.info("start ",player.player_id)
-	local seat_id = client:mod_call('client','enter',player)
-	if seat_id then
-		log.info("enter succ ",player.player_id)
-		g_seat_id = seat_id
-	else
-		log.info("enter faild ",player)
-	end
+	
 	return true
 end
 
 function CMD.exit()
-
+	return true
 end
 
 return CMD
