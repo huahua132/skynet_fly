@@ -41,8 +41,8 @@ function CMD.unwatch(source, server_id)
 
     local rsp = service_map[server_id][source]
     service_map[server_id][source] = nil
-    rsp(true,true)
-    return true
+    rsp(true,false)
+    return NOTRET
 end
 
 skynet.start(function()
