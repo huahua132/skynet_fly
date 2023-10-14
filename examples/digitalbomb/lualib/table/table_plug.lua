@@ -15,7 +15,7 @@ local table = table
 local math = math
 
 local g_table_conf = module_cfg.table_conf
-local g_agent_mgr = nil
+local g_interface_mgr = nil
 
 --======================enum=================================
 local MINE_MIN = 1
@@ -26,17 +26,17 @@ local M = {}
 
 M.send = require(module_cfg.net_util).send
 
-function M.init(agent_mgr)
-	g_agent_mgr = agent_mgr
+function M.init(interface_mgr)
+	g_interface_mgr = interface_mgr
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')
 end
 
 function M.table_creator(table_id)
 	local m_HANDLE = {}
-	local m_agent_mgr = g_agent_mgr:new(table_id)
-	local m_errors_msg = errors_msg:new(m_agent_mgr)
-	local m_game_msg = game_msg:new(m_agent_mgr)
+	local m_interface_mgr = g_interface_mgr:new(table_id)
+	local m_errors_msg = errors_msg:new(m_interface_mgr)
+	local m_game_msg = game_msg:new(m_interface_mgr)
 	local m_table_id = table_id
     local m_game_state = GAME_STATE_ENUM.waiting --参与游戏的玩家座位号
     local m_mine = 0                             --雷
@@ -71,7 +71,7 @@ function M.table_creator(table_id)
 --state
 -----------------------------------------------------------------------
 	local function game_start()
-		m_agent_mgr:call_alloc("update_state",GAME_STATE_ENUM.playing)
+		m_interface_mgr:call_alloc("update_state",GAME_STATE_ENUM.playing)
 		m_game_state = GAME_STATE_ENUM.playing
 		m_game_seat_id_list = {}
 
@@ -96,7 +96,7 @@ function M.table_creator(table_id)
 
 	local function game_over(player_id)
 		log.info("游戏结束！！！")
-		m_agent_mgr:call_alloc("update_state",GAME_STATE_ENUM.over)
+		m_interface_mgr:call_alloc("update_state",GAME_STATE_ENUM.over)
 		m_game_state = GAME_STATE_ENUM.over
 		local args = {
 			lose_player_id = player_id,
@@ -111,7 +111,7 @@ function M.table_creator(table_id)
 				seater:game_over()
 			end
 		end
-		m_agent_mgr:kick_out_all()
+		m_interface_mgr:kick_out_all()
 		return true
 	end
 -----------------------------------------------------------------------

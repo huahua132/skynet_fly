@@ -27,20 +27,14 @@ local g_msg_send = nil
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
---创建房间
-local function create_table(player_id, table_name)
-	local alloc_client = contriner_client:new("room_game_alloc_m",table_name,function() return false end)
-	return alloc_client:mod_call("create_table",table_name, player_id)
-end
-
---匹配进入
-local function match_join(agent, player_id, table_name)
+local function new_join_table(agent, table_name, join_cmd)
 	local alloc_client = contriner_client:new("room_game_alloc_m",table_name,function() return false end)
 	local gate = agent.gate
 	local fd = agent.fd
+	local player_id = agent.player_id
 	local hall_server_id = agent.hall_server_id
 
-	local table_server_id,table_id,errmsg = alloc_client:mod_call("match_join",player_id, gate, fd, hall_server_id, table_name)
+	local table_server_id,table_id,errmsg = alloc_client:mod_call(join_cmd, player_id, gate, fd, hall_server_id, table_name)
 	if not table_server_id then
 		return false,table_id,errmsg
 	end
@@ -50,12 +44,22 @@ local function match_join(agent, player_id, table_name)
 	return table_id
 end
 
---join必须用id，因为table_id已经绑定了alloc服务
-local function join(agent, player_id, table_name, table_id)
+--创建房间
+local function create_join_table(agent, table_name)
+	return new_join_table(agent, table_name, "create_join")
+end
+
+--匹配进入
+local function match_join_table(agent, table_name)
+	return new_join_table(agent, table_name, "match_join")
+end
+
+--join_table必须用id，因为table_id已经绑定了alloc服务
+local function join_table(agent, player_id, table_name, table_id)
 	local s_str = string_util.split(table_id,':')
 	local alloc_server_id = tonumber(s_str[1])
 	if not alloc_server_id then
-		log.warn("join not alloc_server_id ",table_id)
+		log.warn("join_table not alloc_server_id ",table_id)
 		return
 	end
 	local gate = agent.gate
@@ -165,44 +169,57 @@ local CMD = {}
 --interface
 ----------------------------------------------------------------------------------
 local interface = {}
---创建房间
-function interface:create_table(player_id,table_name)
+--创建进入房间
+function interface:create_join_table(player_id,table_name)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.warn("create_table agent not exists ",player_id)
-		return
-	end
-
-	return agent.queue(create_table,player_id,table_name)
-end
-
-
---匹配进入
-function interface:match_join(player_id,table_name)
-	local agent = g_player_map[player_id]
-	if not agent then
-		log.warn("match_join agent not exists ",player_id)
+		log.warn("create_join_table agent not exists ",player_id)
 		return
 	end
 
 	if agent.table_lock then
-		log.warn("match_join is lock ",player_id,table_name)
+		log.warn("create_join_table is lock ",player_id,table_name)
 		return
 	end
 
 	--已经存在房间了
 	if agent.table_server_id then
-		log.warn("match_join table_server_id is exists",player_id)
+		log.warn("create_join_table table_server_id is exists",player_id)
 		return
 	end
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(match_join,agent,player_id,table_name)
+	local ret,errcode,errmsg = agent.queue(create_join_table,agent,table_name)
+	agent.table_lock = nil
+	return ret,errcode,errmsg
+end
+
+
+--匹配进入
+function interface:match_join_table(player_id,table_name)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.warn("match_join_table agent not exists ",player_id)
+		return
+	end
+
+	if agent.table_lock then
+		log.warn("match_join_table is lock ",player_id,table_name)
+		return
+	end
+
+	--已经存在房间了
+	if agent.table_server_id then
+		log.warn("match_join_table table_server_id is exists",player_id)
+		return
+	end
+	agent.table_lock = true
+	local ret,errcode,errmsg = agent.queue(match_join_table,agent,table_name)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
 
 --进入房间
-function interface:join(player_id,table_name,table_id)
+function interface:join_table(player_id,table_name,table_id)
 	local agent = g_player_map[player_id]
 	if not agent then
 		log.warn("join agent not exists ",player_id)
@@ -220,7 +237,7 @@ function interface:join(player_id,table_name,table_id)
 		return
 	end
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(join,agent,player_id,table_name,table_id)
+	local ret,errcode,errmsg = agent.queue(join_table,agent,player_id,table_name,table_id)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end

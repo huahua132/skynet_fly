@@ -107,6 +107,17 @@ local function match_join(player_id, gate, fd, hall_server_id, table_name)
     return join(player_id, gate, fd, hall_server_id, table_name, table_id)
 end
 
+local function create_join(player_id, gate, fd, hall_server_id, table_name)
+	assert(not g_player_map[player_id])
+	local ok,errcode,errmsg = create_table(table_name)
+	if not ok then
+		return ok,errcode,errmsg
+	end
+
+	local table_id = ok
+	return join(player_id, gate, fd, hall_server_id, table_name)
+end
+
 local function leave(player_id)
     local t_info = assert(g_player_map[player_id])
     local table_server_id = t_info.table_server_id
@@ -141,9 +152,9 @@ local interface = {}
 --CMD
 ----------------------------------------------------------------------------------
 local CMD = {}
---创建房间
-function CMD.create_table(player_id, table_name)
-	return queue(create_table, table_name, player_id)
+--创建进入房间
+function CMD.create_join(player_id, gate, fd, hall_server_id, table_name)
+	return queue(create_join, player_id, gate, fd, hall_server_id, table_name)
 end
 
 --匹配进入房间

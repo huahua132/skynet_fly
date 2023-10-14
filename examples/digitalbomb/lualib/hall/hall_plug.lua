@@ -13,7 +13,7 @@ local next = next
 local assert = assert
 
 local g_fd_map = {}
-local g_agent_mgr = nil
+local g_interface_mgr = nil
 
 local M = {}
 
@@ -22,7 +22,7 @@ M.send = require(module_cfg.net_util).send
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
 local function login_out_req(player_id,packname,pack_body)
-	local ok,errorcode,errormsg = g_agent_mgr:goout(player_id)
+	local ok,errorcode,errormsg = g_interface_mgr:goout(player_id)
 	if not ok then
 		log.error("dispatch err ",errorcode,errormsg)
 		errors_msg:errors(player_id,errorcode,errormsg,packname)
@@ -32,7 +32,7 @@ local function login_out_req(player_id,packname,pack_body)
 end
 
 local function match_req(player_id,packname,pack_body)
-	local ok,errorcode,errormsg = g_agent_mgr:match_join(player_id,pack_body.table_name)
+	local ok,errorcode,errormsg = g_interface_mgr:match_join_table(player_id,pack_body.table_name)
 	if not ok then
 		log.error("dispatch err ",errorcode,errormsg)
 		errors_msg:errors(player_id,errorcode,errormsg,packname)
@@ -44,21 +44,21 @@ end
 local function server_info_req(player_id,packname,pack_body)
 	local server_info = {
 		player_id = player_id,
-		hall_server_id = g_agent_mgr:get_hall_server_id(),
-		alloc_server_id = g_agent_mgr:get_alloc_server_id(player_id),
-		table_server_id = g_agent_mgr:get_table_server_id(player_id),
-		table_id = g_agent_mgr:get_table_id(player_id),
+		hall_server_id = g_interface_mgr:get_hall_server_id(),
+		alloc_server_id = g_interface_mgr:get_alloc_server_id(player_id),
+		table_server_id = g_interface_mgr:get_table_server_id(player_id),
+		table_id = g_interface_mgr:get_table_id(player_id),
 	}
 	login_msg:server_info_res(player_id,server_info)
 end
 
-function M.init(agent_mgr)
-	g_agent_mgr = agent_mgr
-	errors_msg = errors_msg:new(agent_mgr)
-	login_msg = login_msg:new(agent_mgr)
-	g_agent_mgr:handle('.login.LoginOutReq',login_out_req)
-	g_agent_mgr:handle('.login.matchReq',match_req)
-	g_agent_mgr:handle('.login.serverInfoReq',server_info_req)
+function M.init(interface_mgr)
+	g_interface_mgr = interface_mgr
+	errors_msg = errors_msg:new(interface_mgr)
+	login_msg = login_msg:new(interface_mgr)
+	g_interface_mgr:handle('.login.LoginOutReq',login_out_req)
+	g_interface_mgr:handle('.login.matchReq',match_req)
+	g_interface_mgr:handle('.login.serverInfoReq',server_info_req)
 	pb_netpack.load("./proto")
 end
 
