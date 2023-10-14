@@ -54,6 +54,7 @@
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
       - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
       - `create_logrotate.sh` 配置日志分割。
+      - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
     - 还有生成mod_config.lua，可热更模块配置文件。（首次生成是拷贝webapp/load_mods.lua，如果mod_config文件存在会对比load_mods和mod_config，将配置值类型不同的，有增加的，有删除的，同步到mod_config，只有值不同不覆盖原本修改的配置）
 3. 运行
@@ -444,10 +445,10 @@ gin还是快啊
 	`sh script/run.sh`
 
 基于tcp长连接实现不停服更新 `digitalbomb` 数字炸弹游戏。
-除了登录 `login` 服务不能热更。
-`hall` 大厅。
-`match` 匹配。
-`room` 房间都是可行的。
+除了登录 `login` 服不能热更。
+`hall` 大厅服。
+`alloc` 分配服。
+`table` 桌子服都是可行的。
 内置了客户端，可以直接看到效果。
 
 * **业务解耦**
@@ -470,7 +471,7 @@ room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
 
 * **热更新**
 	client_m 表写了测试用例，可以用来验证热更新。
-	也可以通过`script/reload.sh`的方式，不过你先修改好文件，然后开始执行。
+	也可以通过`script/check_reload.sh`的方式，不过你先修改好文件，然后开始执行。
 
 * **游戏热更新原理**
 	新服替换旧服务的方案。
