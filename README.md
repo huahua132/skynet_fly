@@ -461,11 +461,11 @@ gin还是快啊
 
 client_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
-room_game_hall_m 配置的 hall_plug由`hall_plug_pb` 改为 `hall_plug_json`
+room_game_hall_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
-room_game_match_m 配置的 match_plug由`match_plug_pb` 改为 `match_plug_json`
+room_game_alloc_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
-room_game_room_m 配置的 room_plug由`room_plug_pb` 改为 `room_plug_json`
+room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
 执行 `sh script/restart.sh` 
 
