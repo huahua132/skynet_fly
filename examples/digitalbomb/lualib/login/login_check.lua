@@ -10,7 +10,7 @@ local login_msg = require "login_msg"
 local assert = assert
 local x_pcall = x_pcall
 
-local agent_mgr = nil
+local g_interface_mgr = nil
 
 local M = {}
 
@@ -24,10 +24,10 @@ M.unpack = require(room_game_login.net_util).unpack
 --发包函数
 M.send = require(room_game_login.net_util).send
 
-function M.init(agent_mgr)
-	agent_mgr = agent_mgr
-	errors_msg = errors_msg:new(agent_mgr)
-	login_msg = login_msg:new(agent_mgr)
+function M.init(interface_mgr)
+	g_interface_mgr = interface_mgr
+	errors_msg = errors_msg:new(g_interface_mgr)
+	login_msg = login_msg:new(g_interface_mgr)
 	pb_netpack.load('./proto')
 end
 
@@ -74,8 +74,8 @@ function M.login_out(player_id)
 end
 
 --掉线回调
-function M.disconnect(gate,fd,player_id)
-	log.info('disconnect:',fd,player_id)
+function M.disconnect(player_id)
+	log.info('disconnect:',player_id)
 end
 
 --正在登录中

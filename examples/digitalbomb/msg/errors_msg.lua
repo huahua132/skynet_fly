@@ -5,9 +5,9 @@ local setmetatable = setmetatable
 local M = {}
 local meta = {__index = M}
 
-function M:new(agent_mgr)
+function M:new(interface_mgr)
 	local t = {
-		agent_mgr = agent_mgr
+		interface_mgr = interface_mgr
 	}
 	setmetatable(t,meta)
 	return t
@@ -24,7 +24,7 @@ function M:errors(player_id,code,msg,packname)
 		packname = packname,
 	}
 
-	self.agent_mgr:send_msg(player_id,'.errors.Error',error)
+	self.interface_mgr:send_msg(player_id,'.errors.Error',error)
 end
 
 return M
