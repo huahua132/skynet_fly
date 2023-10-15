@@ -19,7 +19,7 @@ local g_alloc_table_id = 1              --桌子id分配
 local INIT_TABLE_ID = g_alloc_table_id  --初始id
 local MAX_TABLE_ID = nil				--最大id
 
-local match_plug = nil       --匹配插件
+local alloc_plug = nil       --匹配插件
 
 local g_table_map = {}
 local g_player_map = {}
@@ -49,7 +49,7 @@ local function create_table(table_name, create_player_id)
     local table_id,num_id = alloc_table_id()
 	if not table_id then
 		log.info("alloc_table_id err ",table_id)
-		return match_plug.tablefull()
+		return alloc_plug.tablefull()
 	end
 
 	local room_client = contriner_client:new("room_game_table_m",table_name,function() return false end)
@@ -64,7 +64,7 @@ local function create_table(table_name, create_player_id)
 			player_list = {},
 		}
 		local config = errocode
-		match_plug.createtable(table_name,table_id,config,create_player_id)
+		alloc_plug.createtable(table_name,table_id,config,create_player_id)
 		return table_id
 	else
 		return nil,errocode,errormsg
@@ -74,7 +74,7 @@ end
 local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
     local t_info = g_table_map[table_id]
     if not t_info then
-        return match_plug.table_not_exists()
+        return alloc_plug.table_not_exists()
     end
     local table_server_id = t_info.table_server_id
     local table_id = t_info.table_id
@@ -87,14 +87,14 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
         local player_list = t_info.player_list
         table.insert(player_list,player_id)
 
-        match_plug.entertable(table_id,player_id)
+        alloc_plug.entertable(table_id,player_id)
         return table_server_id,table_id
     end
 end
 
 local function match_join(player_id, gate, fd, hall_server_id, table_name)
     assert(not g_player_map[player_id])
-    local table_id = match_plug.match(player_id)
+    local table_id = alloc_plug.match(player_id)
     local ok,errcode,errmsg
     if not table_id then
         table_id,errcode,errmsg = create_table(table_name)
@@ -134,10 +134,10 @@ local function leave(player_id)
                 break
             end
         end
-        match_plug.leavetable(table_id,player_id)
+        alloc_plug.leavetable(table_id,player_id)
         if #player_list <= 0 then
             g_table_map[table_id] = nil
-            match_plug.dismisstable(table_id)
+            alloc_plug.dismisstable(table_id)
         end
         g_player_map[player_id] = nil
         return true
@@ -174,29 +174,29 @@ end
 
 function CMD.start(config)
 	SELF_ADDRESS = skynet.self()
-	assert(config.match_plug,"not match_plug")
+	assert(config.alloc_plug,"not alloc_plug")
 	assert(config.MAX_TABLES,"not MAX_TABLES")  --最大桌子数量
 
 	MAX_TABLE_ID = INIT_TABLE_ID + config.MAX_TABLES - 1
 
-	match_plug = require (config.match_plug)
-	assert(match_plug.init,"not match init")           --初始化
-	assert(match_plug.match,"not match")		       --匹配
-	assert(match_plug.tablefull,"not tablefull")       --桌子已满
-    assert(match_plug.table_not_exists,"not tablefull")--桌子不存在
-	assert(match_plug.createtable,"not createtable")   --创建桌子
-	assert(match_plug.entertable,"not entertable")     --进入桌子
-	assert(match_plug.leavetable,"not leavetable")     --离开桌子
-	assert(match_plug.dismisstable,"not dismisstable") --解散桌子
+	alloc_plug = require (config.alloc_plug)
+	assert(alloc_plug.init,"not match init")           --初始化
+	assert(alloc_plug.match,"not match")		       --匹配
+	assert(alloc_plug.tablefull,"not tablefull")       --桌子已满
+    assert(alloc_plug.table_not_exists,"not tablefull")--桌子不存在
+	assert(alloc_plug.createtable,"not createtable")   --创建桌子
+	assert(alloc_plug.entertable,"not entertable")     --进入桌子
+	assert(alloc_plug.leavetable,"not leavetable")     --离开桌子
+	assert(alloc_plug.dismisstable,"not dismisstable") --解散桌子
 
-	if match_plug.register_cmd then
-		for name,func in pairs(match_plug.register_cmd) do
+	if alloc_plug.register_cmd then
+		for name,func in pairs(alloc_plug.register_cmd) do
 			assert(not CMD[name],"repeat cmd " .. name)
 			CMD[name] = func
 		end
 	end
 
-	match_plug.init(interface)
+	alloc_plug.init(interface)
 	return true
 end
 
