@@ -183,7 +183,7 @@ function CMD.start(config)
 	assert(match_plug.init,"not match init")           --初始化
 	assert(match_plug.match,"not match")		       --匹配
 	assert(match_plug.tablefull,"not tablefull")       --桌子已满
-    assert(match_plug.table_not_exists,"not tablefull")--桌子不存在
+    assert(match_plug.table_not_exists,"not table_not_exists")--桌子不存在
 	assert(match_plug.createtable,"not createtable")   --创建桌子
 	assert(match_plug.entertable,"not entertable")     --进入桌子
 	assert(match_plug.leavetable,"not leavetable")     --离开桌子
