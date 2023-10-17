@@ -34,7 +34,7 @@ return {
 		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
-			match_plug = "alloc_plug",
+			alloc_plug = "alloc_plug",
 			MAX_TABLES = 10000,
 		}
 	},
