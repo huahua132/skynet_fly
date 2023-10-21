@@ -458,7 +458,7 @@ function CMD.start(config)
 	end
 
 	--检查掉线超时，掉线超时还没有重新连接的需要清理
-	timer:new(timer.minute,0,function()
+	local timer_obj = timer:new(timer.minute,timer.loop,function()
 		local cur_time = time_util.skynet_int_time()
 		for _,agent in pairs(g_player_map) do
 			if not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then
@@ -471,6 +471,7 @@ function CMD.start(config)
 			end
 		end
 	end)
+	timer_obj:after_next()
 
 	hall_plug.init(interface)
 	skynet.register_protocol {

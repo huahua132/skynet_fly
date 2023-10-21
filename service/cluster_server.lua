@@ -121,9 +121,10 @@ skynet.start(function()
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()
 		--一秒写一次
-		timer:new(timer.second,0,function()
+		local timer_obj = timer:new(timer.second,timer.loop,function()
 			rpccli:register(g_svr_name,g_svr_id,conf.host)
 		end)
+		timer_obj:after_next()
 	end
 
 	cluster.register("cluster_server",skynet.self())

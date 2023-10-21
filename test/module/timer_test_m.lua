@@ -30,19 +30,33 @@ function CMD.start(config)
 	log.info("extend",ti_6:extend(timer.second * 5))
 
 	log.info("test 7 start ",os.date("%H:%M:%S"))
-	local ti_6 = timer:new(timer.second * 1,2,time_out,"test 7")
+	local ti_7 = timer:new(timer.second * 1,2,time_out,"test 7")
 	skynet.sleep(600)
-	log.info("extend",ti_6:extend(timer.second * 5))
+	log.info("extend",ti_7:extend(timer.second * 5))
 
 	log.info("test 8 start ",os.date("%H:%M:%S"))
-	local ti_6 = timer:new(timer.minute * 2,2,time_out,"test 8")
+	local ti_8 = timer:new(timer.minute * 2,2,time_out,"test 8")
 	skynet.sleep(600)
-	log.info("extend",ti_6:extend(timer.second * 5))
+	log.info("extend",ti_8:extend(timer.second * 5))
 
 	log.info("test 9 start ",os.date("%H:%M:%S"))
-	local ti_6 = timer:new(timer.second * 2,2,time_out,"test 9")
+	local ti_9 = timer:new(timer.second * 2,2,time_out,"test 9")
 	skynet.sleep(600)
-	log.info("extend",ti_6:extend(timer.second * 5))
+	log.info("extend",ti_9:extend(timer.second * 5))
+
+	log.info("test 10 start ",os.date("%H:%M:%S"))
+	local ti_10 = timer:new(timer.second * 10,2,function(test_name)
+		time_out(test_name)
+		skynet.sleep(timer.second * 3)
+	end, "test 10")
+	skynet.sleep(22)
+	log.info("test 11 start ",os.date("%H:%M:%S"))
+	local ti_11 = timer:new(timer.second * 10,2,function(test_name)
+		time_out(test_name)
+		skynet.sleep(timer.second * 3)
+	end, "test 11")
+
+	ti_11:after_next()
 	return true
 end
 
