@@ -1,6 +1,8 @@
 local skynet = require "skynet"
 local log = require "log"
 local timer = require "timer"
+local timer_point = require "timer_point"
+local time_util = require "time_util"
 
 local CMD = {}
 
@@ -9,54 +11,66 @@ local function time_out(...)
 end
 
 function CMD.start(config)
-	local ti = timer:new(100,5,time_out,"test 1")
+	-- local ti = timer:new(100,5,time_out,"test 1")
 
-	local ti_2 = timer:new(100,5,time_out,"test 2")
-	ti_2:cancel()
+	-- local ti_2 = timer:new(100,5,time_out,"test 2")
+	-- ti_2:cancel()
 
-	local ti_3 = timer:new(100,0,time_out,"test 3")
-	skynet.sleep(310)
-	ti_3:cancel()
+	-- local ti_3 = timer:new(100,0,time_out,"test 3")
+	-- skynet.sleep(310)
+	-- ti_3:cancel()
 
-	local ti_4 = timer:new(timer.minute * 2,1,time_out,"test 4")
-	skynet.sleep(100)
-	ti_4:cancel()
+	-- local ti_4 = timer:new(timer.minute * 2,1,time_out,"test 4")
+	-- skynet.sleep(100)
+	-- ti_4:cancel()
 
-	local ti_5 = timer:new(timer.minute * 2,2,time_out,"test 5")
+	-- local ti_5 = timer:new(timer.minute * 2,2,time_out,"test 5")
 
-	log.info("test 6 start ",os.date("%H:%M:%S"))
-	local ti_6 = timer:new(timer.second * 5,2,time_out,"test 6")
-	skynet.sleep(400)
-	log.info("extend",ti_6:extend(timer.second * 5))
+	-- log.info("test 6 start ",os.date("%H:%M:%S"))
+	-- local ti_6 = timer:new(timer.second * 5,2,time_out,"test 6")
+	-- skynet.sleep(400)
+	-- log.info("extend",ti_6:extend(timer.second * 5))
 
-	log.info("test 7 start ",os.date("%H:%M:%S"))
-	local ti_7 = timer:new(timer.second * 1,2,time_out,"test 7")
-	skynet.sleep(600)
-	log.info("extend",ti_7:extend(timer.second * 5))
+	-- log.info("test 7 start ",os.date("%H:%M:%S"))
+	-- local ti_7 = timer:new(timer.second * 1,2,time_out,"test 7")
+	-- skynet.sleep(600)
+	-- log.info("extend",ti_7:extend(timer.second * 5))
 
-	log.info("test 8 start ",os.date("%H:%M:%S"))
-	local ti_8 = timer:new(timer.minute * 2,2,time_out,"test 8")
-	skynet.sleep(600)
-	log.info("extend",ti_8:extend(timer.second * 5))
+	-- log.info("test 8 start ",os.date("%H:%M:%S"))
+	-- local ti_8 = timer:new(timer.minute * 2,2,time_out,"test 8")
+	-- skynet.sleep(600)
+	-- log.info("extend",ti_8:extend(timer.second * 5))
 
-	log.info("test 9 start ",os.date("%H:%M:%S"))
-	local ti_9 = timer:new(timer.second * 2,2,time_out,"test 9")
-	skynet.sleep(600)
-	log.info("extend",ti_9:extend(timer.second * 5))
+	-- log.info("test 9 start ",os.date("%H:%M:%S"))
+	-- local ti_9 = timer:new(timer.second * 2,2,time_out,"test 9")
+	-- skynet.sleep(600)
+	-- log.info("extend",ti_9:extend(timer.second * 5))
 
-	log.info("test 10 start ",os.date("%H:%M:%S"))
-	local ti_10 = timer:new(timer.second * 10,2,function(test_name)
-		time_out(test_name)
-		skynet.sleep(timer.second * 3)
-	end, "test 10")
-	skynet.sleep(22)
-	log.info("test 11 start ",os.date("%H:%M:%S"))
-	local ti_11 = timer:new(timer.second * 10,2,function(test_name)
-		time_out(test_name)
-		skynet.sleep(timer.second * 3)
-	end, "test 11")
+	-- log.info("test 10 start ",os.date("%H:%M:%S"))
+	-- local ti_10 = timer:new(timer.second * 10,2,function(test_name)
+	-- 	time_out(test_name)
+	-- 	skynet.sleep(timer.second * 3)
+	-- end, "test 10")
+	-- skynet.sleep(22)
+	-- log.info("test 11 start ",os.date("%H:%M:%S"))
+	-- local ti_11 = timer:new(timer.second * 10,2,function(test_name)
+	-- 	time_out(test_name)
+	-- 	skynet.sleep(timer.second * 3)
+	-- end, "test 11")
 
-	ti_11:after_next()
+	--ti_11:after_next()
+
+	local ti_12 = timer_point:new(timer_point.EVERY_MINUTE,function()
+		log.error("每分钟:",os.date("%H:%M:%S",time_util.time()))
+	end)
+
+	local ti_12 = timer_point:new(timer_point.EVERY_HOUR,function()
+		log.error("每小时:",os.date("%H:%M:%S",time_util.time()))
+	end)
+
+	local ti_12 = timer_point:new(timer_point.EVERY_HOUR,function()
+		log.error("每天:",os.date("%H:%M:%S",time_util.time()))
+	end)
 	return true
 end
 

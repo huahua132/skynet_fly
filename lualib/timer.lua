@@ -126,7 +126,7 @@ end
 ]]
 function M:extend(ex_expire)
 	if self.is_cancel or self.is_over then
-		return false
+		return self
 	end
 	
 	local pre_expire = self.expire
@@ -139,12 +139,12 @@ function M:extend(ex_expire)
 
 	local expire = pre_expire + ex_expire
 	self:cancel()
-	self = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
-	self.cur_times = pre_cur_times
-	self.expire_time = time_util.skynet_int_time() + (pre_expire_time - time_util.skynet_int_time()) + ex_expire
-	self.is_after_next = pre_is_after_next
+	local nt = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
+	nt.cur_times = pre_cur_times
+	nt.expire_time = time_util.skynet_int_time() + (pre_expire_time - time_util.skynet_int_time()) + ex_expire
+	nt.is_after_next = pre_is_after_next
 
-	return true
+	return nt
 end
 
 --循环执行
