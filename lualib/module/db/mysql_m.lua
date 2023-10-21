@@ -12,13 +12,14 @@ local g_ti = nil
 local g_querying_cnt = 0
 
 local function keep_alive()
-	g_ti = timer:new(timer.second * 10,0,function()
+	g_ti = timer:new(timer.second * 10,timer.loop,function()
 		if g_db_conn then
 			local ok,ret = pcall(g_db_conn.ping,g_db_conn)
 		else
 			log.error("keep_alive not conn")
 		end
 	end)
+	g_ti:after_next()
 end
 
 function CMD.start(config)

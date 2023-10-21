@@ -9,7 +9,7 @@ contriner_client:set_week_visitor("B_m")
 local CMD = {}
 
 function CMD.start()
-    timer:new(timer.second * 10,0,CMD.send_msg_to_b)
+    timer:new(timer.second * 10,timer.loop,CMD.send_msg_to_b)
     return true
 end
 

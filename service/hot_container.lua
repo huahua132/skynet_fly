@@ -104,7 +104,8 @@ end
 
 --退出
 function CMD.exit()
-	check_timer = timer:new(timer.minute * 10,0,check_exit)
+	check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
+	check_timer:after_next()
 	module_fix_exit() --确定要退出
 end
 

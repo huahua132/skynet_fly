@@ -9,26 +9,42 @@ local assert = assert
 local setmetatable = setmetatable
 local tunpack = table.unpack
 
-local M = {}
+----------------------------------------------------------------------------------------
+--private
+----------------------------------------------------------------------------------------
 
+local TIMES_LOOP<const> = 0   --循环触发
 local CHECK_INVAL_TIME = 6000 --60s
-local mata = {__index = M}
 local register
 
-local function time_out_func(t)
-	if t.is_cancel then return end
-	t.cur_times = t.cur_times + 1
-
-	if t.times == 0 or t.cur_times < t.times then
+local function repeat_register(t)
+	if t.times == TIMES_LOOP or t.cur_times < t.times then
 		t.expire_time = time_util.skynet_int_time() + t.expire
 		skynet.fork(register,t)
 	else
 		t.is_over = true
 	end
+end
 
+local function execute_call_back(t)
 	local is_ok,err = x_pcall(t.callback,tunpack(t.args))
 	if not is_ok then
 		log.error("time_out_func err ",err,t.callback,t.args)
+	end
+end
+
+local function time_out_func(t)
+	if t.is_cancel then return end
+	t.cur_times = t.cur_times + 1
+
+	if t.is_after_next then
+		--先执行回调，再注册下一次
+		execute_call_back(t)
+		repeat_register(t)
+	else
+		--先注册下一次，再执行回调
+		repeat_register(t)
+		execute_call_back(t)
 	end
 end
 
@@ -46,7 +62,12 @@ register = function(t)
 		end
 	end
 end
+----------------------------------------------------------------------------------------
+--interface
+----------------------------------------------------------------------------------------
 
+local M = {}
+local mata = {__index = M}
 --[[
 	函数作用域：M 对象的成员函数
 	函数名称：new
@@ -70,7 +91,8 @@ function M:new(expire,times,callback,...)
 		is_cancel = false,
 		is_over = false,
 		cur_times = 0,
-		expire_time = time_util.skynet_int_time() + expire
+		expire_time = time_util.skynet_int_time() + expire,
+		is_after_next = false,
 	}
 
 	skynet.fork(register,t)
@@ -89,6 +111,14 @@ end
 
 --[[
 	函数作用域：M:new 对象的成员函数
+	函数名称：after_next
+	描述:  之后下一次 ： 回调函数执行完，再注册下一次，默认先注册下一次再执行回调
+]]
+function M:after_next()
+	self.is_after_next = true
+end
+--[[
+	函数作用域：M:new 对象的成员函数
 	函数名称：extend
 	描述:  延长定时器
 	参数:
@@ -105,16 +135,20 @@ function M:extend(ex_expire)
 	local pre_callback = self.callback
 	local pre_args = self.args
 	local pre_expire_time = self.expire_time
+	local pre_is_after_next = self.is_after_next
 
 	local expire = pre_expire + ex_expire
 	self:cancel()
 	self = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
 	self.cur_times = pre_cur_times
 	self.expire_time = time_util.skynet_int_time() + (pre_expire_time - time_util.skynet_int_time()) + ex_expire
+	self.is_after_next = pre_is_after_next
 
 	return true
 end
 
+--循环执行
+M.loop = TIMES_LOOP
 --秒
 M.second = 100
 --分钟
