@@ -37,37 +37,37 @@ end
 local TYPE_REMAIN_TIME_FUNC = {
     [M.EVERY_MINUTE] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_min(sec)
+        local next_time = time_util.every_min(sec)
         return next_time - cur_time
     end,
     [M.EVERY_HOUR] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_hour(min,sec)
+        local next_time = time_util.every_hour(min,sec)
         return next_time - cur_time
     end,
     [M.EVERY_DAY] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_day(hour,min,sec)
+        local next_time = time_util.every_day(hour,min,sec)
         return next_time - cur_time
     end,
     [M.EVERY_WEEK] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_week(wday,hour,min,sec)
+        local next_time = time_util.every_week(wday,hour,min,sec)
         return next_time - cur_time
     end,
     [M.EVERY_MOUTH] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_month(day,hour,min,sec)
+        local next_time = time_util.every_month(day,hour,min,sec)
         return next_time - cur_time
     end,
     [M.EVERY_YEAR] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_year(month,day,hour,min,sec)
+        local next_time = time_util.every_year(month,day,hour,min,sec)
         return next_time - cur_time
     end,
     [M.EVERY_YEAR_DAY] = function(month,day,hour,min,sec,wday,yday)
         local cur_time = time_util.time()
-        local next_time = time_util.next_year_day(yday,hour,min,sec)
+        local next_time = time_util.every_year_day(yday,hour,min,sec)
         return next_time - cur_time
     end
 }
@@ -106,8 +106,8 @@ end
 local adapter_loop
 adapter_loop = function(point_obj,call_back,...)
     skynet.fork(call_back,...)
-    local remain_time = TYPE_REMAIN_TIME_FUNC[self.type](self.month,self.day,self.hour,self.min,self.sec,self.wday,self.yday)
-    self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)
+    local remain_time = TYPE_REMAIN_TIME_FUNC[point_obj.type](point_obj.month,point_obj.day,point_obj.hour,point_obj.min,point_obj.sec,point_obj.wday,point_obj.yday)
+    point_obj.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,point_obj,call_back,...)
 end
 
 function M:new(type)
