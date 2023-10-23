@@ -84,7 +84,7 @@ function CMD.start(config)
 		log.error("每年:",os.date("%Y%m%d-%H:%M:%S",time_util.time()))
 	end)
 
-	local ti_16 = timer_point:new(timer_point.EVERY_YEAR_DAY):set_yday(1):set_hour(6):set_min(5):set_sec(20):builder(function()
+	local ti_18 = timer_point:new(timer_point.EVERY_YEAR_DAY):set_yday(1):set_hour(6):set_min(5):set_sec(20):builder(function()
 		log.error("每年第几天:",os.date("%Y%m%d-%H:%M:%S",time_util.time()))
 	end)
 
