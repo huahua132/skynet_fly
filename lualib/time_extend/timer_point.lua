@@ -97,12 +97,6 @@ local mata = {
     end
 }
 
-local function adapter(point_obj,call_back,...)
-    skynet.fork(call_back,...)
-    local inval_time = TYPE_INVAL_TIME_MAP[point_obj.type]
-    point_obj.time_obj = timer:new(inval_time,timer.loop,call_back,...)
-end
-
 local adapter_loop
 adapter_loop = function(point_obj,call_back,...)
     skynet.fork(call_back,...)
@@ -173,11 +167,7 @@ end
 
 function M:builder(call_back, ...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[self.type](self.month,self.day,self.hour,self.min,self.sec,self.wday,self.yday)
-    if not TYPE_INVAL_TIME_MAP[self.type] then
-        self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)
-    else
-        self.time_obj = timer:new(remain_time * timer.second,1,adapter,self,call_back,...)
-    end
+    self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)
     return self
 end
 
