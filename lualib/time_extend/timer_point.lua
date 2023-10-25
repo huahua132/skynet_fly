@@ -105,7 +105,7 @@ adapter_loop = function(point_obj,call_back,...)
 end
 
 function M:new(type)
-    assert(g_type_map[type], "unkown type ".. tostring(type))
+    assert(g_type_map[type], "unknown type ".. tostring(type))
     local t = {
         type = type,
         month = 1,

@@ -15,8 +15,8 @@ end
 
 function M:errors(player_id,code,msg,packname)
 	if not code then
-		code = errorcode.UNKOWN_ERR
-		msg = "unkown err"
+		code = errorcode.UNKNOWN_ERR
+		msg = "UNKNOWN err"
 	end
 	local error = {
 		code = code,
