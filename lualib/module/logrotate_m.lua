@@ -1,10 +1,10 @@
-local timer = require "timer"
 local skynet = require "skynet"
 local lfs = require "lfs"
 local time_util = require "time_util"
 local file_util = require "file_util"
 local log = require "log"
 local string_util = require "string_util"
+local timer_point = require "timer_point"
 
 local string = string
 local assert = assert
@@ -20,8 +20,16 @@ local g_limit_size = nil  --至少多大才会切割
 local g_max_age = nil     --最大保留天数
 local g_max_backups = nil --最大保留文件数
 local g_sys_cmd = nil     --系统命令
+local g_point_type = nil  --默认每天
+local g_month = nil       --几月
+local g_day = nil         --几天 
+local g_hour = nil        --几时
+local g_min = nil         --几分
+local g_sec = nil         --几秒
+local g_wday = nil        --周几
+local g_yday = nil        --一年第几天
 
-local IS_EXIT = false
+local g_timer_obj = nil
 
 local function os_execute(cmd)
     local isok,status,signal = os.execute(cmd)
@@ -104,7 +112,7 @@ local function backup()
                     time = os.time(date),
                 })
             else
-                log.error("unkown file ",file_name)
+                log.error("unknown file ",file_name)
             end
         end
     end
@@ -144,27 +152,37 @@ function CMD.start(config)
     g_max_backups = config.max_backups or 30
     g_file_path = config.file_path or './'
     g_sys_cmd = config.sys_cmd
+    g_point_type = config.point_type or timer_point.EVERY_DAY --默认每天
+    g_month = config.month or 1         --几月
+    g_day = config.day or 1             --几天 
+    g_hour = config.hour or 0           --几时
+    g_min = config.min or 0             --几分
+    g_sec = config.sec or 0             --几秒
+    g_wday = config.wday or 1           --周几
+    g_yday = config.yday or 1           --一年第几天
 
-    skynet.fork(function()
-        while not IS_EXIT do
-            local next_day_time = time_util.day_time(1,0,0,0) --明天凌晨
-            local expire = next_day_time - os.time()
-            if expire < 0 then
-                expire = 0
-            end
-
-            skynet.sleep(expire * 100)
-            rotate()
-            backup()
-        end
+    local time_obj = timer_point:new(g_point_type)
+    time_obj:set_month(g_month)
+    time_obj:set_day(g_day)
+    time_obj:set_hour(g_hour)
+    time_obj:set_min(g_min)
+    time_obj:set_sec(g_sec)
+    time_obj:set_wday(g_wday)
+    time_obj:set_yday(g_yday)
+    time_obj:builder(function()
+        rotate()
+        backup()
     end)
-    
+
+    g_timer_obj = time_obj
     return true
 end
 
 function CMD.exit()
-    IS_EXIT = true
-    return tremove
+    if g_timer_obj then
+        g_timer_obj:cancel()
+    end
+    return true
 end
 
 return CMD
