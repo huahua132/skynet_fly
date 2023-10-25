@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local time_util = require "time_util"
 local log = require "log"
 local setmetatable = setmetatable
 local os = os
@@ -9,15 +10,11 @@ local next = next
 local math = math
 local assert = assert
 
-local function get_time()
-	return math.floor(skynet.time())
-end
-
-local cur_time_point = get_time()
+local cur_time_point = time_util.skynet_int_time()
 local cache_obj_list = {}
 
 local function cache_clear_loop()
-	local now_time = get_time()
+	local now_time = time_util.skynet_int_time()
 	local diff = now_time - cur_time_point
 	for i = 1,diff do
 		cur_time_point = cur_time_point + 1
