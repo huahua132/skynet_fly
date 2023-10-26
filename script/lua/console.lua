@@ -12,6 +12,7 @@ package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 local lfs = require "lfs"
 local file_util = require "file_util"
 local table_util = require "table_util"
+local time_util = require "time_util"
 local json = require "cjson"
 debug_port = nil
 local skynet_cfg_path = string.format("%s_config",svr_name)
@@ -209,6 +210,21 @@ function CMD.create_logrotate()
 	logrotate_file:write('}\n')
 	logrotate_file:close()
 	os.execute("chmod -R 644 ./")
+end
+
+--快进时间
+function CMD.fasttime()
+	local fastdate = ARGV[4]
+	local one_add = ARGV[5]  --单次加速时间 1表示1秒
+	assert(fastdate,"not fastdate")
+	assert(one_add, "not one_add")
+	local date,err = time_util.string_to_date(fastdate)
+	if not date then
+		error(err)
+	end
+
+	local fastcmd = string.format('%s/fasttime/%s/%s',get_host(),os.time(date),one_add)
+	print(string.format("'%s'",fastcmd))
 end
 
 assert(CMD[cmd],'not cmd:' .. cmd)

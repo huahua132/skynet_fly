@@ -1,5 +1,6 @@
-local skynet = require "skynet"
-
+local string_util = require "string_util"
+local skynet
+local tonumber = tonumber
 local math = math
 local assert = assert
 local os = os
@@ -16,6 +17,7 @@ local M = {
 local starttime
 --整型的skynet_time 
 function M.skynet_int_time()
+	skynet = skynet or require "skynet"
 	if not starttime then
 		starttime = math.floor(skynet.starttime() * 100)
 	end
@@ -31,6 +33,74 @@ end
 function M.date(time)
 	time = time or M.time()
 	return os.date("*t",M.time())
+end
+
+--string格式的时间转换成date日期table 2023:10:26 19:22:50
+function M.string_to_date(str)
+	local datetime = string_util.split(str,' ',':')
+	if #datetime ~= 2 then
+		return nil,"err not space"
+	end
+
+	if #datetime[1] ~= 3 and #datetime[2] ~= 3 then
+		return nil,"err format"
+	end
+
+	for i = 1,2 do
+		for j = 1,3 do
+			datetime[i][j] = tonumber(datetime[i][j])
+			if not datetime[i][j] then --说明不是数字
+				return nil,"err not number " .. i .. ':' .. j
+			end
+		end
+	end
+
+	local year = datetime[1][1]
+	local month = datetime[1][2]
+	local day = datetime[1][3]
+	local hour = datetime[2][1]
+	local min = datetime[2][2]
+	local sec = datetime[2][3]
+
+	if year < 1970 then
+		return nil,"err year[" .. year .. "]"
+	end
+
+	if month < 1 or month > 12 then
+		return nil, "err month[" .. month .."]"
+	end
+	
+	if day < 1 or day > 31 then
+		return nil, "err day[" .. day .. "]"
+	end
+
+	if hour < 0 or hour > 23 then
+		return nil, "err hour[" .. hour .. "]"
+	end
+	
+	if min < 0 or min > 59 then
+		return nil, "err min[" .. min .. "]"
+	end
+	
+	if sec < 0 or sec > 59 then
+		return nil, "err sec[" .. sec .. "]"
+	end
+
+	local date = {
+		year = year,
+		month = month,
+		day = day,
+		hour = hour,
+		min = min,
+		sec = sec,
+	}
+
+	os.time(date)
+	if date.day ~= day then  --这个月没有这一天
+		return nil, "not day[" .. day .. "]"
+	end
+
+	return date
 end
 
 --适配当月最后一天
