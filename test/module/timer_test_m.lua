@@ -88,6 +88,8 @@ function CMD.start(config)
 		log.error("每年第几天:",os.date("%Y%m%d-%H:%M:%S",time_util.time()))
 	end)
 
+	log.info("string_to_date:",time_util.string_to_date("2023:10:27 0:0:0"))
+
 	return true
 end
 
