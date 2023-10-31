@@ -25,7 +25,7 @@ function M.init()
 	--注册全局中间件
 	app:use(logger_mid())
 
-	app:static_dir("/login","imgs")
+	app:static_dir("/login","./static/imgs")
 
 	app:run()
 end

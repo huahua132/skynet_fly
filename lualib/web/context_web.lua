@@ -48,14 +48,13 @@ function M:next()
     end
 end
 
-local static_root_path = "./static/"
 local filecache = setmetatable({}, { __mode = "kv"  })
 local function read_filecache(_, filepath)
     local v = filecache[filepath]
     if v then
         return v
     end
-    local fpath = static_root_path .. filepath
+    local fpath = filepath
     log.debug("read_filecache. fpath:", fpath)
     local f = iopen(fpath)
     if f then

@@ -24,7 +24,7 @@ function M.init()
 	--注册全局中间件
 	app:use(logger_mid())
 
-	app:static_file('/login/test.webp','/test.webp')
+	app:static_file('/login/test.webp','./static/test.webp')
 
 	app:run()
 end
