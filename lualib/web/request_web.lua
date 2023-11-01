@@ -17,7 +17,7 @@ function M:new(req)
 	local header = req.header
 	local body = req.body
 	local url = req.url
-    local content_type = header['content-type']
+    local content_type = header['content-type'] or ""
     -- the post request have Content-Type header set
 
 	local parse_func = nil
