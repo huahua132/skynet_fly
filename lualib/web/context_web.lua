@@ -48,6 +48,11 @@ function M:next()
     end
 end
 
+--中断调用,比如中间件验证失败
+function M:abort()
+    self.index = #self.handlers + 1
+end
+
 local filecache = setmetatable({}, { __mode = "kv"  })
 local function read_filecache(_, filepath)
     local v = filecache[filepath]
