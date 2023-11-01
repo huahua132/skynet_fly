@@ -5,6 +5,8 @@ local log = require "log"
 local assert = assert
 local setmetatable = setmetatable
 
+contriner_client:register("mysql_m")
+
 local M = {}
 local mt = {__index = M}
 
