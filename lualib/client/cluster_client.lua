@@ -5,7 +5,6 @@ local contriner_client = require "contriner_client"
 local setmetatable = setmetatable
 local assert = assert
 local type = type
-local xx_pcall = xx_pcall
 
 contriner_client:register("cluster_client_m")
 
@@ -65,7 +64,7 @@ end
 	描述：用简单轮询负载均衡给单个结点的module_name模板用balance_call的方式发送消息
 ]]
 function M:one_balance_call(...)
-	return xx_pcall(cluster_client.balance_call,cluster_client,"balance_call",self.svr_name,"balance_call",self.module_name,...)
+	return cluster_client:balance_call("balance_call",self.svr_name,"balance_call",self.module_name,...)
 end
 
 --[[
@@ -83,7 +82,7 @@ end
 	描述：用简单轮询负载均衡给单个结点的module_name模板用mod_call的方式发送消息
 ]]
 function M:one_mod_call(...)
-	return xx_pcall(cluster_client.balance_call,cluster_client,"balance_call",self.svr_name,"mod_call",self.module_name,self.mod_num or skynet.self(),...)
+	return cluster_client:balance_call("balance_call",self.svr_name,"mod_call",self.module_name,self.mod_num or skynet.self(),...)
 end
 
 --[[
@@ -119,7 +118,7 @@ end
 	描述：给所有结点的module_name模板用balance_call的方式发送消息
 ]]
 function M:all_balance_call(...)
-	return xx_pcall(cluster_client.balance_call,cluster_client,"call_all",self.svr_name,"balance_call",self.module_name,...)
+	return cluster_client:balance_call("call_all",self.svr_name,"balance_call",self.module_name,...)
 end
 
 --[[
@@ -137,7 +136,7 @@ end
 	描述：给所有结点的module_name模板用mod_call的方式发送消息
 ]]
 function M:all_mod_call(...)
-	return xx_pcall(cluster_client.balance_call,cluster_client,"call_all",self.svr_name,"mod_call",self.module_name,self.mod_num or skynet.self(),...)
+	return cluster_client:balance_call("call_all",self.svr_name,"mod_call",self.module_name,self.mod_num or skynet.self(),...)
 end
 
 --[[
@@ -173,7 +172,7 @@ end
 ]]
 function M:one_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	return xx_pcall(cluster_client.balance_call,cluster_client,"balance_call",self.svr_name,"balance_call_by_name",self.module_name,self.instance_name,...)
+	return cluster_client:balance_call("balance_call",self.svr_name,"balance_call_by_name",self.module_name,self.instance_name,...)
 end
 
 --[[
@@ -193,7 +192,7 @@ end
 ]]
 function M:one_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	return xx_pcall(cluster_client.balance_call,cluster_client,"balance_call",self.svr_name,"mod_call_by_name",self.module_name,self.instance_name,self.mod_num or skynet.self(),...)
+	return cluster_client:balance_call("balance_call",self.svr_name,"mod_call_by_name",self.module_name,self.instance_name,self.mod_num or skynet.self(),...)
 end
 
 --[[
@@ -231,7 +230,7 @@ end
 ]]
 function M:all_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	return xx_pcall(cluster_client.balance_call,cluster_client,"call_all",self.svr_name,"balance_call_by_name",self.module_name,self.instance_name,...)
+	return cluster_client:balance_call("call_all",self.svr_name,"balance_call_by_name",self.module_name,self.instance_name,...)
 end
 
 --[[
@@ -251,7 +250,7 @@ end
 ]]
 function M:all_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	return xx_pcall(cluster_client.balance_call,cluster_client,"call_all",self.svr_name,"mod_call_by_name",self.module_name,self.instance_name,self.mod_num or skynet.self(),...)
+	return cluster_client:balance_call("call_all",self.svr_name,"mod_call_by_name",self.module_name,self.instance_name,self.mod_num or skynet.self(),...)
 end
 
 --[[

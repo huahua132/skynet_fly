@@ -1,6 +1,8 @@
 local skynet = require "skynet"
 local log = require "log"
 local cluster_client = require "cluster_client"
+local contriner_client = require "contriner_client"
+contriner_client:register('debug_console_m')
 
 local CMD = {}
 
@@ -11,10 +13,10 @@ function CMD.start()
 		cli:one_balance_send("hello","one_balance_send")
 		cli:one_mod_send("hello","one_mod_send")
 
-		for i = 1,20 do
+		for i = 1,3 do
 			log.info("balance ping ",i,cli:one_balance_call("ping"))
 		end
-		for i = 1,20 do
+		for i = 1,3 do
 			log.info("mod ping ",i,cli:one_mod_call("ping"))
 		end
 		
@@ -33,10 +35,10 @@ function CMD.start()
 		cli:one_balance_send_by_name("hello","one_balance_send_by_name")
 		cli:one_mod_send_by_name("hello","one_mod_send_by_name")
 
-		for i = 1,20 do
+		for i = 1,3 do
 			log.info("one_balance_call_by_name ping ",i,cli:one_balance_call_by_name("ping"))
 		end
-		for i = 1,20 do
+		for i = 1,3 do
 			log.info("one_mod_call_by_name ping ",i,cli:one_mod_call_by_name("ping"))
 		end
 
@@ -50,6 +52,11 @@ function CMD.start()
 
 		cli:one_broadcast_by_name("hello","one_broadcast_by_name")
 		cli:all_broadcast_by_name("hello","all_broadcast_by_name")
+	end)
+
+	skynet.fork(function()
+		local debug_client = contriner_client:new('debug_console_m')
+		log.info(debug_client:mod_call('call','help'))
 	end)
 
 	return true

@@ -55,7 +55,7 @@ local function add_node(svr_name,svr_id,host)
 	local host_list = node_info.host_list
 	local id_host_map = node_info.id_host_map
 
-	local cluster_name = svr_name .. '_' .. svr_id
+	local cluster_name = svr_name .. ':' .. svr_id
 	tinsert(name_list,cluster_name)
 	tinsert(host_list,host)
 	id_name_map[svr_id] = cluster_name
@@ -138,7 +138,12 @@ function CMD.balance_call(svr_name,...)
 
 	local index = get_balance(node_info)
 	local cluster_name = name_list[index]
-	return cluster.call(cluster_name,"@cluster_server",...)
+	local ret = {x_pcall(cluster.call,cluster_name,"@cluster_server",...)}
+	local isok = tremove(ret,1)
+	if not isok then
+		log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
+	end
+	return {cluster_name = cluster_name, result = ret} 
 end
 
 --给集群所有结点发
@@ -166,7 +171,7 @@ function CMD.call_all(svr_name,...)
 			log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
 		end
 		local host = host_list[i]
-		tinsert(res,{cluster_name = cluster_name,host = host, result = ret})
+		tinsert(res,{cluster_name = cluster_name, result = ret})
 	end
 
 	return res
