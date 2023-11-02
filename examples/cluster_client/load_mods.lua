@@ -1,6 +1,11 @@
 return {
-	cluster_client_m = {
+	share_config_m = {
 		launch_seq = 1,
+		launch_num = 1,
+	},
+
+	cluster_client_m = {
+		launch_seq = 2,
 		launch_num = 1,
 		default_arg = {
 			node_map = {
@@ -12,8 +17,13 @@ return {
 		}
 	},
 
+	debug_console_m = {
+		launch_seq = 3,
+		launch_num = 1,
+	},
+
 	test_m = {
-		launch_seq = 2,
+		launch_seq = 4,
 		launch_num = 1,
 	}
 }
