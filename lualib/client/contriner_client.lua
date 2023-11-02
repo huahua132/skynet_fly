@@ -23,6 +23,7 @@ local g_name_id_list_map = {}
 local g_is_watch_map = {}
 local g_register_map = {}    --注册表
 local g_week_visitor_map = {} --弱访问者
+local g_instance_map = {}
 
 local function monitor(t,key)
 	while not IS_CLOSE do
@@ -203,6 +204,28 @@ function M:new(module_name,instance_name,can_switch_func)
     return t
 end
 
+--有时候不想创建实例
+function M:instance(module_name,instance_name)
+	assert(module_name)
+	if not g_instance_map[module_name] then
+		g_instance_map[module_name] = {
+			name_map = {},
+			obj = nil
+		}
+	end
+
+	if instance_name then
+		if not g_instance_map[module_name].name_map[instance_name] then
+			g_instance_map[module_name].name_map[instance_name] = M:new(module_name,instance_name)
+		end
+		return g_instance_map[module_name].name_map[instance_name]
+	else
+		if not g_instance_map[module_name].obj then
+			g_instance_map[module_name].obj = M:new(module_name,instance_name)
+		end
+		return g_instance_map[module_name].obj
+	end
+end
 --[[
 	函数作用域：M:new 对象的成员函数
 	函数名称：set_mod_num
