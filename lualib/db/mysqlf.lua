@@ -7,19 +7,27 @@ local setmetatable = setmetatable
 
 contriner_client:register("mysql_m")
 
+local g_instance_map = {}
+
 local M = {}
 local mt = {__index = M}
 
 function M:new(db_name)
 	local client = contriner_client:new("mysql_m",db_name)
-	assert(client,"not mysql_m service ")
-
 	local t = {
 		client = client
 	}
 
 	setmetatable(t,mt)
 	return t
+end
+
+function M:instance(db_name)
+	if not g_instance_map[db_name] then
+		g_instance_map[db_name] = M:new(db_name)
+	end
+
+	return g_instance_map[db_name]
 end
 
 function M:query(sql_str)
