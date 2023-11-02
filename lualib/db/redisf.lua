@@ -25,6 +25,8 @@ local command = {}     --自定义命令函数
 
 local cmdfuncs = {}    --命令函数缓存
 
+local g_instance_map = {}  --实例
+
 --[[
 	函数作用域：M的成员函数
 	函数名称：script_run
@@ -127,6 +129,15 @@ function M.new_client(db_name)
 	setmetatable(t_conn,mt)
 	t_conn:get("ping")       --尝试调一下
 	return t_conn
+end
+
+-- 有时候并不想创建和管理redis连接,就直接访问实例
+function M.instance(db_name)
+	if not g_instance_map[db_name] then
+		g_instance_map[db_name] = M.new_client(db_name)
+	end
+
+	return g_instance_map[db_name]
 end
 
 --[[

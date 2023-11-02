@@ -12,6 +12,8 @@ local M = {}
 local meta = {__index = M}
 local cluster_client = nil
 
+local g_instance_map = {}
+
 --[[
 	函数作用域：M 的成员函数
 	函数名称: new
@@ -36,6 +38,35 @@ function M:new(svr_name,module_name,instance_name)
 	setmetatable(t,meta)
 
 	return t
+end
+
+--有时候并不想创建实例
+function M:instance(svr_name,module_name,instance_name)
+	assert(svr_name,"not svr_name")
+	assert(module_name,"not module_name")
+
+	if not g_instance_map[svr_name] then
+		g_instance_map[svr_name] = {}
+	end
+
+	if not g_instance_map[svr_name][module_name] then
+		g_instance_map[svr_name][module_name] = {
+			name_map = {},
+			obj = nil
+		}
+	end
+
+	if instance_name then
+		if not g_instance_map[svr_name][module_name].name_map[instance_name] then
+			g_instance_map[svr_name][module_name].name_map[instance_name] = M:new(svr_name,module_name,instance_name)
+		end
+		return g_instance_map[svr_name][module_name].name_map[instance_name]
+	else
+		if not g_instance_map[svr_name][module_name].obj then
+			g_instance_map[svr_name][module_name].obj = M:new(svr_name,module_name,instance_name)
+		end
+		return g_instance_map[svr_name][module_name].obj
+	end
 end
 
 function M:set_mod_num(num)
