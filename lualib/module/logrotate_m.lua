@@ -152,6 +152,11 @@ end
 
 local CMD = {}
 
+function CMD.add_rotate(cfg)
+    tinsert(g_rotate_list,create_rotate(cfg))
+    return true
+end
+
 function CMD.start(config)
     tinsert(g_rotate_list,create_rotate(config))
     return true
