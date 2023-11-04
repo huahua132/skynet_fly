@@ -88,8 +88,8 @@ local mata = {
         return tb.time_obj[k]
     end,
     __newindex = function (tb,k,v)
-        local v = rawget(tb,k)
-        if v then
+        local s = rawget(tb,k)
+        if s then
             rawset(tb,k,v)
         else
             tb.time_obj[k] = v
