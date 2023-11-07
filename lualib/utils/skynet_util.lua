@@ -1,7 +1,9 @@
 local skynet = require "skynet"
 
+local tonumber = tonumber
 local assert = assert
 local table = table
+local type = type
 local skynet_ret = skynet.ret
 local skynet_pack = skynet.pack
 local tunpack = table.unpack
@@ -42,6 +44,18 @@ function M.lua_dispatch(cmd_func,not_ret,is_need_src)
             end
         end
     end)
+end
+
+function M.number_address(name)
+	local t = type(name)
+	if t == "number" then
+		return name
+	elseif t == "string" then
+		local hex = name:match "^:(%x+)"
+		if hex then
+			return tonumber(hex, 16)
+		end
+	end
 end
 
 return M
