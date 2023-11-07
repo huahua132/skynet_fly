@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local time_util = require "time_util"
+local skynet_util = require "skynet_util"
 
 local g_debug_console = nil
 local CMD = {}
@@ -22,7 +23,7 @@ function CMD.exit()
 	return true
 end
 
-skynet.info_func(function()
+skynet_util.register_info_func("dec",function()
     return "I am is debug_console"
 end)
 

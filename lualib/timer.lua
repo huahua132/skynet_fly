@@ -147,6 +147,19 @@ function M:extend(ex_expire)
 	return nt
 end
 
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：remain_expire
+	描述:  剩余触发时间
+]]
+function M:remain_expire()
+	if self.is_cancel or self.is_over then
+		return -1     --已经触发完了
+	end
+
+	return self.expire_time - time_util.skynet_int_time()
+end
+
 --循环执行
 M.loop = TIMES_LOOP
 --秒

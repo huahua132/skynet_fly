@@ -23,6 +23,18 @@ local g_id_list_map = {}
 local g_watch_map = {}
 local g_version_map = {}
 
+skynet_util.register_info_func("id_list",function()
+	return g_id_list_map
+end)
+
+skynet_util.register_info_func("name_id_list",function()
+	return g_name_id_list_map
+end)
+
+skynet_util.register_info_func("version",function()
+	return g_version_map
+end)
+
 local function call_id_list(id_list,cmd)
 	for _,id in ipairs(id_list) do
 		skynet_call(id,'lua',cmd)
@@ -46,7 +58,16 @@ local function launch_new_module(module_name,config)
 	local is_ok = true
 	local id_list = {}
 	local name_id_list = {}
-	local version = g_version_map[module_name] or 1
+	if not g_version_map[module_name] then
+		g_version_map[module_name] = 0
+	end
+
+	if not g_watch_map[module_name] then
+		g_watch_map[module_name] = {}
+	end
+	
+	g_version_map[module_name] = g_version_map[module_name] + 1
+	local version = g_version_map[module_name]
 	for i = 1,launch_num do
 		local cur_time = os.time()
 		local cur_date = os.date("%Y-%m-%d[%H:%M:%S]",cur_time)
@@ -144,18 +165,7 @@ local function load_modules(...)
 			local name_id_list = m.name_id_list
 			g_name_id_list_map[module_name] = name_id_list
 			g_id_list_map[module_name] = id_list
-		
-			if not g_version_map[module_name] then
-				g_version_map[module_name] = 0
-			end
-		
-			if not g_watch_map[module_name] then
-				g_watch_map[module_name] = {}
-			end
-			
-			g_version_map[module_name] = g_version_map[module_name] + 1
 			local version = g_version_map[module_name]
-		
 			local watch_map = g_watch_map[module_name]
 			for source,response in pairs(watch_map) do
 				response(true,id_list,name_id_list,version)

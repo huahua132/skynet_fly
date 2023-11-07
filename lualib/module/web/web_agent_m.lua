@@ -6,6 +6,7 @@ local log = require "log"
 local cache_help = require "cache_help"
 local table_pool = require "table_pool":new(2048)
 local timer = require "timer"
+local skynet_util = require "skynet_util"
 
 local table  = table
 local string = string
@@ -230,8 +231,8 @@ function CMD.exit()
 	return true
 end
 
-skynet.info_func(function()
-	log.error("web_agent_module:",fd_info_map)
+skynet_util.register_info_func("fd_info_map",function()
+	return fd_info_map
 end)
 
 return CMD
