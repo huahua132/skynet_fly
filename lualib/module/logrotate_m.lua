@@ -14,8 +14,9 @@ local tremove = table.remove
 local tsort = table.sort
 local tonumber = tonumber
 local ipairs = ipairs
+local pairs = pairs
 
-local g_rotate_list = {}
+local g_rotates_map = {}
 
 local function os_execute(cmd)
     local isok,status,signal = os.execute(cmd)
@@ -26,7 +27,6 @@ local function os_execute(cmd)
 end
 
 local function create_rotate(cfg)
-  
     assert(cfg.filename,"not filename")
     local m_filename = cfg.filename                                     --文件名
     local m_rename_format = cfg.rename_format or "%Y%m%d"               --重命名文件格式
@@ -152,20 +152,40 @@ end
 
 local CMD = {}
 
-function CMD.add_rotate(cfg)
-    tinsert(g_rotate_list,create_rotate(cfg))
+function CMD.add_rotate(server_id, cfg)
+    if not g_rotates_map[server_id] then
+        g_rotates_map[server_id] = {}
+    end
+    tinsert(g_rotates_map[server_id],create_rotate(cfg))
     return true
+end
+
+function CMD.cancel(server_id)
+    local rlist = g_rotates_map[server_id]
+    if not rlist then return end
+
+    g_rotates_map[server_id] = nil
+
+    for _,cancel in ipairs(rlist) do
+        cancel()
+    end
 end
 
 function CMD.start(config)
-    tinsert(g_rotate_list,create_rotate(config))
+    g_rotates_map[skynet.self()] = {}
+    tinsert(g_rotates_map[skynet.self()],create_rotate(config))
     return true
 end
 
-function CMD.exit()
-    for _,cancel in ipairs(g_rotate_list) do
-        cancel()
+function CMD.fix_exit()
+    for _,rlist in pairs(g_rotates_map) do
+        for _,cancel in ipairs(rlist) do
+            cancel()
+        end
     end
+end
+
+function CMD.exit()
     return true
 end
 
