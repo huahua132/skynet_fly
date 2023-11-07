@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local time_util = require "time_util"
 
 local g_debug_console = nil
 local CMD = {}
@@ -8,6 +9,11 @@ function CMD.start(config)
 	return true
 end
 
+--运行时长
+function CMD.run_time()
+    return time_util.time() - skynet.starttime()
+end
+
 function CMD.call(...)
     return skynet.call(g_debug_console, 'lua', ...)
 end
@@ -15,5 +21,9 @@ end
 function CMD.exit()
 	return true
 end
+
+skynet.info_func(function()
+    return "I am is debug_console"
+end)
 
 return CMD
