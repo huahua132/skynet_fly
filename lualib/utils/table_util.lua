@@ -264,7 +264,7 @@ end
 --通用的排序后遍历
 function M.sort_ipairs(t,comp)
 	assert(t)
-	assert(type(comp) == 'function')
+	assert(not comp or type(comp) == 'function')
 	local list = {}
 	local v_k = {}
 	for k,v in pairs(t) do
