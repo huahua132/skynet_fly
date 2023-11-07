@@ -146,6 +146,33 @@ function CMD.balance_call(svr_name,...)
 	return {cluster_name = cluster_name, result = ret} 
 end
 
+--指定结点id发
+function CMD.send_by_id(svr_name,svr_id,...)
+	assert(g_node_info_map[svr_name],"send_by_id not exists " .. svr_name)
+	local node_info = g_node_info_map[svr_name]
+	local id_name_map = node_info.id_name_map
+	assert(id_name_map[svr_id],svr_name .. " send_by_id not exists svr_id " .. svr_id)
+
+	local cluster_name = id_name_map[svr_id]
+	cluster.send(cluster_name,"@cluster_server",...)
+end
+
+--指定结点id发
+function CMD.call_by_id(svr_name,svr_id,...)
+	assert(g_node_info_map[svr_name],"call_by_id not exists " .. svr_name)
+	local node_info = g_node_info_map[svr_name]
+	local id_name_map = node_info.id_name_map
+	assert(id_name_map[svr_id],svr_name .. " call_by_id not exists svr_id " .. svr_id)
+
+	local cluster_name = id_name_map[svr_id]
+	local ret = {x_pcall(cluster.call,cluster_name,"@cluster_server",...)}
+	local isok = tremove(ret,1)
+	if not isok then
+		log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
+	end
+	return {cluster_name = cluster_name, result = ret}
+end
+
 --给集群所有结点发
 function CMD.send_all(svr_name,...)
 	assert(g_node_info_map[svr_name],"balance_send not exists " .. svr_name)
