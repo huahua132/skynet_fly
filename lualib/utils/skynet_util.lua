@@ -4,6 +4,8 @@ local tonumber = tonumber
 local assert = assert
 local table = table
 local type = type
+local next = next
+local pairs = pairs
 local skynet_ret = skynet.ret
 local skynet_pack = skynet.pack
 local tunpack = table.unpack
@@ -46,6 +48,7 @@ function M.lua_dispatch(cmd_func,not_ret,is_need_src)
     end)
 end
 
+--用于转换成number的服务地址 比如 :00000001 转成 1
 function M.number_address(name)
 	local t = type(name)
 	if t == "number" then
@@ -56,6 +59,29 @@ function M.number_address(name)
 			return tonumber(hex, 16)
 		end
 	end
+end
+
+local g_info_func_map = {}
+
+local old_skynet_info_func = skynet.info_func
+skynet.info_func = nil
+
+old_skynet_info_func(function()
+    local info = {}
+    for name,func in pairs(g_info_func_map) do
+        info[name] = func()
+    end
+
+    return info
+end)
+
+--注册info_name信息的生成函数
+function M.register_info_func(info_name,info_func)
+    assert(type(info_func) == 'function', "not is function")
+    assert(type(info_name) == 'string',"not is string")
+    assert(not g_info_func_map[info_name], " exists " .. info_name)
+
+    g_info_func_map[info_name] = info_func
 end
 
 return M

@@ -56,6 +56,7 @@ assert(module_exit,MODULE_NAME .. " not exit func")
 local old_skynet_exit = skynet.exit
 
 local SELF_ADDRESS = skynet.self()
+local SERVER_STATE = "loading"
 
 module_info.set_base_info {
 	module_name = MODULE_NAME,
@@ -65,6 +66,11 @@ module_info.set_base_info {
 	version = VERSION,
 }
 
+skynet_util.register_info_func("module_info",module_info.get_base_info)
+skynet_util.register_info_func("server_state",function()
+	return SERVER_STATE
+end)
+
 skynet.exit = function()
 	log.info("mod exit ",MODULE_NAME,INDEX,LAUNCH_DATE)
 	old_skynet_exit()
@@ -72,8 +78,21 @@ end
 
 local check_timer = nil
 local is_fix_check_exit = nil
+local exit_timer = nil
 
 local g_source_map = {}        --来访者列表
+
+skynet_util.register_info_func("source_map",function()
+	return g_source_map
+end)
+
+skynet_util.register_info_func("exit_remain_time",function()
+	if not exit_timer then
+		return 0
+	end
+
+	return exit_timer:remain_expire()
+end)
 
 local function check_exit()
 	if not is_fix_check_exit then
@@ -82,8 +101,9 @@ local function check_exit()
 	log.info("check_exit:",is_fix_check_exit,g_source_map)
 	if is_fix_check_exit and not next(g_source_map) then
 		--真正退出
+		SERVER_STATE = "exited"
 		if module_exit() then
-			timer:new(timer.minute * 10,1,skynet.exit)
+			exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
 		else
 			log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 		end
@@ -99,14 +119,16 @@ function CMD.start(cfg)
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
 	contriner_client.open_ready()
+	SERVER_STATE = "starting"
 	return ret
 end
 
 --退出
 function CMD.exit()
-	check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
+	check_timer = timer:new(timer.minute,timer.loop,check_exit)
 	check_timer:after_next()
 	module_fix_exit() --确定要退出
+	SERVER_STATE = "fix_exited"
 end
 
 --退出之前
