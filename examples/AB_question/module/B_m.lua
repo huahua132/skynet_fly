@@ -1,5 +1,6 @@
 local log = require "log"
 local contriner_client = require "contriner_client"
+local skynet = require "skynet"
 
 contriner_client:register("A_m")
 
@@ -32,7 +33,7 @@ function CMD.check_exit()
 end
 
 function CMD.hello()
-    return "HEELO AAA"
+    return "HEELO AAA:" .. skynet.self()
 end
 
 return CMD

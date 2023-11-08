@@ -6,6 +6,7 @@ local pairs = pairs
 local ipairs = ipairs
 local type = type
 local tostring = tostring
+local tinsert = table.insert
 
 local M = {}
 local meta = {__index = M}
@@ -25,11 +26,33 @@ local g_register_map = {}    --注册表
 local g_week_visitor_map = {} --弱访问者
 local g_instance_map = {}
 
+--弱引用原表
+local g_week_meta = {__mode = "kv"}
+local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
+
+local function add_id_list_week(module_name,id_list)
+	if not g_id_list_map[module_name] then
+		g_id_list_map[module_name] = setmetatable({}, g_week_meta)
+	end
+	tinsert(g_id_list_map[module_name],id_list)
+end
+
+local function register_visitor(id_list)
+	local module_base = module_info.get_base_info()
+	for _,id in ipairs(id_list) do
+		if id ~= SELF_ADDRESS then
+			skynet.call(id,'lua','register_visitor',SELF_ADDRESS,module_base.module_name)
+		end
+	end
+end
+
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		local id_list,name_id_list,version = skynet.call('.contriner_mgr','lua','watch',key,old_version)
 		if not is_close_swtich then
+			add_id_list_week(key,id_list)
+			register_visitor(id_list)
 			t[key] = id_list
 			g_mod_svr_version_map[key] = version
 			g_name_id_list_map[key] = name_id_list
@@ -44,6 +67,8 @@ local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 		g_is_watch_map[key] = true
 		skynet.fork(monitor,t,key)
 	end
+	add_id_list_week(key,t[key])
+	register_visitor(t[key])
 	return t[key],g_mod_svr_version_map[key]
 end})
 
@@ -57,15 +82,9 @@ end
 
 --查询所有服务的地址
 skynet.init(function()
-	local module_base = module_info.get_base_info()
 	skynet.fork(function()
 		for mod_name,_ in pairs(g_register_map) do
 			local id_list = g_mod_svr_ids_map[mod_name]
-			for _,id in ipairs(id_list) do
-				if id ~= SELF_ADDRESS then
-					skynet.call(id,'lua','ping',SELF_ADDRESS,module_base.module_name)
-				end
-			end
 		end
 	end)
 end)
@@ -130,22 +149,19 @@ local function switch_svr(t)
 		end
 	end
 end
---[[
-	关闭服务切换
-]]
+
+--关闭服务切换
 function M:close_switch()
 	is_close_swtich = true
 end
 
---[[
-	开启服务切换
-]]
+
+--开启服务切换
 function M:open_switch()
 	is_close_swtich = false
 end
---[[
-	模块必须全部启动好了才能查询访问其他服务
-]]
+
+--模块必须全部启动好了才能查询访问其他服务
 function M:open_ready()
 	is_ready = true
 end
@@ -173,6 +189,24 @@ end
 --是否弱访问者
 function M:is_week_visitor(module_name)
 	return g_week_visitor_map[module_name]
+end
+
+--是否不再需要访问
+function M:is_not_need_visitor(module_name, source)
+	if not g_id_list_map[module_name] then
+		return true
+	end
+	
+	local list = g_id_list_map[module_name]
+	for _,one_id_list in pairs(list) do
+		for _,id in ipairs(one_id_list) do
+			if id == source then
+				return false
+			end
+		end
+	end
+
+	return true
 end
 --[[
 	函数作用域：M 的成员函数
