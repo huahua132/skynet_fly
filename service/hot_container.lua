@@ -6,6 +6,7 @@ local tonumber = tonumber
 local table = table
 local ipairs = ipairs
 local next = next
+local pairs = pairs
 
 local ARGV = {...}
 MODULE_NAME = ARGV[1]
@@ -99,15 +100,25 @@ local function check_exit()
 		is_fix_check_exit = module_check_exit()
 	end
 	log.info("check_exit:",is_fix_check_exit,g_source_map)
-	if is_fix_check_exit and not next(g_source_map) then
-		--真正退出
-		SERVER_STATE = "exited"
-		if module_exit() then
-			exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
-		else
-			log.warn("warning " .. MODULE_NAME .. ' can`t exit')
+	if is_fix_check_exit then
+		for source,_ in pairs(g_source_map) do
+			--问对方是否还需要访问自己
+			if skynet.call(source, 'lua', 'is_not_need_visitor', SELF_ADDRESS, MODULE_NAME) then
+				g_source_map[source] = nil
+			end
 		end
-		check_timer:cancel()
+
+		if not next(g_source_map) then
+			--真正退出
+			log.info("exited")
+			SERVER_STATE = "exited"
+			if module_exit() then
+				exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
+			else
+				log.warn("warning " .. MODULE_NAME .. ' can`t exit')
+			end
+			check_timer:cancel()
+		end
 	end
 end
 
@@ -125,7 +136,7 @@ end
 
 --退出
 function CMD.exit()
-	check_timer = timer:new(timer.minute,timer.loop,check_exit)
+	check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
 	check_timer:after_next()
 	module_fix_exit() --确定要退出
 	SERVER_STATE = "fix_exited"
@@ -143,8 +154,9 @@ function CMD.cancel_exit()
 	module_cancel_exit()
 end
 
---ping报道，用于记录来访地址
-function CMD.ping(source,module_name) 
+--注册访问，用于记录来访地址
+assert(not CMD['register_visitor'], "repeat cmd register_visitor")
+function CMD.register_visitor(source,module_name) 
 	if not module_name then
 		--不是可热更服务，不用管
 		return
@@ -160,6 +172,12 @@ function CMD.ping(source,module_name)
 		g_source_map[source] = nil
 	end)
 	return "pong"
+end
+
+--是否不再需要访问
+assert(not CMD['is_not_need_visitor'], "repeat cmd is_not_need_visitor")
+function CMD.is_not_need_visitor(source,module_name)
+	return contriner_client:is_not_need_visitor(module_name, source)
 end
 
 skynet.start(function()
