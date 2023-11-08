@@ -11,6 +11,7 @@ local os = os
 local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
+local tsort = table.sort
 local skynet_send = skynet.send
 local skynet_call = skynet.call
 local skynet_pack = skynet.pack
@@ -108,11 +109,17 @@ local function load_modules(...)
 	local module_name_list = {...}
 	local mod_config = loadfile("mod_config.lua")()
 	assert(mod_config,"not mod_config")
+
 	--检查是否配置都有
 	for _,module_name in ipairs(module_name_list) do
 		local m_cfg = mod_config[module_name]
 		assert(m_cfg,"not m_cfg")
 	end
+
+	--按顺序启动
+	tsort(module_name_list,function(a,b)
+		return mod_config[a].launch_seq < mod_config[b].launch_seq
+	end)
 
 	--通知旧服务即将要退出了
 	for _,module_name in ipairs(module_name_list) do
