@@ -4,7 +4,7 @@ local log = require "log"
 local skynet = require "skynet"
 
 contriner_client:register("B_m")
--- contriner_client:set_week_visitor("B_m")
+contriner_client:set_week_visitor("B_m")
 
 local CMD = {}
 
