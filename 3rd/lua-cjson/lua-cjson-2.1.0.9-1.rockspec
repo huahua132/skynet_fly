@@ -1,8 +1,9 @@
 package = "lua-cjson"
-version = "2.1devel-1"
+version = "2.1.0.9-1"
 
 source = {
-    url = "http://www.kyne.com.au/~mark/software/download/lua-cjson-2.1devel.zip",
+    url = "git+https://github.com/openresty/lua-cjson",
+    tag = "2.1.0.9",
 }
 
 description = {
@@ -47,7 +48,7 @@ build = {
     -- Override default build options (per platform)
     platforms = {
         win32 = { modules = { cjson = { defines = {
-            "DISABLE_INVALID_NUMBERS"
+            "DISABLE_INVALID_NUMBERS", "USE_INTERNAL_ISINF"
         } } } }
     },
     copy_directories = { "tests" }

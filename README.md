@@ -22,7 +22,7 @@
 ## 第三方依赖来源
 * [skynet](https://github.com/cloudwu/skynet)1.6
 * [basexx](https://github.com/aiq/basexx)0.4.1
-* [lua-cjson](https://github.com/mpx/lua-cjson)2.1.0
+* [lua-cjson](https://github.com/openresty/lua-cjson)2.1.0.9
 * [lua-openssl](https://github.com/zhaozg/lua-openssl)0.8.5-0
 * [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
 * [lua-rax](https://github.com/hanxi/lua-rax)last
