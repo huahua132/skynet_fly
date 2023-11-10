@@ -191,6 +191,10 @@ function M:is_week_visitor(module_name)
 	return g_week_visitor_map[module_name]
 end
 
+--弱访问者
+function M:get_week_visitor_map()
+	return g_week_visitor_map
+end
 --是否不再需要访问
 function M:is_not_need_visitor(module_name, source)
 	if not g_id_list_map[module_name] then
@@ -207,6 +211,11 @@ function M:is_not_need_visitor(module_name, source)
 	end
 
 	return true
+end
+
+--访问列表
+function M:get_need_visitor_map()
+	return g_id_list_map
 end
 --[[
 	函数作用域：M 的成员函数

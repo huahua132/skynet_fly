@@ -67,32 +67,28 @@ module_info.set_base_info {
 	version = VERSION,
 }
 
-skynet_util.register_info_func("module_info",module_info.get_base_info)
-skynet_util.register_info_func("server_state",function()
-	return SERVER_STATE
-end)
-
 skynet.exit = function()
 	log.info("mod exit ",MODULE_NAME,INDEX,LAUNCH_DATE)
 	old_skynet_exit()
 end
 
-local check_timer = nil
+local g_check_timer = nil
 local is_fix_check_exit = nil
-local exit_timer = nil
+local g_exit_timer = nil
 
 local g_source_map = {}        --来访者列表
 
-skynet_util.register_info_func("source_map",function()
-	return g_source_map
-end)
+skynet_util.register_info_func("hot_container",function()
+	local info = {
+		module_info = module_info.get_base_info(),
+		server_state = SERVER_STATE,
+		source_map = g_source_map,
+		exit_remain_time = g_exit_timer and g_exit_timer:remain_expire() or 0,
+		week_visitor_map = contriner_client:get_week_visitor_map(),
+		need_visitor_map = contriner_client:get_need_visitor_map(),
+	}
 
-skynet_util.register_info_func("exit_remain_time",function()
-	if not exit_timer then
-		return 0
-	end
-
-	return exit_timer:remain_expire()
+	return info
 end)
 
 local function check_exit()
@@ -113,11 +109,11 @@ local function check_exit()
 			log.info("exited")
 			SERVER_STATE = "exited"
 			if module_exit() then
-				exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
+				g_exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
 			else
 				log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 			end
-			check_timer:cancel()
+			g_check_timer:cancel()
 		end
 	end
 end
@@ -136,8 +132,8 @@ end
 
 --退出
 function CMD.exit()
-	check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
-	check_timer:after_next()
+	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
+	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
 	SERVER_STATE = "fix_exited"
 end
