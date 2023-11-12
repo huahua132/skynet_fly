@@ -14,7 +14,7 @@ local server_path = "./"
 
 local shell_str = "#!bin/bash\n"
 shell_str = shell_str .. string.format('%s %s/script/lua/console.lua %s %s fasttime "$1" $2 | \n',lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl --http0.9 -s \n")
+shell_str = shell_str .. string.format("xargs curl -s \n")
 
 local shell_path = server_path .. 'script/'
 
