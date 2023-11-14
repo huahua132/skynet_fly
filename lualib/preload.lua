@@ -7,8 +7,6 @@ local math = math
 local tremove = table.remove
 local tunpack = table.unpack
 
---preload中 require的文件都不能热更
-
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 assert(skynet_fly_path,'not skynet_fly_path')
 

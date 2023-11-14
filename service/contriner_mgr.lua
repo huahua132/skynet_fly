@@ -113,7 +113,7 @@ local function load_modules(...)
 	--检查是否配置都有
 	for _,module_name in ipairs(module_name_list) do
 		local m_cfg = mod_config[module_name]
-		assert(m_cfg,"not m_cfg")
+		assert(m_cfg,"not m_cfg " .. module_name)
 	end
 
 	--按顺序启动
