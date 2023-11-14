@@ -1,6 +1,4 @@
 local skynet = require "skynet"
-skynet.cache.mode "OFF"
-
 local assert = assert
 local tonumber = tonumber
 local table = table
@@ -16,18 +14,7 @@ local LAUNCH_TIME = ARGV[4]
 local VERSION = ARGV[5]
 assert(MODULE_NAME)
 
-local new_loaded = {}
-
-if INDEX == 1 then
-	local old_require = require
-	local loaded = package.loaded
-	require = function(name)
-		if not loaded[name] then
-			new_loaded[name] = true
-		end
-		return old_require(name)
-	end
-end
+local new_loaded = _loaded
 
 local MODULE_NAME = MODULE_NAME
 local module_info = require "module_info"
@@ -125,6 +112,7 @@ function CMD.start(cfg)
 		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
+	new_loaded = nil
 	contriner_client.open_ready()
 	SERVER_STATE = "starting"
 	return ret

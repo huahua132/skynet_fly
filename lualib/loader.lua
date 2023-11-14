@@ -40,6 +40,7 @@ else
 	SERVICE_PATH = p
 end
 local skynet = require "skynet"
+skynet.cache.mode "OFF"                --不启用代码缓存
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 local env_util = loadfile(skynet_fly_path .. '/lualib/utils/env_util.lua')()
 local pre_load = nil
@@ -50,14 +51,25 @@ if SERVICE_NAME ~= "fly_bootstrap" then
 	after_load = env_util.get_after_load()
 end
 
+local new_loaded = {}
+
+local old_require = (require "skynet.require").require
+local loaded = package.loaded
+_G.require = function(name)
+	if not loaded[name] then
+		new_loaded[name] = true
+	end
+	return old_require(name)
+end
+
+_G._loaded = new_loaded
+
 if pre_load then
 	for pat in string.gmatch(pre_load, "([^;]+);*") do
 		loadfile(pat)()
 	end
 	pre_load = nil
 end
-
-_G.require = (require "skynet.require").require
 
 main(select(2, table.unpack(args)))
 
@@ -67,3 +79,5 @@ if after_load then
 	end
 	after_load = nil
 end
+
+_G._loaded = nil
