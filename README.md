@@ -66,7 +66,7 @@
     - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码，加个空格什么的，最好是改一下html代码加个文本什么的，能看出来更新了。
     - 之后执行 `sh script/check_reload.sh`
     - 再次访问网站就更新了。
-    - 也可以观察webapp/server.log
+    - 也可以观察webapp/logs/server.log
 
 http服务已经接入了涵曦的[wlua](https://github.com/hanxi/wlua),扩展了路由和中间件模式，完整示例请看运行examples/webapp 源码。
 默认webapp运行的是`webapp_dispatch.lua`，想要切换其他示例，只需要更改`mod_config.lua`中的dispatch即可。
