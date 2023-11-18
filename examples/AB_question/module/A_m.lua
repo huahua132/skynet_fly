@@ -36,9 +36,12 @@ function CMD.check_exit()
 end
 
 function CMD.send_msg_to_b()
-    local b_client = contriner_client:new("B_m")      --用于访问B服务
-    local ret = b_client:mod_call("hello")
+    local ret = contriner_client:instance("B_m"):mod_call("hello")
     log.info("send_msg_to_b:",ret)
+    local ret = contriner_client:instance("B_m","test_one"):mod_call("hello")
+    log.info("send_msg_to_b test_one:",ret)
+    local ret = contriner_client:instance("B_m","test_two"):mod_call("hello")
+    log.info("send_msg_to_b test_two:",ret)
 end
 
 return CMD
