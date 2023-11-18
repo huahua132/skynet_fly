@@ -24,11 +24,12 @@ local g_name_id_list_map = {}
 local g_is_watch_map = {}
 local g_register_map = {}    --注册表
 local g_week_visitor_map = {} --弱访问者
-local g_instance_map = {}
+local g_instance_map = {}     --常驻实例
 
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
+local g_mod_svr_ids_map
 
 local function add_id_list_week(module_name,id_list)
 	if not g_id_list_map[module_name] then
@@ -46,6 +47,34 @@ local function register_visitor(id_list)
 	end
 end
 
+local function switch_svr(t)
+	if is_close_swtich then return end
+
+	if t.can_switch_func() then
+		local old_t = t.cur_id_list
+		t.cur_id_list = g_mod_svr_ids_map[t.module_name]
+		t.cur_name_id_list = g_name_id_list_map[t.module_name]
+
+		if old_t ~= t.cur_id_list then
+			t.balance = 1
+			t.name_balance = 1
+		end
+	end
+end
+
+--切换常驻实例的地址引用
+local function switch_all_intance()
+	for _,v in pairs(g_instance_map) do
+		if v.obj then
+			switch_svr(v.obj)
+		end
+
+		for _,vv in pairs(v.name_map) do
+			switch_svr(vv)
+		end
+	end
+end
+
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
@@ -56,11 +85,12 @@ local function monitor(t,key)
 			t[key] = id_list
 			g_mod_svr_version_map[key] = version
 			g_name_id_list_map[key] = name_id_list
+			switch_all_intance()
 		end
 	end
 end
 
-local g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
+g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr','lua','query',key)
 	assert(t[key],"query err " .. key)
 	if not g_is_watch_map[key] then
@@ -133,21 +163,6 @@ local function get_name_mod(t)
 	local id_list = cur_name_id_list[t.instance_name]
 	local len = #id_list
 	return id_list[mod % len + 1]
-end
-
-local function switch_svr(t)
-	if is_close_swtich then return end
-
-	if t.can_switch_func() then
-		local old_t = t.cur_id_list
-		t.cur_id_list = g_mod_svr_ids_map[t.module_name]
-		t.cur_name_id_list = g_name_id_list_map[t.module_name]
-
-		if old_t ~= t.cur_id_list then
-			t.balance = 1
-			t.name_balance = 1
-		end
-	end
 end
 
 --关闭服务切换
