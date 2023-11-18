@@ -190,28 +190,6 @@ function CMD.create_mod_config_old()
 	os.execute("cp mod_config.lua mod_config.lua.old")
 end
 
-function CMD.create_logrotate()
-	local currentdir = lfs.currentdir()
-	local logrotate_file_name = "/etc/logrotate.d/skynet_"..svr_name
-	local info = lfs.attributes(logrotate_file_name)
-	local logrotate_file = io.open(logrotate_file_name,'w+')
-	assert(logrotate_file)
-	logrotate_file:write(currentdir .. '/*.log {\n')
-	logrotate_file:write('\tdaily\n')
-	logrotate_file:write('\trotate 30\n')
-	logrotate_file:write('\tmissingok\n')
-	logrotate_file:write('\tnotifempty\n')
-	logrotate_file:write('\tnocompress\n')
-	logrotate_file:write('\tdateext\n')
-	logrotate_file:write('\tpostrotate\n')
-	logrotate_file:write(string.format('\t\t/usr/bin/pkill -HUP -f skynet.%s_config.lua\n',svr_name))
-	logrotate_file:write('\tendscript\n')
-
-	logrotate_file:write('}\n')
-	logrotate_file:close()
-	os.execute("chmod -R 644 ./")
-end
-
 --快进时间
 function CMD.fasttime()
 	local fastdate = ARGV[4]

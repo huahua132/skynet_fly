@@ -59,28 +59,20 @@ command_resetenv(lua_State *L) {
 	return 0;
 }
 
-static int
-command_init(lua_State *L) {
-	int old_val = __sync_val_compare_and_swap(&is_init,0,1);
-	if (old_val == 0) {
-		skynet_fly_env_init();
-	}
-
-	lua_pushinteger(L,old_val);
-	return 1;
-}
-
 static const struct luaL_Reg cmd[] =
 {
     {"getenv",command_getenv},
 	{"setenv",command_setenv},
     {"resetenv",command_resetenv},
-    {"init",command_init},
     {NULL,NULL},
 };
 
 int luaopen_skynet_fly_env(lua_State *L)
 {
+	int old_val = __sync_val_compare_and_swap(&is_init,0,1);
+	if (old_val == 0) {
+		skynet_fly_env_init();
+	}
     luaL_newlib(L,cmd);
     return 1;
 }
