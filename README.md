@@ -53,7 +53,7 @@
       - `reload.sh` 热更某个可热更模块。
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
       - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
-      - `create_logrotate.sh` 配置日志分割。
+      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
     - 还有生成mod_config.lua，可热更模块配置文件。（首次生成是拷贝webapp/load_mods.lua，如果mod_config文件存在会对比load_mods和mod_config，将配置值类型不同的，有增加的，有删除的，同步到mod_config，只有值不同不覆盖原本修改的配置）
