@@ -16,6 +16,7 @@ local skynet_send = skynet.send
 local skynet_call = skynet.call
 local skynet_pack = skynet.pack
 local skynet_ret = skynet.ret
+local pcall = pcall
 
 local NORET = {}
 
@@ -75,8 +76,9 @@ local function launch_new_module(module_name,config)
 		local server_id = skynet.newservice('hot_container',module_name,i,cur_date,cur_time,version)
 		local args = mod_args[i] or default_arg
 
-		if not skynet_call(server_id,'lua','start',args) then
-			log.error("launch_new_module err ",module_name,args)
+		local isok,ret = pcall(skynet_call,server_id,'lua','start',args)
+		if not isok or not ret then
+			log.fatal("launch_new_module err ",module_name,args)
 			is_ok = false
 		end
 		local instance_name = args.instance_name

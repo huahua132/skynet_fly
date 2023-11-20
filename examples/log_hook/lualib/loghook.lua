@@ -1,6 +1,7 @@
 local log = require "log"
 local string = string
 
-return function(msg)
-    log.info("loghook >>>>>>>>>>>>>>>>> ",msg)
+return function(log_str)
+    log.info("loghook >>>>>>>>>>>>>>>>> ",log_str)
+    log.info(log.parse(log_str))
 end
