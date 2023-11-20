@@ -73,14 +73,7 @@ local function create_log_func(level_name,is_format)
 			server_name = MODULE_NAME
 		end
 
-		local cur_time = time_util.skynet_int_time()
-        local second,m = math_floor(cur_time / 100), cur_time % 100
-        local mstr = sformat("%02d",m)
-        local time_date = osdate('[%Y%m%d %H:%M:%S ',second)
-        local msg = sformat("[%s][%s][%s]%s",level_name,server_name,lineinfo,log_str)
-        local log_str = '[' .. ADDRESS .. ']' .. time_date .. mstr .. ']' .. msg
-
-		serror(log_str)
+		serror(sformat("[%s][%s][%s]%s",level_name,server_name,lineinfo,log_str))
 
 		local log_hook = hooks[level]
 		for _,hook_func in ipairs(log_hook) do

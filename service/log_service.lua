@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local skynet_util = require "skynet_util"
 local file_util = require "file_util"
+local time_util = require "time_util"
 require "skynet.manager"
 
 local os = os
@@ -11,6 +12,9 @@ local print = print
 local string = string
 local type = type
 local table = table
+local math_floor = math.floor
+local sformat = string.format
+local osdate = os.date
 
 local SELF_ADDRESS = skynet.self()
 
@@ -42,16 +46,22 @@ skynet.register_protocol {
 	id = skynet.PTYPE_TEXT,
 	unpack = skynet.tostring,
 	dispatch = function(_, address, msg)
+        local cur_time = time_util.skynet_int_time()
+        local second,m = math_floor(cur_time / 100), cur_time % 100
+        local mstr = sformat("%02d",m)
+        local time_date = osdate('[%Y%m%d %H:%M:%S ',second)
+        local log_str = '[' .. skynet.address(address) .. ']' .. time_date .. mstr .. ']' .. msg
+        
         if file then
-            file:write(msg .. '\n')
+            file:write(log_str .. '\n')
             file:flush()
         else
-            print(msg)
+            print(log_str)
         end
 
         if address ~= SELF_ADDRESS then
             for i = 1,#hook_hander_list do
-                hook_hander_list[i](msg)
+                hook_hander_list[i](log_str)
             end
         end
 	end
