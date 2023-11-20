@@ -46,8 +46,10 @@ skynet.register_protocol {
 	dispatch = function(_, address, msg)
         local cur_time = time_util.skynet_int_time()
         local second,m = math_floor(cur_time / 100), cur_time % 100
+        local mstr = string.format("%02d",m)
         local time_date = os.date('[%Y%m%d:%H:%M:%S ',second)
-        local log_str = time_date .. m .. ']' .. msg
+        
+        local log_str = '[' .. skynet.address(address) .. ']' .. time_date .. mstr .. ']' .. msg
         if file then
             file:write(log_str .. '\n')
             file:flush()
