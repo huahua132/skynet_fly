@@ -1,4 +1,5 @@
 local log = require "log"
+local skynet = require "skynet"
 
 local CMD = {}
 
@@ -16,6 +17,8 @@ function CMD.start()
 	log.warn("hello skynet !!!")
 	log.error("hello skynet !!!")
 	log.fatal("hello skynet !!!")
+	
+	assert(1 == 2)
 	return true
 end
 

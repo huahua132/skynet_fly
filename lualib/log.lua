@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local table_util = require "table_util"
+local time_util = require "time_util"
 local sformat = string.format
 local sdump = table_util.dump
 local serror = skynet.error
@@ -11,6 +12,13 @@ local assert = assert
 local tostring = tostring
 local tinsert = table.insert
 local ipairs = ipairs
+local sfind = string.find
+local ssub = string.sub
+local schar = string.char
+local math_floor = math.floor
+local osdate = os.date
+
+local ADDRESS = skynet.address(skynet.self())
 
 local M = {
 	INFO = 0,
@@ -18,6 +26,9 @@ local M = {
 	WARN = 2,
 	ERROR = 3,
 	FATAL = 4,
+
+	TRACEBACK = 5, --错误堆栈
+	UNKNOWN = 6,   --未知
 }
 
 local level_map = {
@@ -62,7 +73,14 @@ local function create_log_func(level_name,is_format)
 			server_name = MODULE_NAME
 		end
 
-		serror(sformat("[%s][%s][%s]%s",level_name,server_name,lineinfo,log_str))
+		local cur_time = time_util.skynet_int_time()
+        local second,m = math_floor(cur_time / 100), cur_time % 100
+        local mstr = sformat("%02d",m)
+        local time_date = osdate('[%Y%m%d %H:%M:%S ',second)
+        local msg = sformat("[%s][%s][%s]%s",level_name,server_name,lineinfo,log_str)
+        local log_str = '[' .. ADDRESS .. ']' .. time_date .. mstr .. ']' .. msg
+
+		serror(log_str)
 
 		local log_hook = hooks[level]
 		for _,hook_func in ipairs(log_hook) do
@@ -85,6 +103,58 @@ M.fatal_fmt = create_log_func("fatal",true)
 function M.add_hook(loglevel,hook_func)
 	assert(hooks[loglevel],"not loglevel " .. tostring(loglevel))
 	tinsert(hooks[loglevel],hook_func)
+end
+
+local g_log_type_info = {
+	log_type = M.UNKNOWN,            --日志类型
+	address = "",         		     --服务地址
+	time_date = "",                  --日期
+	server_name = "",                --服务名称
+	code_line = "",                  --代码行号
+}
+
+--解析日志
+function M.parse(log_str)
+	local log_type = M.UNKNOWN
+	local address = ""         		      --服务地址
+	local time_date = ""                  --日期
+	local server_name = ""                --服务名称
+	local code_line = ""                  --代码行号
+	if sfind(log_str,"[:",nil,true) then
+		address = ssub(log_str,2,10)
+		time_date = ssub(log_str,13,32)
+
+		if schar(log_str:byte(34)) == '[' then
+			local _,type_e = sfind(log_str,"]",38,true)
+			if type_e then
+				log_type = ssub(log_str,35,type_e - 1)
+				log_type = level_map[log_type] or M.UNKNOWN
+
+				local s_n_b = type_e + 2
+				local _,s_n_e = sfind(log_str,"]",s_n_b,true)
+				if s_n_e then
+					server_name = ssub(log_str,s_n_b,s_n_e - 1)
+					
+					local c_l_b = s_n_e + 2
+					local _,c_l_e = sfind(log_str,"]",c_l_b,true)
+					if c_l_e then
+						code_line = ssub(log_str,c_l_b,c_l_e - 1)
+					end
+				end
+			end
+		end
+	elseif sfind(log_str,"stack traceback:",nil,true) then
+		log_type = M.TRACEBACK
+	else
+		log_type = M.UNKNOWN
+	end
+
+	g_log_type_info.log_type = log_type
+	g_log_type_info.address = address
+	g_log_type_info.time_date = time_date
+	g_log_type_info.server_name = server_name
+	g_log_type_info.code_line = code_line
+	return g_log_type_info
 end
 
 return M
