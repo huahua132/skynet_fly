@@ -33,7 +33,7 @@ function CMD.check_exit()
 end
 
 function CMD.hello()
-    return "HEELO AAA:" .. skynet.self()
+    return "HEELO A I am is " .. skynet.address(skynet.self())
 end
 
 return CMD
