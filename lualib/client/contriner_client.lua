@@ -25,6 +25,8 @@ local g_is_watch_map = {}
 local g_register_map = {}    --注册表
 local g_week_visitor_map = {} --弱访问者
 local g_instance_map = {}     --常驻实例
+local g_queryed_map = {}      --查询到地址的回调列表
+local g_updated_map = {}      --更新地址的回调列表
 
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
@@ -75,6 +77,12 @@ local function switch_all_intance()
 	end
 end
 
+local function call_back_updated(updated)
+	for _,func in ipairs(updated) do
+		func()
+	end
+end
+
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
@@ -86,7 +94,17 @@ local function monitor(t,key)
 			g_mod_svr_version_map[key] = version
 			g_name_id_list_map[key] = name_id_list
 			switch_all_intance()
+			local updated = g_updated_map[key]
+			if updated then
+				skynet.fork(call_back_updated, updated)
+			end
 		end
+	end
+end
+
+local function call_back_queryed(queryed)
+	for _,func in ipairs(queryed) do
+		func()
 	end
 end
 
@@ -99,6 +117,10 @@ g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	end
 	add_id_list_week(key,t[key])
 	register_visitor(t[key])
+	local queryed = g_queryed_map[key]
+	if queryed then
+		skynet.fork(call_back_queryed, queryed)
+	end
 	return t[key],g_mod_svr_version_map[key]
 end})
 
@@ -231,6 +253,25 @@ end
 --访问列表
 function M:get_need_visitor_map()
 	return g_id_list_map
+end
+
+-- 添加查询到某服务地址的回调
+function M:add_queryed_cb(module_name, func)
+	assert(type(func) == 'function', "not is func")
+	if not g_queryed_map[module_name] then
+		g_queryed_map[module_name] = {}
+	end
+
+	tinsert(g_queryed_map[module_name], func)
+end
+
+--添加更新某服务地址的回调
+function M:add_updated_cb(module_name, func)
+	assert(type(func) == 'function', "not is func")
+	if not g_updated_map[module_name] then
+		g_updated_map[module_name] = {}
+	end
+	tinsert(g_updated_map[module_name], func)
 end
 --[[
 	函数作用域：M 的成员函数

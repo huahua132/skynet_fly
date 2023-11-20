@@ -6,6 +6,14 @@ local skynet = require "skynet"
 contriner_client:register("B_m")
 contriner_client:set_week_visitor("B_m")
 
+contriner_client:add_queryed_cb("B_m",function()
+    log.info("queryed B_m")
+end)
+
+contriner_client:add_updated_cb("B_m",function()
+    log.info("updated B_m")
+end)
+
 local CMD = {}
 
 function CMD.start()
