@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 local redis = require "skynet.db.redis"
 local string_util = require "string_util"
-local sha2 = require "sha2"
+local crypt = require "skynet.crypt"
 local log = require "log"
 
 local setmetatable = setmetatable
@@ -43,11 +43,11 @@ function command:script_run(script_str,...)
 
 	local sha = g_sha_map[script_str]
 	if not sha then
-		sha = sha2.sha1(script_str)
+		sha = crypt.hexencode(crypt.sha1(script_str))
 		g_sha_map[script_str] = sha
 	end
 
-	local isok,ret = pcall(conn.evalsha,conn,...)
+	local isok,ret = pcall(conn.evalsha,conn,sha,...)
 	if not isok then
 		if string.find(ret,"NOSCRIPT",nil,true) then
 			ret = conn:eval(script_str,...)

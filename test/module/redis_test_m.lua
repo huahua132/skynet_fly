@@ -134,14 +134,16 @@ local function command_test()
 end
 
 function CMD.start()
-	log.info("redis_test_m start !!!")
-	--client_test()
-	--watch_test()
-	--script_test()
-	--expired_key_watch_test()
-	--disconnect_test()
-	--disconnect_watch()
-	command_test()
+	skynet.fork(function()
+		log.info("redis_test_m start !!!")
+		--client_test()
+		--watch_test()
+		script_test()
+		--expired_key_watch_test()
+		--disconnect_test()
+		--disconnect_watch()
+		--command_test()
+	end)
 	return true
 end
 
