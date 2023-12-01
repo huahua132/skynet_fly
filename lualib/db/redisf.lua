@@ -176,7 +176,7 @@ function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
 	local ok,watch
 
 	skynet.fork(function()
-		while not watch and not is_cancel do
+		while not ok and not is_cancel do
 			ok,watch = pcall(redis.watch,conf)
 			if not ok then
 				log.error("redisf connect watch err ",conf)
