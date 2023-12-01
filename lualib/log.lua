@@ -135,9 +135,9 @@ function M.parse(log_str)
 					end
 				end
 			end
+		elseif sfind(log_str,"stack traceback:",nil,true) then
+			log_type = M.TRACEBACK
 		end
-	elseif sfind(log_str,"stack traceback:",nil,true) then
-		log_type = M.TRACEBACK
 	else
 		log_type = M.UNKNOWN
 	end
