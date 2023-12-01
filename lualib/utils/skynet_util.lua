@@ -8,6 +8,7 @@ local next = next
 local pairs = pairs
 local skynet_ret = skynet.ret
 local skynet_pack = skynet.pack
+local retpack = skynet.retpack
 local tunpack = table.unpack
 
 local M = {}
@@ -42,7 +43,7 @@ function M.lua_dispatch(cmd_func,not_ret,is_need_src)
             
             local r1 = ret[1]
             if r1 ~= not_ret then
-                skynet_ret(skynet_pack(tunpack(ret)))
+                retpack(tunpack(ret))
             end
         end
     end)
