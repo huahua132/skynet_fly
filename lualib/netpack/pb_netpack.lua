@@ -4,7 +4,7 @@ local protoc = require "protoc"
 local pb = require "pb"
 
 local string = string
-local x_pcall = x_pcall
+local pcall = pcall
 local assert = assert
 
 local M = {}
@@ -35,7 +35,7 @@ function M.encode(name,tab)
 		return nil,"encode not exists " .. name
 	end
 
-	return x_pcall(pb.encode,name,tab)
+	return pcall(pb.encode,name,tab)
 end
 
 function M.decode(name,pstr)
@@ -45,7 +45,7 @@ function M.decode(name,pstr)
 		return nil,"decode not exists " .. name
 	end
 
-	return x_pcall(pb.decode,name,pstr)
+	return pcall(pb.decode,name,pstr)
 end
 
 M.pack = netpack_base.create_pack(M.encode)

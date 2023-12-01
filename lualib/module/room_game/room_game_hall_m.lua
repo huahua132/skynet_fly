@@ -16,6 +16,7 @@ local next = next
 local xx_pcall = xx_pcall
 local tonumber = tonumber
 local pairs = pairs
+local tinsert = table.insert
 
 local SELF_ADDRESS = nil
 local g_player_map = {}
@@ -283,30 +284,58 @@ function interface:is_online(player_id)
 end
 --发送消息
 function interface:send_msg(player_id,packname,pack_body)
-	local agent = g_player_map[player_id]
-	if not agent then
-		log.info("send msg not agent ",player_id,packname)
-		return
-	end
 	if not interface:is_online(player_id) then
 		log.info("send msg not online ",player_id,packname)
 		return
 	end
+	local agent = g_player_map[player_id]
 	hall_plug.send(agent.gate,agent.fd,packname,pack_body)
 end
 
 --发送消息给部分玩家
 function interface:send_msg_by_player_list(player_list,packname,pack_body)
-	for i = 1,#player_list do
-		interface:send_msg(player_list[i],packname,pack_body)
+	local gate_list = {}
+	local fd_list = {}
+	for i = 1, #player_list do
+		local player_id = player_list[i]
+		local agent = g_player_map[player_id]
+		if not agent then
+			log.info("send_msg_by_player_list not exists ",player_id)
+		else
+			if agent.fd > 0 then
+				tinsert(gate_list, agent.gate)
+				tinsert(fd_list, agent.fd)
+			else
+				log.info("send_msg_by_player_list not online ",player_id)
+			end
+		end
 	end
+
+	if #gate_list <= 0 then return end
+
+	hall_plug.broadcast(gate_list,fd_list,packname,pack_body)
 end
 
 --广播发送消息
-function interface:broad_cast_msg(packname,pack_body)
-	for player_id,_ in pairs(g_player_map) do
-		interface:send_msg(player_id,packname,pack_body)
+function interface:broad_cast_msg(packname,pack_body,filter_map)
+	filter_map = filter_map or {}
+
+	local gate_list = {}
+	local fd_list = {}
+	for player_id,agent in pairs(g_player_map) do
+		if not filter_map[player_id] then
+			if agent.fd > 0 then
+				tinsert(gate_list, agent.gate)
+				tinsert(fd_list, agent.fd)
+			else
+				log.info("broad_cast_msg not online ",player_id)
+			end
+		end
 	end
+
+	if #gate_list <= 0 then return end
+
+	hall_plug.broadcast(gate_list,fd_list,packname,pack_body)
 end
 
 --获取大厅id
@@ -444,6 +473,7 @@ function CMD.start(config)
 	assert(hall_plug.init,"not init")             --初始化
 	assert(hall_plug.unpack,"not unpack")         --解包函数
 	assert(hall_plug.send,"not send")             --发包函数
+	assert(hall_plug.broadcast,"not broadcast")   --广播发包函数
 	assert(hall_plug.connect,"not connect")       --连接大厅
 	assert(hall_plug.disconnect,"not disconnect") --掉线
 	assert(hall_plug.reconnect,"not reconnect")   --重连

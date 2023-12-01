@@ -25,6 +25,8 @@ local MINE_MAX = 100
 local M = {}
 
 M.send = require(module_cfg.net_util).send
+--广播函数
+M.broadcast = require(module_cfg.net_util).broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr

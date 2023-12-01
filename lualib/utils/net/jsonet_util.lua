@@ -11,6 +11,9 @@ local M = {}
 --给fd发送socket消息
 M.send = util_net_base.create_gate_send(json_netpack.pack)
 
+--给fd_list发送socket消息
+M.broadcast = util_net_base.create_gate_broadcast(json_netpack.pack)
+
 --解包
 M.unpack = util_net_base.create_gate_unpack(json_netpack.unpack)
 
