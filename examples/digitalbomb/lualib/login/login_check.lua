@@ -23,6 +23,8 @@ M.time_out = timer.second * 5
 M.unpack = require(room_game_login.net_util).unpack
 --发包函数
 M.send = require(room_game_login.net_util).send
+--广播函数
+M.broadcast = require(room_game_login.net_util).broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr

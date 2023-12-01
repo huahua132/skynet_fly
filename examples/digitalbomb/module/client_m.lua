@@ -50,7 +50,7 @@ local function close(fd)
 	if g_config.protocol == 'websocket' then
 		websocket.close(fd)
 	else
-		socket.close()
+		socket.close(fd)
 	end
 end
 

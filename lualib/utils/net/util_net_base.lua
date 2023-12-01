@@ -10,7 +10,7 @@ local assert = assert
 
 local M = {}
 
---------------------------------------------------------
+-------------------------------------------------------
 --基于skynet gate 的消息发送
 -------------------------------------------------------
 function M.create_gate_send(pack)
@@ -21,7 +21,7 @@ function M.create_gate_send(pack)
 	
 		local msg,err = pack(name,tab)
 		if not msg then
-			log.error("pb_netpack.pack err ",name,tab,err)
+			log.error("util_net_base.pack err ",name,tab,err)
 			return
 		end
 	
@@ -29,6 +29,27 @@ function M.create_gate_send(pack)
 	end
 end
 
+-------------------------------------------------------
+--基于skynet gate 的消息广播
+-------------------------------------------------------
+function M.create_gate_broadcast(pack)
+	return function(gate_list,fd_list,name,tab)
+		assert(fd_list and #fd_list > 0)
+		assert(name)
+		assert(tab)
+
+		local msg,err = pack(name,tab)
+		if not msg then
+			log.error("util_net_base.pack err ",name,tab,err)
+			return
+		end
+
+		for i = 1,#fd_list do
+			--netpack.pack会分配内存，write会释放内存，所以必须一个write一个包
+			socket.write(fd_list[i], netpack.pack(msg))
+		end
+	end
+end
 --------------------------------------------------------
 --基于skynet gate 的消息解包
 --------------------------------------------------------
@@ -118,7 +139,7 @@ local function create_ws_gate_send(type)
 		
 			local msg,err = pack(name,tab)
 			if not msg then
-				log.error("pb_netpack.pack err ",name,tab,err)
+				log.error("util_net_base.pack err ",name,tab,err)
 				return
 			end
 		
@@ -138,10 +159,40 @@ local function create_ws_gate_send(type)
 	end
 end
 
+local function create_ws_gate_broadcast(type)
+	local send_type = 'send_' .. type
+	return function(pack)
+		return function(gate_list,fd_list,name,tab)
+			assert(gate_list and #gate_list > 0)
+			assert(fd_list and #fd_list > 0)
+			assert(name)
+			assert(tab)
+			
+			local msg,err = pack(name,tab)
+			if not msg then
+				log.error("util_net_base.pack err ",name,tab,err)
+				return
+			end
+
+			--大端2字节表示包长度
+			local send_buffer = string.pack(">I2",msg:len()) .. msg
+			
+			for i = 1,#fd_list do
+				local fd = fd_list[i]
+				local gate = gate_list[i]
+				skynet.send(gate,'lua',send_type,fd,send_buffer)
+			end
+		end
+	end
+end
+
 M.create_ws_gate_send_text = create_ws_gate_send('text')
 
 M.create_ws_gate_send_binary = create_ws_gate_send('binary')
 
+M.create_ws_gate_broadcast_text = create_ws_gate_broadcast('text')
+
+M.create_ws_gate_broadcast_binary = create_ws_gate_broadcast('binary')
 
 --------------------------------------------------------
 --基于skynet ws_gate 的消息解包

@@ -7,6 +7,9 @@ local M = {}
 --给fd发送socket binary消息
 M.send = util_net_base.create_ws_gate_send_binary(pb_netpack.pack)
 
+--给fd_list发送socket消息
+M.broadcast = util_net_base.create_ws_gate_broadcast_binary(pb_netpack.pack)
+
 --解包
 M.unpack = util_net_base.create_ws_gate_unpack(pb_netpack.unpack)
 

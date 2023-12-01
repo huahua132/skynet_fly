@@ -7,6 +7,7 @@ local next = next
 local pairs = pairs
 local setmetatable = setmetatable
 local tostring = tostring
+local tinsert = table.insert
 
 local g_table_map = {}
 local g_config = nil
@@ -84,40 +85,73 @@ end
 
 --发送消息
 local function send_msg(table_id,player_id,packname,pack_body)
-    local player = get_player_info(table_id,player_id)
-	if not player then
-		log.warn("send_msg not exists player ",table_id,player_id)
-		return
-	end
 	if not is_online(table_id,player_id) then
 		log.info("send msg not online ",table_id,player_id)
 		return
 	end
+	local player = get_player_info(table_id,player_id)
     table_plug.send(player.gate,player.fd,packname,pack_body)
 end
 
 --发送消息给部分玩家
 local function send_msg_by_player_list(table_id,player_list,packname,pack_body)
-	for i = 1,#player_list do
-		send_msg(table_id,player_list[i],packname,pack_body)
+	local t_info = get_table_info(table_id)
+	if not t_info then
+		log.warn("send_msg_by_player_list not exists table_id = ",table_id)
+		return
 	end
+	
+	local player_map = t_info.player_map
+
+	local gate_list = {}
+	local fd_list = {}
+	for i = 1,#player_list do
+		local player_id = player_list[i]
+		local player = player_map[player_id]
+		if not player then
+			log.info("send_msg_by_player_list not exists ",player_id)
+		else
+			if player.fd > 0 then
+				tinsert(gate_list,player.gate)
+				tinsert(fd_list,player.fd)
+			else
+				log.info("send_msg_by_player_list not online ",player_id)
+			end
+		end
+	end
+
+	if #gate_list <= 0 then return end
+	
+	table_plug.broadcast(gate_list,fd_list,packname,pack_body)
 end
 
 --广播发送消息
-local function broad_cast_msg(table_id,packname,pack_body)
+local function broad_cast_msg(table_id,packname,pack_body,filter_map)
 	if not g_table_map[table_id] then
 		log.warn("broad_cast_msg not exists table_id = ",table_id)
 		return
 	end
+	filter_map = filter_map or {}
+
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
+
+	local gate_list = {}
+	local fd_list = {}
 	for player_id,player in pairs(player_map) do
-		if player.fd ~= 0 then
-			table_plug.send(player.gate,player.fd,packname,pack_body)
-		else
-			log.info("send msg not online ",table_id,player_id)
+		if not filter_map[player_id] then
+			if player.fd > 0 then
+				tinsert(gate_list,player.gate)
+				tinsert(fd_list,player.fd)
+			else
+				log.info("send_msg_by_player_list not online ",player_id)
+			end
 		end
 	end
+
+	if #gate_list <= 0 then return end
+	
+	table_plug.broadcast(gate_list,fd_list,packname,pack_body)
 end
 -------------------------------------------------------------------------------
 --interface
@@ -314,7 +348,8 @@ function CMD.start(config)
 	table_plug = require (config.table_plug)
 	assert(table_plug.init,"not table_plug init")                 --初始化
 	assert(table_plug.table_creator,"not table_creator")          --桌子建造者
-    assert(table_plug.send,"not send")                           --消息发送函数
+    assert(table_plug.send,"not send")                            --消息发送函数
+	assert(table_plug.broadcast,"not broadcast")   				  --广播发包函数
 
     table_plug.init(interface)
 	local tmp_table = table_plug.table_creator(1,config.instance_name)
