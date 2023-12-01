@@ -6,8 +6,6 @@ local table = table
 local type = type
 local next = next
 local pairs = pairs
-local skynet_ret = skynet.ret
-local skynet_pack = skynet.pack
 local retpack = skynet.retpack
 local tunpack = table.unpack
 
