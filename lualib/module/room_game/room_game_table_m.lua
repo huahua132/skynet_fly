@@ -371,6 +371,14 @@ function CMD.start(config)
 end
 
 function CMD.check_exit()
+	local is_check_ok = true
+	for _,t_info in pairs(g_table_map) do
+		if t_info.game_table.check_exit then
+			is_check_ok = t_info.game_table.check_exit()
+			if not is_check_ok then return false end
+		end
+	end
+	
 	if not next(g_table_map) then
 		log.info("g_table_map.is_empty can exit")
 		return true
@@ -380,7 +388,43 @@ function CMD.check_exit()
 	end
 end
 
+--预告退出
+function CMD.herald_exit()
+	for _,t_info in pairs(g_table_map) do
+		if t_info.game_table.herald_exit then
+			t_info.game_table.herald_exit()
+		end
+	end
+end
+
+--取消退出
+function CMD.cancel_exit()
+	for _,t_info in pairs(g_table_map) do
+		if t_info.game_table.cancel_exit then
+			t_info.game_table.cancel_exit()
+		end
+	end
+end
+
+
+--确认退出
+function CMD.fix_exit()
+	for _,t_info in pairs(g_table_map) do
+		if t_info.game_table.fix_exit then
+			t_info.game_table.fix_exit()
+		end
+	end
+end
+
+--退出
 function CMD.exit()
+	local is_exit = true
+	for _,t_info in pairs(g_table_map) do
+		if t_info.game_table.exit then
+			is_exit = t_info.game_table.exit()
+			if not is_exit then return false end
+		end
+	end
 	return true
 end
 

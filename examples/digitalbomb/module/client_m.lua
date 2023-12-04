@@ -285,9 +285,9 @@ function CMD.start(config)
 		--reload_reconnet_test('room_game_table_m')
 		--player_game()
 		--player_game_reconnect()
-		player_reload_reconnect('room_game_hall_m')
+		--player_reload_reconnect('room_game_hall_m')
 		--player_reload_reconnect('room_game_alloc_m')
-		--player_reload_reconnect('room_game_table_m')
+		player_reload_reconnect('room_game_table_m')
 	end)
 	
 	return true
