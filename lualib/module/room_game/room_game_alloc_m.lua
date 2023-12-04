@@ -200,7 +200,12 @@ function CMD.start(config)
 	return true
 end
 
+--检查退出
 function CMD.check_exit()
+	if alloc_plug.check_exit and not alloc_plug.check_exit() then
+		return false
+	end
+	
 	if not next(g_player_map) then
 		log.info("g_player_map.is_empty can exit")
 		return true
@@ -210,8 +215,35 @@ function CMD.check_exit()
 	end
 end
 
+--预告退出
+function CMD.herald_exit()
+	if alloc_plug.herald_exit then
+		alloc_plug.herald_exit()
+	end
+end
+
+--取消退出
+function CMD.cancel_exit()
+	if alloc_plug.cancel_exit then
+		alloc_plug.cancel_exit()
+	end
+end
+
+
+--确认退出
+function CMD.fix_exit()
+	if alloc_plug.fix_exit then
+		alloc_plug.fix_exit()
+	end
+end
+
+--退出
 function CMD.exit()
-	return true
+	if alloc_plug.exit then
+		return alloc_plug.exit()
+	else
+		return true
+	end
 end
 
 return CMD

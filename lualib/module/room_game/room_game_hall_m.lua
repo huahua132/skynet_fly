@@ -514,7 +514,12 @@ function CMD.start(config)
 	return true
 end
 
+--检查退出
 function CMD.check_exit()
+	if hall_plug.check_exit and not hall_plug.check_exit() then
+		return false
+	end
+	
 	if not next(g_player_map) then
 		log.info("g_player_map.is_empty can exit")
 		return true
@@ -524,8 +529,35 @@ function CMD.check_exit()
 	end
 end
 
+--预告退出
+function CMD.herald_exit()
+	if hall_plug.herald_exit then
+		hall_plug.herald_exit()
+	end
+end
+
+--取消退出
+function CMD.cancel_exit()
+	if hall_plug.cancel_exit then
+		hall_plug.cancel_exit()
+	end
+end
+
+
+--确认退出
+function CMD.fix_exit()
+	if hall_plug.fix_exit then
+		hall_plug.fix_exit()
+	end
+end
+
+--退出
 function CMD.exit()
-	return true
+	if hall_plug.exit then
+		return hall_plug.exit()
+	else
+		return true
+	end
 end
 
 return CMD

@@ -152,4 +152,28 @@ function M.table_not_exists()
 	return nil,errorcode.TABLE_NOT_EXISTS,"not table"
 end
 
+------------------------------------服务退出回调-------------------------------------
+function M.herald_exit()
+    log.error("预告退出")
+end
+
+function M.exit()
+    log.error("退出")
+    return true
+end
+
+function M.fix_exit()
+    log.error("确认要退出")
+end
+
+function M.cancel_exit()
+    log.error("取消退出")
+end
+
+function M.check_exit()
+    log.error("检查退出")
+    return true
+end
+
+
 return M

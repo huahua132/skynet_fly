@@ -203,20 +203,20 @@ local function query(source,module_name)
 	return id_list,name_id_list,version
 end
 
-local function watch(source,module_name,version)
+local function watch(source,module_name,oldversion)
 	assert(module_name,'not module_name')
-	assert(version,"not version")
+	assert(oldversion,"not version")
 	assert(g_id_list_map[module_name],"not exists " .. module_name)
 	assert(g_version_map[module_name],"not exists " .. module_name)
 
 	local id_list = g_id_list_map[module_name]
 	local name_id_list = g_name_id_list_map[module_name]
-	local version = g_version_map[module_name]
+	local newversion = g_version_map[module_name]
 	local watch_map = g_watch_map[module_name]
 
 	assert(not watch_map[source])
-	if version ~= version then
-		return id_list,name_id_list,version
+	if oldversion ~= newversion then
+		return id_list,name_id_list,newversion
 	end
 
 	watch_map[source] = skynet.response()

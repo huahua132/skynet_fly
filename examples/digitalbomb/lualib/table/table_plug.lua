@@ -261,7 +261,29 @@ function M.table_creator(table_id)
 				})
 				return true
 			end
-		}
+		},
+		------------------------------------服务退出回调-------------------------------------
+		herald_exit = function()
+			log.error("预告退出")
+		end,
+
+		exit = function()
+			log.error("退出")
+			return true
+		end,
+		
+		fix_exit = function()
+			log.error("确认要退出")
+		end,
+
+		cancel_exit = function()
+			log.error("取消退出")
+		end,
+
+		check_exit = function()
+			log.error("检查退出")
+			return true
+		end,
     }
 end
 
