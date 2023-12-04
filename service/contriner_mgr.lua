@@ -98,7 +98,7 @@ local function kill_modules(...)
 	local module_name_list = {...}
 	for _,module_name in ipairs(module_name_list) do
 		call_module(module_name,"herald_exit")
-		call_module(module_name,"exit")
+		call_module(module_name,"close")
 		
 		g_name_id_list_map[module_name] = nil
 		g_id_list_map[module_name] = nil
@@ -157,7 +157,7 @@ local function load_modules(...)
 
 		--通知新服务退出
 		for _,m in pairs(tmp_module_map) do
-			call_id_list(m.id_list,'exit')
+			call_id_list(m.id_list,'close')
 		end
 
 		return "notok"
@@ -184,7 +184,7 @@ local function load_modules(...)
 
 		--通知旧模块退出
 		for module_name,id_list in pairs(old_id_list_map) do
-			call_id_list(id_list,"exit")
+			call_id_list(id_list,"close")
 		end
 		return "ok"
 	end
