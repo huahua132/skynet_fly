@@ -8,6 +8,7 @@ local assert = assert
 local string = string
 
 local CLOSE_CODE = {
+	normal = 1000,
 	goingaway = 1001,
 }
 
@@ -141,7 +142,7 @@ function CMD.send_binary(_,fd, msg)
 end
 
 function CMD.kick(_,fd)
-	websocket.close(fd,CLOSE_CODE.goingaway,CLOSE_REASON[CLOSE_CODE.goingaway])
+	websocket.close(fd,CLOSE_CODE.normal,CLOSE_REASON[CLOSE_CODE.normal])
 end
 
 skynet.start(function()
