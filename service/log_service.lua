@@ -61,7 +61,7 @@ skynet.register_protocol {
 
         if address ~= SELF_ADDRESS then
             for i = 1,#hook_hander_list do
-                hook_hander_list[i](log_str)
+                hook_hander_list[i](log_str,msg)
             end
         end
 	end
