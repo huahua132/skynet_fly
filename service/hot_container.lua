@@ -119,7 +119,8 @@ function CMD.start(cfg)
 end
 
 --退出
-function CMD.exit()
+assert(not CMD['close'], "repeat cmd close")
+function CMD.close()
 	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
 	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
