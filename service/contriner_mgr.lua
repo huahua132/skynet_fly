@@ -24,6 +24,7 @@ local g_name_id_list_map = {}
 local g_id_list_map = {}
 local g_watch_map = {}
 local g_version_map = {}
+local g_monitor_new_map = {}
 
 skynet_util.register_info_func("id_list",function()
 	return g_id_list_map
@@ -165,8 +166,13 @@ local function load_modules(...)
 		--都启动成功
 		--切换模板服务id绑定，通知其他服务更新id
 		local old_id_list_map = {}
+		local is_have_new = false
 		for _,module_name in ipairs(module_name_list) do
-			old_id_list_map[module_name] = g_id_list_map[module_name] or {}
+			if g_id_list_map[module_name] then
+				old_id_list_map[module_name] = g_id_list_map[module_name]
+			else
+				is_have_new = true
+			end
 		end
 
 		for module_name,m in pairs(tmp_module_map) do
@@ -179,6 +185,14 @@ local function load_modules(...)
 			for source,response in pairs(watch_map) do
 				response(true,id_list,name_id_list,version)
 				watch_map[source] = nil
+			end
+		end
+
+		--通知有新模块上线
+		if is_have_new then
+			for source,response in pairs(g_monitor_new_map) do
+				response(true,g_version_map)
+				g_monitor_new_map[source] = nil
 			end
 		end
 
@@ -240,6 +254,32 @@ local function unwatch(source,module_name)
 	return true
 end
 
+local function monitor_new(source,mod_version_map)
+	assert(not g_monitor_new_map[source])
+	if not mod_version_map then
+		return g_version_map
+	end
+	
+	if mod_version_map then
+		for mod_name,_ in pairs(g_version_map) do
+			if not mod_version_map[mod_name] then
+				return g_version_map
+			end
+		end
+	end
+
+	g_monitor_new_map[source] = skynet.response()
+	return NORET
+end
+
+local function unmonitor_new(source)
+	local response = g_monitor_new_map[source]
+	assert(response)
+	response(true, g_version_map)
+	g_monitor_new_map[source] = nil
+	return true
+end
+
 local CMD = {}
 
 --通知模块退出
@@ -274,6 +314,16 @@ end
 --取消监听
 function CMD.unwatch(source,module_name)
 	queue(unwatch,source,module_name)
+end
+
+--监听new模块启动
+function CMD.monitor_new(source,mod_version_map)
+	return queue(monitor_new,source,mod_version_map)
+end
+
+--取消监听new模块启动
+function CMD.unmonitor_new(source)
+	queue(unmonitor_new,source)
 end
 
 skynet.start(function()
