@@ -141,17 +141,14 @@ end
 
 --注册访问，用于记录来访地址
 assert(not CMD['register_visitor'], "repeat cmd register_visitor")
-function CMD.register_visitor(source,module_name) 
-	if not module_name then
-		--不是可热更服务，不用管
+function CMD.register_visitor(source,module_name,servername)
+	
+	-- 弱访问者
+	if module_name and contriner_client:is_week_visitor(module_name) then
 		return
 	end
 
-	if contriner_client:is_week_visitor(module_name) then
-		return
-	end
-
-	g_source_map[source] = module_name
+	g_source_map[source] = module_name or servername
 	skynet.fork(function()
 		skynet.call('.monitor_exit','lua','watch',source)
 		g_source_map[source] = nil
@@ -159,11 +156,7 @@ function CMD.register_visitor(source,module_name)
 	return "pong"
 end
 
---是否不再需要访问
-assert(not CMD['is_not_need_visitor'], "repeat cmd is_not_need_visitor")
-function CMD.is_not_need_visitor(source,module_name)
-	return contriner_client:is_not_need_visitor(module_name, source)
-end
+contriner_client:CMD(CMD)
 
 skynet.start(function()
 	skynet_util.lua_dispatch(CMD,{})

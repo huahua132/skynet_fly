@@ -17,8 +17,10 @@ local string = string
 local g_svr_name = skynet.getenv("svr_name")
 local g_svr_id = tonumber(skynet.getenv("svr_id"))
 
+contriner_client:register("share_config_m")
+contriner_client:monitor_all()
+
 local g_client_map = setmetatable({},{__index = function(t,key)
-	contriner_client:register(key) --不是可热更服务什么时候注册都可以
 	t[key] = contriner_client:new(key)
 	return t[key]
 end})
@@ -109,10 +111,11 @@ function CMD.broadcast_by_name(module_name,instance_name,...)
 	cli:broadcast_by_name(...)
 end
 
+contriner_client:CMD(CMD)
+
 skynet.start(function()
 	skynet_util.lua_dispatch(CMD,{})
 
-	contriner_client:register("share_config_m")
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','cluster_server')
 	assert(conf.host,"not host")

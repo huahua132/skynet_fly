@@ -18,7 +18,8 @@ local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
 local is_close_swtich = false
 local is_ready = true   --是否准备好了
-local is_init = false 
+local is_init = false
+local is_monitor_all = false
 
 local g_mod_svr_version_map = {}
 local g_name_id_list_map = {}
@@ -28,7 +29,7 @@ local g_week_visitor_map = {} --弱访问者
 local g_instance_map = {}     --常驻实例
 local g_queryed_map = {}      --查询到地址的回调列表
 local g_updated_map = {}      --更新地址的回调列表
-
+local SERVICE_NAME = SERVICE_NAME
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
@@ -45,7 +46,7 @@ local function register_visitor(id_list)
 	local module_base = module_info.get_base_info()
 	for _,id in ipairs(id_list) do
 		if id ~= SELF_ADDRESS then
-			skynet.call(id,'lua','register_visitor',SELF_ADDRESS,module_base.module_name)
+			skynet.call(id,'lua','register_visitor',SELF_ADDRESS,module_base.module_name,SERVICE_NAME)
 		end
 	end
 end
@@ -125,10 +126,29 @@ g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	return t[key],g_mod_svr_version_map[key]
 end})
 
+local function monitor_all()
+	is_monitor_all = true
+	skynet.fork(function()
+		local mod_version_map = nil
+		while not IS_CLOSE do
+			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new',mod_version_map)
+			for mod_name,_ in pairs(mod_version_map) do
+				if not g_register_map[mod_name] then
+					g_register_map[mod_name] = true
+					local id_list = g_mod_svr_ids_map[mod_name]
+				end
+			end
+		end
+	end)
+end
+
 skynet.exit = function()
 	IS_CLOSE = true
 	for mod_name in pairs(g_mod_svr_ids_map) do
 		skynet.send('.contriner_mgr','lua','unwatch',mod_name)
+	end
+	if is_monitor_all then
+		skynet.call('.contriner_mgr','lua', 'unmonitor_new')
 	end
 	return skynet_exit()
 end
@@ -211,11 +231,7 @@ end
 
 --注册
 function M:register(...)
-	local module_base = module_info.get_base_info()
-	if module_base.module_name then
-		--可热更服务需要限制在load阶段就注册好
-		assert(not is_init, "init after can`t register")
-	end
+	assert(not is_init, "init after can`t register")
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
 		g_register_map[mod_name] = true
@@ -279,6 +295,22 @@ function M:add_updated_cb(module_name, func)
 		g_updated_map[module_name] = {}
 	end
 	tinsert(g_updated_map[module_name], func)
+end
+
+--监听所有服务地址
+function M:monitor_all()
+	assert(not is_monitor_all,"repeat monitor_all")
+	assert(not is_init, "init after can`t monitor_all")
+	monitor_all()
+end
+
+--扩展CMD
+function M:CMD(cmd)
+	--是否不再需要访问
+	assert(not cmd['is_not_need_visitor'], "repeat cmd is_not_need_visitor")
+	function cmd.is_not_need_visitor(source,module_name)
+		return self:is_not_need_visitor(module_name, source)
+	end
 end
 --[[
 	函数作用域：M 的成员函数
