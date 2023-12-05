@@ -18,6 +18,7 @@ local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
 local is_close_swtich = false
 local is_ready = true   --是否准备好了
+local is_init = false 
 
 local g_mod_svr_version_map = {}
 local g_name_id_list_map = {}
@@ -134,6 +135,7 @@ end
 
 --查询所有服务的地址
 skynet.init(function()
+	is_init = true
 	skynet.fork(function()
 		for mod_name,_ in pairs(g_register_map) do
 			local id_list = g_mod_svr_ids_map[mod_name]
@@ -209,6 +211,11 @@ end
 
 --注册
 function M:register(...)
+	local module_base = module_info.get_base_info()
+	if module_base.module_name then
+		--可热更服务需要限制在load阶段就注册好
+		assert(not is_init, "init after can`t register")
+	end
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
 		g_register_map[mod_name] = true

@@ -2,6 +2,7 @@ local log = require "log"
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
 
+contriner_client:register("share_config_m")
 local string = string
 
 local g_config = nil
