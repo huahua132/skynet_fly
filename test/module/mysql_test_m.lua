@@ -3,7 +3,7 @@ local log = require "log"
 local contriner_client = require "contriner_client"
 local timer = require "timer"
 local mysqlf = require "mysqlf"
-
+contriner_client:register("mysql_m")
 local CMD = {}
 
 function CMD.start()
