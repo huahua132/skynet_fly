@@ -12,12 +12,12 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local lua_path = skynet_path .. '/3rd/lua/lua'
 local server_path = "./"
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s check_reload | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs -r -t sh script/reload.sh \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s check_kill_mod | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs -r -t -L1 sh script/kill_mod.sh \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_mod_config_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_load_mods_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 
 local shell_path = server_path .. 'script/'
 

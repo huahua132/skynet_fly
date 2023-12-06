@@ -5,7 +5,6 @@ local rpc_redis = require "rpc_redis"
 local log = require "log"
 local timer = require "timer"
 local skynet_util = require "skynet_util"
-local mod_config = require "mod_config"
 
 local pairs = pairs
 local assert = assert

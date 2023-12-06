@@ -44,7 +44,7 @@
 
 1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo) 
     - `make build`
-2. 构建skynet_config, mod_config, webapp运维脚本
+2. 构建skynet_config, webapp运维脚本
     - `cd examples/webapp/`
     - `sh ../../binshell/make_server.sh ../../`
     - 如果一些顺利的话将会生成script文件夹，文件夹下有:
@@ -57,7 +57,6 @@
       - `fasttime.sh` 快进时间。 `sh script/fasttime.sh "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
-    - 还有生成mod_config.lua，可热更模块配置文件。（首次生成是拷贝webapp/load_mods.lua，如果mod_config文件存在会对比load_mods和mod_config，将配置值类型不同的，有增加的，有删除的，同步到mod_config，只有值不同不覆盖原本修改的配置）
 3. 运行
    - `sh script/run.sh`
 4. 访问
@@ -70,7 +69,7 @@
     - 也可以观察webapp/logs/server.log
 
 http服务已经接入了涵曦的[wlua](https://github.com/hanxi/wlua),扩展了路由和中间件模式，完整示例请看运行examples/webapp 源码。
-默认webapp运行的是`webapp_dispatch.lua`，想要切换其他示例，只需要更改`mod_config.lua`中的dispatch即可。
+默认webapp运行的是`webapp_dispatch.lua`，想要切换其他示例，只需要更改`load_mods.lua`中的dispatch即可。
 ```lua
 return {
 	web_agent_m = {
@@ -458,7 +457,7 @@ gin还是快啊
 * **切换示例**
 	把digitalbomb游戏由pb协议转换到跑json协议。
 
-	修改由命令生成好的配置文件 mod_config.lua
+	修改配置文件 load_mods.lua
 
 client_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 

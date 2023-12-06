@@ -12,7 +12,13 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local lua_path = skynet_path .. '/3rd/lua/lua'
 local server_path = "./"
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
+shell_str = shell_str .. [[
+if [ ! -f "./tmp_reload_cmd.txt" ]; then
+	echo "not try_reload file"
+	exit 1 \n 
+fi
+]]
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s try_again_reload | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s | \n")
 shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s handle_reload_result | xargs \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)

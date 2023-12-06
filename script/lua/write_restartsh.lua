@@ -12,8 +12,9 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. "sh script/stop.sh" .. '\n'
+shell_str = shell_str .. "sleep 1" .. '\n'
 shell_str = shell_str .. "sh script/run.sh" .. '\n'
 
 local shell_path = server_path .. 'script/'

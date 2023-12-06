@@ -12,9 +12,11 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. string.format("%s/skynet %s_config.lua\n",skynet_path,svr_name)
-shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_mod_config_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_running_config\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s create_load_mods_old\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("echo run %s\n",svr_name)
 
 local shell_path = server_path .. 'script/'
 

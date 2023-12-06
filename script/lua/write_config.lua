@@ -47,6 +47,7 @@ local config = {
 
 	lua_path = "",
 	enablessl = true,
+	loadmodsfile = "load_mods",      --可热更服务启动配置
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)

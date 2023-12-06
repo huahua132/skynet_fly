@@ -15,8 +15,11 @@ local table_util = require "table_util"
 local time_util = require "time_util"
 local json = require "cjson"
 debug_port = nil
-local skynet_cfg_path = string.format("%s_config",svr_name)
-require(skynet_cfg_path)
+local skynet_cfg_path = string.format("%s_config.lua.run",svr_name)  --读取skynet启动配置
+local file = loadfile(skynet_cfg_path)
+if file then
+	file()
+end
 
 local function get_host()
 	assert(debug_port)
@@ -45,13 +48,13 @@ end
 function CMD.reload()
 	local file = io.open("./tmp_reload_cmd.txt",'w+')
 	assert(file)
-	local mod_config = require "mod_config"
+	local load_mods = require (loadmodsfile)
 	local server_id = assert(ARGV[4])
 	local mod_name_str = ""
 	for i = 5,#ARGV do
 		local module_name = ARGV[i]
 		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
-		assert(mod_config[module_name])
+		assert(load_mods[module_name])
 	end
 	local reload_url = string.format('%s/call/%s/"load_modules"%s',get_host(),server_id,mod_name_str)
 	file:write(string.format("'%s'",reload_url))
@@ -90,12 +93,12 @@ function CMD.check_reload()
 	local module_info_dir = "module_info"
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
-	local mod_config = require "mod_config"
+	local load_mods = require (loadmodsfile)
 
 	local module_info_map = {}
 	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
 		local m_name = string.sub(f_name,1,#f_name - 9)
-		if mod_config[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
+		if load_mods[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
 			local f_tb = loadfile(f_path)()
 			module_info_map[m_name] = f_tb
 		end
@@ -123,19 +126,19 @@ function CMD.check_reload()
 		end
   	end
 
-	for module_name,_ in pairs(mod_config) do
+	for module_name,_ in pairs(load_mods) do
 		if not module_info_map[module_name] then
 		need_reload_module[module_name] = "launch_new_module"
 		end
 	end
 
-	local old_mod_confg = loadfile("mod_config.lua.old")
+	local old_mod_confg = loadfile("load_mods.lua.old")
 	if old_mod_confg then
 		old_mod_confg = old_mod_confg()
 	end
 
 	if old_mod_confg and next(old_mod_confg) then
-		for module_name,module_cfg in pairs(mod_config) do
+		for module_name,module_cfg in pairs(load_mods) do
 			local old_module_cfg = old_mod_confg[module_name]
 			if old_module_cfg then
 			local def_des = table_util.check_def_table(module_cfg,old_module_cfg)
@@ -154,15 +157,15 @@ function CMD.check_reload()
 end
 
 function CMD.check_kill_mod()
-	local mod_config = require "mod_config"
-	local old_mod_confg = loadfile("mod_config.lua.old")
+	local load_mods = require (loadmodsfile)
+	local old_mod_confg = loadfile("load_mods.lua.old")
 	if not old_mod_confg then
 		return	
 	end
 	old_mod_confg = old_mod_confg()
 
 	for mod_name,_ in pairs(old_mod_confg) do
-		if not mod_config[mod_name] then
+		if not load_mods[mod_name] then
 			print(mod_name)
 		end
 	end
@@ -185,9 +188,16 @@ function CMD.call()
  	print(string.format("'%s'",cmd_url))
 end
 
-function CMD.create_mod_config_old()
-	local mod_config = require "mod_config"
-	os.execute("cp mod_config.lua mod_config.lua.old")
+function CMD.create_load_mods_old()
+	local load_mods = require (loadmodsfile)
+	local cmd = string.format("cp %s.lua load_mods.lua.old",loadmodsfile)
+	os.execute(cmd)
+end
+
+--拷贝一个运行时配置供console.lua读取
+function CMD.create_running_config()
+	local cmd = string.format("cp %s_config.lua %s_config.lua.run",svr_name,svr_name)
+	os.execute(cmd)
 end
 
 --快进时间

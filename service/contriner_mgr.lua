@@ -18,6 +18,8 @@ local skynet_pack = skynet.pack
 local skynet_ret = skynet.ret
 local pcall = pcall
 
+local loadmodsfile = skynet.getenv("loadmodsfile") .. '.lua'
+
 local NORET = {}
 
 local g_name_id_list_map = {}
@@ -110,18 +112,18 @@ end
 
 local function load_modules(...)
 	local module_name_list = {...}
-	local mod_config = loadfile("mod_config.lua")()
-	assert(mod_config,"not mod_config")
+	local load_mods = loadfile(loadmodsfile)()
+	assert(load_mods,"not load_mods")
 
 	--检查是否配置都有
 	for _,module_name in ipairs(module_name_list) do
-		local m_cfg = mod_config[module_name]
+		local m_cfg = load_mods[module_name]
 		assert(m_cfg,"not m_cfg " .. module_name)
 	end
 
 	--按顺序启动
 	tsort(module_name_list,function(a,b)
-		return mod_config[a].launch_seq < mod_config[b].launch_seq
+		return load_mods[a].launch_seq < load_mods[b].launch_seq
 	end)
 
 	--通知旧服务即将要退出了
@@ -133,12 +135,12 @@ local function load_modules(...)
 	local is_allok = true   --是否所有都启动成功了
 	--检查是否配置都有
 	for _,module_name in ipairs(module_name_list) do
-		local m_cfg = mod_config[module_name]
+		local m_cfg = load_mods[module_name]
 		assert(m_cfg,"not m_cfg")
 	end
 	local tmp_module_map = {}
 	for _,module_name in ipairs(module_name_list) do
-		local m_cfg = mod_config[module_name]
+		local m_cfg = load_mods[module_name]
 		local isok,id_list,name_id_list = launch_new_module(module_name,m_cfg)
 		tmp_module_map[module_name] = {
 			id_list = id_list,
