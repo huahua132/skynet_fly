@@ -12,8 +12,9 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua\n",svr_name)
+shell_str = shell_str .. string.format("echo kill %s\n",svr_name)
 
 local shell_path = server_path .. 'script/'
 

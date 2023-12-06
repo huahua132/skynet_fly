@@ -12,7 +12,13 @@ local skynet_path = skynet_fly_path .. '/skynet/'
 local lua_path = skynet_path .. '/3rd/lua/lua'
 local server_path = "./"
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
+shell_str = shell_str .. [[
+if [ "$#" -ne 1 ]; then
+	echo "please format script/fasttime.sh '2023:10:26 19:22:50' 1"
+	exit 1
+fi
+]]
 shell_str = shell_str .. string.format('%s %s/script/lua/console.lua %s %s fasttime "$1" $2 | \n',lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s \n")
 

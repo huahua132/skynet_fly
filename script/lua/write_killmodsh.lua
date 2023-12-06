@@ -12,11 +12,17 @@ package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 local file_util = require "file_util"
 local svr_name = file_util.get_cur_dir_name()
 
-local shell_str = "#!bin/bash\n"
+local shell_str = "#!/bin/bash\n"
+shell_str = shell_str .. [[
+if [ "$#" -lt 1 ]; then
+    echo "please format script/kill_mod.sh ***_m ***_m"
+    exit 1
+fi
+]]
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s get_list | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s |\n")
 shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s find_server_id contriner_mgr 2 | \\\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s call kill_module $1 | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s call kill_modules $* | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s")
 
 local shell_path = server_path .. 'script/'

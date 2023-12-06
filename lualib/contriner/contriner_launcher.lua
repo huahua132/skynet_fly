@@ -1,10 +1,12 @@
 local skynet = require "skynet"
-local mod_config = require "mod_config"
 local table_util = require "table_util"
 require "manager"
 
 local table = table
 local ipairs = ipairs
+
+local loadmodsfile = skynet.getenv("loadmodsfile")
+local load_mods = require(loadmodsfile)
 
 --这是可热更服务的启动
 
@@ -17,7 +19,7 @@ function M.run()
 
     local before_run_list = {} --先跑
     local delay_run_list = {}  --延迟再次调用再跑
-	for mod_name,mod_cfg in table_util.sort_ipairs(mod_config,function(a,b)
+	for mod_name,mod_cfg in table_util.sort_ipairs(load_mods,function(a,b)
 		return a.launch_seq < b.launch_seq
 	end) do
         if not mod_cfg.delay_run then
