@@ -17,7 +17,6 @@ local g_svr_name = skynet.getenv("svr_name")
 local g_svr_id = tonumber(skynet.getenv("svr_id"))
 
 contriner_client:register("share_config_m")
-contriner_client:monitor_all()
 
 local g_client_map = setmetatable({},{__index = function(t,key)
 	t[key] = contriner_client:new(key)

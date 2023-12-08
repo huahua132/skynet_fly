@@ -18,7 +18,6 @@ local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
 local is_close_swtich = false
 local is_ready = true   --是否准备好了
-local is_init = false
 local is_monitor_all = false
 
 local g_mod_svr_version_map = {}
@@ -127,6 +126,7 @@ g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 end})
 
 local function monitor_all()
+	if is_monitor_all then return end
 	is_monitor_all = true
 	skynet.fork(function()
 		local mod_version_map = nil
@@ -155,7 +155,10 @@ end
 
 --查询所有服务的地址
 skynet.init(function()
-	is_init = true
+	local module_base = module_info.get_base_info()
+	if not module_base.module_name then                     --不是热更模块，监听所有地址
+		monitor_all()
+	end
 	skynet.fork(function()
 		for mod_name,_ in pairs(g_register_map) do
 			local id_list = g_mod_svr_ids_map[mod_name]
@@ -231,7 +234,10 @@ end
 
 --注册
 function M:register(...)
-	assert(not is_init, "init after can`t register")
+	local module_base = module_info.get_base_info()
+	if module_base.module_name then                     --是热更模块才有这个限制
+		assert(not is_ready, "ready after can`t register")
+	end
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
 		g_register_map[mod_name] = true
@@ -300,7 +306,7 @@ end
 --监听所有服务地址
 function M:monitor_all()
 	assert(not is_monitor_all,"repeat monitor_all")
-	assert(not is_init, "init after can`t monitor_all")
+	assert(not is_ready, "ready can`t monitor_all")
 	monitor_all()
 end
 

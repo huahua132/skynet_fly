@@ -18,8 +18,6 @@ local new_loaded = _loaded
 
 local MODULE_NAME = MODULE_NAME
 local module_info = require "module_info"
-
-
 local contriner_client = require "contriner_client"
 contriner_client:close_ready()
 
@@ -113,7 +111,7 @@ function CMD.start(cfg)
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
 	new_loaded = nil
-	contriner_client.open_ready()
+	contriner_client:open_ready()
 	SERVER_STATE = "starting"
 	return ret
 end
