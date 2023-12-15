@@ -39,4 +39,47 @@ function M.number_div_str(num,div_num)
 	return result
 end
 
+M.int8min = -(1 << 7)
+M.int8max = (1 << 7) - 1
+M.uint8min = 0
+M.uint8max = (1 << 8) - 1
+M.int16min = -(1 << 15)
+M.int16max = (1 << 15) - 1
+M.uint16min = 0
+M.uint16max = (1 << 16) - 1
+M.int32min = -(1 << 31)
+M.int32max = (1 << 31) - 1
+M.uint32min = 0
+M.uint32max = (1 << 32) - 1
+M.int64min = -(1 << 63)
+M.int64max = (1 << 63) - 1
+
+function M.is_vaild_int8(num)
+	return num >= M.int8min and num <= M.int8max
+end
+
+function M.is_vaild_uint8(num)
+	return num >= M.uint8min and num <= M.uint8max
+end
+
+function M.is_vaild_int16(num)
+	return num >= M.int16min and num <= M.int16max
+end
+
+function M.is_vaild_uint16(num)
+	return num >= M.uint16max and num <= M.uint16max
+end
+
+function M.is_vaild_int32(num)
+	return num >= M.int32min and num <= M.int32max
+end
+
+function M.is_vaild_uint32(num)
+	return num >= M.uint32min and num <= M.uint32max
+end
+
+function M.is_vaild_int64(num)
+	return num >= M.int64min and num <= M.int64max
+end
+
 return M

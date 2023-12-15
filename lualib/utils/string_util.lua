@@ -6,6 +6,7 @@ local tunpack = table.unpack
 local sgmatch = string.gmatch
 local next = next
 local pairs = pairs
+local strgsub = string.gsub
 
 --[[
 	函数作用域：M 的成员函数
@@ -33,6 +34,28 @@ function M.split(inputstr, ...)
     end
 
     return result
+end
+
+local escape_map = {
+    ['\0'] = "\\0",
+    ['\b'] = "\\b",
+    ['\n'] = "\\n",
+    ['\r'] = "\\r",
+    ['\t'] = "\\t",
+    ['\26'] = "\\Z",
+    ['\\'] = "\\\\",
+    ["'"] = "\\'",
+    ['"'] = '\\"',
+}
+
+--防sql注入
+function M.quote_sql_str(str)
+    local newstr = strgsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
+    if not newstr then
+        return str
+    end
+
+    return newstr
 end
 
 return M

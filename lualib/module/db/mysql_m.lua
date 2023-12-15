@@ -47,6 +47,10 @@ function CMD.query(sql_str)
 	return ret
 end
 
+function CMD.max_packet_size()
+	return g_db_conf.max_packet_size or 1024 * 1024
+end
+
 function CMD.check_exit()
 	return g_querying_cnt <= 0
 end

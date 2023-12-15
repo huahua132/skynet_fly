@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local contriner_client = require "contriner_client"
-local log = require "log"
 
 local assert = assert
 local setmetatable = setmetatable
@@ -38,6 +37,10 @@ end
 
 function M:query(sql_str)
 	return self.client:balance_call("query",sql_str)
+end
+
+function M:max_packet_size()
+	return self.client:balance_call("max_packet_size")
 end
 
 return M
