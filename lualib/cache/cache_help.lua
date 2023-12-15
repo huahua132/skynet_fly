@@ -79,7 +79,7 @@ function M:del(key)
 			self.cache_map[key] = nil
 			self.pre_expire_map[key] = nil
 			if not next(time_map) then
-			self.expire_time_map[pre_expire_time] = nil
+				self.expire_time_map[pre_expire_time] = nil
 			end
 			return true
 		end
@@ -92,7 +92,7 @@ function M:set_cache(key,value)
 	assert(key)
 	assert(value)
 	if self.cache_map[key] then
-	return false
+		return false
 	end
 	if self.cache_cnt >= self.cache_limit then
 		log.error("set_cache cache limit ",key,self.cache_limit)
@@ -112,7 +112,7 @@ function M:update_cache(key,value)
 	assert(key)
 	assert(value)
 	if not self.cache_map[key] then
-	return false
+		return false
 	end
 
 	self:del(key)

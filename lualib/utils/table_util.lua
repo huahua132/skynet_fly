@@ -282,8 +282,9 @@ function M.sort_ipairs(t,comp)
 
 		local v = list[index]
 		local k = v_k[v]
+		local is_end = index == len
 		index = index + 1
-		return k,v
+		return k,v,is_end
 	end
 end
 
@@ -408,6 +409,25 @@ function M.deep_copy(orig)
         return copy
     end
     return copy_recursive(orig)
+end
+
+-- 按深度元素转成list
+function M.depth_to_list(tab, depth)
+	assert(depth > 0)
+	local list1 = {tab}
+	local list2 = {}
+
+	for i = 1,depth do
+		for _,tt in pairs(list1) do
+			for _,t in pairs(tt) do
+				tinsert(list2, t)
+			end
+		end
+		list1 = list2
+		list2 = {}
+	end
+
+	return list1
 end
 
 return M
