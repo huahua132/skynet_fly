@@ -284,10 +284,20 @@ function CMD.leave(table_id,player_id)
 	end
 
 	player_map[player_id] = nil
-	if not next(player_map) then
-		g_table_map[table_id] = nil
+
+	return true
+end
+
+--销毁房间
+function CMD.dismisstable(table_id)
+	assert(g_table_map[table_id])
+	local t_info = g_table_map[table_id]
+	local player_map = t_info.player_map
+	if next(player_map) then  --还有玩家
+		return false
 	end
 
+	g_table_map[table_id] = nil
 	return true
 end
 

@@ -1,6 +1,8 @@
 local log = require "log"
 local errorcode = require "errorcode"
 local GAME_STATE = require "GAME_STATE"
+local skynet = require "skynet"
+local timer = require "timer"
 
 local pairs = pairs
 local table = table
@@ -30,7 +32,18 @@ end
 M.register_cmd = CMD
 
 function M.init(alloc_mgr) --初始化
+	--初始化的时候不能访问其他服务，用fock让它启动完成再去
+	skynet.fork(function()
+		log.info("创建桌子》》》》》》》》",alloc_mgr.create_table("default"))
+	end)
 
+	-- 监听有没有空桌子
+	timer:new(timer.minute,0,function()
+		local empty_map = alloc_mgr.get_empty_map()
+		for table_id,empty_time in pairs(empty_map) do
+			log.info("销毁空桌子》》》》》》》",alloc_mgr.dismisstable(table_id),empty_time)
+		end
+	end)
 end
 
 local function check_can_join(t_info,player_id)
