@@ -12,7 +12,8 @@ local assert = assert
 local CMD = {}
 
 --测试创建表
-local function test_create_table()
+local function test_create_table(is_del)
+    mysqlf:instance("admin"):query("drop table if exists t_player")
     local adapter = ormadapter_mysql:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
@@ -39,7 +40,7 @@ local function test_create_table()
     :builder(adapter)
 
     local sqlret = mysqlf:instance("admin"):query("DESCRIBE t_player")
-    
+
     assert(not sqlret.err,sqlret.err)
     assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
     assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
@@ -61,6 +62,53 @@ local function test_create_table()
     assert(sqlret[18].Field == 'sex13' and sqlret[18].Type == 'varchar(8192)')
     assert(sqlret[19].Field == 'sex14' and sqlret[19].Type == 'text')
     assert(sqlret[20].Field == 'sex15' and sqlret[20].Type == 'blob')
+
+    if is_del then
+        mysqlf:instance("admin"):query("drop table if exists t_player")
+    end
+end
+
+--测试修改表
+local function test_alter_table()
+    test_create_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :int8("nickname1")
+    :set_keys("player_id","role_id","sex")
+    :builder(adapter)
+
+    local sqlret = mysqlf:instance("admin"):query("DESCRIBE t_player")
+
+    assert(not sqlret.err,sqlret.err)
+    assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
+    assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
+    assert(sqlret[3].Field == 'sex' and sqlret[3].Type == 'tinyint' and sqlret[3].Key == 'PRI')
+    assert(sqlret[4].Field == 'nickname' and sqlret[4].Type == 'varchar(32)')
+    assert(sqlret[5].Field == 'email' and sqlret[5].Type == 'varchar(64)')
+    assert(sqlret[6].Field == 'sex1' and sqlret[6].Type == 'tinyint unsigned')
+    assert(sqlret[7].Field == 'sex2' and sqlret[7].Type == 'smallint')
+    assert(sqlret[8].Field == 'sex3' and sqlret[8].Type == 'smallint unsigned')
+    assert(sqlret[9].Field == 'sex4' and sqlret[9].Type == 'int')
+    assert(sqlret[10].Field == 'sex5' and sqlret[10].Type == 'int unsigned')
+    assert(sqlret[11].Field == 'sex6' and sqlret[11].Type == 'bigint')
+    assert(sqlret[12].Field == 'sex7' and sqlret[12].Type == 'varchar(128)')
+    assert(sqlret[13].Field == 'sex8' and sqlret[13].Type == 'varchar(256)')
+    assert(sqlret[14].Field == 'sex9' and sqlret[14].Type == 'varchar(512)')
+    assert(sqlret[15].Field == 'sex10' and sqlret[15].Type == 'varchar(1024)')
+    assert(sqlret[16].Field == 'sex11' and sqlret[16].Type == 'varchar(2048)')
+    assert(sqlret[17].Field == 'sex12' and sqlret[17].Type == 'varchar(4096)')
+    assert(sqlret[18].Field == 'sex13' and sqlret[18].Type == 'varchar(8192)')
+    assert(sqlret[19].Field == 'sex14' and sqlret[19].Type == 'text')
+    assert(sqlret[20].Field == 'sex15' and sqlret[20].Type == 'blob')
+    assert(sqlret[21].Field == 'nickname1' and sqlret[21].Type == 'tinyint')
+end
+
+--测试新增数据
+local function test_create_entry()
+
 end
 
 local function test()
@@ -118,7 +166,8 @@ end
 
 function CMD.start()
     skynet.fork(function()
-        test_create_table()
+        test_create_table(true)
+        test_alter_table()
     end)
     return true
 end

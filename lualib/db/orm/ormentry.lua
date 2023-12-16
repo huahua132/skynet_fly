@@ -36,12 +36,12 @@ function M:set(filed_name, filed_value)
     self._change_map[filed_name] = true      --标记变更
 end
 
--- 数据迭代器
+-- 数据
 function M:get_entry_data()
     return self._entry_data
 end
 
--- 修改条目迭代器
+-- 修改条目
 function M:get_change_map()
     return self._change_map
 end
