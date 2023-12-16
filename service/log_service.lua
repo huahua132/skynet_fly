@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local skynet_util = require "skynet_util"
 local file_util = require "file_util"
 local time_util = require "time_util"
+local contriner_client = require "contriner_client"
 require "skynet.manager"
 
 local os = os
@@ -90,3 +91,5 @@ skynet.start(function()
     open_file()
     skynet_util.lua_dispatch(CMD,{})
 end)
+
+contriner_client:CMD(CMD)

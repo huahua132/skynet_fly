@@ -283,3 +283,5 @@ skynet.start(function()
 	g_gate = skynet.newservice(room_game_login.gateservice)
 	skynet.call(g_gate,'lua','open',room_game_login.gateconf)
 end)
+
+contriner_client:CMD(CMD)
