@@ -4,6 +4,7 @@ local contriner_client = require "contriner_client"
 local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local timer = require "timer"
+local time_util = require "time_util"
 
 contriner_client:register("room_game_table_m")
 
@@ -23,6 +24,7 @@ local alloc_plug = nil       --匹配插件
 
 local g_table_map = {}
 local g_player_map = {}
+local g_empty_map = {}       --空桌映射表(key:table_id value:empty_time)空置时间
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
@@ -55,7 +57,7 @@ local function create_table(table_name, create_player_id)
 	local room_client = contriner_client:new("room_game_table_m",table_name,function() return false end)
 	room_client:set_mod_num(num_id)
 	local table_server_id = room_client:get_mod_server_id()
-	local ok,errocode,errormsg = skynet.call(table_server_id,'lua','create_table',table_id,SELF_ADDRESS) 
+	local ok,errocode,errormsg = room_client:mod_call('create_table',table_id,SELF_ADDRESS) 
 	if ok then
 		g_table_map[table_id] = {
 			room_client = room_client,
@@ -64,6 +66,7 @@ local function create_table(table_name, create_player_id)
 			player_list = {},
 		}
 		local config = errocode
+		g_empty_map[table_id] = time_util.time()
 		alloc_plug.createtable(table_name,table_id,config,create_player_id)
 		return table_id
 	else
@@ -76,9 +79,10 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
     if not t_info then
         return alloc_plug.table_not_exists()
     end
-    local table_server_id = t_info.table_server_id
+	local table_server_id = t_info.table_server_id
+    local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = skynet.call(table_server_id,'lua','enter',table_id,player_id,gate,fd,hall_server_id)
+    local ok,errcode,errmsg = room_client:mod_call('enter',table_id,player_id,gate,fd,hall_server_id)
     if not ok then
         log.info("enter table fail ",player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -86,7 +90,7 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
         g_player_map[player_id] = t_info
         local player_list = t_info.player_list
         table.insert(player_list,player_id)
-
+		g_empty_map[table_id] = nil
         alloc_plug.entertable(table_id,player_id)
         return table_server_id,table_id
     end
@@ -120,9 +124,9 @@ end
 
 local function leave(player_id)
     local t_info = assert(g_player_map[player_id])
-    local table_server_id = t_info.table_server_id
+    local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = skynet.call(table_server_id,'lua','leave',table_id,player_id)
+    local ok,errcode,errmsg = room_client:mod_call('leave',table_id,player_id)
     if not ok then
         log.info("leave table fail ",table_id,player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -136,18 +140,51 @@ local function leave(player_id)
         end
         alloc_plug.leavetable(table_id,player_id)
         if #player_list <= 0 then
-            g_table_map[table_id] = nil
-            alloc_plug.dismisstable(table_id)
+			g_empty_map[table_id] = time_util.time()
         end
         g_player_map[player_id] = nil
         return true
     end
 end
+
+--销毁房间
+local function dismisstable(table_id)
+	local t_info = assert(g_table_map[table_id])
+	local player_list = t_info.player_list
+	if #player_list > 0 then
+		log.warn("can`t dismisstable is have player ",table_id,table.concat(player_list,','))
+		return false
+	end
+	local room_client = t_info.room_client
+	local isok = room_client:mod_call('dismisstable',table_id)
+	if not isok then
+		log.error("dismisstable err ", table_id)
+		return false
+	end
+
+	g_table_map[table_id] = nil
+	g_empty_map[table_id] = nil
+    alloc_plug.dismisstable(table_id)
+	return true
+end
 ----------------------------------------------------------------------------------
 --interface
 ----------------------------------------------------------------------------------
 local interface = {}
+--创建桌子
+function interface.create_table(table_name)
+	return queue(create_table,table_name)
+end
 
+-- 销毁桌子
+function interface.dismisstable(table_id)
+	return queue(dismisstable, table_id)
+end
+
+-- 获取空桌列表
+function interface.get_empty_map()
+	return g_empty_map
+end
 ----------------------------------------------------------------------------------
 --CMD
 ----------------------------------------------------------------------------------
