@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "log"
 local engine_web = require "engine_web"
 local HTTP_STATUS = require "HTTP_STATUS"
+local time_util = require "time_util"
 
 local string = string
 local M = {}
@@ -18,7 +19,7 @@ M.dispatch = engine_web.dispatch(app)
 --初始化
 function M.init()
 	app:get("/",function(c)
-		c.res:set_rsp("hello skynet_fly",HTTP_STATUS.OK)
+		c.res:set_rsp("hello skynet_fly " .. os.date("%Y%m%d %H:%M:%S",time_util.time()),HTTP_STATUS.OK)
 	end)
 
 	app:run()

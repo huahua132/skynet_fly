@@ -14,7 +14,7 @@ local server_path = "./"
 
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
 	echo "please format script/fasttime.sh '2023:10:26 19:22:50' 1"
 	exit 1
 fi
