@@ -1,6 +1,8 @@
 local math = math
 local tonumber = tonumber
 local string = string
+local type = type
+local sformat = string.format
 
 local M = {}
 
@@ -67,7 +69,7 @@ function M.is_vaild_int16(num)
 end
 
 function M.is_vaild_uint16(num)
-	return num >= M.uint16max and num <= M.uint16max
+	return num >= M.uint16min and num <= M.uint16max
 end
 
 function M.is_vaild_int32(num)

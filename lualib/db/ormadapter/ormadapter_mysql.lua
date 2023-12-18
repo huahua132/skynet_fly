@@ -5,7 +5,6 @@ local mysqlf = require "mysqlf"
 local log = require "log"
 
 local FILED_TYPE = require "ormtable".FILED_TYPE
-local FILED_LUA_DEFAULT = require "ormtable".FILED_LUA_DEFAULT
 
 local setmetatable = setmetatable
 local sfild = string.find
@@ -41,6 +40,16 @@ local FILED_TYPE_SQL_TYPE = {
 
     [FILED_TYPE.text] = "text",
     [FILED_TYPE.blob] = "blob",
+}
+
+local IS_NUMBER_TYPE = {
+    [FILED_TYPE.int8] = true,
+    [FILED_TYPE.int16] = true,
+    [FILED_TYPE.int32] = true,
+    [FILED_TYPE.int64] = true,
+    [FILED_TYPE.uint8] = true,
+    [FILED_TYPE.uint16] = true,
+    [FILED_TYPE.uint32] = true,
 }
 
 local FILED_TYPE_LUA_TYPE = {}
@@ -220,37 +229,61 @@ function M:builder(tab_name, filed_list, filed_map, key_list, index_map)
     local update_format_head = sformat("update %s set ",tab_name)
     local update_format_head_list = {}
     local update_format_end = " where "
-    local delete_format_head = sformat("delete from %s",tab_name)
-    local delete_format_end = " where "
+    local delete_format_head = sformat("delete from %s where ",tab_name)
 
     local len = #filed_list
     for i = 1,len do
         local filed_name = filed_list[i]
+        local filed_type = filed_map[filed_name]
+        if IS_NUMBER_TYPE[filed_type] then
+            if i == len then
+                insert_format_end = insert_format_end .. "%d" 
+            else
+                insert_format_end = insert_format_end .. "%d,"
+            end
+            update_format_head_list[i] = '`' .. filed_name .. "` = %d"
+        else
+            if i == len then
+                insert_format_end = insert_format_end .. "'%s'" 
+            else
+                insert_format_end = insert_format_end .. "'%s',"
+            end
+            update_format_head_list[i] = '`' .. filed_name .. "` = '%s'"
+        end
         if i == len then
             insert_format_head = insert_format_head .. '`' .. filed_name .. '`'
             select_format_head = select_format_head .. '`' .. filed_name .. '`'
-            insert_format_end = insert_format_end .. "'%s'" 
+            
         else
             insert_format_head = insert_format_head .. '`' .. filed_name .. '`,'
             select_format_head = select_format_head .. '`' .. filed_name .. '`,'
-            insert_format_end = insert_format_end .. "'%s',"
         end
-        update_format_head_list[i] = '`' .. filed_name .. "` = '%s'"
+        
         filed_index_map[filed_name] = i
     end
 
     len = #key_list
     for i = 1,len do
         local filed_name = key_list[i]
-        if i == len then
-            select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
-            update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
-            delete_format_end = delete_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
+        local filed_type = filed_map[filed_name]
+        if IS_NUMBER_TYPE[filed_type] then
+            if i == len then
+                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "%d"
+                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "%d"
+            else
+                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "%d"
+                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "%d and "
+            end
         else
-            select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
-            update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s' and "
-            delete_format_end = delete_format_end .. '`' .. filed_name .. '`=' .. "'%s' and "
+            if i == len then
+                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
+                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
+            else
+                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
+                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s' and "
+            end
         end
+       
         select_format_end_list[i] = select_format_end
         select_format_end = select_format_end .. ' and '
     end
@@ -264,7 +297,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list, index_map)
         for i = 1,#filed_list do
             local fn = filed_list[i]
             local ft = filed_map[fn]
-            local fv = entry_data[fn] or FILED_LUA_DEFAULT[ft]
+            local fv = entry_data[fn]
 
             if type(fv) == 'string' then
                 fv = string_util.quote_sql_str(fv)
@@ -405,53 +438,15 @@ function M:builder(tab_name, filed_list, filed_map, key_list, index_map)
         return ret_list
     end
 
-    self._delete = function(entry_data_list)
-        local sql_str = ""
-        local add_str = nil
-        local add_count = 0
-        local index = 1
-        local len = #entry_data_list
-        local sql_ret = nil
-        local ret_list = {}
-        local s_index = index
-
-        while index <= len do
-            local entry_data = entry_data_list[index]
-            if not entry_data then break end
-           
-            if not add_str then
-                local key_values = {}
-                for i = 1,#key_list do
-                    key_values[i] = entry_data[key_list[i]]
-                end
-                add_str = delete_format_head .. sformat(delete_format_end,tunpack(key_values))
-            end
-            if sql_str:len() + add_str:len() > max_packet_size then
-                --一条都超过
-                assert(add_count ~= 0, "can`t delete max_packet_size:" .. max_packet_size .. ' packlen:' ..  sql_str:len() + add_str:len())
-                --超过最大长度了 先插入一波
-                sql_str = sql_str:sub(1,sql_str:len() - 1)
-                sql_ret = self._db:query(sql_str)
-                handle_sql_ret(ret_list, s_index, index - 1, sql_ret, sql_str)
-                sql_str = ""
-                add_count = 0
-                s_index = index
-            elseif index == len then  --到结尾了
-                sql_str = sql_str .. add_str
-                sql_ret = self._db:query(sql_str)
-                handle_sql_ret(ret_list, s_index, index, sql_ret, sql_str)
-                add_count = 0
-                index = index + 1
-                s_index = index
-            else
-                sql_ret = nil
-                sql_str = sql_str .. add_str .. ';'
-                index = index + 1
-                add_str = nil
-                add_count = add_count + 1
-            end
+    self._delete = function(key_values)
+        assert(#key_values > 0 and #key_values <= #select_format_end_list, "err key_values len " .. #key_values)
+        local sql_str = delete_format_head .. sformat(select_format_end_list[#key_values], tunpack(key_values))
+        local sql_ret = self._db:query(sql_str)
+        if sql_ret.err then
+            log.error("delete err ",sql_str,sql_ret)
+            error(sql_ret.err)
         end
-        return ret_list
+        return sql_ret.affected_rows
     end
 
     return self
@@ -473,8 +468,8 @@ function M:save_entry(entry_data_list, change_map_list)
 end
 
 -- 删除表数据
-function M:delete_entry(entry_data_list)
-    return self._delete(entry_data_list)
+function M:delete_entry(key_values)
+    return self._delete(key_values)
 end
 
 return M

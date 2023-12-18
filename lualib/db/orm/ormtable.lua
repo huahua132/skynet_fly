@@ -74,7 +74,7 @@ local FILED_TYPE_CHECK_FUNC = {
     [FILED_TYPE.int64] = math_util.is_vaild_int64,
     [FILED_TYPE.uint8] = math_util.is_vaild_uint8,
     [FILED_TYPE.uint16] = math_util.is_vaild_uint16,
-    [FILED_TYPE.uint32] = math_util.is_vaild_int32,
+    [FILED_TYPE.uint32] = math_util.is_vaild_uint32,
 
     [FILED_TYPE.string32] = create_check_str(32),
     [FILED_TYPE.string64] = create_check_str(64),
@@ -84,7 +84,7 @@ local FILED_TYPE_CHECK_FUNC = {
     [FILED_TYPE.string1024] = create_check_str(1024),
     [FILED_TYPE.string2048] = create_check_str(2048),
     [FILED_TYPE.string4096] = create_check_str(4096),
-    [FILED_TYPE.string8192] = create_check_str(9192),
+    [FILED_TYPE.string8192] = create_check_str(8192),
 
     [FILED_TYPE.text] = function(str) return type(str) == 'string' end,
     [FILED_TYPE.blob] = function(str) return type(str) == 'string' end,
@@ -262,9 +262,24 @@ local function del_key_select(t, entry)
     end
 end
 
+local function init_entry_data(t,entry_data)
+    local new_entry_data = {}
+    local filed_list = t._filed_list
+    local filed_map = t._filed_map
+    for i = 1,#filed_list do
+        local fn = filed_list[i]
+        local ft = filed_map[fn]
+        if entry_data[fn] then
+            new_entry_data[fn] = entry_data[fn]
+        else
+            new_entry_data[fn] = FILED_LUA_DEFAULT[ft]
+        end
+    end
+    return new_entry_data
+end
+
 local M = {
     FILED_TYPE = FILED_TYPE,
-    FILED_LUA_DEFAULT = FILED_LUA_DEFAULT,
 }
 local mata = {__index = M}
 
@@ -362,9 +377,11 @@ end
 
 local function create_entry(t, ...)
     assert(t._is_builder, "not builder can`t create_entry")
-    local entry_data_list = {...}
-    for _,entry_data in ipairs(entry_data_list) do
+    local list = {...}
+    local entry_data_list = {}
+    for _,entry_data in ipairs(list) do
         check_fileds(t, entry_data)
+        tinsert(entry_data_list, init_entry_data(t, entry_data))
     end
     local ret_list = t._adapterinterface:create_entry(entry_data_list)
     assert(#ret_list == #entry_data_list, "result len not same " .. #ret_list .. ':' .. #entry_data_list)
@@ -402,15 +419,17 @@ local function get_entry(t,...)
     assert(t._is_builder, "not builder can`t get_entry")
     local key_list = t._keylist
     local key_values = {...}
+    assert(#key_values > 0, "not key_values")
     local entry_list = {}
     local depth = #key_list - #key_values
     local entry_list_map,is_cache_all = get_key_select(t, key_values)
     if not is_cache_all then
         local entry_data_list = t._adapterinterface:get_entry(key_values)
-        if not entry_data_list or not next(entry_data_list) then return end
+        if not entry_data_list or not next(entry_data_list) then return entry_list end
 
         for i = 1,#entry_data_list do
-            local entry = ormentry:new(t, entry_data_list[i])
+            local entry_data = init_entry_data(t, entry_data_list[i])
+            local entry = ormentry:new(t, entry_data)
             add_key_select(t, entry)
             tinsert(entry_list, entry)
         end
@@ -478,17 +497,14 @@ end
 
 local function delete_entry(t, ...)
     assert(t._is_builder, "not builder can`t delete_entry")
-    local entry_list = {...}
-    local entry_data_list = {}
-    for i = 1,#entry_list do
-        local entry = entry_list[i]
-        entry_data_list[i] = entry:get_entry_data()
-    end
-    local ret_list = t._adapterinterface:delete_entry(entry_data_list)
-    assert(#ret_list == #entry_data_list, "result len not same " .. #ret_list .. ':' .. #entry_data_list)
-    for i = 1,#ret_list do
-        local res = ret_list[i]
-        if res then  --删除成功
+    local key_values = {...}
+    assert(#key_values > 0, "not key_values")
+    local entry_list = get_entry(t,...)
+    if not next(entry_list) then return true end --没有数据可删
+
+    local res = t._adapterinterface:delete_entry(key_values)
+    if res then
+        for i = 1,#entry_list do
             local entry = entry_list[i]
             if t._cache_time > 0 then
                 t._cache_map:del_cache(entry)
@@ -497,7 +513,7 @@ local function delete_entry(t, ...)
         end
     end
 
-    return ret_list
+    return res
 end
 
 -- 删除数据
