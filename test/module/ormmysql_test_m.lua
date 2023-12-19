@@ -623,29 +623,85 @@ local function test_cache_entry()
     skynet.sleep(600)
 
     --缓存过期
-    local gg_entry_list = orm_obj:get_entry(10001)
+    local gg_entry_list,is_cache = orm_obj:get_entry(10001)
     local gg_entry = assert(gg_entry_list[1])
+    assert(not is_cache)
 
     assert(entry ~= gg_entry) --不是同一个表
 
     --查询建立了缓存，再次查询应命中缓存
-    local reget_entry_list = orm_obj:get_entry(10001)
+    local reget_entry_list,is_cache = orm_obj:get_entry(10001)
     local reget_entry = assert(reget_entry_list[1])
 
     assert(gg_entry == reget_entry)
+    assert(is_cache)
 
     skynet.sleep(300)
     --查询延迟缓存时间 重置为5秒
     local rr_list = orm_obj:get_entry(10001)
     skynet.sleep(300)
-    local rrr_list = orm_obj:get_entry(10001)
+    local rrr_list,is_cache = orm_obj:get_entry(10001)
     local rrr_entry = assert(rrr_list[1])
     assert(rrr_entry == reget_entry)
+    assert(is_cache)
 
     -- 多条数据命中缓存
+    local entry_list = orm_obj:create_entry(
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 2}
+    )
 
+    --两个关联key
+    local get_entry_list = orm_obj:get_entry(10002, 1)
+    assert(entry_list[1] == get_entry_list[1])
+    assert(entry_list[4] == get_entry_list[2])
 
-    -- 多条数据中 单条数据缓存过期查询应重拉数据
+    --1个关联key
+    local gg_entry_list = orm_obj:get_entry(10002)
+    assert(entry_list[1] == gg_entry_list[1])
+
+    -- 多条数据中 有数据缓存过期查询应重拉数据
+    skynet.sleep(600)
+    --两个关联key
+    local ggg_entry_list = orm_obj:get_entry(10002, 1)
+
+    skynet.sleep(300)
+    orm_obj:get_entry(10002, 1, 1) --保活一条数据
+    skynet.sleep(300) --3秒后过期1条数据
+
+    local gggg_entry_list,is_cache = orm_obj:get_entry(10002, 1) --拉取新的
+    --1因为缓存还在 2缓存不在
+    assert(ggg_entry_list[1] == gggg_entry_list[1])
+    assert(ggg_entry_list[2] ~= gggg_entry_list[2])
+    assert(not is_cache)
+
+    skynet.sleep(600)
+    --1个关联key
+    local ggg_entry_list = orm_obj:get_entry(10002)
+    skynet.sleep(300)
+    orm_obj:get_entry(10002, 1, 1) --保活一条数据
+
+    skynet.sleep(300) --3秒后过期5条数据
+    local gggg_entry_list,is_cache = orm_obj:get_entry(10002) --拉取新的
+    assert(ggg_entry_list[1] == gggg_entry_list[1])
+    assert(ggg_entry_list[2] ~= gggg_entry_list[2])
+    assert(not is_cache)
+
+    --删除数据后拿取关联多条，应命中缓存
+    local entry_list = orm_obj:get_entry(10003)
+    orm_obj:delete_entry(10003, 3, 2)
+    local gg_entry_list,is_cache = orm_obj:get_entry(10003)
+    assert(is_cache)
 
     delete_table()
 end
