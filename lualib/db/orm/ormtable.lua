@@ -127,10 +127,12 @@ end
 
 -- 添加进key索引表
 local function add_key_select(t, entry)
-    if t._cache_time <= 0 then return end
+    if t._cache_time <= 0 then return entry end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local key_list = t._keylist
+
+    local res_entry = entry
 
     local select_list = {}
     local len = #key_list
@@ -149,23 +151,23 @@ local function add_key_select(t, entry)
             key_cache_num_map = key_cache_num_map[filed_value].sub_map
             key_select_map = key_select_map[filed_value]
         else
-            local is_new = false
             if not key_select_map[filed_value] then
-                is_new = true
-            end
-            t._cache_map:set_cache(entry,true)
-            key_cache_num_map[filed_value] = {count = 1, total_count = 1} --主键唯一
-            key_select_map[filed_value] = entry
-            if is_new then
+                t._cache_map:set_cache(entry,true)
+                key_cache_num_map[filed_value] = {count = 1, total_count = 1} --主键唯一
+                key_select_map[filed_value] = entry
                 for i = #select_list, 1, -1 do
                     local one_select = select_list[i]
                     one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
                 end
+            else
+                t._cache_map:update_cache(entry,true)
+                res_entry = key_select_map[filed_value]
             end
         end
     end
 
     --log.info("add_key_select:",t._key_cache_num_map)
+    return res_entry
 end
 
 -- 设置total_count
@@ -203,6 +205,7 @@ local function get_key_select(t, key_values)
         else
             local cache = key_cache_num_map[filed_value]
             if not cache then return end
+            if not cache.total_count then return end
             return key_select_map[filed_value], cache.count == cache.total_count
         end
     end
@@ -211,7 +214,7 @@ local function get_key_select(t, key_values)
 end
 
 -- 删除掉key索引表
-local function del_key_select(t, entry)
+local function del_key_select(t, entry, is_del)
     if t._cache_time <= 0 then return end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
@@ -240,8 +243,16 @@ local function del_key_select(t, entry)
             for i = #select_list, 1, -1 do
                 local one_select = select_list[i]
 
-                one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
-
+                one_select.pc[one_select.k].count = one_select.pc[one_select.k].count - 1
+                if is_del then
+                    --是删除跟着count 一起减一就行
+                    if one_select.pc[one_select.k].total_count then
+                        one_select.pc[one_select.k].total_count = one_select.pc[one_select.k].total_count - 1
+                    end
+                else
+                    one_select.pc[one_select.k].total_count = nil
+                end
+                
                 if not next(one_select.sv) then  --表空了父级表应该删掉自己
                     rm_k = one_select.k
                 end
@@ -344,7 +355,9 @@ function M:set_cache_time(expire)
     assert(not self._is_builder, "builded can`t set_cache_time")
     assert(expire > 0, "err expire " .. expire)
     self._cache_time = expire
-    self._cache_map = cache_help:new(expire, function(k) del_key_select(self,k) end)
+    self._cache_map = cache_help:new(expire, function(k)
+        self._queue(del_key_select, self, k)
+    end)
     return self
 end
 
@@ -384,8 +397,7 @@ local function create_entry(t, ...)
         if ret_list[i] then
             local new_entry = ormentry:new(t, entry_data)
             -- 建立key关联
-            add_key_select(t, new_entry)
-            tinsert(new_entry_list, new_entry)
+            tinsert(new_entry_list, add_key_select(t, new_entry))
         else
             tinsert(new_entry_list, false)
         end
@@ -424,8 +436,7 @@ local function get_entry(t,...)
         for i = 1,#entry_data_list do
             local entry_data = init_entry_data(t, entry_data_list[i])
             local entry = ormentry:new(t, entry_data)
-            add_key_select(t, entry)
-            tinsert(entry_list, entry)
+            tinsert(entry_list, add_key_select(t, entry))
         end
         set_total_count(t, key_values, #entry_data_list)
     else
@@ -442,7 +453,7 @@ local function get_entry(t,...)
         end
     end
 
-    return entry_list
+    return entry_list,is_cache_all
 end
 -- 查询数据
 function M:get_entry(...)
@@ -500,7 +511,7 @@ local function delete_entry(t, ...)
             if t._cache_time > 0 then
                 t._cache_map:del_cache(entry)
             end
-            del_key_select(t, entry)
+            del_key_select(t, entry, true)
         end
     end
 
