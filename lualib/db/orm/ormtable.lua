@@ -159,15 +159,13 @@ local function add_key_select(t, entry)
             if is_new then
                 for i = #select_list, 1, -1 do
                     local one_select = select_list[i]
-                    if one_select.pc == t._key_cache_num_map then
-                        t._key_cache_num_map[one_select.k].count = t._key_cache_num_map[one_select.k].count + 1
-                    else
-                        one_select.pc.count = one_select.pc.count + 1
-                    end
+                    one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
                 end
             end
         end
     end
+
+    --log.info("add_key_select:",t._key_cache_num_map)
 end
 
 -- 设置total_count
@@ -188,6 +186,7 @@ end
 
 -- 查询key索引表
 local function get_key_select(t, key_values)
+    if t._cache_time <= 0 then return end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local key_list = t._keylist
@@ -213,6 +212,7 @@ end
 
 -- 删除掉key索引表
 local function del_key_select(t, entry)
+    if t._cache_time <= 0 then return end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local key_list = t._keylist
@@ -240,26 +240,20 @@ local function del_key_select(t, entry)
             for i = #select_list, 1, -1 do
                 local one_select = select_list[i]
 
-                if one_select.pc == t._key_cache_num_map then
-                    t._key_cache_num_map[one_select.k].count = t._key_cache_num_map[one_select.k].count - 1
-                else
-                    one_select.pc.count = one_select.pc.count - 1
-                end
+                one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
 
                 if not next(one_select.sv) then  --表空了父级表应该删掉自己
                     rm_k = one_select.k
                 end
                 if rm_k then
                     one_select.pv[rm_k] = nil
-                    if one_select.pc == t._key_cache_num_map then
-                        t._key_cache_num_map[rm_k] = nil
-                    else
-                        one_select.pc.sub_map[rm_k] = nil
-                    end
+                    one_select.pc[rm_k] = nil
                 end
             end
         end
     end
+
+    --log.info("del_key_select:", t._key_cache_num_map)
 end
 
 local function init_entry_data(t,entry_data)
@@ -481,9 +475,6 @@ local function save_entry(t, ...)
         if res then  --保存成功
             entry:clear_change()
         end
-        if t._cache_time > 0 then
-            t._cache_map:update_cache(entry, true)
-        end
         local index = not_ret_index_list[i]
         result_list[index] = res
     end
@@ -524,13 +515,17 @@ end
 local function clear_cache(t, ...)
     local entry_list = {...}
     for i = 1,#entry_list do
-        del_key_select(t, entry_list[i])
+        local entry = entry_list[i]
+        if t._cache_time > 0 then
+            t._cache_map:del_cache(entry)
+        end
+        del_key_select(t, entry)
     end
 end
 
 -- 清除缓存
 function M:clear_cache(...)
-    clear_cache(self, ...)
+    return self._queue(clear_cache,self,...)
 end
 
 return M

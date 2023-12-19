@@ -598,6 +598,58 @@ local function test_delete_entry()
     delete_table()
 end
 
+--测试本地缓存
+local function test_cache_entry()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache_time(500) --缓存5秒
+    :builder(adapter)
+
+    --创建entry 建立缓存 
+    local entry_list = orm_obj:create_entry({player_id = 10001, role_id = 1, sex = 1})
+    local entry = assert(entry_list[1])
+
+    local get_entry_list = orm_obj:get_entry(10001)
+    local get_entry = assert(entry_list[1])
+
+    assert(entry == get_entry) --是同一个表
+    skynet.sleep(600)
+
+    --缓存过期
+    local gg_entry_list = orm_obj:get_entry(10001)
+    local gg_entry = assert(gg_entry_list[1])
+
+    assert(entry ~= gg_entry) --不是同一个表
+
+    --查询建立了缓存，再次查询应命中缓存
+    local reget_entry_list = orm_obj:get_entry(10001)
+    local reget_entry = assert(reget_entry_list[1])
+
+    assert(gg_entry == reget_entry)
+
+    skynet.sleep(300)
+    --查询延迟缓存时间 重置为5秒
+    local rr_list = orm_obj:get_entry(10001)
+    skynet.sleep(300)
+    local rrr_list = orm_obj:get_entry(10001)
+    local rrr_entry = assert(rrr_list[1])
+    assert(rrr_entry == reget_entry)
+
+    -- 多条数据命中缓存
+
+
+    -- 多条数据中 单条数据缓存过期查询应重拉数据
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         test_create_table(true)
@@ -606,6 +658,7 @@ function CMD.start()
         test_select_entry()
         test_save_entry()
         test_delete_entry()
+        test_cache_entry()
     end)
     return true
 end
