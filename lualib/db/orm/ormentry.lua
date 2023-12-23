@@ -34,6 +34,7 @@ function M:set(filed_name, filed_value)
     ormtab:check_one_filed(filed_name, filed_value)
     self._entry_data[filed_name] = filed_value
     self._change_map[filed_name] = true      --标记变更
+    ormtab:set_change_entry(self)
 end
 
 -- 数据

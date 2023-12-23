@@ -71,7 +71,6 @@ function M:new(db_name)
         _filed_list = nil,
         _filed_map = nil,
         _key_list = nil,
-        _index_map = nil,
     }
 
     setmetatable(t, mata)
@@ -83,17 +82,12 @@ local function create_table(t)
     local filed_list = t._filed_list
     local filed_map = t._filed_map
     local key_list = t._key_list
-    local index_map = t._index_map
     local sql_str = sformat("create table %s (\n", t._tab_name)
     for i = 1,#filed_list do
         local filed_name = filed_list[i]
         local filed_type = filed_map[filed_name]
         local convert_type = assert(FILED_TYPE_SQL_TYPE[filed_type],"unknown type : " .. filed_type)
         sql_str = sql_str .. sformat("\t%s %s,\n",filed_name, convert_type)
-    end
-
-    for file_name,_ in pairs(index_map) do
-        sql_str = sql_str .. sformat("\tindex %s(%s),\n", file_name, file_name)
     end
 
     sql_str = sql_str .. sformat("\tprimary key(%s)\n", tconcat(key_list,','))
@@ -112,7 +106,6 @@ local function alter_table(t, describe, index_info)
     local filed_list = t._filed_list
     local filed_map = t._filed_map
     local key_list = t._key_list
-    local index_map = t._index_map
     local key_map = {}
     
     for i = 1,#key_list do
@@ -126,7 +119,6 @@ local function alter_table(t, describe, index_info)
     end
 
     local pre_key_map = {}
-    local pre_index_map = {}
 
     for i = 1,#index_info do
         local info = index_info[i]
@@ -134,16 +126,11 @@ local function alter_table(t, describe, index_info)
         local key_name = info.Key_name
         if key_name == 'PRIMARY' then   --主键
             pre_key_map[column_name] = true
-        else                            --普通索引
-            pre_index_map[column_name] = true
         end
     end
 
     local def = table_util.check_def_table(key_map, pre_key_map)
     assert(not next(def),"can`t change keys " .. table_util.def_tostring(def))     --不能修改主键
-
-    def = table_util.check_def_table(index_map, pre_index_map)
-    assert(not next(def),"can`t change indexs ".. table_util.def_tostring(def))    --不能修改索引
 
     -- 不能修改字段类型
     local pre_filed_map = {}
@@ -189,11 +176,10 @@ local function alter_table(t, describe, index_info)
     end
 end
 -- 构建表
-function M:builder(tab_name, filed_list, filed_map, key_list, index_map)
+function M:builder(tab_name, filed_list, filed_map, key_list)
     self._tab_name = tab_name
     self._filed_map = filed_map
     self._key_list = key_list
-    self._index_map = index_map
     self._filed_list = filed_list
 
     -- 查询表的字段信息
@@ -308,8 +294,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list, index_map)
     end
 
     local function handle_sql_ret(ret_list,s_start,s_end,sql_ret,sql_str)
-        if not sql_ret then return end
-        if sql_ret.err then
+        if not sql_ret or sql_ret.err then
             log.error("sql ret err ",sql_ret,sql_str)
             for i = s_start, s_end do
                 ret_list[i] = false

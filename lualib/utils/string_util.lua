@@ -50,12 +50,7 @@ local escape_map = {
 
 --防sql注入
 function M.quote_sql_str(str)
-    local newstr = strgsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
-    if not newstr then
-        return str
-    end
-
-    return newstr
+    return strgsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
 end
 
 return M
