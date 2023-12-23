@@ -46,7 +46,7 @@ function M:new(cache_time,call_back,cache_limit)
 		cache_time = cache_time,
 		cache_map = {},
 		call_back = call_back,
-		cache_limit = cache_limit or 10000,
+		cache_limit = cache_limit,
 		cache_cnt = 0,
 		expire_time_map = {},
 		pre_expire_map = {},
@@ -94,7 +94,7 @@ function M:set_cache(key,value)
 	if self.cache_map[key] then
 		return false
 	end
-	if self.cache_cnt >= self.cache_limit then
+	if self.cache_limit and self.cache_cnt >= self.cache_limit then
 		log.error("set_cache cache limit ",key,self.cache_limit)
 		return false
 	end

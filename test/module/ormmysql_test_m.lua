@@ -609,7 +609,7 @@ local function test_cache_entry()
     :string64("email")
     :uint8("sex1")
     :set_keys("player_id","role_id","sex")
-    :set_cache_time(500) --缓存5秒
+    :set_cache(500, 100) --缓存5秒
     :builder(adapter)
 
     --创建entry 建立缓存 
@@ -702,12 +702,142 @@ local function test_cache_entry()
     orm_obj:delete_entry(10003, 3, 2)
     local gg_entry_list,is_cache = orm_obj:get_entry(10003)
     assert(is_cache)
+    
+    delete_table()
+end
+
+--测试定期自动保存数据
+local function test_inval_save()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,100)   --1保存一次
+    :builder(adapter)
+
+    -- 自动保存数据
+    local entry_list = orm_obj:create_entry(
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 2}
+    )
+
+    for i,entry in ipairs(entry_list) do
+        entry:set("email", "emailssss")
+    end
+
+    skynet.sleep(1000)
+
+    local entry_list = orm_obj:get_entry(10002)
+    for i,entry in ipairs(entry_list) do
+        local email = entry:get("email")
+        assert(email == "emailssss")
+    end
+
+    delete_table()
+end
+
+--测试定期保存数据，数据库挂了之后再启动，数据应该还能落地
+local function test_sql_over()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    -- 自动保存数据
+    local entry_list = orm_obj:create_entry(
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 2}
+    )
+
+    for i,entry in ipairs(entry_list) do
+        entry:set("email", "emailssss")
+    end
+
+    --杀掉数据库
+    os.execute("pkill mysql")
+    log.info("杀掉数据库》》》》》》》》》》》》》")
+
+    skynet.sleep(6000)
+
+    os.execute("systemctl start mysql")
+    log.info("启动数据库》》》》》》》》》》》》》")
+
+    --等待缓存过期
+    log.info("等待缓存过期》》》》》》》》》》》》》")
+    skynet.sleep(1000)
+    log.info("缓存过期》》》》》》》》》》》》》")
+
+    local entry_list = orm_obj:get_entry(10002)
+    for i,entry in ipairs(entry_list) do
+        local email = entry:get("email")
+        assert(email == "emailssss")
+    end
+
+    delete_table()
+end
+
+--测试对象没用后的定时器清除
+local function test_over_clear_time()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local time_obj = orm_obj._time_obj
+    orm_obj = nil
+ 
+    collectgarbage("collect")
+    collectgarbage("collect")
+    assert(time_obj.is_cancel == true)
 
     delete_table()
 end
 
 function CMD.start()
     skynet.fork(function()
+        log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         test_create_table(true)
         test_alter_table()
         test_create_entry()
@@ -715,6 +845,10 @@ function CMD.start()
         test_save_entry()
         test_delete_entry()
         test_cache_entry()
+        test_inval_save()
+        test_sql_over()
+        test_over_clear_time()
+        log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
     return true
 end

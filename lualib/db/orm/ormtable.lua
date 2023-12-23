@@ -3,11 +3,14 @@ local table_util = require "table_util"
 local math_util = require "math_util"
 local queue = require "skynet.queue"
 local cache_help = require "cache_help"
+local timer = require "timer"
+local skynet = require "skynet"
 local log = require "log"
 
 local setmetatable = setmetatable
 local assert = assert
 local tinsert = table.insert
+local tunpack = table.unpack
 local pairs = pairs
 local type = type
 local ipairs = ipairs
@@ -116,10 +119,6 @@ local function check_fileds(t,entry_data)
         assert(entry_data[filed_name], "not set key value:" .. filed_name)                  --key字段值必须有值
     end
 
-    for filed_name,_ in pairs(t._index_map) do
-        assert(entry_data[filed_name], "not set index value:" .. filed_name)                --index字段值必须有值
-    end
-
     for filed_name,filed_value in pairs(entry_data) do
         check_one_filed(t, filed_name, filed_value)
     end
@@ -152,7 +151,7 @@ local function add_key_select(t, entry)
             key_select_map = key_select_map[filed_value]
         else
             if not key_select_map[filed_value] then
-                t._cache_map:set_cache(entry,true)
+                t._cache_map:set_cache(entry,t)
                 key_cache_num_map[filed_value] = {count = 1, total_count = 1} --主键唯一
                 key_select_map[filed_value] = entry
                 for i = #select_list, 1, -1 do
@@ -160,7 +159,7 @@ local function add_key_select(t, entry)
                     one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
                 end
             else
-                t._cache_map:update_cache(entry,true)
+                t._cache_map:update_cache(entry,t)
                 res_entry = key_select_map[filed_value]
             end
         end
@@ -286,7 +285,11 @@ end
 local M = {
     FILED_TYPE = FILED_TYPE,
 }
-local mata = {__index = M}
+local mata = {__index = M, __gc = function(t)
+    if t._time_obj then
+        t._time_obj:cancel()
+    end
+end}
 
 -- 新建表
 function M:new(tab_name)
@@ -297,7 +300,6 @@ function M:new(tab_name)
         _filed_map = {},                            --所有字段
         _key_map = {},
         _keylist = {},                              --key列表
-        _index_map = {},                            --索引
         _is_builder = false,
 
         -- key索引表
@@ -309,6 +311,9 @@ function M:new(tab_name)
 
         -- 缓存时间
         _cache_time = 0,
+
+        -- 变更的标记
+        _change_flag_map = {},
     }
     setmetatable(t, mata)
     return t
@@ -337,27 +342,79 @@ function M:set_keys(...)
     return self
 end
 
--- 设置索引
-function M:set_indexs(...)
-    assert(not self._is_builder, "builded can`t set_indexs")
-    local list = {...}
-    for i = 1,#list do
-        local filed_name = list[i]
-        assert(self._filed_map[filed_name], "not exists: ".. filed_name)
-        assert(not self._index_map[filed_name], "is exists: ".. filed_name)
-        self._index_map[filed_name] = true
+local function excute_time_out(t, entry)
+    local change_flag_map = t._change_flag_map
+    if change_flag_map[entry] then
+        --还没保存数据 还不能清除
+        t._cache_map:set_cache(entry, t)   --重新设置缓存
+    else
+        del_key_select(t, entry)
     end
-    return self
 end
 
+--缓存到期
+local function cache_time_out(entry, t)
+    t._queue(excute_time_out, t, entry)
+end
+
+--定期保存修改
+local function inval_time_out(week_t)
+    local t = next(week_t)
+    if not t then return end
+
+    local change_flag_map = t._change_flag_map
+    local cur_count = 0
+    local once_save = 100
+    local resave_cnt_map = {}
+    local last_warn_cnt_map = {}
+    local init_warn_cnt = 5
+    while next(change_flag_map) do
+        cur_count = 0
+        local entry_list = {}
+        for entry in pairs(change_flag_map) do
+            tinsert(entry_list, entry)
+            change_flag_map[entry] = nil
+            cur_count = cur_count + 1
+            if cur_count >= once_save then
+                break
+            end
+        end
+
+        local res_list = t:save_entry(tunpack(entry_list))
+        for i = 1, #entry_list do
+            local res = res_list[i]
+            local entry = entry_list[i]
+            if not res then
+                change_flag_map[entry] = true      --没有保存成功，下次继续尝试
+                if not resave_cnt_map[entry] then
+                    resave_cnt_map[entry] = 0
+                    last_warn_cnt_map[entry] = init_warn_cnt
+                end
+                resave_cnt_map[entry] = resave_cnt_map[entry] + 1
+                if resave_cnt_map[entry] > last_warn_cnt_map[entry] then
+                    last_warn_cnt_map[entry] = last_warn_cnt_map[entry] * init_warn_cnt
+                    log.warn("inval_time_out save entry err ", resave_cnt_map[entry], entry:get_entry_data())
+                end
+            end
+        end
+        skynet.sleep(100)  --避免请求过于频繁
+    end
+end
+
+local week_mata = {__mode = "kv"}
 -- 设置缓存时间
-function M:set_cache_time(expire)
-    assert(not self._is_builder, "builded can`t set_cache_time")
+function M:set_cache(expire, inval)
+    assert(not self._is_builder, "builded can`t set_cache")
+    assert(not self._time_obj, "repeat time_obj")
     assert(expire > 0, "err expire " .. expire)
+    assert(inval > 0, "err inval")
     self._cache_time = expire
-    self._cache_map = cache_help:new(expire, function(k)
-        self._queue(del_key_select, self, k)
-    end)
+    self._cache_map = cache_help:new(expire, cache_time_out)
+    
+    local week_t = setmetatable({},week_mata)                   --挂载一个弱引用表
+    week_t[self] = true
+    self._time_obj = timer:new(inval, 0, inval_time_out, week_t)
+    self._time_obj:after_next()
     return self
 end
 
@@ -369,10 +426,9 @@ local function builder(t, adapterinterface)
     local filed_map = t._filed_map
     local filed_list = t._filed_list
     local key_list = t._keylist
-    local index_map = t._index_map
     
     t._is_builder = true
-    adapterinterface:builder(tab_name, filed_list, filed_map, key_list, index_map)
+    adapterinterface:builder(tab_name, filed_list, filed_map, key_list)
     return t
 end
 
@@ -414,11 +470,15 @@ end
 function M:check_one_filed(filed_name, filed_value)
     --主键 索引值不能改变
     local key_map = self._key_map
-    local index_map = self._index_map
     assert(not key_map[filed_name], "can`t change key value")
-    assert(not index_map[filed_name], "can`t change index value")
 
     check_one_filed(self, filed_name, filed_value)
+end
+
+-- 设置变更标记
+function M:set_change_entry(entry)
+    if not self._time_obj then return end
+    self._change_flag_map[entry] = true
 end
 
 local function get_entry(t,...)
@@ -449,7 +509,7 @@ local function get_entry(t,...)
 
     if t._cache_time > 0 then
         for _,entry in ipairs(entry_list) do
-            t._cache_map:update_cache(entry, true)
+            t._cache_map:update_cache(entry, t)
         end
     end
 
@@ -521,22 +581,6 @@ end
 -- 删除数据
 function M:delete_entry(...)
     return self._queue(delete_entry, self, ...)
-end
-
-local function clear_cache(t, ...)
-    local entry_list = {...}
-    for i = 1,#entry_list do
-        local entry = entry_list[i]
-        if t._cache_time > 0 then
-            t._cache_map:del_cache(entry)
-        end
-        del_key_select(t, entry)
-    end
-end
-
--- 清除缓存
-function M:clear_cache(...)
-    return self._queue(clear_cache,self,...)
 end
 
 return M
