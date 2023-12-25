@@ -210,12 +210,14 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     local insert_format_head = sformat("insert into %s (",tab_name)
     local insert_format_end = "("
     local select_format_head = sformat("select ")
+    local select_format_center = " where "
     local select_format_end = ""
     local select_format_end_list = {}
     local update_format_head = sformat("update %s set ",tab_name)
     local update_format_head_list = {}
     local update_format_end = " where "
-    local delete_format_head = sformat("delete from %s where ",tab_name)
+    local delete_format_head = sformat("delete from %s",tab_name)
+    local delete_format_center = " where "
 
     local len = #filed_list
     for i = 1,len do
@@ -276,7 +278,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
 
     insert_format_head = insert_format_head .. ') value'
     insert_format_end = insert_format_end .. ')'
-    select_format_head = select_format_head .. ' from ' .. tab_name .. ' where '
+    select_format_head = select_format_head .. ' from ' .. tab_name
 
     local insert_list = {}                               
     local function entry_data_to_list(entry_data)
@@ -352,8 +354,14 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
 
     --select 查询
     self._select = function(key_values)
-        assert(#key_values > 0 and #key_values <= #select_format_end_list, "err key_values len " .. #key_values)
-        local sql_str = select_format_head .. sformat(select_format_end_list[#key_values], tunpack(key_values))
+        local len = #key_values
+        assert(len >= 0 and len <= #select_format_end_list, "err key_values len " .. len)
+        local sql_str = nil
+        if len == 0 then
+            sql_str = select_format_head
+        else
+            sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
+        end
         local sql_ret = self._db:query(sql_str)
         if sql_ret.err then
             log.error("select err ",sql_str,sql_ret)
@@ -424,8 +432,15 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     end
 
     self._delete = function(key_values)
-        assert(#key_values > 0 and #key_values <= #select_format_end_list, "err key_values len " .. #key_values)
-        local sql_str = delete_format_head .. sformat(select_format_end_list[#key_values], tunpack(key_values))
+        local len = #key_values
+        assert(len >= 0 and len <= #select_format_end_list, "err key_values len " .. len)
+        local sql_str = nil
+        if len == 0 then
+            sql_str = delete_format_head
+        else
+            sql_str = delete_format_head .. delete_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
+        end
+        
         local sql_ret = self._db:query(sql_str)
         if sql_ret.err then
             log.error("delete err ",sql_str,sql_ret)
