@@ -806,7 +806,7 @@ local function test_sql_over()
         local email = entry:get("email")
         assert(email == "emailssss")
     end
-
+    log.info("保存成功》》》》》》》》》》》》》")
     delete_table()
 end
 
@@ -835,6 +835,138 @@ local function test_over_clear_time()
     delete_table()
 end
 
+--测试缓存不过期
+local function test_permanent()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(0,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_list = orm_obj:create_entry({
+        player_id = 10001,
+        role_id = 1,
+        sex = 1
+    })
+    local entry = entry_list[1]
+
+    skynet.sleep(1)
+
+    local get_entry_List = orm_obj:get_entry(10001)
+    local g_entry = get_entry_List[1]
+
+    assert(entry == g_entry)
+
+    delete_table()
+end
+
+--测试查询所有数据
+local function test_get_all()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_list = orm_obj:create_entry(
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 2}
+    )
+
+    local get_entry_list,is_cache = orm_obj:get_all_entry()
+    assert(not is_cache and #get_entry_list == #entry_list)--首次查询，不确定缓存数量与实际数量是否一致
+
+    local get_entry_list,is_cache = orm_obj:get_all_entry()
+    assert(is_cache and #get_entry_list == #entry_list)--首次查询，第二次查询应命中缓存
+
+    skynet.sleep(300)
+
+    local get_entry_list,is_cache = orm_obj:get_entry(10002) --保活
+    assert(not is_cache)
+    skynet.sleep(300)
+    
+    assert(orm_obj._key_cache_count == 6 and orm_obj._key_cache_total_count == nil)
+    local get_entry_list,is_cache = orm_obj:get_all_entry()
+    assert(not is_cache)
+    assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
+
+    orm_obj:delete_entry(10002, 1, 1)
+    assert(orm_obj._key_cache_count == 11 and orm_obj._key_cache_total_count == 11)
+
+    orm_obj:create_entry({player_id = 10004, role_id = 3, sex = 2})
+    assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
+    delete_table()
+end
+
+--测试删除所有数据
+local function test_delete_all()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_list = orm_obj:create_entry(
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 2}
+    )
+
+    orm_obj:delete_all_entry()
+    assert(orm_obj._key_cache_count == 0 and orm_obj._key_cache_total_count == 0)
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == 0)
+
+    local entry_list = orm_obj:create_entry({player_id = 10002, role_id = 1, sex = 1})
+    assert(orm_obj._key_cache_count == 1 and orm_obj._key_cache_total_count == 1)
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == 1)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -848,6 +980,9 @@ function CMD.start()
         test_inval_save()
         test_sql_over()
         test_over_clear_time()
+        test_permanent()
+        test_get_all()
+        test_delete_all()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
     return true
