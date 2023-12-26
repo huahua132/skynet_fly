@@ -104,7 +104,7 @@ end
 
 -- 检查一条数据的合法性
 local function check_one_filed(t, filed_name, filed_value)
-    local filed_type = t._filed_map[filed_name]
+    local filed_type = assert(t._filed_map[filed_name], "not exists filed_name = " .. filed_name)
     local check_func = assert(FILED_TYPE_CHECK_FUNC[filed_type], "not check func : ".. filed_type)
     assert(check_func(filed_value),sformat("set invaild value filed_name[%s] value[%s] filed_type[%s]", filed_name, filed_value, filed_type))
     local ktype = type(filed_name)
