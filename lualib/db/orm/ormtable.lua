@@ -449,6 +449,7 @@ function M:set_cache(expire, inval)
     week_t[self] = true
     self._time_obj = timer:new(inval, 0, inval_time_out, week_t)
     self._time_obj:after_next()
+    self._week_t = week_t
     return self
 end
 
@@ -625,6 +626,15 @@ end
 -- 删除所有数据
 function M:delete_all_entry()
     return self._queue(delete_entry, self, {})
+end
+
+-- 立即保存所有修改
+function M:save_change_now()
+    if not self._week_t then
+        return
+    end
+
+    return inval_time_out(self._week_t)
 end
 
 return M
