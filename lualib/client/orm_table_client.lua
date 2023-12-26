@@ -15,7 +15,8 @@ local mt = {__index = function(t,k)
     t[k] = function(self,...)
         t._client = t._client or contriner_client:new("orm_table_m",t._orm_name)
         local ret = nil
-        while true do
+        --尝试 5 次，还不成功，那肯定是数据库挂逼了或者热更后执行保存比较耗时
+        for i = 1,5 do
             ret = {t._client:mod_call("call", k, ...)}
             local is_move = ret[1]
             if not is_move then
