@@ -430,4 +430,16 @@ function M.depth_to_list(tab, depth)
 	return list1
 end
 
+--在列表中
+function M.inlist(list, v)
+	for i = 1,#list do
+		local vv = list[v]
+		if vv == v then
+			return true
+		end
+	end
+
+	return false
+end
+
 return M
