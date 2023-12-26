@@ -36,6 +36,8 @@ function CMD.herald_exit()
 end
 
 function CMD.exit()
+
+    queue(g_orm_obj.save_change_now,g_orm_obj)
     return true
 end
 

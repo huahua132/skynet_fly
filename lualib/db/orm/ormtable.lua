@@ -428,7 +428,6 @@ local function inval_time_out(week_t)
                 end
             end
         end
-        skynet.sleep(100)  --避免请求过于频繁
     end
 end
 
