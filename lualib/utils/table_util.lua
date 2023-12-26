@@ -433,7 +433,7 @@ end
 --在列表中
 function M.inlist(list, v)
 	for i = 1,#list do
-		local vv = list[v]
+		local vv = list[i]
 		if vv == v then
 			return true
 		end
