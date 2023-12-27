@@ -488,3 +488,7 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 具体使用例子可以参照`examples/cluster_client` `examples/cluster_server_1` `examples/cluster_server_2`
 
 [文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
+
+# 技术交流群
+加群，能够更快速的响应解决使用中遇到的问题。
+QQ：102993581
