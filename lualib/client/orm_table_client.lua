@@ -17,7 +17,7 @@ local mt = {__index = function(t,k)
         local ret = nil
         --尝试 5 次，还不成功，那肯定是数据库挂逼了或者热更后执行保存比较耗时
         for i = 1,5 do
-            ret = {t._client:mod_call("call", k, ...)}
+            ret = {t._client:mod_call_by_name("call", k, ...)}
             local is_move = ret[1]
             if not is_move then
                 return select(2,tunpack(ret))
