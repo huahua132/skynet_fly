@@ -144,8 +144,13 @@ return {
 	-- 	launch_num = 1,
 	-- }
 
-	mongo_test_m = {
-	 	launch_seq = 13,
-	 	launch_num = 1,
-	}
+	-- mongo_test_m = {
+	--  	launch_seq = 13,
+	--  	launch_num = 1,
+	-- },
+
+	ormmongo_test_m = {
+		launch_seq = 14,
+		launch_num = 1,
+   	}
 }

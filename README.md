@@ -16,7 +16,7 @@
 	* 支持jwt鉴权。
 	* 内置日志分割。
 	* 支持快进时间。
-	* 支持orm（数据关系映射）目前有mysql的。
+	* 支持orm（数据关系映射）目前适配了(mysql,mongo),数据库可无缝切换。
 
 * [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
@@ -64,7 +64,7 @@
    - 浏览器打开 `x.x.x.x:80`
    - 如果一切顺利的话，网页将会显示内容。
 5. 热更
-    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码，加个空格什么的，最好是改一下html代码加个文本什么的，能看出来更新了。
+    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
     - 之后执行 `sh script/check_reload.sh`
     - 再次访问网站就更新了。
     - 也可以观察webapp/logs/server.log
