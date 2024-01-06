@@ -495,4 +495,4 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
 # 技术交流群
 加群，能够更快速的响应解决使用中遇到的问题。
-QQ：102993581
+QQ群号：102993581
