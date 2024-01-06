@@ -41,6 +41,10 @@
 [热更新方案三的实现](https://huahua132.github.io/2023/05/22/think/reload/)
 运行 **examples/hot_module4** 示例
 
+### [官方示例domo](https://github.com/huahua132/skynet_fly_demo)
+
+### [API 文档](https://huahua132.github.io/2023/12/17/skynet_fly_api/module/)
+
 ## 快速开始 http服务 (运行examples/webapp)
 
 1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo) 
