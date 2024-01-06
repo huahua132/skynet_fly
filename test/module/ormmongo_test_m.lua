@@ -1,10 +1,10 @@
 local skynet = require "skynet"
 local ormtable = require "ormtable"
-local ormadapter_mysql = require "ormadapter_mysql"
+local ormadapter_mongo = require "ormadapter_mongo"
 local math_util = require "math_util"
 local string_util = require "string_util"
 local table_util = require "table_util"
-local mysqlf = require "mysqlf"
+local mongof = require "mongof"
 local log = require "log"
 
 local assert = assert
@@ -12,12 +12,12 @@ local assert = assert
 local CMD = {}
 
 local function delete_table()
-    mysqlf:instance("admin"):query("drop table if exists t_player")
+    mongof.instance("admin").t_player:drop()
 end
 
 --测试创建表
 local function test_create_table(is_del)
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -42,41 +42,13 @@ local function test_create_table(is_del)
     :set_keys("player_id","role_id","sex")
     :builder(adapter)
 
-    local sqlret = mysqlf:instance("admin"):query("DESCRIBE t_player")
-
-    assert(not sqlret.err,sqlret.err)
-    assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
-    assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
-    assert(sqlret[3].Field == 'sex' and sqlret[3].Type == 'tinyint' and sqlret[3].Key == 'PRI')
-    assert(sqlret[4].Field == 'nickname' and sqlret[4].Type == 'varchar(32)')
-    assert(sqlret[5].Field == 'email' and sqlret[5].Type == 'varchar(64)')
-    assert(sqlret[6].Field == 'sex1' and sqlret[6].Type == 'tinyint unsigned')
-    assert(sqlret[7].Field == 'sex2' and sqlret[7].Type == 'smallint')
-    assert(sqlret[8].Field == 'sex3' and sqlret[8].Type == 'smallint unsigned')
-    assert(sqlret[9].Field == 'sex4' and sqlret[9].Type == 'int')
-    assert(sqlret[10].Field == 'sex5' and sqlret[10].Type == 'int unsigned')
-    assert(sqlret[11].Field == 'sex6' and sqlret[11].Type == 'bigint')
-    assert(sqlret[12].Field == 'sex7' and sqlret[12].Type == 'varchar(128)')
-    assert(sqlret[13].Field == 'sex8' and sqlret[13].Type == 'varchar(256)')
-    assert(sqlret[14].Field == 'sex9' and sqlret[14].Type == 'varchar(512)')
-    assert(sqlret[15].Field == 'sex10' and sqlret[15].Type == 'varchar(1024)')
-    assert(sqlret[16].Field == 'sex11' and sqlret[16].Type == 'varchar(2048)')
-    assert(sqlret[17].Field == 'sex12' and sqlret[17].Type == 'varchar(4096)')
-    assert(sqlret[18].Field == 'sex13' and sqlret[18].Type == 'varchar(8192)')
-    assert(sqlret[19].Field == 'sex14' and sqlret[19].Type == 'text')
-    assert(sqlret[20].Field == 'sex15' and sqlret[20].Type == 'blob')
-
-    if is_del then
-        delete_table()
-    end
-
     return orm_obj
 end
 
 --测试修改表
 local function test_alter_table()
     test_create_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -84,31 +56,6 @@ local function test_alter_table()
     :int8("nickname1")
     :set_keys("player_id","role_id","sex")
     :builder(adapter)
-
-    local sqlret = mysqlf:instance("admin"):query("DESCRIBE t_player")
-
-    assert(not sqlret.err,sqlret.err)
-    assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
-    assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
-    assert(sqlret[3].Field == 'sex' and sqlret[3].Type == 'tinyint' and sqlret[3].Key == 'PRI')
-    assert(sqlret[4].Field == 'nickname' and sqlret[4].Type == 'varchar(32)')
-    assert(sqlret[5].Field == 'email' and sqlret[5].Type == 'varchar(64)')
-    assert(sqlret[6].Field == 'sex1' and sqlret[6].Type == 'tinyint unsigned')
-    assert(sqlret[7].Field == 'sex2' and sqlret[7].Type == 'smallint')
-    assert(sqlret[8].Field == 'sex3' and sqlret[8].Type == 'smallint unsigned')
-    assert(sqlret[9].Field == 'sex4' and sqlret[9].Type == 'int')
-    assert(sqlret[10].Field == 'sex5' and sqlret[10].Type == 'int unsigned')
-    assert(sqlret[11].Field == 'sex6' and sqlret[11].Type == 'bigint')
-    assert(sqlret[12].Field == 'sex7' and sqlret[12].Type == 'varchar(128)')
-    assert(sqlret[13].Field == 'sex8' and sqlret[13].Type == 'varchar(256)')
-    assert(sqlret[14].Field == 'sex9' and sqlret[14].Type == 'varchar(512)')
-    assert(sqlret[15].Field == 'sex10' and sqlret[15].Type == 'varchar(1024)')
-    assert(sqlret[16].Field == 'sex11' and sqlret[16].Type == 'varchar(2048)')
-    assert(sqlret[17].Field == 'sex12' and sqlret[17].Type == 'varchar(4096)')
-    assert(sqlret[18].Field == 'sex13' and sqlret[18].Type == 'varchar(8192)')
-    assert(sqlret[19].Field == 'sex14' and sqlret[19].Type == 'text')
-    assert(sqlret[20].Field == 'sex15' and sqlret[20].Type == 'blob')
-    assert(sqlret[21].Field == 'nickname1' and sqlret[21].Type == 'tinyint')
 
     delete_table()
 end
@@ -461,7 +408,7 @@ local function test_select_entry()
     --查询版本一用，版本二不用，版本三再用，字段取出不能为nil
     
     --版本二只有3个主键
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -476,7 +423,7 @@ local function test_select_entry()
     orm_obj = test_create_table()
     local entry_list = orm_obj:get_entry(10004)
     local entry = assert(entry_list[1])
-
+    
     assert(entry:get('nickname') == "")
     assert(entry:get('sex4') == 0)
 
@@ -601,7 +548,7 @@ end
 
 --测试本地缓存
 local function test_cache_entry()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -710,7 +657,7 @@ end
 --测试定期自动保存数据
 local function test_inval_save()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -756,7 +703,7 @@ end
 --测试定期保存数据，数据库挂了之后再启动，数据应该还能落地
 local function test_sql_over()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -789,12 +736,12 @@ local function test_sql_over()
     end
 
     --杀掉数据库
-    os.execute("pkill mysql")
+    os.execute("pkill mongod")
     log.info("杀掉数据库》》》》》》》》》》》》》")
 
     skynet.sleep(6000)
 
-    os.execute("systemctl start mysql")
+    os.execute("systemctl start mongod")
     log.info("启动数据库》》》》》》》》》》》》》")
 
     --等待缓存过期
@@ -814,7 +761,7 @@ end
 --测试对象没用后的定时器清除
 local function test_over_clear_time()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -839,7 +786,7 @@ end
 --测试缓存不过期
 local function test_permanent()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -871,7 +818,7 @@ end
 --测试查询所有数据
 local function test_get_all()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -926,7 +873,7 @@ end
 --测试删除所有数据
 local function test_delete_all()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -971,18 +918,31 @@ end
 function CMD.start()
     skynet.fork(function()
         log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        log.info("test_create_table>>>>>")
         test_create_table(true)
+        log.info("test_alter_table>>>>>")
         test_alter_table()
+        log.info("test_create_entry>>>>>")
         test_create_entry()
+        log.info("test_select_entry>>>>>")
         test_select_entry()
+        log.info("test_save_entry>>>>>")
         test_save_entry()
+        log.info("test_delete_entry>>>>>")
         test_delete_entry()
+        log.info("test_cache_entry>>>>>")
         test_cache_entry()
+        log.info("test_inval_save>>>>>")
         test_inval_save()
+        log.info("test_sql_over>>>>>")
         test_sql_over()
+        log.info("test_over_clear_time>>>>>")
         test_over_clear_time()
+        log.info("test_permanent>>>>>")
         test_permanent()
+        log.info("test_get_all>>>>>")
         test_get_all()
+        log.info("test_delete_all>>>>>")
         test_delete_all()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
