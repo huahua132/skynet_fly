@@ -37,7 +37,7 @@ local enter_map = {}
 local req_cnt_map = {}
 
 
-local req_cnt_cache = cache_help:new(1,function(fd)
+local req_cnt_cache = cache_help:new(100,function(fd)
 	req_cnt_map[fd] = nil
 end) --用于一秒内请求数量限制
 
@@ -53,7 +53,7 @@ local function close_fd(fd)
 	end
 end
 
-local enter_cache = cache_help:new(10,function(fd,addr) 
+local enter_cache = cache_help:new(1000,function(fd,addr) 
 	if enter_map[fd] then
 		log.error("enter_timer_out:",fd,addr)
 		skynet.fork(close_fd,fd)
