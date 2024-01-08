@@ -3,9 +3,14 @@
 
 skynet_fly_path=$1
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ]; then
     echo "缺少参数 请输入1个参数 skynet_fly_path"
     exit 1
+fi
+
+load_mods_name="load_mods"
+if [ -n "$2" ]; then
+    load_mods_name="$2"
 fi
 
 if [ -z "${skynet_fly_path}" ]; then
@@ -15,4 +20,4 @@ fi
 
 shell_path="${skynet_fly_path}/script/shell"
 
-bash ${shell_path}/make_server.sh ${skynet_fly_path}
+bash ${shell_path}/make_server.sh ${skynet_fly_path} ${load_mods_name}
