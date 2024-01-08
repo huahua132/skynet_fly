@@ -38,7 +38,7 @@ local keep_live_list_map = {}                --相同ip的连接fd
 local lock_kick_num_map = {}
 local lock_kick_map = {}
 
-local ip_connnect_cnt_cache = cache_help:new(1,function(ip)
+local ip_connnect_cnt_cache = cache_help:new(100,function(ip)
 	limit_conn_sum_map[ip] = nil
 end)
 
