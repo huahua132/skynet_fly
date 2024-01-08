@@ -2,10 +2,7 @@
 #构建服务设施 skynet.config 还有load_mods run.sh
 
 skynet_fly_path=$1
-load_mods_name="load_mods"
-if [ -n "$2" ]; then
-	load_mods_name="$2"
-fi
+load_mods_name="$2"
 
 if [[ -z ${skynet_fly_path} ]]; then
 	echo "缺少 skynet_fly_path"
