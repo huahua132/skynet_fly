@@ -1,6 +1,17 @@
 return {
-	web_agent_m = {
+	share_config_m = {
 		launch_seq = 1,
+		launch_num = 1,
+		default_arg = {
+			server_cfg = {
+				thread = 2,
+				debug_port = 9001,
+			}
+		}
+	},
+
+	web_agent_m = {
+		launch_seq = 2,
 		launch_num = 6,
 		default_arg = {
 			protocol = 'http',
@@ -11,7 +22,7 @@ return {
 	},
 
 	web_master_m = {
-		launch_seq = 2,
+		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
 			protocol = 'http',

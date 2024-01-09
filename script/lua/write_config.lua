@@ -48,7 +48,7 @@ local config = {
 
 	lua_path        = "",
 	enablessl       = true,
-	loadmodsfile    = load_mods_name, --可热更服务启动配置
+	loadmodsfile    = load_mods_name or "load_mods", --可热更服务启动配置
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
@@ -78,18 +78,6 @@ end
 
 
 local config_path = server_path .. svr_name .. '_config.lua'
-
-
-local old_config = loadfile(config_path)
-
-if old_config then
-	old_config = old_config()
-	for k, _ in pairs(config) do
-		if _G[k] then
-			config[k] = _G[k]
-		end
-	end
-end
 
 local file = io.open(config_path, 'w+')
 assert(file)
