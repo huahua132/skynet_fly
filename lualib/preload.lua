@@ -3,6 +3,7 @@ local debug = debug
 local xpcall = xpcall
 local pcall = pcall
 local math = math
+local tostring = tostring
 
 local tremove = table.remove
 local tunpack = table.unpack
@@ -18,8 +19,13 @@ assert(log,"not log file")
 
 package.path = file_util.create_luapath(skynet_fly_path)
 
+-- 为了处理err是个table的情况下，无法获取到堆栈
+local function error_handler(err)
+	return tostring(err) .. debug.traceback("", 2)
+end
+
 function x_pcall(f,...)
-	return xpcall(f, debug.traceback, ...)
+	return xpcall(f, error_handler, ...)
 end
 
 local x_pcall = x_pcall
