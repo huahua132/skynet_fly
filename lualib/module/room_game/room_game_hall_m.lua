@@ -376,7 +376,7 @@ end
 function interface:get_table_id(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
-		return 0
+		return "0:0"
 	end
 
 	return agent.table_id or "0:0"
