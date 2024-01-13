@@ -22,7 +22,7 @@
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
 
 ## 第三方依赖来源
-* [skynet](https://github.com/cloudwu/skynet)1.6
+* [skynet](https://github.com/cloudwu/skynet)1.7
 * [basexx](https://github.com/aiq/basexx)0.4.1
 * [lua-cjson](https://github.com/openresty/lua-cjson)2.1.0.9
 * [lua-openssl](https://github.com/zhaozg/lua-openssl)0.8.5-0
