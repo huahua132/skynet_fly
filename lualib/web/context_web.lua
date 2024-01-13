@@ -14,6 +14,8 @@ local mt = { __index = M,__close = function(t)
 	table_pool:release(t)
 end}
 
+local req_ctx = {}
+
 function M:new(app, oldreq)
     local req = request:new(oldreq)
     if not req then
@@ -22,7 +24,9 @@ function M:new(app, oldreq)
 
     local res = response:new()
 
-    local handlers, params = app.router:match(req.path, req.method)
+    req_ctx.method = req.method
+    local params = {}
+    local handlers = app.router:match(req.path, req_ctx, params)
 
     local found = false
     if handlers then
