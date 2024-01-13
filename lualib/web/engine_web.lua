@@ -2,7 +2,7 @@ local methods = require "methods_web"
 local routergroup = require "routergroup_web"
 local context = require "context_web"
 local log = require "log"
-local rax = require "rax"
+local radix_router = require "radix-router"
 local logger_mid = require "logger_mid"
 local HTTP_STATUS = require "HTTP_STATUS"
 
@@ -15,7 +15,9 @@ local mt = { __index = M}
 
 function M:new()
     local instance = {
-        router = rax:new(),
+        routes_n = 0,
+        routes = {},
+        router = nil,
         no_route = {},
         all_no_route = {},
     }
@@ -40,11 +42,21 @@ function M:reset_no_route()
 end
 
 function M:run()
-    self.router:compile()
+    local router, err = radix_router.new(self.routes)
+    if not router then
+      -- todo error handling
+    end
+    self.router = router
 end
 
 function M:add_route(method, absolute_path, handlers)
-    self.router:insert(method, absolute_path, handlers)
+    local path = absolute_path -- todo, converts gin style to openapi style. /users/:name -> /users/{name}
+    self.routes_n = self.routes_n + 1
+    self.routes[self.routes_n] = {
+      paths = { path },
+      methods = { method },
+      handler = handlers,
+    }
 end
 
 -- M:use(middleware1, middleware2, ...)
