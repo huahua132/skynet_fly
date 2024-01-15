@@ -1,8 +1,7 @@
-local skynet_fly_env = require "skynet_fly_env"
+local skynet = require "skynet"
 local assert = assert
 local loadfile = loadfile
 local tostring = tostring
-local debug_getinfo = debug.getinfo
 
 local M = {}
 
@@ -15,11 +14,11 @@ function M.add_pre_load(path)
 	end
 
 	pre_load = pre_load .. path .. ";"
-	skynet_fly_env.resetenv("preload",pre_load)
+	skynet.setenv("preload",pre_load)
 end
 
 function M.get_pre_load()
-	return skynet_fly_env.getenv("preload")
+	return skynet.getenv("preload")
 end
 
 --添加服务启动之后加载的文件
@@ -31,11 +30,11 @@ function M.add_after_load(path)
 	end
 	old_after_load = old_after_load .. path .. ";"
 
-	skynet_fly_env.resetenv('afterload',old_after_load)
+	skynet.setenv('afterload',old_after_load)
 end
 
 function M.get_after_load()
-	return skynet_fly_env.getenv('afterload')
+	return skynet.getenv('afterload')
 end
 
 return M
