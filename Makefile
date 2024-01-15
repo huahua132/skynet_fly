@@ -31,7 +31,7 @@ $(skynet) : skynet/Makefile
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
-LUA_CLIB = lfs cjson pb zlib chat_filter rax openssl skynet_fly_env
+LUA_CLIB = lfs cjson pb zlib chat_filter rax openssl
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -55,9 +55,6 @@ $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_
 
 $(LUA_CLIB_PATH)/rax.so : 3rd/lua-rax/rax.c 3rd/lua-rax/lua_rax.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-rax
-
-$(LUA_CLIB_PATH)/skynet_fly_env.so : skynet_fly-src/skynet_fly_env.c lualib-src/lua-skynet_fly_env.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src -Iskynet_fly-src
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
 SRCS := $(shell find 3rd/lua-openssl-0.8.5-0 -name '*.c')
