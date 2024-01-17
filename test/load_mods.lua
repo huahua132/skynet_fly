@@ -149,8 +149,12 @@ return {
 	--  	launch_num = 1,
 	-- },
 
-	ormmongo_test_m = {
-		launch_seq = 14,
+	-- ormmongo_test_m = {
+	-- 	launch_seq = 14,
+	-- 	launch_num = 1,
+   	-- }
+	radix_router_test_m = {
+		launch_seq = 15,
 		launch_num = 1,
-   	}
+	}
 }
