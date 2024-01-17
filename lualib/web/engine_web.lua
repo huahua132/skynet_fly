@@ -13,6 +13,12 @@ local pairs = pairs
 local M = {}
 local mt = { __index = M}
 
+local function convert_path(path)
+    path = string.gsub(path, ":([^/]*)", "{%1}")
+    path = string.gsub(path, "%*(%w*)", "{*%1}")
+    return path
+end
+
 function M:new()
     local instance = {
         routes_n = 0,
@@ -44,13 +50,15 @@ end
 function M:run()
     local router, err = radix_router.new(self.routes)
     if not router then
-      -- todo error handling
+        -- todo error handling
+        log.fatal("engine_web run router err ", err)
+        return
     end
     self.router = router
 end
 
 function M:add_route(method, absolute_path, handlers)
-    local path = absolute_path -- todo, converts gin style to openapi style. /users/:name -> /users/{name}
+    local path = convert_path(absolute_path) -- todo, converts gin style to openapi style. /users/:name -> /users/{name}
     self.routes_n = self.routes_n + 1
     self.routes[self.routes_n] = {
       paths = { path },
