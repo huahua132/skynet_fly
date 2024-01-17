@@ -79,7 +79,8 @@ function M.create_luapath(skynet_fly_path)
 		end
 	end
 
-	--skynet_fly 3rd下所以文件夹
+	--skynet_fly 3rd下所有文件夹
+	lua_path = lua_path .. skynet_fly_path .. '/3rd/?.lua;'
 	for file_name,file_path,file_info in M.diripairs(skynet_fly_path .. '/3rd') do
 		if file_info.mode == 'directory' then
 			lua_path = lua_path .. file_path .. '/?.lua;'

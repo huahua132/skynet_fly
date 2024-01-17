@@ -110,7 +110,7 @@ function M:insert(method, path, data)
 
     self.match_data_index = self.match_data_index + 1
     self.match_data[self.match_data_index] = {opts}
-    log_info("insert route path: ", path, " dataprt: ", self.match_data_index)
+    --log_info("insert route path: ", path, " dataprt: ", self.match_data_index)
     return rax_core.insert(self.tree, path, self.match_data_index)
 end
 
@@ -177,7 +177,7 @@ function M:_compare_param(req_path, route, opts)
     end
 
     local pat, names = self:_fetch_pat(route.path_org)
-    log_debug("pat: ", pat)
+    --log_debug("pat: ", pat)
     if #names == 0 then
         return true
     end
