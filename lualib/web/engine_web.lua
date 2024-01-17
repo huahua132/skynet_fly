@@ -5,6 +5,7 @@ local log = require "log"
 local radix_router = require "radix-router"
 local logger_mid = require "logger_mid"
 local HTTP_STATUS = require "HTTP_STATUS"
+local file_util = require "file_util"
 
 local string = string
 local setmetatable = setmetatable
@@ -12,12 +13,6 @@ local pairs = pairs
 
 local M = {}
 local mt = { __index = M}
-
-local function convert_path(path)
-    path = string.gsub(path, ":([^/]*)", "{%1}")
-    path = string.gsub(path, "%*(%w*)", "{*%1}")
-    return path
-end
 
 function M:new()
     local instance = {
@@ -58,7 +53,7 @@ function M:run()
 end
 
 function M:add_route(method, absolute_path, handlers)
-    local path = convert_path(absolute_path) -- todo, converts gin style to openapi style. /users/:name -> /users/{name}
+    local path = file_util.convert_path(absolute_path) -- todo, converts gin style to openapi style. /users/:name -> /users/{name}
     self.routes_n = self.routes_n + 1
     self.routes[self.routes_n] = {
       paths = { path },

@@ -114,6 +114,7 @@ function M.get_cur_dir_name()
 	return strsplit[#strsplit]
 end
 
+--路径拼接
 function M.path_join(a,b)
     if a:sub(-1) == "/" then
         if b:sub(1, 1) == "/" then
@@ -127,6 +128,11 @@ function M.path_join(a,b)
     return string.format("%s/%s", a, b)
 end
 
-
+-- converts gin style to openapi style. /users/:name -> /users/{name}
+function M.convert_path(path)
+    path = string.gsub(path, ":([^/]*)", "{%1}")
+    path = string.gsub(path, "%*(%w*)", "{*%1}")
+    return path
+end
 
 return M
