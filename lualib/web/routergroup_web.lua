@@ -26,6 +26,10 @@ function M:calculate_absolute_path(relative_path)
     return file_util.path_join(self.base_path, relative_path)
 end
 
+function M:calculate_absolute_convert_path(relative_path)
+    return file_util.convert_path(file_util.path_join(self.base_path, relative_path))
+end
+
 function M:combine_handlers(handlers)
     local n = #self.handlers
     assert(n+#handlers < abort_index, "too many handlers")
