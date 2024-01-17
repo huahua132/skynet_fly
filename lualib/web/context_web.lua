@@ -26,7 +26,8 @@ function M:new(app, oldreq)
 
     req_ctx.method = req.method
     local params = {}
-    local handlers = app.router:match(req.path, req_ctx, params)
+    local matched = {}
+    local handlers = app.router:match(req.path, req_ctx, params, matched)
 
     local found = false
     if handlers then
@@ -40,6 +41,7 @@ function M:new(app, oldreq)
 	t.handlers = handlers or {}
 	t.params = params
 	t.found = found
+    t.matched = matched
 
     return setmetatable(t, mt)
 end
