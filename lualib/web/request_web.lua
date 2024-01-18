@@ -11,6 +11,7 @@ local parse_url = urllib.parse
 
 local M = {}
 local mt = { __index = M }
+local empty_table = {}
 
 -- new request: init args/body etc from http request
 function M:new(req)
@@ -33,7 +34,7 @@ function M:new(req)
         body = parse_query(body)
     end
 
-    local query = {}
+    local query = empty_table
     local path,query_str = parse_url(url)
     if query_str then
         query = parse_query(query_str)
