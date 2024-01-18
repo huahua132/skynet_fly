@@ -64,7 +64,7 @@
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 3. 运行
-   - `sh script/run.sh`
+   - `sh script/run.sh load_mods.lua 0`
 4. 访问
    - 浏览器打开 `x.x.x.x:80`
    - 如果一切顺利的话，网页将会显示内容。

@@ -13,9 +13,17 @@ local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
 local shell_str = "#!/bin/bash\n"
+shell_str = shell_str .. [[
+if [ "$#" -lt 1 ]; then
+	echo "arg1 [load_mods] 启动的load_mods配置"
+	echo "arg2 [is_daemon] 是否守护进程运行 1是0不是 默认1"
+	echo "please format script/restart.sh load_mods is_daemon"
+	exit 1
+fi
+]]
 shell_str = shell_str .. "sh script/stop.sh" .. '\n'
 shell_str = shell_str .. "sleep 1" .. '\n'
-shell_str = shell_str .. "sh script/run.sh" .. '\n'
+shell_str = shell_str .. "sh script/run.sh $1 $2" .. '\n'
 
 local shell_path = server_path .. 'script/'
 

@@ -2,6 +2,7 @@ local assert = assert
 local ARGV = { ... }
 local skynet_fly_path = ARGV[1]
 local load_mods_name = ARGV[2]
+local is_daemon = ARGV[3]
 assert(skynet_fly_path, '缺少 skynet_fly_path')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
@@ -11,6 +12,19 @@ local lfs = require "lfs"
 local json = require "cjson"
 local table_util = require "table_util"
 local file_util = require "file_util"
+
+if load_mods_name then
+	if string.find(load_mods_name, '.lua', nil, true) then
+		load_mods_name = load_mods_name:sub(1,load_mods_name:len() - 4)
+	end
+end
+
+is_daemon = tonumber(is_daemon)
+if not is_daemon or is_daemon == 1 then
+	is_daemon = true
+else
+	is_daemon = false
+end
 
 local skynet_path = skynet_fly_path .. '/skynet/'
 local server_path = "./"
@@ -29,7 +43,7 @@ local config = {
 	logpath         = server_path .. 'logs/',
 	logfilename     = 'server.log',
 	logservice      = 'snlua',
-	daemon          = "./skynet.pid",
+	daemon          = is_daemon and "./skynet.pid" or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
 	debug_port      = 8888,
