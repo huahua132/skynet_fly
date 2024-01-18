@@ -48,7 +48,7 @@ $(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
 
 $(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
-	$(CC) -g -Werror -I$(LUA_INC) -Wall -pedantic -O0 -fPIC -shared -lz -I3rd/lzlib -L$(LUA_INC)  $^ -o $@
+	$(CC) -g -Werror -I$(LUA_INC) -Wall -pedantic -O0 -fPIC -shared -I3rd/lzlib $^ -L$(LUA_INC) -lz -o $@
 
 $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
