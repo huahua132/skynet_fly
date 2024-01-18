@@ -6,7 +6,7 @@ local mysqlf = require "mysqlf"
 contriner_client:register("mysql_m")
 local CMD = {}
 
-function CMD.start()
+local function test()
 	log.error("mysql_test_m start!!!")
 	local game_client = contriner_client:new("mysql_m","game")
 	local ret = game_client:mod_call_by_name("query","show tables;")
@@ -26,6 +26,10 @@ function CMD.start()
 
 	log.error("mysql_test_m over!!!")
 
+end
+
+function CMD.start()
+	skynet.fork(test)
 	return true
 end
 
