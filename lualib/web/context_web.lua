@@ -4,9 +4,9 @@ local response = require "response_web"
 local puremagic = require "puremagic"
 local HTTP_STATUS = require "HTTP_STATUS"
 local table_pool = require "table_pool":new(2048)
-
 local setmetatable = setmetatable
 local iopen = io.open
+local pairs = pairs
 
 local M = {}
 local mt = { __index = M,__close = function(t)
@@ -25,23 +25,24 @@ function M:new(app, oldreq)
     local res = response:new()
 
     req_ctx.method = req.method
-    local params = {}
-    local matched = {}
-    local handlers = app.router:match(req.path, req_ctx, params, matched)
+    local t = table_pool:get()
+    t.matched = t.matched or {}
+    t.params = t.params or {}
+    for k,v in pairs(t.params) do
+        t.params[k] = nil
+    end
 
+    local handlers = app.router:match(req.path, req_ctx, t.params, t.matched)
     local found = false
     if handlers then
         found = true
     end
-	local t = table_pool:get()
 	t.app = app
 	t.req = req
 	t.res = res
 	t.index = 0
 	t.handlers = handlers or {}
-	t.params = params
 	t.found = found
-    t.matched = matched
 
     return setmetatable(t, mt)
 end
