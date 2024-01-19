@@ -915,6 +915,76 @@ local function test_delete_all()
     delete_table()
 end
 
+-- 测试创建单条数据
+local function test_craete_one()
+    delete_table()
+    local orm_obj = test_create_table()
+
+    --新建单条数据
+    local new_data = {player_id = 10001,role_id = 1, sex = 1}
+    local entry = orm_obj:create_one_entry(new_data)
+    assert(entry)
+    assert(entry:get('player_id') == 10001)
+    assert(entry:get('role_id') == 1)
+    assert(entry:get('sex') == 1)
+    assert(entry:get('nickname') == "") --没有设置的string 会默认给个空 string
+    assert(entry:get('sex1') == 0)      --没有设置的number 会默认给个 0
+
+    --主键冲突
+    local new_data = {player_id = 10001,role_id = 1, sex = 1}
+    local entry = orm_obj:create_one_entry(new_data)
+    assert(not entry)     
+
+    --缺少主键数据
+    local new_data = {player_id = 10001,role_id = 2}
+    local isok,res = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    assert(not isok) --会崩溃报错
+
+    delete_table()
+end
+
+-- 测试查询单条数据
+local function test_select_one()
+    delete_table()
+    local orm_obj = test_create_table()
+    --新建多条数据
+    local new_data_list = {
+        {player_id = 10002,role_id = 1, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 2},
+        {player_id = 10002,role_id = 3, sex = 2},
+        {player_id = 10003,role_id = 1, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 2},
+        {player_id = 10003,role_id = 3, sex = 2},
+    }
+
+    local res = orm_obj:create_entry(table.unpack(new_data_list))
+    assert(#res == 8)
+    for i,v in pairs(res) do
+        assert(v)
+    end
+
+    --通过player_id查询
+    local entry = orm_obj:get_one_entry(10002, 1, 1)
+    assert(entry:get('player_id') == new_data_list[1].player_id)
+    assert(entry:get('role_id') == new_data_list[1].role_id)
+    assert(entry:get('sex') == new_data_list[1].sex)
+
+    --缺少2个参数
+    local isok,entry_list = pcall(orm_obj.get_one_entry, orm_obj, 10002)
+    assert(not isok)
+    --缺少1个参数
+    local isok,entry_list = pcall(orm_obj.get_one_entry, orm_obj, 10002, 1)
+    assert(not isok)
+
+    --查询不存在数据
+    local entry = orm_obj:get_one_entry(10004, 1, 1)
+    assert(not entry)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -944,6 +1014,10 @@ function CMD.start()
         test_get_all()
         log.info("test_delete_all>>>>>")
         test_delete_all()
+        log.info("test_craete_one>>>>>")
+        test_craete_one()
+        log.info("test_craete_one>>>>>")
+        test_select_one()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
     return true

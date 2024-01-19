@@ -59,7 +59,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     assert(res.ok == 1, "builder err")
 
     local key_len = #key_list
-    --insert 执行
+    --insert 创建
     self._insert = function(entry_data_list)
         local res_list = {}
         for i = 1,#entry_data_list do
@@ -73,6 +73,16 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
             end
         end
         return res_list
+    end
+
+    --insert_one 创建一条数据
+    self._insert_one = function(entry_data)
+        local isok,err = collect_db:raw_safe_insert(entry_data)
+        if not isok then
+            log.error("insert doc err ",err)
+            return nil
+        end
+        return true
     end
 
     --select 查询
@@ -100,6 +110,21 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         end
     
         return res_list
+    end
+
+    --select_one 查询单条
+    self._select_one = function(key_values)
+        local args = {}
+        for i = 1, key_len do
+            args[key_list[i]] = key_values[i]
+        end
+        local ret = collect_db:find_one(args)
+        if not ret then
+            return nil
+        else
+            ret._id = nil
+            return ret
+        end
     end
 
     --update 更新
@@ -149,14 +174,24 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     return self
 end
 
--- 创建表数据
+-- 批量创建表数据
 function M:create_entry(entry_data_list)
     return self._insert(entry_data_list)
+end
+
+-- 创建一条数据
+function M:create_one_entry(entry_data)
+    return self._insert_one(entry_data)
 end
 
 -- 查询表数据
 function M:get_entry(key_values)
     return self._select(key_values)
+end
+
+-- 查询一条表数据
+function M:get_one_entry(key_values)
+    return self._select_one(key_values)
 end
 
 -- 保存表数据
