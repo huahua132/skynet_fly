@@ -308,7 +308,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         end
     end
 
-    --insert 执行
+    --insert 批量插入
     self._insert = function(entry_data_list)
         local sql_str = insert_format_head
         local add_str = nil
@@ -352,6 +352,19 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         return ret_list
     end
 
+    --insert_one插入单条
+    self._insert_one = function(entry_data)
+        local sql_str = insert_format_head .. sformat(insert_format_end, tunpack(entry_data_to_list(entry_data)))
+        assert(sql_str:len() <= max_packet_size, "can`t insert max_packet_size:" .. max_packet_size .. ' packlen:' ..  sql_str:len())
+        local sql_ret = self._db:query(sql_str)
+        if not sql_ret or sql_ret.err then
+            log.error("_insert_one err ",sql_ret,sql_str)
+            return nil
+        end
+
+        return true
+    end
+
     --select 查询
     self._select = function(key_values)
         local len = #key_values
@@ -368,6 +381,18 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
             error(sql_ret.err)
         end
         return sql_ret
+    end
+
+    --查询一条数据
+    local keys_max_len = #key_list
+    self._select_one = function(key_values)
+        local sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[keys_max_len], tunpack(key_values))
+        local sql_ret = self._db:query(sql_str)
+        if sql_ret.err then
+            log.error("_select_one err ",sql_str,sql_ret)
+            error(sql_ret.err)
+        end
+        return sql_ret[1]
     end
 
     --update 更新
@@ -452,14 +477,24 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     return self
 end
 
--- 创建表数据
+-- 批量创建表数据
 function M:create_entry(entry_data_list)
     return self._insert(entry_data_list)
+end
+
+-- 创建一条数据
+function M:create_one_entry(entry_data)
+    return self._insert_one(entry_data)
 end
 
 -- 查询表数据
 function M:get_entry(key_values)
     return self._select(key_values)
+end
+
+-- 查询一条表数据
+function M:get_one_entry(key_values)
+    return self._select_one(key_values)
 end
 
 -- 保存表数据

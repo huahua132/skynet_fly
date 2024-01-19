@@ -337,9 +337,6 @@ function M:new(tab_name)
         _key_cache_count = 0,                       --缓存总数
         _key_cache_total_count = nil,               --实际总数
 
-        -- index索引表
-        _index_select_map = {},
-
         -- 缓存时间
         _cache_time = nil,
 
@@ -495,9 +492,17 @@ local function create_entry(t, ...)
 
     return new_entry_list
 end
--- 创建新数据
-function M:create_entry(...)
-    return self._queue(create_entry, self, ...)
+
+local function create_one_entry(t, entry_data)
+    assert(t._is_builder, "not builder can`t create_one_entry")
+    check_fileds(t, entry_data)
+    entry_data = init_entry_data(t, entry_data)
+
+    local ret = t._adapterinterface:create_one_entry(entry_data)
+    if not ret then return nil end
+
+    local new_entry = ormentry:new(t, entry_data)
+    return add_key_select(t, new_entry, true)
 end
 
 -- 检查数据合法性
@@ -547,11 +552,23 @@ local function get_entry(t, key_values)
 
     return entry_list,is_cache_all
 end
--- 查询数据
-function M:get_entry(...)
-    local key_values = {...}
-    assert(#key_values > 0, "err key_values")
-    return self._queue(get_entry, self, key_values)
+
+local function get_one_entry(t, key_values)
+    assert(t._is_builder, "not builder can`t get_one_entry")
+    local key_list = t._keylist
+    local entry, is_cache = get_key_select(t, key_values)
+    if not is_cache then
+        local entry_data = t._adapterinterface:get_one_entry(key_values)
+        if not entry_data then return nil end
+
+        entry = ormentry:new(t, entry_data)
+        return add_key_select(t, entry)
+    end
+
+    if t._cache_map then
+        t._cache_map:update_cache(entry, t)
+    end
+    return entry
 end
 
 local function save_entry(t, ...)
@@ -586,10 +603,6 @@ local function save_entry(t, ...)
 
     return result_list
 end
--- 立即保存数据
-function M:save_entry(...)
-    return self._queue(save_entry, self, ...)
-end
 
 local function delete_entry(t, key_values)
     assert(t._is_builder, "not builder can`t delete_entry")
@@ -608,6 +621,36 @@ local function delete_entry(t, key_values)
     end
 
     return res
+end
+
+-- 批量创建新数据
+function M:create_entry(...)
+    return self._queue(create_entry, self, ...)
+end
+
+-- 创建一条数据
+function M:create_one_entry(entry_data)
+    return self._queue(create_one_entry, self, entry_data)
+end
+
+-- 查询多条数据
+function M:get_entry(...)
+    local key_values = {...}
+    assert(#key_values > 0, "err key_values")
+    return self._queue(get_entry, self, key_values)
+end
+
+-- 查询一条数据
+function M:get_one_entry(...)
+    local key_values = {...}
+    local key_list = self._keylist
+    assert(#key_values == #key_list, "args len err") --查询单条数据，必须提供所有主键
+    return self._queue(get_one_entry, self, key_values)
+end
+
+-- 立即保存数据
+function M:save_entry(...)
+    return self._queue(save_entry, self, ...)
 end
 
 -- 删除数据
