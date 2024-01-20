@@ -16,3 +16,8 @@
 #yum install -y openssl-devel
 #yum install -y autoconf automake libtool
 #yum install -y install curl
+
+# centos 升级gcc 
+#yum -y install centos-release-scl
+#yum install devtoolset-9-gcc*
+# scl enable devtoolset-9 bash

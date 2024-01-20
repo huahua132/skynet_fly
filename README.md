@@ -48,7 +48,10 @@
 
 ## 快速开始 http服务 (运行examples/webapp)
 
-1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo) 
+1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
+	- `git clone https://github.com/huahua132/skynet_fly`
+	- 安装MakeRequests.sh中依赖的库。
+	- 根据系统手动安装。
     - `make build`
 2. 构建skynet_config, webapp运维脚本
     - `cd examples/webapp/`
