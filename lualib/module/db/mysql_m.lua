@@ -24,6 +24,21 @@ end
 
 function CMD.start(config)
 	g_db_conf = config.db_conf
+
+	if config.is_create then
+		local database = g_db_conf.database
+		g_db_conf.database = nil
+		local ok,conn = pcall(mysql.connect, g_db_conf)
+		if not ok then
+			log.error("connect faild ",conn,g_db_conf)
+			return
+		end
+
+		conn:query('CREATE DATABASE IF NOT EXISTS ' .. database .. ';')
+		conn:disconnect()
+		g_db_conf.database = database
+	end
+
 	local ok,conn = pcall(mysql.connect,g_db_conf)
 	if not ok then
 		log.error("connect faild ",conn,g_db_conf)
