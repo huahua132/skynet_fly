@@ -213,7 +213,14 @@ function M:set_yday(yday)
     self.yday = yday
     return self
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：builder
+	描述:  构建。
+	参数:
+		- callback (function): 回调函数。
+        - ... (any): 回调参数。
+]]
 function M:builder(call_back, ...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[self.type](self.month,self.day,self.hour,self.min,self.sec,self.wday,self.yday)
     self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)
