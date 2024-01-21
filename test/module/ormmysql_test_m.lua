@@ -43,7 +43,7 @@ local function test_create_table(is_del)
     :builder(adapter)
 
     local sqlret = mysqlf:instance("admin"):query("DESCRIBE t_player")
-
+    
     assert(not sqlret.err,sqlret.err)
     assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
     assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
