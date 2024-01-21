@@ -103,7 +103,13 @@ adapter_loop = function(point_obj,call_back,...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[point_obj.type](point_obj.month,point_obj.day,point_obj.hour,point_obj.min,point_obj.sec,point_obj.wday,point_obj.yday)
     point_obj.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,point_obj,call_back,...)
 end
-
+--[[
+    函数作用域：M 对象的成员函数
+	函数名称：extend
+	描述:  创建整点报时对象
+	参数:
+		- type (number): 时间刻度类型
+]]
 function M:new(type)
     assert(g_type_map[type], "unknown type ".. tostring(type))
     local t = {
@@ -120,45 +126,88 @@ function M:new(type)
     setmetatable(t,mata)
     return t
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_month
+	描述:  指定几月
+	参数:
+		- month (number): 月份 1-12
+    
+]]
 function M:set_month(month)
     assert(month >= 1 and month <= 12)
     self.month = month
     return self
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_day
+	描述:  每月第几天,超过适配到最后一天
+	参数:
+		- day (number): 天数 1-31
+]]
 function M:set_day(day)
     assert(day >= 1 and day <= 31)
     self.day = day
     return self
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_hour
+	描述:  几时
+	参数:
+		- hour (number): 几时 0-23
+]]
 function M:set_hour(hour)
     assert(hour >= 0 and hour <= 23)
     self.hour = hour
     return self
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_min
+	描述:  几分
+	参数:
+		- min (number): 几分 0-59
+]]
 function M:set_min(min)
     assert(min >= 0 and min <= 59)
     self.min = min
     return self
 end
-
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_sec
+	描述:  几秒
+	参数:
+		- sec (number): 几秒 0-59
+]]
 function M:set_sec(sec)
     assert(sec >= 0 and sec <= 59)
     self.sec = sec
     return self
 end
 
---星期天为 1
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_wday
+	描述:  周几（仅仅设置每周有效）
+	参数:
+		- wday (number): 周几 1-7 星期天为 1
+]]
 function M:set_wday(wday)
     assert(wday >= 1 and wday <= 7)
     self.wday = wday
     return self
 end
 
---一年的第几天
+--[[
+    函数作用域：M:new 对象的成员函数
+	函数名称：set_yday
+	描述:  一年第几天（仅仅设置每年第几天有效）
+	参数:
+		- yday (number): 第几天 1-366 超过适配到最后一天。
+]]
 function M:set_yday(yday)
     assert(yday >= 1 and yday <= 366)
     self.yday = yday
