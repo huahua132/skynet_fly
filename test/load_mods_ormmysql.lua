@@ -12,8 +12,9 @@ return {
 					user = 'root',
 					password = '123456',
 					database = 'admin',
-				}
-			}
+				},
+				is_create = true,  --不存在数据库就创建
+			},
 		}
 	},
 
