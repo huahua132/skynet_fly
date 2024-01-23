@@ -57,30 +57,37 @@ M.int64min = -(1 << 63)
 M.int64max = (1 << 63) - 1
 
 function M.is_vaild_int8(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.int8min and num <= M.int8max
 end
 
 function M.is_vaild_uint8(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.uint8min and num <= M.uint8max
 end
 
 function M.is_vaild_int16(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.int16min and num <= M.int16max
 end
 
 function M.is_vaild_uint16(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.uint16min and num <= M.uint16max
 end
 
 function M.is_vaild_int32(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.int32min and num <= M.int32max
 end
 
 function M.is_vaild_uint32(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.uint32min and num <= M.uint32max
 end
 
 function M.is_vaild_int64(num)
+	if type(num) ~= 'number' then return false end
 	return num >= M.int64min and num <= M.int64max
 end
 
