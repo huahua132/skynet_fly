@@ -66,6 +66,7 @@ local FILED_LUA_DEFAULT = {
 
 local function create_check_str(len)
     return function(str)
+        if type(str) ~= 'string' then return false end
         return str:len() <= len
     end
 end
@@ -106,11 +107,9 @@ end
 local function check_one_filed(t, filed_name, filed_value)
     local filed_type = assert(t._filed_map[filed_name], "not exists filed_name = " .. filed_name)
     local check_func = assert(FILED_TYPE_CHECK_FUNC[filed_type], "not check func : ".. filed_type)
-    assert(check_func(filed_value),sformat("set invaild value filed_name[%s] value[%s] filed_type[%s]", filed_name, filed_value, filed_type))
     local ktype = type(filed_name)
-    assert(ktype == "string", "error filed_name type: " .. ktype)                       --字段名必须是string
-    local vtype = type(filed_value)
-    assert(vtype == "string" or vtype == "number", "error filed_value type:" .. vtype)  --字段值只能是string 或者 number
+    assert(ktype == "string", sformat("tab_name[%s] set invaild filed_name type filed_name[%s] value[%s] filed_type[%s]", t._tab_name, filed_name, filed_value, filed_type))                       --字段名必须是string
+    assert(check_func(filed_value),sformat("tab_name[%s] set invaild value filed_name[%s] value[%s] filed_type[%s]", t._tab_name, filed_name, filed_value, filed_type))
 end
 
 -- 检查数据表的合法性
@@ -408,7 +407,7 @@ local function inval_time_out(week_t)
             end
         end
 
-        local res_list = t:save_entry(tunpack(entry_list))
+        local res_list = t:save_entry(entry_list)
         for i = 1, #entry_list do
             local res = res_list[i]
             local entry = entry_list[i]
@@ -469,9 +468,8 @@ function M:builder(adapterinterface)
     return self._queue(builder, self, adapterinterface)
 end
 
-local function create_entry(t, ...)
+local function create_entry(t, list)
     assert(t._is_builder, "not builder can`t create_entry")
-    local list = {...}
     local entry_data_list = {}
     for _,entry_data in ipairs(list) do
         check_fileds(t, entry_data)
@@ -571,9 +569,8 @@ local function get_one_entry(t, key_values)
     return entry
 end
 
-local function save_entry(t, ...)
+local function save_entry(t, entry_list)
     assert(t._is_builder, "not builder can`t save_entry")
-    local entry_list = {...}
     local entry_data_list = {}
     local change_map_list = {}
     local result_list = {}
@@ -604,6 +601,17 @@ local function save_entry(t, ...)
     return result_list
 end
 
+local function save_one_entry(t, entry)
+    assert(t._is_builder, "not builder can`t save_one_entry")
+    local change_map = entry:get_change_map()
+    --没有变化
+    if not next(change_map) then
+        return true
+    end
+    local entry_data = entry:get_entry_data()
+    return t._adapterinterface:save_one_entry(entry_data, change_map)
+end
+
 local function delete_entry(t, key_values)
     assert(t._is_builder, "not builder can`t delete_entry")
     local entry_list = get_entry(t, key_values)
@@ -624,8 +632,8 @@ local function delete_entry(t, key_values)
 end
 
 -- 批量创建新数据
-function M:create_entry(...)
-    return self._queue(create_entry, self, ...)
+function M:create_entry(entry_data_list)
+    return self._queue(create_entry, self, entry_data_list)
 end
 
 -- 创建一条数据
@@ -649,8 +657,15 @@ function M:get_one_entry(...)
 end
 
 -- 立即保存数据
-function M:save_entry(...)
-    return self._queue(save_entry, self, ...)
+function M:save_entry(entry_list)
+    if not next(entry_list) then return entry_list end
+    return self._queue(save_entry, self, entry_list)
+end
+
+-- 立即保存一条数据
+function M:save_one_entry(entry)
+    assert(entry,"not entry")
+    return self._queue(save_one_entry, self, entry)
 end
 
 -- 删除数据
@@ -677,6 +692,24 @@ function M:save_change_now()
     end
 
     return inval_time_out(self._week_t)
+end
+
+-- 通过数据获得entry
+function M:get_entry_by_data(entry_data)
+    local key_list = self._keylist
+    local key_values = {}
+    for i = 1,#key_list do
+        local filed_name = key_list[i]
+        local v = assert(entry_data[filed_name], "not exists value filed_name:" .. filed_name)
+        tinsert(key_values, v)
+    end
+
+    return self._queue(get_one_entry, self, key_values)
+end
+
+-- 是否启动了间隔保存
+function M:is_inval_save()
+    return self._time_obj ~= nil
 end
 
 return M

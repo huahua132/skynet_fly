@@ -20,11 +20,6 @@ function M.init()
     return g_orm_obj
 end
 
-function M.call(func_name, ...)
-    log.info("call:",func_name, skynet.self())
-    return handle[func_name](...)
-end
-
 -- 不存在就创建
 function handle.not_exist_create(entry_data)
     local player_id = assert(entry_data.player_id)
@@ -33,7 +28,7 @@ function handle.not_exist_create(entry_data)
         return
     end
 
-    entry_list = g_orm_obj:create_entry(entry_data)
+    entry_list = g_orm_obj:create_one_entry(entry_data)
     local entry = entry_list[1]
     if not entry then return end
 
@@ -60,8 +55,10 @@ function handle.change_status(player_id, status)
     end
 
     entry:set("status", status)
-    local res_list = g_orm_obj:save_entry(entry)
+    local res_list = g_orm_obj:save_one_entry(entry)
     return res_list[1]
 end
+
+M.handle = handle
 
 return M

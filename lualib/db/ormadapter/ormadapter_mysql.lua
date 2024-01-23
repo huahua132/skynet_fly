@@ -456,6 +456,34 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         return ret_list
     end
 
+    --更新一条数据
+    self._update_one = function(entry_data, change_map)
+        local center_str = ""
+        for field_name in pairs(change_map) do
+            local index = filed_index_map[field_name]
+            local field_value = entry_data[field_name]
+            if type(field_value) == 'string' then
+                field_value = string_util.quote_sql_str(field_value)
+            end
+            center_str = center_str .. sformat(update_format_head_list[index], field_value) .. ','
+        end
+        center_str = center_str:sub(1,center_str:len() - 1)
+        local key_values = {}
+        for i = 1,#key_list do
+            key_values[i] = entry_data[key_list[i]]
+        end
+        local sql_str = update_format_head .. center_str .. sformat(update_format_end,tunpack(key_values))
+        local sql_ret = self._db:query(sql_str)
+        if not sql_ret then
+            return false
+        end
+        if sql_ret.err then
+            log.error("_update_one err ",sql_str,sql_ret)
+            return false
+        end
+        return true
+    end
+
     self._delete = function(key_values)
         local len = #key_values
         assert(len >= 0 and len <= #select_format_end_list, "err key_values len " .. len)
@@ -500,6 +528,11 @@ end
 -- 保存表数据
 function M:save_entry(entry_data_list, change_map_list)
     return self._update(entry_data_list, change_map_list)
+end
+
+-- 保存一条数据
+function M:save_one_entry(entry_data, change_map)
+    return self._update_one(entry_data, change_map)
 end
 
 -- 删除表数据

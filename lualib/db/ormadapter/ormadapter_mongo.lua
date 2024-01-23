@@ -157,6 +157,22 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         return res_list
     end
 
+    self._update_one = function(entry_data, change_map)
+        for k,_ in pairs(query) do
+            query[k] = entry_data[k]
+        end
+        local update = {}
+        for k,_ in pairs(change_map) do
+            update[k] = entry_data[k]
+        end
+        local ok,isok,err = pcall(collect_db.safe_update, collect_db, query, {['$set'] = update})
+        if not ok or not isok then
+            log.error("_update_one doc err ",isok, err)
+            return nil
+        end
+        return true
+    end
+
     self._delete = function(key_values)
         local delete_query = {}
         for i = 1,#key_values do
@@ -197,6 +213,11 @@ end
 -- 保存表数据
 function M:save_entry(entry_data_list, change_map_list)
     return self._update(entry_data_list, change_map_list)
+end
+
+-- 保存一条数据
+function M:save_one_entry(entry_data, change_map)
+    return self._update_one(entry_data, change_map)
 end
 
 -- 删除表数据
