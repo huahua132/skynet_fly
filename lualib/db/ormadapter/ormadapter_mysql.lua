@@ -136,7 +136,7 @@ local function alter_table(t, describe, index_info)
     local pre_filed_map = {}
     for i = 1,#describe do
         local one_des = describe[i]
-        local tp = one_des.Type
+        local tp = one_des.Type:gsub("(%a*)int%(%d+%)", "%1int")
         local field_name = one_des.Field
         local lua_type = assert(FILED_TYPE_LUA_TYPE[tp],"not exists type " .. tp)
         pre_filed_map[field_name] = lua_type
