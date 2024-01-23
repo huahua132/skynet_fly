@@ -44,11 +44,7 @@ function g_handle.get_entry(...)
     local data_list = {}
     for i = 1,#entry_list do
         local entry = entry_list[i]
-        if entry then
-            tinsert(data_list, entry:get_entry_data())
-        else
-            tinsert(data_list, false)
-        end
+        tinsert(data_list, entry:get_entry_data())
     end
     return data_list
 end
@@ -135,11 +131,7 @@ function g_handle.get_all_entry()
     local data_list = {}
     for i = 1,#entry_list do
         local entry = entry_list[i]
-        if entry then
-            tinsert(data_list, entry:get_entry_data())
-        else
-            tinsert(data_list, false)
-        end
+        tinsert(data_list, entry:get_entry_data())
     end
     return data_list
 end
