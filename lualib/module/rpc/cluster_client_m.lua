@@ -12,7 +12,7 @@ local next = next
 local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
-local x_pcall = x_pcall
+local pcall = pcall
 
 local g_node_info_map = {}
 local g_config = nil
@@ -121,7 +121,11 @@ local CMD = {}
 
 --轮询给单个集群结点发
 function CMD.balance_send(svr_name,...)
-	assert(g_node_info_map[svr_name],"balance_send not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("balance_send not exists " .. svr_name)
+		return
+	end
+
 	local node_info = g_node_info_map[svr_name]
 	local name_list = node_info.name_list
 
@@ -132,26 +136,37 @@ end
 
 --轮询给单个集群结点发
 function CMD.balance_call(svr_name,...)
-	assert(g_node_info_map[svr_name],"balance_send not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("balance_call not exists " .. svr_name)
+		return
+	end
 	local node_info = g_node_info_map[svr_name]
 	local name_list = node_info.name_list
 
 	local index = get_balance(node_info)
 	local cluster_name = name_list[index]
-	local ret = {x_pcall(cluster.call,cluster_name,"@cluster_server",...)}
+	local ret = {pcall(cluster.call,cluster_name,"@cluster_server",...)}
 	local isok = tremove(ret,1)
 	if not isok then
-		log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
+		log.error("balance_call err ",svr_name,cluster_name,ret[1])
+		return
 	end
 	return {cluster_name = cluster_name, result = ret} 
 end
 
 --指定结点id发
 function CMD.send_by_id(svr_name,svr_id,...)
-	assert(g_node_info_map[svr_name],"send_by_id not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("send_by_id not exists " .. svr_name)
+		return
+	end
+
 	local node_info = g_node_info_map[svr_name]
 	local id_name_map = node_info.id_name_map
-	assert(id_name_map[svr_id],svr_name .. " send_by_id not exists svr_id " .. svr_id)
+	if not id_name_map[svr_id] then
+		log.warn(svr_name .. " send_by_id not exists svr_id " .. svr_id)
+		return
+	end
 
 	local cluster_name = id_name_map[svr_id]
 	cluster.send(cluster_name,"@cluster_server",...)
@@ -159,23 +174,35 @@ end
 
 --指定结点id发
 function CMD.call_by_id(svr_name,svr_id,...)
-	assert(g_node_info_map[svr_name],"call_by_id not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("call_by_id not exists " .. svr_name)
+		return
+	end
+	
 	local node_info = g_node_info_map[svr_name]
 	local id_name_map = node_info.id_name_map
-	assert(id_name_map[svr_id],svr_name .. " call_by_id not exists svr_id " .. svr_id)
+	if not id_name_map[svr_id] then
+		log.warn(svr_name .. " call_by_id not exists svr_id " .. svr_id)
+		return
+	end
 
 	local cluster_name = id_name_map[svr_id]
-	local ret = {x_pcall(cluster.call,cluster_name,"@cluster_server",...)}
+	local ret = {pcall(cluster.call,cluster_name,"@cluster_server",...)}
 	local isok = tremove(ret,1)
 	if not isok then
-		log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
+		log.error("call_by_id err ",svr_name,cluster_name,ret[1])
+		return
 	end
 	return {cluster_name = cluster_name, result = ret}
 end
 
 --给集群所有结点发
 function CMD.send_all(svr_name,...)
-	assert(g_node_info_map[svr_name],"balance_send not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("send_all not exists " .. svr_name)
+		return
+	end
+
 	local node_info = g_node_info_map[svr_name]
 	local name_list = node_info.name_list
 	for _,cluster_name in ipairs(name_list) do
@@ -185,20 +212,23 @@ end
 
 --给集群所有结点发
 function CMD.call_all(svr_name,...)
-	assert(g_node_info_map[svr_name],"balance_send not exists " .. svr_name)
+	if not g_node_info_map[svr_name] then
+		log.warn("call_all not exists " .. svr_name)
+		return
+	end
+	
 	local node_info = g_node_info_map[svr_name]
 	local name_list = node_info.name_list
-	local host_list = node_info.host_list
 
 	local res = {}
 	for i,cluster_name in ipairs(name_list) do
-		local ret = {x_pcall(cluster.call,cluster_name,"@cluster_server",...)}
+		local ret = {pcall(cluster.call,cluster_name,"@cluster_server",...)}
 		local isok = tremove(ret,1)
 		if not isok then
-			log.error("call_all err ",svr_name,cluster_name,tunpack(ret))
+			log.error("call_all err ",svr_name,cluster_name,ret[1])
+		else
+			tinsert(res,{cluster_name = cluster_name, result = ret})
 		end
-		local host = host_list[i]
-		tinsert(res,{cluster_name = cluster_name, result = ret})
 	end
 
 	return res
