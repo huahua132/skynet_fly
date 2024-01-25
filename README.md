@@ -52,7 +52,7 @@
 	- `git clone https://github.com/huahua132/skynet_fly`
 	- 安装MakeRequests.sh中依赖的库。
 	- 根据系统手动安装。
-    - `make build`
+    - `make linux`
 2. 构建skynet_config, webapp运维脚本
     - `cd examples/webapp/`
     - `sh ../../binshell/make_server.sh ../../`
