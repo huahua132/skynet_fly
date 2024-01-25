@@ -6,6 +6,7 @@ help:
 	@echo "make macosx      # macosx 编译 skynet fly"
 	@echo "make clean       # 清理"
 	@echo "make cleanall    # 清理所有"
+	@echo "make upskynet    # 更新skynet仓库代码"
 
 PLAT ?= none
 
@@ -76,6 +77,9 @@ $(SKYNET):
 
 $(SKYNET_BULDER):
 	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
+
+upskynet: $(SKYNET)
+	git submodule update --remote
 
 linux macosx freebsd: $(SKYNET) $(SKYNET_BULDER) \
  	$(LUA_CLIB_PATH) \
