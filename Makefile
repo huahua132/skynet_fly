@@ -19,6 +19,7 @@ LUA_INC ?= skynet/3rd/lua
 CFLAGS = -g -O0 -Wall -I$(LUA_INC)
 SHARED := -fPIC --shared
 
+SKYNET := skynet
 SKYNET_BULDER := skynet/skynet
 
 TLS_LIB=/usr/bin/openssl
@@ -69,15 +70,14 @@ CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
 $(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -L$(TLS_LIB) -I$(TLS_INC) -lssl
 
-
-skynet/Makefile:
+$(SKYNET):
 	git submodule update --init
 	chmod -R 744 skynet
 
 $(SKYNET_BULDER):
 	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
-linux macosx freebsd: $(SKYNET_BULDER) \
+linux macosx freebsd: $(SKYNET) $(SKYNET_BULDER) \
  	$(LUA_CLIB_PATH) \
 	$(foreach v,$(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so)
 	$(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
