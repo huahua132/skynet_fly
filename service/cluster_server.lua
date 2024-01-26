@@ -112,7 +112,7 @@ end
 contriner_client:CMD(CMD)
 
 skynet.start(function()
-	skynet_util.lua_dispatch(CMD,{})
+	skynet_util.lua_dispatch(CMD)
 
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','cluster_server')

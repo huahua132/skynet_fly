@@ -30,5 +30,5 @@ function CMD.exit(list)
 end
 
 skynet.start(function()
-	skynet_util.lua_dispatch(CMD,{})
+	skynet_util.lua_dispatch(CMD)
 end)

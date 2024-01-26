@@ -20,8 +20,6 @@ local pcall = pcall
 
 local loadmodsfile = skynet.getenv("loadmodsfile") .. '.lua'
 
-local NORET = {}
-
 local g_name_id_list_map = {}
 local g_id_list_map = {}
 local g_watch_map = {}
@@ -207,7 +205,7 @@ local function load_modules(...)
 end
 
 local function query(source,module_name)
-	assert(module_name,'not module_name')
+	assert(module_name,'not module_name:' .. module_name)
 	assert(g_id_list_map[module_name],"not exists " .. module_name)
 	assert(g_name_id_list_map[module_name],"not exists " .. module_name)
 	assert(g_version_map[module_name],"not exists " .. module_name)
@@ -236,7 +234,7 @@ local function watch(source,module_name,oldversion)
 	end
 
 	watch_map[source] = skynet.response()
-	return NORET
+	return skynet_util.NOT_RET
 end
 
 local function unwatch(source,module_name)
@@ -271,7 +269,7 @@ local function monitor_new(source,mod_version_map)
 	end
 
 	g_monitor_new_map[source] = skynet.response()
-	return NORET
+	return skynet_util.NOT_RET
 end
 
 local function unmonitor_new(source)
@@ -330,5 +328,5 @@ end
 
 skynet.start(function()
 	skynet.register('.contriner_mgr')
-	skynet_util.lua_dispatch(CMD,NORET,true)
+	skynet_util.lua_dispatch(CMD)
 end)

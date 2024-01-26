@@ -1,3 +1,7 @@
+local net_util = "ws_pbnet_util" --ws_pbnet_util or pbnet_util or jsonet_util or ws_jsonet_util
+local gate = "ws_gate"		     -- gate or ws_gate
+local protocol = "websocket"     -- websocket  or socket
+
 return {
 	--共享配置
 	share_config_m = {
@@ -6,7 +10,7 @@ return {
 		default_arg = {
 			--room_game_login用的配置
 			room_game_login = {
-				gateservice = "gate", --gate 或者 ws_gate
+				gateservice = gate, --gate 或者 ws_gate
 				--gate连接配置
 				gateconf = {
 					address = '127.0.0.1',
@@ -14,7 +18,7 @@ return {
 					maxclient = 2048,
 				},
 				login_plug = "login_check",
-				net_util = "pbnet_util",
+				net_util = net_util,
 			}
 		}
 	},
@@ -25,7 +29,7 @@ return {
 		launch_num = 6,
 		default_arg = {
 			hall_plug = "hall_plug",
-			net_util = "pbnet_util",
+			net_util = net_util,
 		}
 	},
 
@@ -46,7 +50,7 @@ return {
 		default_arg = {
 			instance_name = "default",
 			table_plug = "table_plug",
-			net_util = "pbnet_util",
+			net_util = net_util,
 			table_conf = {
 				player_num = 2,
 			}
@@ -59,8 +63,8 @@ return {
 		launch_num = 2,
 		delay_run = true,       --延迟运行
 		mod_args = {
-			{account = "skynet",password = '123456',player_id = 10000,net_util = "pbnet_util",protocol = "socket"},
-			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = "pbnet_util",protocol = "socket"},
+			{account = "skynet",password = '123456',player_id = 10000,net_util = net_util,protocol = protocol},
+			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = net_util,protocol = protocol},
 		}
 	}
 }

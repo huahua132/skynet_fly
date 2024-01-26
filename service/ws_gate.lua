@@ -64,5 +64,5 @@ function CMD.closed(_,fd)
 end
 
 skynet.start(function()
-	skynet_util.lua_dispatch(CMD,{},true)
+	skynet_util.lua_src_dispatch(CMD)
 end)

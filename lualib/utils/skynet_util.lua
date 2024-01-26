@@ -8,39 +8,49 @@ local next = next
 local pairs = pairs
 local retpack = skynet.retpack
 local tunpack = table.unpack
+local NOT_RET = {}
 
-local M = {}
+
+local M = {
+    NOT_RET = NOT_RET
+}
 
 --常用的lua消息处理函数
 --[[
     cmd_func 函数表
-    not_ret  标记本次不返回结果，一般想异步返回结果时调用。 比如用skynet.response
-    is_need_src 是否传递来源服务id
 ]]
-function M.lua_dispatch(cmd_func,not_ret,is_need_src) 
+function M.lua_dispatch(cmd_func) 
     assert(cmd_func)
-    assert(not_ret)
     
     skynet.dispatch('lua',function(session,source,cmd,...)
         local f = cmd_func[cmd]
         assert(f,'cmd no found :'..cmd .. ' from : ' .. source)
 
         if session == 0 then
-            if is_need_src then
-                f(source,...)
-            else
-                f(...)
-            end
+            f(...)
         else
-            local ret = nil
-            if is_need_src then
-                ret = {f(source,...)}
-            else
-                ret = {f(...)}
-            end
-            
+            local ret = {f(...)}
             local r1 = ret[1]
-            if r1 ~= not_ret then
+            if r1 ~= M.NOT_RET then
+                retpack(tunpack(ret))
+            end
+        end
+    end)
+end
+
+function M.lua_src_dispatch(cmd_func)
+    assert(cmd_func)
+    
+    skynet.dispatch('lua',function(session,source,cmd,...)
+        local f = cmd_func[cmd]
+        assert(f,'cmd no found :'..cmd .. ' from : ' .. source)
+        
+        if session == 0 then
+            f(source, ...)
+        else
+            local ret = {f(source, ...)}
+            local r1 = ret[1]
+            if r1 ~= M.NOT_RET then
                 retpack(tunpack(ret))
             end
         end
