@@ -23,16 +23,16 @@ function M.run()
 		return a.launch_seq < b.launch_seq
 	end) do
         if not mod_cfg.delay_run then
-            table.insert(before_run_list,mod_name)
+            table.insert(before_run_list, mod_name)
         else
-            table.insert(delay_run_list,mod_name)
+            table.insert(delay_run_list, mod_name)
         end
 	end
-
-    skynet.call(cmgr,'lua','load_modules',table.unpack(before_run_list))
+    local self_address = skynet.self()
+    skynet.call(cmgr, 'lua', 'load_modules', self_address, table.unpack(before_run_list))
     return function()
         if not delay_run_list then return end
-        skynet.call(cmgr,'lua','load_modules',table.unpack(delay_run_list))
+        skynet.call(cmgr, 'lua', 'load_modules', self_address, table.unpack(delay_run_list))
         delay_run_list = nil
     end
 end

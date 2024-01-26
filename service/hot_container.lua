@@ -110,7 +110,7 @@ function CMD.start(cfg)
 		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
-	new_loaded = nil
+
 	contriner_client:open_ready()
 	SERVER_STATE = "starting"
 	return ret
@@ -148,7 +148,7 @@ function CMD.register_visitor(source,module_name,servername)
 
 	g_source_map[source] = module_name or servername
 	skynet.fork(function()
-		skynet.call('.monitor_exit','lua','watch',source)
+		skynet.call('.monitor_exit', 'lua', 'watch', SELF_ADDRESS, source)
 		g_source_map[source] = nil
 	end)
 	return "pong"
@@ -157,5 +157,5 @@ end
 contriner_client:CMD(CMD)
 
 skynet.start(function()
-	skynet_util.lua_dispatch(CMD,{})
+	skynet_util.lua_dispatch(CMD)
 end)

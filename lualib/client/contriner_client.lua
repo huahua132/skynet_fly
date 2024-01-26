@@ -87,7 +87,7 @@ end
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
-		local id_list,name_id_list,version = skynet.call('.contriner_mgr','lua','watch',key,old_version)
+		local id_list,name_id_list,version = skynet.call('.contriner_mgr', 'lua', 'watch', SELF_ADDRESS, key, old_version)
 		if not is_close_swtich then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
@@ -110,7 +110,7 @@ local function call_back_queryed(queryed)
 end
 
 g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
-	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr','lua','query',key)
+	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr', 'lua', 'query', SELF_ADDRESS, key)
 	assert(t[key],"query err " .. key)
 	if not g_is_watch_map[key] then
 		g_is_watch_map[key] = true
@@ -131,7 +131,7 @@ local function monitor_all()
 	skynet.fork(function()
 		local mod_version_map = nil
 		while not IS_CLOSE do
-			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new',mod_version_map)
+			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
 			for mod_name,_ in pairs(mod_version_map) do
 				if not g_register_map[mod_name] then
 					g_register_map[mod_name] = true
@@ -145,10 +145,10 @@ end
 skynet.exit = function()
 	IS_CLOSE = true
 	for mod_name in pairs(g_mod_svr_ids_map) do
-		skynet.send('.contriner_mgr','lua','unwatch',mod_name)
+		skynet.send('.contriner_mgr','lua','unwatch',SELF_ADDRESS, mod_name)
 	end
 	if is_monitor_all then
-		skynet.call('.contriner_mgr','lua', 'unmonitor_new')
+		skynet.call('.contriner_mgr','lua', 'unmonitor_new', SELF_ADDRESS)
 	end
 	return skynet_exit()
 end

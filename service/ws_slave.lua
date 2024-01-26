@@ -151,5 +151,5 @@ skynet.start(function()
 		id = skynet.PTYPE_CLIENT,
 	}
 
-	skynet_util.lua_dispatch(CMD,{},true)
+	skynet_util.lua_src_dispatch(CMD)
 end)

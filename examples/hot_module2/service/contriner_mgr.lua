@@ -43,5 +43,5 @@ end
 skynet.start(function()
 	skynet.register('.contriner_mgr')
 	
-	skynet_util.lua_dispatch(CMD,{})
+	skynet_util.lua_dispatch(CMD)
 end)

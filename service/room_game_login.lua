@@ -220,7 +220,7 @@ end
 
 skynet.start(function()
 	SELF_ADDRESS = skynet.self()
-	skynet_util.lua_dispatch(CMD,{})
+	skynet_util.lua_dispatch(CMD)
 
 	local confclient = contriner_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')

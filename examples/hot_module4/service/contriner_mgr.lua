@@ -11,15 +11,13 @@ local skynet_call = skynet.call
 local skynet_pack = skynet.pack
 local skynet_ret = skynet.ret
 
-local NORET = {}
-
 local g_module_id_list_map = {}
 local g_module_watch_map = {}
 local g_module_version_map = {}
 
 local CMD = {}
 
-function CMD.load_module(source,module_name,launch_num)
+function CMD.load_module(module_name,launch_num)
 	assert(module_name,'not module_name')
 	assert(launch_num and launch_num > 0,"launch_num err")
 
@@ -84,7 +82,7 @@ function CMD.watch(source,module_name,version)
 	end
 
 	watch_map[source] = skynet.response()
-	return NORET
+	return skynet_util.NOT_RET
 end
 
 function CMD.unwatch(source,module_name)
@@ -106,5 +104,5 @@ end
 
 skynet.start(function()
 	skynet.register('.contriner_mgr')
-	skynet_util.lua_dispatch(CMD,NORET,true)
+	skynet_util.lua_dispatch(CMD)
 end)

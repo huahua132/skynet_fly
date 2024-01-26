@@ -104,7 +104,7 @@ local function reload_switch_test(mod_name)
 	end)
 	skynet.wait(wi)
 
-	skynet.call('.contriner_mgr','lua','load_modules',mod_name)
+	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), mod_name)
 	loginout(fd)
 	out_wi = coroutine.running()
 	skynet.wait(out_wi)
@@ -141,7 +141,7 @@ local function reload_reconnet_test(mod_name)
 	end)
 	skynet.wait(wi)
 
-	skynet.call('.contriner_mgr','lua','load_modules',mod_name)
+	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),mod_name)
 
 	local close_wi = coroutine.running()
 
@@ -244,7 +244,7 @@ local function player_reload_reconnect(mod_name)
 	skynet.sleep(300)
 	--热更
 	log.info("热更:",mod_name)
-	skynet.call('.contriner_mgr','lua','load_modules',mod_name)
+	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),mod_name)
 	--重新连接
 	skynet.sleep(200)
 	log.info("重新连接:",g_config)
