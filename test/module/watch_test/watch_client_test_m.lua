@@ -63,7 +63,8 @@ end
 
 function CMD.start()
     skynet.fork(function()
-        local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
+        --local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
+        local rpc_interface = service_watch_interface:new('.watch_server_test_m')      --适用于监听不是可热更的服务
         watch_client = watch_syn.new_client(rpc_interface)
         log.info("start test_syn")
         test_syn()
