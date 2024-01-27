@@ -19,7 +19,7 @@ function M:send(...)
     skynet.send(self.server, 'lua', ...)
 end
 
-function M:call(cmd, ...)
+function M:call(...)
     return skynet.call(self.server, 'lua', ...)
 end
 

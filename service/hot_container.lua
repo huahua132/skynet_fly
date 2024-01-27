@@ -19,14 +19,16 @@ local new_loaded = _loaded
 local MODULE_NAME = MODULE_NAME
 local module_info = require "module_info"
 local contriner_client = require "contriner_client"
+local contriner_interface = require "contriner_interface"
 contriner_client:close_ready()
 
 local CMD = require(MODULE_NAME)
 local write_mod_required = require "write_mod_required"
 local skynet_util = require "skynet_util"
 local log = require "log"
-
 local timer = require "timer"
+
+local SERVER_STATE_TYPE = contriner_interface.SERVER_STATE_TYPE
 
 local NOT_FUNC = function() return true end
 
@@ -42,7 +44,6 @@ assert(module_exit,MODULE_NAME .. " not exit func")
 local old_skynet_exit = skynet.exit
 
 local SELF_ADDRESS = skynet.self()
-local SERVER_STATE = "loading"
 
 module_info.set_base_info {
 	module_name = MODULE_NAME,
@@ -66,7 +67,7 @@ local g_source_map = {}        --来访者列表
 skynet_util.register_info_func("hot_container",function()
 	local info = {
 		module_info = module_info.get_base_info(),
-		server_state = SERVER_STATE,
+		server_state = contriner_interface.get_server_state(),
 		source_map = g_source_map,
 		exit_remain_time = g_exit_timer and g_exit_timer:remain_expire() or 0,
 		week_visitor_map = contriner_client:get_week_visitor_map(),
@@ -92,7 +93,7 @@ local function check_exit()
 		if not next(g_source_map) then
 			--真正退出
 			log.info("exited")
-			SERVER_STATE = "exited"
+			contriner_interface.set_server_state(SERVER_STATE_TYPE.exited)
 			if module_exit() then
 				g_exit_timer = timer:new(timer.minute * 10,1,skynet.exit)
 			else
@@ -112,7 +113,7 @@ function CMD.start(cfg)
 	end
 
 	contriner_client:open_ready()
-	SERVER_STATE = "starting"
+	contriner_interface.set_server_state(SERVER_STATE_TYPE.starting)
 	return ret
 end
 
@@ -122,7 +123,7 @@ function CMD.close()
 	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
 	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
-	SERVER_STATE = "fix_exited"
+	contriner_interface.set_server_state(SERVER_STATE_TYPE.fix_exited)
 end
 
 --退出之前

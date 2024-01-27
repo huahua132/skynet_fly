@@ -1,5 +1,8 @@
 local skynet = require "skynet"
+local skynet_util = require "skynet_util"
 local log = require "log"
+local contriner_interface = require "contriner_interface"
+local SERVER_STATE_TYPE = contriner_interface.SERVER_STATE_TYPE
 
 local assert = assert
 local setmetatable = setmetatable
@@ -12,6 +15,15 @@ local watch_cmd = "_watch"
 local unwatch_cmd = "_unwatch"
 
 local M = {}
+
+M.EVENT_TYPE = {
+    update = 1,  --更新
+    move   = 2,  --请转移访问
+    unwatch = 3, --取消监听
+}
+
+local EVENT_TYPE = M.EVENT_TYPE
+
 local server = {}
 local server_mt = {__index = server}
 
@@ -19,28 +31,30 @@ local server_mt = {__index = server}
 --server
 ------------------------------------------------------------------------------------------
 
-function M.new_server(CMD, NOT_RET)
-    assert(CMD[watch_cmd], "exists _watch cmd")
-    assert(CMD[unwatch_cmd], "exists _unwatch cmd")
-    assert(NOT_RET, "not NOT_RET")
+function M.new_server(CMD)
+    assert(contriner_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
+    assert(not CMD[watch_cmd], "exists _watch cmd")
+    assert(not CMD[unwatch_cmd], "exists _unwatch cmd")
     local watch_map = {}         --监听者记录
     local version_map = {}       --版本
     local value_map = {}         --值
     local is_first_map = {}      --监听者是否首次拿值
+    local is_exit = false
+    
     local t = {
         watch_map = watch_map,
         value_map = value_map,
         version_map = version_map,
+        is_first_map = is_first_map,
     }
 
-    t._update = function(name, new_v)
+    t._event = function(name, new_v, event_type)
         local w_map = assert(watch_map[name], "not exists watch name " .. name)
         value_map[name] = new_v
         version_map[name] = version_map[name] + 1
         local version = version_map[name]
-
         for src, rsp in pairs(w_map) do
-            rsp(true, new_v, version)
+            rsp(true, new_v, version, event_type)
             w_map[src] = nil
         end
     end
@@ -51,27 +65,49 @@ function M.new_server(CMD, NOT_RET)
         local version = version_map[name]
         local is_firsts = is_first_map[name]
         local v = value_map[name]
+        if is_exit then
+            return v, version, EVENT_TYPE.move
+        end
         if old_version ~= version or not is_firsts[source] then
             is_firsts[source] = true
-            return v, version
+            return v, version, EVENT_TYPE.update
         end
 
         w_map[source] = skynet.response()
-        return NOT_RET
+        return skynet_util.NOT_RET
     end
 
     CMD[unwatch_cmd] = function(source, name)
         local w_map = assert(watch_map[name], "not exists watch name " .. name)
-        local rsp = assert(w_map[source], "not exists watch " .. source)
+        local rsp = w_map[source]
         local is_firsts = is_first_map[name]
         local version = version_map[name]
         local v = value_map[name]
-        rsp(true, v, version)
-
         is_firsts[source] = nil
         w_map[source] = nil
+        if rsp then
+            rsp(true, v, version, EVENT_TYPE.unwatch)
+        end
+
         return true
     end
+
+    local old_fix_exit = CMD['fix_exit']
+    CMD['fix_exit'] = function()
+        is_exit = true
+        for name,_ in pairs(watch_map) do
+            t._event(name, value_map[name], EVENT_TYPE.move)
+        end
+        if old_fix_exit then
+            old_fix_exit()
+        end
+    end
+
+    local cancel_exit = CMD['cancel_exit']
+    CMD['cancel_exit'] = function()
+        is_exit = false
+    end
+
     setmetatable(t, server_mt)
     return t
 end
@@ -79,7 +115,7 @@ end
 --注册
 function server:register(name, init_v)
     local watch_map = self.watch_map
-    assert(watch_map[name], "repeat register " .. name)  --重复注册
+    assert(not watch_map[name], "repeat register " .. name)  --重复注册
     local version_map = self.version_map
     local value_map = self.value_map
     local is_first_map = self.is_first_map
@@ -93,7 +129,7 @@ end
 
 --发布新值
 function server:publish(name, new_value)
-    return self._update(name, new_value)
+    return self._event(name, new_value, EVENT_TYPE.update)
 end
 
 ------------------------------------------------------------------------------------------
@@ -108,20 +144,38 @@ function M.new_client(rpc_interface)
     local value_map = {}
     local is_watch_map = {}
     local version_map = {}
+    local waits_map = {}
     local t = {
         value_map = value_map,
         is_watch_map = is_watch_map,
-        waits_map = {},
+        version_map = version_map,
+        waits_map = waits_map,
         is_exit = false,
     }
 
     local self_address = skynet.self()
-    t._send = function(cmd, name)
-        rpc_interface:send(cmd, self_address, name)
+    t._send = function(cmd, ...)
+        rpc_interface:send(cmd, self_address, ...)
     end
 
-    t._call = function(cmd, name)
-        return rpc_interface:call(cmd, self_address, name)
+    t._call = function(cmd, ...)
+        return rpc_interface:call(cmd, self_address, ...)
+    end
+
+    t._add_wait = function(name)
+        local waits = waits_map[name]
+        local token = coroutine.running()
+        tinsert(waits, token)
+        skynet.wait(token)
+    end
+
+    t._wakeup = function(name)
+        local waits = waits_map[name]
+        for i = #waits, 1, -1 do
+            local token = waits[i]
+            tremove(waits, i)
+            skynet.wakeup(token)
+        end
     end
     
     local old_skyent_exit = skynet.exit
@@ -149,22 +203,37 @@ function client:watch(name)
     waits_map[name] = {}
 
     skynet.fork(function()
+        local not_update_cnt = 0
         while not self.is_exit and is_watch_map[name] do
-            local v, version = self._call(watch_cmd, name, version_map[name])
+            local v, version, event_type = self._call(watch_cmd, name, version_map[name])
             value_map[name] = v
             version_map[name] = version
-
-            local waits = waits_map[name]
-            for i = #waits, 1, -1 do
-                local token = waits[i]
-                skynet.wakeup(token)
-                tremove(waits, i)
+            if event_type == EVENT_TYPE.move then
+                skynet.sleep(10)                    --避免move中发给旧服务的请求过多
+                not_update_cnt = not_update_cnt + 1
+                if not_update_cnt % 100 == 0 then
+                    --正常不会有这么多次，出现这种情况，肯定是有bug流量没切过去
+                    log.warn("watch move times abnormal ", not_update_cnt)
+                elseif not_update_cnt > 10000 then
+                    --避免出现这种情况导致死循环
+                    log.error("watch move times fatal ", not_update_cnt)
+                    break
+                end
+            else
+                not_update_cnt = 0
+                self._wakeup(name)
             end
         end
         is_watch_map[name] = nil
+        self._wakeup(name)
     end)
 
     return true
+end
+
+--是否监听
+function client:is_watch(name)
+    return self.is_watch_map[name]
 end
 
 --取消监听
@@ -186,11 +255,9 @@ end
 function client:await_get(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
     local version = self.version_map[name]
+    local event_type = nil
     if not version then
-        local waits = self.waits_map[name]
-        local token = coroutine.running()
-        tinsert(waits, token)
-        skynet.wait(token)
+        self._add_wait(name)
     end
 
     local value_map = self.value_map
@@ -200,11 +267,9 @@ end
 --等待更新
 function client:await_update(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
-    local waits = self.waits_map[name]
-    local token = coroutine.running()
-    tinsert(waits, token)
-    skynet.wait(token)
-
+    self._add_wait(name)
     local value_map = self.value_map
     return value_map[name]
 end
+
+return M

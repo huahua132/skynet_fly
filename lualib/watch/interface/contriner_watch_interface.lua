@@ -1,12 +1,12 @@
-
+local contriner_client = require "contriner_client"
 local setmetatable = setmetatable
 
 local M = {}
 local mt = {__index = M}
 --可热更模块接口
-function M:new(contriner_client)
+function M:new(mod_name, instance_name)
     local t = {
-        cli = contriner_client
+        cli = contriner_client:new(mod_name, instance_name)
     }
 
     setmetatable(t, mt)
@@ -17,7 +17,7 @@ function M:send(...)
     return self.cli:mod_send(...)
 end
 
-function M:call(cmd, ...)
+function M:call(...)
     return self.cli:mod_call(...)
 end
 
