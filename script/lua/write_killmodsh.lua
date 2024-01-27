@@ -22,7 +22,7 @@ fi
 shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s get_list | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s |\n")
 shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s find_server_id contriner_mgr 2 | \\\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s call kill_modules $* | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s call kill_modules 0 $* | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s")
 
 local shell_path = server_path .. 'script/'

@@ -1,16 +1,78 @@
 local watch_syn = require "watch_syn"
 local skynet = require "skynet"
+
+local contriner_client = require "contriner_client"
 local contriner_watch_interface = require "contriner_watch_interface"
 local service_watch_interface = require "service_watch_interface"
+local log = require "log"
+
+contriner_client:register("watch_server_test_m")
 
 local watch_client = nil
 
 local CMD = {}
 
+--同步数据
+local function test_syn()
+    watch_client:watch("test_syn_data")
+
+    assert(watch_client:await_get("test_syn_data") == nil)
+    for i = 1, 5 do
+        log.info("test_syn:", i, assert(watch_client:await_update("test_syn_data") == "test_syn_data: " .. i))
+    end
+
+    --服务器热更后同步值
+    skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),"watch_server_test_m")
+
+    assert(watch_client:await_update("test_syn_data") == nil)
+    for i = 1, 5 do
+        log.info("test_syn:", i, assert(watch_client:await_update("test_syn_data") == "test_syn_data: " .. i))
+    end
+end
+
+--取消监听
+local function test_unwatch()
+    watch_client:watch("unwatch_data")
+
+    skynet.fork(function()
+        skynet.sleep(500)
+        log.info("test_unwatch>>>> ")
+        watch_client:unwatch("unwatch_data")
+    end)
+
+    while watch_client:is_watch("unwatch_data") do
+        local v, event = watch_client:await_update("unwatch_data")
+        log.info("test_unwatch:", v, event)
+        if event == watch_syn.EVENT_TYPE.unwatch then
+            break
+        end
+    end
+end
+
+--测试热更失败应还能正常与旧服务工作
+local function test_reloaderr()
+    watch_client:watch("test_reloaderr_data")
+    while true do
+        local v, event = watch_client:await_update("test_reloaderr_data")
+        log.info("test_reloaderr:", v, event)
+        if event == watch_syn.EVENT_TYPE.unwatch then
+            break
+        end
+    end
+end
+
 function CMD.start()
     skynet.fork(function()
-        
+        local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
+        watch_client = watch_syn.new_client(rpc_interface)
+        log.info("start test_syn")
+        test_syn()
+        log.info("start test_unwatch")
+        test_unwatch()
+        log.info("start test_reloaderr")
+        test_reloaderr()
     end)
+
     return true
 end
 

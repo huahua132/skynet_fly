@@ -110,6 +110,7 @@ end
 
 local function load_modules(...)
 	local module_name_list = {...}
+	assert(#module_name_list >= 1, "not args ")
 	local load_mods = loadfile(loadmodsfile)()
 	assert(load_mods,"not load_mods")
 
@@ -247,9 +248,9 @@ local function unwatch(source,module_name)
 	local version = g_version_map[module_name]
 	local watch_map = g_watch_map[module_name]
 	local response = watch_map[source]
-	assert(response)
-
-	response(true,id_list,name_id_list,version)
+	if response then
+		response(true,id_list,name_id_list,version)
+	end
 	watch_map[source] = nil
 	return true
 end
@@ -274,8 +275,9 @@ end
 
 local function unmonitor_new(source)
 	local response = g_monitor_new_map[source]
-	assert(response)
-	response(true, g_version_map)
+	if response then
+		response(true, g_version_map)
+	end
 	g_monitor_new_map[source] = nil
 	return true
 end

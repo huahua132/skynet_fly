@@ -50,7 +50,7 @@ function CMD.reload()
 	assert(file)
 	local load_mods = require (loadmodsfile)
 	local server_id = assert(ARGV[4])
-	local mod_name_str = ""
+	local mod_name_str = ",0"
 	for i = 5,#ARGV do
 		local module_name = ARGV[i]
 		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
