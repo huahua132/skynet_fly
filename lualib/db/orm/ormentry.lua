@@ -37,12 +37,12 @@ function M:set(filed_name, filed_value)
     ormtab:set_change_entry(self)
 end
 
--- 数据
+-- 获取数据表
 function M:get_entry_data()
     return self._entry_data
 end
 
--- 修改条目
+-- 获取修改条目
 function M:get_change_map()
     return self._change_map
 end
