@@ -359,7 +359,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         local sql_ret = self._db:query(sql_str)
         if not sql_ret or sql_ret.err then
             log.error("_insert_one err ",sql_ret,sql_str)
-            return nil
+            error("_insert_one err" .. sql_str)
         end
 
         return true
@@ -376,9 +376,9 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
             sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
         end
         local sql_ret = self._db:query(sql_str)
-        if sql_ret.err then
+        if not sql_ret or sql_ret.err then
             log.error("select err ",sql_str,sql_ret)
-            error(sql_ret.err)
+            error("select err ".. sql_str)
         end
         return sql_ret
     end
@@ -388,9 +388,9 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     self._select_one = function(key_values)
         local sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[keys_max_len], tunpack(key_values))
         local sql_ret = self._db:query(sql_str)
-        if sql_ret.err then
+        if not sql_ret or sql_ret.err then
             log.error("_select_one err ",sql_str,sql_ret)
-            error(sql_ret.err)
+            error("_select_one err " .. sql_str)
         end
         return sql_ret[1]
     end
@@ -474,13 +474,11 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         end
         local sql_str = update_format_head .. center_str .. sformat(update_format_end,tunpack(key_values))
         local sql_ret = self._db:query(sql_str)
-        if not sql_ret then
-            return false
-        end
-        if sql_ret.err then
+        if not sql_ret or sql_ret.err then
             log.error("_update_one err ",sql_str,sql_ret)
-            return false
+            error("_update_one err " .. sql_str)
         end
+
         return true
     end
 
@@ -495,9 +493,9 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         end
         
         local sql_ret = self._db:query(sql_str)
-        if sql_ret.err then
-            log.error("delete err ",sql_str,sql_ret)
-            error(sql_ret.err)
+        if not sql_ret or sql_ret.err then
+            log.error("_delete err ",sql_str,sql_ret)
+            error("_delete err " .. sql_str)
         end
         return sql_ret.affected_rows
     end

@@ -407,11 +407,13 @@ local function inval_time_out(week_t)
             end
         end
 
+        local is_have_fail = false
         local res_list = t:save_entry(entry_list)
         for i = 1, #entry_list do
             local res = res_list[i]
             local entry = entry_list[i]
             if not res then
+                is_have_fail = true
                 change_flag_map[entry] = true      --没有保存成功，下次继续尝试
                 if not resave_cnt_map[entry] then
                     resave_cnt_map[entry] = 0
@@ -423,6 +425,9 @@ local function inval_time_out(week_t)
                     log.warn("inval_time_out save entry err ", resave_cnt_map[entry], entry:get_entry_data())
                 end
             end
+        end
+        if is_have_fail then
+            skynet.sleep(100) --避免失败了请求太过频繁
         end
     end
 end

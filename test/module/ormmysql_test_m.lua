@@ -133,8 +133,8 @@ local function test_create_entry()
 
     --主键冲突
     local new_data = {player_id = 10001,role_id = 1, sex = 1}
-    local res = orm_obj:create_one_entry(new_data)
-    assert(not res)     
+    local isok, res = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    assert(not isok)     
 
     --缺少主键数据
     local new_data = {player_id = 10001,role_id = 2}
@@ -986,8 +986,8 @@ local function test_craete_one()
 
     --主键冲突
     local new_data = {player_id = 10001,role_id = 1, sex = 1}
-    local entry = orm_obj:create_one_entry(new_data)
-    assert(not entry)     
+    local isok, err = pcall(orm_obj.create_one_entry, orm_obj, new_data)
+    assert(not isok)     
 
     --缺少主键数据
     local new_data = {player_id = 10001,role_id = 2}
@@ -1039,6 +1039,106 @@ local function test_select_one()
     delete_table()
 end
 
+--测试连接断开后的API效果
+local function test_disconnect()
+    delete_table()
+    --批量创建
+    --因为批量创建可能存在分批请求mysql，所有过程中不能断言，结果应该是全部创建失败
+    local orm_obj = test_create_table()
+
+    local entry_list = orm_obj:create_entry({
+        {player_id = 110002,role_id = 1, sex = 1},
+        {player_id = 110002,role_id = 2, sex = 1},
+        {player_id = 110002,role_id = 2, sex = 2},
+        {player_id = 110002,role_id = 3, sex = 2},
+        {player_id = 110003,role_id = 1, sex = 1},
+        {player_id = 110003,role_id = 2, sex = 1},
+        {player_id = 110003,role_id = 2, sex = 2},
+        {player_id = 110003,role_id = 3, sex = 2},
+    })
+
+    os.execute("pkill mysql")
+    log.info("杀掉数据库》》》》》》》》》》》》》")
+    skynet.sleep(500)
+    --新建多条数据
+    local new_data_list = {
+        {player_id = 10002,role_id = 1, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 2},
+        {player_id = 10002,role_id = 3, sex = 2},
+        {player_id = 10003,role_id = 1, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 2},
+        {player_id = 10003,role_id = 3, sex = 2},
+    }
+
+    local res = orm_obj:create_entry(new_data_list)
+    for i = 1, #res do
+        assert(res[i] == false)
+    end
+
+    --新建单条数据
+    --创建失败，应该出现断言错误
+
+    local isok, err = pcall(orm_obj.create_one_entry, orm_obj, {
+        player_id = 10005, role_id = 3, sex = 2
+    })
+    log.error("create_one_entry:", isok, err)
+    assert(not isok)
+
+    --批量查询
+    --数据库断开了，查询失败，应该断言
+    local isok, err = pcall(orm_obj.get_entry, orm_obj, 10002, 1)
+
+    log.error("get_entry:", isok, err)
+    assert(not isok)
+
+    --查询单条数据
+    local isok,err = pcall(orm_obj.get_one_entry, orm_obj, 10003, 3, 2)
+    log.error("get_one_entry:", isok, err)
+    assert(not isok)
+
+    --批量保存数据
+    --因为保存也是批量分配执行的，并且设置间隔保存的时候会自动重试，所以不能断言。
+    for _,entry in ipairs(entry_list) do
+        entry:set("nickname", "skynet_fly")
+    end
+    local ret_list = orm_obj:save_entry(entry_list)
+    log.error("save_entry:", ret_list)
+    for _,v in ipairs(ret_list) do
+        assert(v == false)
+    end
+
+    --保存一条数据，失败应该断言
+    local isok, err = pcall(orm_obj.save_one_entry, orm_obj, entry_list[1])
+    log.error("save_one_entry:", isok, err)
+    assert(not isok)
+
+    --删除数据，失败应该断言
+    local isok, err = pcall(orm_obj.delete_entry, orm_obj, 10003, 3, 2)
+    log.error("delete_entry:", isok, err)
+    assert(not isok)
+
+    --查询所有数据，失败应该断言
+    local isok, err = pcall(orm_obj.get_all_entry, orm_obj)
+    log.error("get_all_entry:", isok, err)
+    assert(not isok)
+
+    --删除所有数据，失败应该断言
+    local isok, err = pcall(orm_obj.delete_all_entry, orm_obj)
+    log.error("delete_all_entry:", isok, err)
+    assert(not isok)
+
+    --通过数据查询出entry，失败应该断言
+    local isok, err = pcall(orm_obj.get_entry_by_data, orm_obj, {player_id = 10003, role_id = 3, sex = 1})
+    log.error("get_entry_by_data:", isok, err)
+    assert(not isok)
+
+    log.info("启动数据库》》》》》》》》》》》》》")
+    os.execute("systemctl start mysql")
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -1058,6 +1158,7 @@ function CMD.start()
         test_delete_all()
         test_craete_one()
         test_select_one()
+        test_disconnect()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
