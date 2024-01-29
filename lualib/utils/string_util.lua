@@ -7,7 +7,7 @@ local sgmatch = string.gmatch
 local next = next
 local pairs = pairs
 local strgsub = string.gsub
-
+local sfind = string.find
 --[[
 	函数作用域：M 的成员函数
 	函数名称: split
@@ -51,6 +51,12 @@ local escape_map = {
 --防sql注入
 function M.quote_sql_str(str)
     return strgsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
+end
+
+function M.is_binary_string(str)
+    local s = str:gsub("[%z\t\n\r ]", "") -- 忽略空白字符
+    -- 查找其他控制字符或高ASCII值
+    return sfind(s, "[%c%z\128-\255]") ~= nil
 end
 
 return M
