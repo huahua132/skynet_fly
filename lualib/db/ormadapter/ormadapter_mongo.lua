@@ -28,11 +28,27 @@ function M:new(db_name)
         _filed_list = nil,
         _filed_map = nil,
         _key_list = nil,
+        batch_insert_num = 10,
+        batch_update_num = 10,
     }
 
     setmetatable(t, mata)
 
     return t
+end
+
+--设置单次整合批量插入的数量
+function M:set_batch_insert_num(num)
+    assert(num > 0)
+    self.batch_insert_num = num
+    return self
+end
+
+--设置单次整合批量更新的数量
+function M:set_batch_update_num(num)
+    assert(num > 0)
+    self.batch_update_num = num
+    return self
 end
 
 -- 构建表
@@ -61,26 +77,53 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     local key_len = #key_list
     --insert 创建
     self._insert = function(entry_data_list)
+        --批量插入
         local res_list = {}
-        for i = 1,#entry_data_list do
-            local entry_data = entry_data_list[i]
-            local isok,err = collect_db:raw_safe_insert(entry_data)
-            if not isok then
-                log.error("insert doc err ",err)
-                res_list[i] = false
+        local insert_list = {}
+        local ref_list = {}     --引用一下，用于错误打印
+        local cur = 1
+        local ret_index = 1
+        local len = #entry_data_list
+        while true do
+            if cur > len then break end
+            for j = 1, self.batch_insert_num do
+                if entry_data_list[cur] then
+                    insert_list[j] = table_util.deep_copy(entry_data_list[cur])   --需要拷贝一下，因为 safe_batch_insert会改动原表
+                    ref_list[j] = entry_data_list[cur]
+                else
+                    insert_list[j] = nil
+                    ref_list[j] = nil
+                end
+                
+                cur = cur + 1
+            end
+
+            if #insert_list <= 0 then break end
+
+            local ok, isok, err = pcall(collect_db.safe_batch_insert, collect_db, insert_list)
+            if ok and isok then
+                for i = 1, #insert_list do
+                    res_list[ret_index] = true
+                    ret_index = ret_index + 1
+                end
             else
-                res_list[i] = true
+                log.error("_insert err ", self._tab_name, err, ref_list)
+                for i = 1, #insert_list do
+                    res_list[ret_index] = false
+                    ret_index = ret_index + 1
+                end
             end
         end
+
         return res_list
     end
 
     --insert_one 创建一条数据
     self._insert_one = function(entry_data)
-        local isok,err = collect_db:raw_safe_insert(entry_data)
-        if not isok then
-            log.error("insert doc err ",err)
-            return nil
+        local ok, isok, err = pcall(collect_db.raw_safe_insert, collect_db, entry_data)
+        if not ok or not isok then
+            log.error("_insert_one doc err ", self._tab_name, err, entry_data)
+            error("_insert_one err ")
         end
         return true
     end
@@ -135,22 +178,59 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
  
     self._update = function(entry_data_list,change_map_list)
         local res_list = {}
-        for i = 1,#entry_data_list do
-            local entry_data = entry_data_list[i]
-            local change_map = change_map_list[i]
-            for k,_ in pairs(query) do
-                query[k] = entry_data[k]
+        local cur = 1
+        local ret_index = 1
+        local len = #entry_data_list
+        local updates = {}
+        local min_len = self.batch_update_num
+        if len < min_len then
+            min_len = len
+        end
+        for i = 1, min_len do
+            updates[i] = {
+                query = table_util.deep_copy(query),
+                update = {
+                    ['$set'] = nil,
+                }
+            }
+        end
+        while true do
+            if cur > len then break end
+
+            for i = 1, self.batch_update_num do
+                local entry_data = entry_data_list[cur]
+                local change_map = change_map_list[cur]
+                cur = cur + 1
+                if entry_data then
+                    local update = updates[i]
+                    for k,_ in pairs(update.query) do
+                        update.query[k] = entry_data[k]
+                    end
+
+                    local up = {}
+                    for k,_ in pairs(change_map) do
+                        up[k] = entry_data[k]
+                    end
+                    update.update['$set'] = up
+                else
+                    updates[i] = nil
+                end
             end
-            local update = {}
-            for k,_ in pairs(change_map) do
-                update[k] = entry_data[k]
-            end
-            local ok,isok,err = pcall(collect_db.safe_update, collect_db, query, {['$set'] = update})
-            if not ok or not isok then
-                log.error("update doc err ",isok, err)
-                res_list[i] = false
+
+            if #updates <= 0 then break end
+
+            local ok,isok,err = pcall(collect_db.safe_batch_update, collect_db, updates)
+            if ok and isok then
+                for i = 1, #updates do
+                    res_list[ret_index] = true
+                    ret_index = ret_index + 1
+                end
             else
-                res_list[i] = true
+                log.error("_update err ", self._tab_name, err, updates)
+                for i = 1, #updates do
+                    res_list[ret_index] = false
+                    ret_index = ret_index + 1
+                end
             end
         end
 
@@ -167,8 +247,8 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         end
         local ok,isok,err = pcall(collect_db.safe_update, collect_db, query, {['$set'] = update})
         if not ok or not isok then
-            log.error("_update_one doc err ",isok, err)
-            return nil
+            log.error("_update_one doc err ",self._tab_name, err)
+            error("_update_one doc err")
         end
         return true
     end
@@ -182,9 +262,10 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
 
         local isok,err = collect_db:safe_delete(delete_query)
         if not isok then
-            log.error("delete doc err ",err)
+            log.error("delete doc err ", self._tab_name, err)
+            error("delete doc err")
         end
-        return isok
+        return true
     end
 
     return self
@@ -202,12 +283,24 @@ end
 
 -- 查询表数据
 function M:get_entry(key_values)
-    return self._select(key_values)
+    local ok, ret = pcall(self._select, key_values)
+    if not ok then
+        log.error("_select err ", self._tab_name, key_values)
+        error("_select err")
+    else
+        return ret
+    end
 end
 
 -- 查询一条表数据
 function M:get_one_entry(key_values)
-    return self._select_one(key_values)
+    local ok, ret = pcall(self._select_one, key_values)
+    if not ok then
+        log.error("_select_one err ", self._tab_name, key_values)
+        error("_select_one err")
+    else
+        return ret
+    end
 end
 
 -- 保存表数据
