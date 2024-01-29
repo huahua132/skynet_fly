@@ -4,6 +4,7 @@ local setmetatable = setmetatable
 local select = select
 local tunpack = table.unpack
 local assert = assert
+local error = error
 
 contriner_client:register("orm_table_m")
 
@@ -15,8 +16,8 @@ local mt = {__index = function(t,k)
     t[k] = function(self,...)
         t._client = t._client or contriner_client:new("orm_table_m",t._orm_name)
         local ret = nil
-        --尝试 5 次，还不成功，那肯定是数据库挂逼了或者热更后执行保存比较耗时
-        for i = 1,5 do
+        --尝试 100 次，还不成功，那肯定是数据库挂逼了或者热更后执行保存比较耗时
+        for i = 1,100 do
             ret = {t._client:mod_call_by_name("call", k, ...)}
             local is_move = ret[1]
             if not is_move then
@@ -24,6 +25,7 @@ local mt = {__index = function(t,k)
             end
             skynet.yield()
         end
+        error("call err ",k, ...)
     end
     return t[k]
 end}
