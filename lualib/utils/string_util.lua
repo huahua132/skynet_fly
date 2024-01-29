@@ -53,10 +53,4 @@ function M.quote_sql_str(str)
     return strgsub(str, "[\0\b\n\r\t\26\\\'\"]", escape_map)
 end
 
-function M.is_binary_string(str)
-    local s = str:gsub("[%z\t\n\r ]", "") -- 忽略空白字符
-    -- 查找其他控制字符或高ASCII值
-    return sfind(s, "[%c%z\128-\255]") ~= nil
-end
-
 return M

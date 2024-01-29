@@ -1,5 +1,4 @@
 local json = require "cjson"
-local string_util = require "string_util"
 
 local tinsert = table.insert
 local tremove = table.remove
@@ -100,11 +99,7 @@ function M.dump(tab)
 	local function string_v(v)
 		local t = type(v)
 		if t == 'string' then
-			if string_util.is_binary_string(v) then
-				return "binary(" .. v:len() .. ')'
-			else
-				return '"' .. v .. '"'
-			end
+			return '"' .. v .. '"'
 		else
 			return tostring(v)
 		end
