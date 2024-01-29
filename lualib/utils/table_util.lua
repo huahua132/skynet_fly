@@ -1,4 +1,5 @@
 local json = require "cjson"
+local string_util = require "string_util"
 
 local tinsert = table.insert
 local tremove = table.remove
@@ -86,6 +87,29 @@ end
 ]]
 function M.dump(tab)
 	local filter = {}
+
+	local function string_k(k)
+		local t = type(k)
+		if t == 'string' then
+			return '["' .. k .. '"]'
+		else
+			return '[' .. tostring(k) .. ']'
+		end
+	end
+
+	local function string_v(v)
+		local t = type(v)
+		if t == 'string' then
+			if string_util.is_binary_string(v) then
+				return "binary(" .. v:len() .. ')'
+			else
+				return '"' .. v .. '"'
+			end
+		else
+			return tostring(v)
+		end
+	end
+
 	local function dp(k,v,level)
 		local t = type(v)
 		local str = ''
@@ -97,13 +121,13 @@ function M.dump(tab)
 		if t == 'table' then
 			filter[v] = k or ''
 			if k then
-				str = str .. head_str .. tostring(k) .. ' = ' .. ' {\n'
+				str = str .. head_str .. string_k(k) .. ' = ' .. ' {\n'
 			else
 				str = str .. head_str .. '{\n'
 			end
 			for kk,vv in pairs(v) do
 				if type(vv) == 'table' and filter[vv] then
-					str = str .. head_str .. '\t' .. tostring(kk) .. ' = ' .. tostring(vv) .. ',\n'
+					str = str .. head_str .. '\t' .. string_k(kk) .. ' = ' .. string_v(vv) .. ',\n'
 				else
 					str = str .. dp(kk,vv,level + 1)
 				end
@@ -111,9 +135,9 @@ function M.dump(tab)
 			str = str .. head_str .. '}\n'
 		else
 			if k then
-				str = str .. head_str .. tostring(k) .. ' = ' .. tostring(v) .. ',\n'
+				str = str .. head_str .. string_k(k) .. ' = ' .. string_v(v) .. ',\n'
 			else
-				str = str .. head_str .. tostring(v)
+				str = str .. head_str .. string_v(v)
 			end
 		end
 
