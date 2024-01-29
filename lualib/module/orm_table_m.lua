@@ -110,11 +110,7 @@ function g_handle.change_save_one_entry(entry_data)
     end
     --没有启动间隔时间自动保存就立即保存
     if not g_orm_obj:is_inval_save() then
-        local ret = g_orm_obj:save_one_entry(entry)
-        if not ret then
-            log.error("change_save_one_entry save err ", entry_data)
-            return nil
-        end
+        g_orm_obj:save_one_entry(entry)
     end
 
     return true
