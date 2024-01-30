@@ -17,8 +17,8 @@ local M = {}
 
 local CMD = {}
 
-function CMD.update_state(table_id,player_id,state)
-	log.info("update_state:",table_id, player_id)
+function CMD.update_state(table_id,state)
+	log.info("update_state:",table_id)
 
 	local t_info = g_table_map[table_id]
 	if not t_info then
@@ -26,7 +26,10 @@ function CMD.update_state(table_id,player_id,state)
 		return
 	end
 
-	log.error("update_state:", table_id, player_id, state)
+	log.fatal("update_state:", table_id, state)
+	if t_info.state == GAME_STATE.stop then
+		return
+	end
 	t_info.state = state
 end
 
@@ -48,6 +51,8 @@ function M.init(alloc_mgr) --初始化
 			else
 				if t_info.state == GAME_STATE.stop then
 					log.error("销毁已经停止的空桌子》》》》》》》", table_id, t_info.state, alloc_mgr.dismisstable(table_id),empty_time)
+				else
+					log.error("桌子还不能销毁>>>>>>>>>>>>>>>>>", table_id, t_info.state)
 				end
 			end
 		end
