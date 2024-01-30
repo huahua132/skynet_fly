@@ -19,6 +19,10 @@ return {
 				},
 				login_plug = "login_check",
 				net_util = net_util,
+			},
+
+			server_cfg = {
+				loglevel = "info",
 			}
 		}
 	},
@@ -49,7 +53,7 @@ return {
 		launch_num = 6,
 		default_arg = {
 			instance_name = "default",
-			table_plug = "table_plug",
+			table_plug = "table_plug2",
 			net_util = net_util,
 			table_conf = {
 				player_num = 2,

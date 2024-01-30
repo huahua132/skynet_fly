@@ -26,6 +26,7 @@ function CMD.update_state(table_id,player_id,state)
 		return
 	end
 
+	log.error("update_state:", table_id, player_id, state)
 	t_info.state = state
 end
 
@@ -41,7 +42,14 @@ function M.init(alloc_mgr) --初始化
 	timer:new(timer.minute,0,function()
 		local empty_map = alloc_mgr.get_empty_map()
 		for table_id,empty_time in pairs(empty_map) do
-			log.info("销毁空桌子》》》》》》》",alloc_mgr.dismisstable(table_id),empty_time)
+			local t_info = g_table_map[table_id]
+			if not t_info then
+				log.error("桌子不存在", table_id)
+			else
+				if t_info.state == GAME_STATE.stop then
+					log.error("销毁已经停止的空桌子》》》》》》》", table_id, t_info.state, alloc_mgr.dismisstable(table_id),empty_time)
+				end
+			end
 		end
 	end)
 end
