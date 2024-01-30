@@ -17,7 +17,7 @@ local M = {}
 local mt = {__index = M}
 
 function M:new(interface_mgr, table_conf, table_id)
-    local m_interface_mgr = interface_mgr:new(table_id)
+    local m_interface_mgr = interface_mgr
     local t = {
         m_interface_mgr = m_interface_mgr,
         m_errors_msg = errors_msg:new(m_interface_mgr),
