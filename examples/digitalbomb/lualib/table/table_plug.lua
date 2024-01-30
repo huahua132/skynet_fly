@@ -274,6 +274,7 @@ function M.table_creator(table_id)
 		
 		fix_exit = function()
 			log.error("确认要退出")
+			m_interface_mgr:call_alloc("update_state", GAME_STATE_ENUM.stop)
 		end,
 
 		cancel_exit = function()
