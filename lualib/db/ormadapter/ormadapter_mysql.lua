@@ -87,7 +87,7 @@ local function create_table(t)
         local filed_name = filed_list[i]
         local filed_type = filed_map[filed_name]
         local convert_type = assert(FILED_TYPE_SQL_TYPE[filed_type],"unknown type : " .. filed_type)
-        sql_str = sql_str .. sformat("\t%s %s,\n",filed_name, convert_type)
+        sql_str = sql_str .. sformat("\t`%s` %s,\n",filed_name, convert_type)
     end
 
     sql_str = sql_str .. sformat("\tprimary key(%s)\n", tconcat(key_list,','))
@@ -159,9 +159,9 @@ local function alter_table(t, describe, index_info)
             local filed_type = filed_map[filed_name]
             local convert_type = assert(FILED_TYPE_SQL_TYPE[filed_type],"unknown type : " .. filed_type)
             if not is_end then
-                sql_str = sql_str .. sformat("add %s %s,\n", filed_name, convert_type)
+                sql_str = sql_str .. sformat("add `%s` %s,\n", filed_name, convert_type)
             else
-                sql_str = sql_str .. sformat("add %s %s;\n", filed_name, convert_type)
+                sql_str = sql_str .. sformat("add `%s` %s;\n", filed_name, convert_type)
             end
         end
 
