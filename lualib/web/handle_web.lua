@@ -57,6 +57,7 @@ local function do_request(fd, ip,port, protocol, handle)
 	req.protocol = protocol
 	req.ip = ip
 	req.port = port
+	req.session = {}			--可用于记录一个连接的临时数据
 
   	return {
     	read_request = function()
