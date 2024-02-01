@@ -1,0 +1,110 @@
+name: Check
+
+on: [push, pull_request]
+
+jobs:
+  Coverage:
+    # look at https://github.com/eddyxu/cpp-coveralls
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        openssl_version: [openssl-1.0.2u, openssl-3.1.2]
+    env:
+      COVERALLS_GIT_BRANCH: "${{ github.ref }}"
+      COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
+      WITH_LUA_ENGINE: LuaJIT
+      LUA: luajit2.1
+      LUAROCKS: 3.9.2
+      SSL: ${{ matrix.openssl_version }}
+      COVERALLS_PARALLEL: ON
+      COVERALLS_SERVICE_NAME: github
+      TRAVIS_JOB_ID: ${{ github.run_id }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: cpp-coveralls
+      run: pip install cpp-coveralls PyYAML
+    - name: depends
+      run: sudo apt update && sudo apt install -y libuv1-dev
+    - name: setup
+      run:
+        .github/shell/setup_lua.sh && .github/shell/setup_ssl.sh
+    - name: run
+      run: |
+        export PATH=$HOME/.usr/bin:$PATH
+        $HOME/.usr/bin/luarocks install luv
+        ln -s $HOME/.usr/lib/lua/5.1/luv.so
+        export PKG_CONFIG_PATH=$HOME/.usr/lib/pkgconfig
+        export LD_LIBRARY_PATH=$HOME/.usr/lib
+        make coveralls
+        coveralls -b . -i src --gcov-options '\-lp'
+  finish:
+    needs: Coverage
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close parallel build
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.COVERALLS_TOKEN }}
+          parallel-finished: true
+
+  Valgrind:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: depends
+      run: sudo apt update && sudo apt install -y luajit libluajit-5.1-dev valgrind
+    - name: run
+      run: make valgrind
+
+  Document:
+    runs-on: ubuntu-latest
+    env:
+      WITH_LUA_ENGINE: LuaJIT
+      LUA: luajit2.1
+      LUAROCKS: 3.9.2
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: run
+      run: |
+        .github/shell/setup_lua.sh
+        export PATH=$HOME/.usr/bin:$PATH
+        $HOME/.usr/bin/luarocks install ldoc
+        make doc
+
+  clang-asan:
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1
+      UBSAN_OPTIONS: print_stacktrace=1
+      CC: clang
+      CXX: clang++
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: depends
+      run: sudo apt update && sudo apt install -y luajit libluajit-5.1-dev
+    - name: Test
+      run: make asan
+
+  clang-tsan:
+    runs-on: ubuntu-20.04
+    env:
+      CC: clang
+      CXX: clang++
+      TSAN_OPTIONS: atexit_sleep_ms=2000 flush_memory_ms=2000
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: depends
+      run: sudo apt update && sudo apt install -y luajit libluajit-5.1-dev
+    - name: Test
+      run: make tsan
