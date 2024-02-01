@@ -1,0 +1,17 @@
+# OpenSSL v1.1
+leak:X509_REQ_dup
+# OpenSSL v3
+leak:DSA_generate_parameters_ex
+leak:d2i_X509_REQ_bio
+
+#clang-asan on ubuntu-latest OpenSSL v3.0.2
+leak:CRYPTO_strndup
+leak:CRYPTO_memdup
+leak:OPENSSL_LH_insert
+leak:__interceptor_malloc
+leak:__interceptor_realloc
+
+## MacOS
+#leak:_objc_init
+#leak:localtime_r
+#leak:pthread_once
