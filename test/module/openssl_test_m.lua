@@ -15,16 +15,18 @@ local CMD = {}
 
 function CMD.start()
 	local clientec = pkey.new('ec', "prime256v1")
+	local client_pk = pkey.read(clientec:get_public():export('der'))
+	client_pk =client_pk:parse().ec
 	clientec = clientec:parse().ec
-	log.info("client_key:", clientec)
+	log.info("client_key:", clientec:parse(), client_pk:parse())
 
 	local serverec = pkey.new('ec', "prime256v1")--server_key:export('der'))
 	serverec = serverec:parse().ec
-
-	log.info("server_key:", serverec)
+	
+	log.info("server_key:", serverec, serverec:parse())
 
 	local share_secret = clientec:compute_key(serverec)
-	local share_secret2 = serverec:compute_key(clientec)
+	local share_secret2 = serverec:compute_key(client_pk)
 
 	log.info("share_secret1 ", share_secret:len())
 	log.info("share_secret2 ", share_secret2:len())
