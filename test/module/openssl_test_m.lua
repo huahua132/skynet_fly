@@ -11,14 +11,22 @@ local pkey = openssl.pkey
 
 local assert = assert
 
+local client_kkk = [[
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvN9auyL/Ovr0Rvdwt3ZoRUhmkHV2
+641RQXMrOPj/DdM4Dvw2eX7wq4hkRQEjWiU3CrXPoiyoUgFWoyEVHTpmvw==
+-----END PUBLIC KEY-----
+]]
+
 local CMD = {}
 
 function CMD.start()
-	local clientec = pkey.new('ec', "prime256v1")
-	local client_pk = pkey.read(clientec:get_public():export('der'))
-	client_pk =client_pk:parse().ec
-	clientec = clientec:parse().ec
-	log.info("client_key:", clientec:parse(), client_pk:parse())
+	-- local clientec = pkey.new('ec', "prime256v1")
+	-- log.info("public key:", clientec:get_public():export('der'):len())
+	local clientec = pkey.read(client_kkk, false, 'pem', 'ec')
+	clientec =clientec:parse().ec
+	
+	log.info("client_key:", clientec:parse())
 
 	local serverec = pkey.new('ec', "prime256v1")--server_key:export('der'))
 	serverec = serverec:parse().ec
@@ -26,7 +34,7 @@ function CMD.start()
 	log.info("server_key:", serverec, serverec:parse())
 
 	local share_secret = clientec:compute_key(serverec)
-	local share_secret2 = serverec:compute_key(client_pk)
+	local share_secret2 = serverec:compute_key(clientec)
 
 	log.info("share_secret1 ", share_secret:len())
 	log.info("share_secret2 ", share_secret2:len())
@@ -48,5 +56,14 @@ end
 function CMD.exit()
 	return true
 end
+
+-- -----BEGIN PUBLIC KEY-----
+-- MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGPgQahbbzM0wkQjT/NLh8tJBM7Ni
+-- sC+/1mMTSuE7v31iSKPRLCRLI35AQ6PAZa/ZFD0J9xlPi6EJG8pUK5PS4Q==
+-- -----END PUBLIC KEY-----
+-- -----BEGIN PUBLIC KEY-----
+-- BImIGDm9WZ6OMFOVGXffWfeDn1+P4uitjPp3kfSCk6ihx1TlHIaSipDInRdUsPOn
+-- tZTFehJZqPkvp0+sy1Mkalk=
+-- -----END PUBLIC KEY-----
 
 return CMD
