@@ -148,6 +148,13 @@ function SOCKET.enter(fd, ip,port,master_id)
 	fd_info.handle = handle
 	local keep_alive = true
 	skynet.fork(function()
+		if web.connect then
+			local isok, err = x_pcall(web.connect, fd)
+			if not is_ok then
+				log.error("web connect handle err ", fd, err)
+			end
+		end
+
 		while keep_alive do
 			if socket.disconnected(fd) or socket.invalid(fd) then
 				log.warn("disconnect:fd",fd,socket.disconnected(fd),socket.invalid(fd))
@@ -174,10 +181,14 @@ function SOCKET.enter(fd, ip,port,master_id)
 			if not ret then break end
 			keep_alive = fd_info.keep_alive
 		end
-
+		
 		handle.close()
 		clear_fd(fd)
 		skynet.send(master_id,'lua','socket','closed',fd,ip,port)
+
+		if web.disconnect then
+			web.disconnect(fd)
+		end
 	end)
 
 	return SELF_ADDRESS
