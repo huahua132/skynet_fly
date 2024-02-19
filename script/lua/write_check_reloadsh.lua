@@ -14,11 +14,17 @@ local server_path = "./"
 local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 
 local shell_str = "#!/bin/bash\n"
-shell_str = shell_str .. string.format("%s %s/console.lua %s %s check_reload | \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs -r -t sh script/reload.sh \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("%s %s/console.lua %s %s check_kill_mod | \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. [[
+if [ "$#" -ne 1 ]; then
+	echo "please format script/check_reload.sh load_mods.lua"
+	exit 1
+fi
+]]
+shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 check_reload | \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -r -t sh script/reload.sh $1 \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 check_kill_mod | \n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs -r -t -L1 sh script/kill_mod.sh \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("%s %s/console.lua %s %s create_load_mods_old\n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 create_load_mods_old\n",lua_path,script_path,skynet_fly_path,svr_name)
 
 local shell_path = server_path .. 'script/'
 

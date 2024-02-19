@@ -15,12 +15,12 @@ local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
-if [ "$#" -ne 2 ]; then
-	echo "please format script/fasttime.sh '2023:10:26 19:22:50' 1"
+if [ "$#" -ne 3 ]; then
+	echo "please format script/fasttime.sh load_mods.lua '2023:10:26 19:22:50' 1"
 	exit 1
 fi
 ]]
-shell_str = shell_str .. string.format('%s %s/console.lua %s %s fasttime "$1" $2 | \n',lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format('%s %s/console.lua %s %s $1 fasttime "$2" $3 | \n',lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s \n")
 
 local shell_path = server_path .. 'script/'

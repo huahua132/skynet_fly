@@ -17,6 +17,8 @@ if load_mods_name then
 	if string.find(load_mods_name, '.lua', nil, true) then
 		load_mods_name = load_mods_name:sub(1,load_mods_name:len() - 4)
 	end
+else
+	load_mods_name = 'load_mods.lua'
 end
 
 is_daemon = tonumber(is_daemon)
@@ -43,7 +45,7 @@ local config = {
 	logpath         = server_path .. 'logs/',
 	logfilename     = 'server.log',
 	logservice      = 'snlua',
-	daemon          = is_daemon and "./skynet.pid" or nil,
+	daemon          = is_daemon and string.format("./skynet.%s.pid", load_mods_name) or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
 	debug_port      = 8888,
@@ -62,7 +64,7 @@ local config = {
 
 	lua_path        = "",
 	enablessl       = true,
-	loadmodsfile    = load_mods_name or "load_mods", --可热更服务启动配置
+	loadmodsfile    = load_mods_name, --可热更服务启动配置
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
