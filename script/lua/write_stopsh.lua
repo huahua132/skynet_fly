@@ -13,8 +13,15 @@ local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
 local shell_str = "#!/bin/bash\n"
-shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua\n",svr_name)
-shell_str = shell_str .. string.format("echo kill %s\n",svr_name)
+shell_str = shell_str .. [[
+if [ "$#" -lt 1 ]; then
+	echo "arg1 [load_mods] 启动的load_mods配置"
+	echo "please format script/stop.sh load_mods.lua"
+	exit 1
+fi
+]]
+shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua.$1\n",svr_name)
+shell_str = shell_str .. string.format("echo kill %s $1\n",svr_name)
 
 local shell_path = server_path .. 'script/'
 

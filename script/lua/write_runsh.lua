@@ -18,15 +18,15 @@ shell_str = shell_str .. [[
 if [ "$#" -lt 1 ]; then
 	echo "arg1 [load_mods] 启动的load_mods配置"
 	echo "arg2 [is_daemon] 是否守护进程运行 1是0不是 默认1"
-	echo "please format script/run.sh load_mods is_daemon"
+	echo "please format script/run.sh load_mods.lua is_daemon"
 	exit 1
 fi
 ]]
-shell_str = shell_str .. string.format("echo run %s\n",svr_name)
+shell_str = shell_str .. string.format("echo run %s $1\n",svr_name)
 shell_str = shell_str .. string.format("%s %s/write_config.lua %s $1 $2\n",lua_path,script_path,skynet_fly_path)
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s create_running_config\n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s create_load_mods_old\n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("%s/skynet %s_config.lua\n",skynet_path,svr_name)
+shell_str = shell_str .. string.format("%s/skynet %s_config.lua $1\n",skynet_path,svr_name)
 local shell_path = server_path .. 'script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
