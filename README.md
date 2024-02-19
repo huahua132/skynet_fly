@@ -63,7 +63,7 @@
       - `reload.sh` 热更某个可热更模块。
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
       - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
-      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh "2023:11:19 11:10:59" 1`
+      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 3. 运行
@@ -73,7 +73,7 @@
    - 如果一切顺利的话，网页将会显示内容。
 5. 热更
     - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
-    - 之后执行 `sh script/check_reload.sh`
+    - 之后执行 `sh script/check_reload.sh load_mods.lua`
     - 再次访问网站就更新了。
     - 也可以观察webapp/logs/server.log
 	

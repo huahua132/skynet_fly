@@ -1,13 +1,17 @@
 local ARGV = {...}
 local skynet_fly_path = ARGV[1]
 local svr_name = ARGV[2]
-local cmd = ARGV[3]
-assert(skynet_fly_path,'缺少 skynet_fly_path')
-assert(svr_name,'缺少 svr_name')
-assert(cmd,"缺少命令")
+local load_modsfile = ARGV[3]
+local cmd = ARGV[4]
+assert(skynet_fly_path,'缺少 skynet_fly_path' .. table.concat(ARGV,','))
+assert(svr_name,'缺少 svr_name' .. table.concat(ARGV, ','))
+assert(load_modsfile, "缺少 启动配置文件 " .. table.concat(ARGV,','))
+assert(cmd,"缺少命令 " .. table.concat(ARGV,','))
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
 package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
+
+local ARGV_HEAD = 4
 
 local lfs = require "lfs"
 local file_util = require "file_util"
@@ -15,7 +19,7 @@ local table_util = require "table_util"
 local time_util = require "time_util"
 local json = require "cjson"
 debug_port = nil
-local skynet_cfg_path = string.format("%s_config.lua.run",svr_name)  --读取skynet启动配置
+local skynet_cfg_path = string.format("%s_config.lua.%s.run",svr_name, load_modsfile)  --读取skynet启动配置
 local file = loadfile(skynet_cfg_path)
 if file then
 	file()
@@ -33,9 +37,9 @@ function CMD.get_list()
 end
 
 function CMD.find_server_id()
-	local module_name = assert(ARGV[4])
-	local offset = assert(ARGV[5])
-	for i = 5,#ARGV do
+	local module_name = assert(ARGV[ARGV_HEAD + 1])
+	local offset = assert(ARGV[ARGV_HEAD + 2])
+	for i = ARGV_HEAD + 3,#ARGV do
 		local line = ARGV[i]
 		if string.find(line,module_name,nil,true) then
 			print(ARGV[i - offset])
@@ -46,12 +50,12 @@ function CMD.find_server_id()
 end
 
 function CMD.reload()
-	local file = io.open("./tmp_reload_cmd.txt",'w+')
+	local file = io.open(string.format("./%s.tmp_reload_cmd.txt", load_modsfile),'w+')
 	assert(file)
-	local load_mods = require (loadmodsfile)
-	local server_id = assert(ARGV[4])
+	local load_mods = loadfile(load_modsfile)()
+	local server_id = assert(ARGV[ARGV_HEAD + 1])
 	local mod_name_str = ",0"
-	for i = 5,#ARGV do
+	for i = ARGV_HEAD + 2,#ARGV do
 		local module_name = ARGV[i]
 		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
 		assert(load_mods[module_name])
@@ -64,7 +68,7 @@ end
 
 function CMD.handle_reload_result()
 	local is_ok = false
-	for i = 4,#ARGV do
+	for i = ARGV_HEAD + 1,#ARGV do
 		local str = ARGV[i]
 		if str == "ok" then
 			is_ok = true
@@ -78,12 +82,12 @@ function CMD.handle_reload_result()
 	else
 		--执行成功
 		print("reload succ")
-		os.remove('tmp_reload_cmd.txt')
+		os.remove(string.format("./%s.tmp_reload_cmd.txt", load_modsfile))
 	end
 end
 
 function CMD.try_again_reload()
-	local is_ok,str = pcall(file_util.readallfile,'./tmp_reload_cmd.txt')
+	local is_ok,str = pcall(file_util.readallfile,string.format("./%s.tmp_reload_cmd.txt", load_modsfile))
 	if is_ok then
 		print(str)
 	end
@@ -93,7 +97,7 @@ function CMD.check_reload()
 	local module_info_dir = "module_info"
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
-	local load_mods = require (loadmodsfile)
+	local load_mods = loadfile (load_modsfile)()
 
 	local module_info_map = {}
 	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
@@ -132,7 +136,7 @@ function CMD.check_reload()
 		end
 	end
 
-	local old_mod_confg = loadfile("load_mods.lua.old")
+	local old_mod_confg = loadfile(string.format("%s.old", load_modsfile))
 	if old_mod_confg then
 		old_mod_confg = old_mod_confg()
 	end
@@ -157,8 +161,8 @@ function CMD.check_reload()
 end
 
 function CMD.check_kill_mod()
-	local load_mods = require (loadmodsfile)
-	local old_mod_confg = loadfile("load_mods.lua.old")
+	local load_mods = loadfile(load_modsfile)()
+	local old_mod_confg = loadfile(string.format("%s.old", load_modsfile))
 	if not old_mod_confg then
 		return	
 	end
@@ -172,11 +176,11 @@ function CMD.check_kill_mod()
 end
 
 function CMD.call()
-	local mod_cmd = assert(ARGV[4])
+	local mod_cmd = assert(ARGV[ARGV_HEAD + 1])
 	local server_id = assert(ARGV[#ARGV])
 
 	local mod_cmd_args = ""
-	for i = 5,#ARGV - 1 do
+	for i = ARGV_HEAD + 2,#ARGV - 1 do
 		if tonumber(ARGV[i]) then
 			mod_cmd_args = mod_cmd_args .. string.format(',%s',ARGV[i])
 		else
@@ -189,21 +193,20 @@ function CMD.call()
 end
 
 function CMD.create_load_mods_old()
-	local load_mods = require (loadmodsfile)
-	local cmd = string.format("cp %s.lua load_mods.lua.old",loadmodsfile)
+	local cmd = string.format("cp %s %s.old", load_modsfile, load_modsfile)
 	os.execute(cmd)
 end
 
 --拷贝一个运行时配置供console.lua读取
 function CMD.create_running_config()
-	local cmd = string.format("cp %s_config.lua %s_config.lua.run",svr_name,svr_name)
+	local cmd = string.format("cp %s_config.lua %s_config.lua.%s.run",svr_name, svr_name, load_modsfile)
 	os.execute(cmd)
 end
 
 --快进时间
 function CMD.fasttime()
-	local fastdate = ARGV[4]
-	local one_add = ARGV[5]  --单次加速时间 1表示1秒
+	local fastdate = ARGV[ARGV_HEAD + 1]
+	local one_add = ARGV[ARGV_HEAD + 2]  --单次加速时间 1表示1秒
 	assert(fastdate,"not fastdate")
 	assert(one_add, "not one_add")
 	local date,err = time_util.string_to_date(fastdate)
