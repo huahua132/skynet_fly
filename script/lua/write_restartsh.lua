@@ -21,7 +21,7 @@ if [ "$#" -lt 1 ]; then
 	exit 1
 fi
 ]]
-shell_str = shell_str .. "sh script/stop.sh" .. '\n'
+shell_str = shell_str .. "sh script/stop.sh $1" .. '\n'
 shell_str = shell_str .. "sleep 1" .. '\n'
 shell_str = shell_str .. "sh script/run.sh $1 $2" .. '\n'
 
