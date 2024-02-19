@@ -494,7 +494,7 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
 ## 如何远程rpc调用
 
-具体使用例子可以参照`examples/cluster_client` `examples/cluster_server_1` `examples/cluster_server_2`
+具体使用例子可以参照`examples/cluster_client` `examples/cluster_server`
 
 [文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
 

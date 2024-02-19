@@ -18,7 +18,7 @@ local skynet_pack = skynet.pack
 local skynet_ret = skynet.ret
 local pcall = pcall
 
-local loadmodsfile = skynet.getenv("loadmodsfile") .. '.lua'
+local loadmodsfile = skynet.getenv("loadmodsfile")
 
 local g_name_id_list_map = {}
 local g_id_list_map = {}

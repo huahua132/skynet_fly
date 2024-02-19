@@ -19,6 +19,12 @@ return {
 					db = 0,
 				},
 			},
+
+			server_cfg = {
+				svr_id = 2,
+				debug_port = 9002,
+				logpath = './logs_2/',
+			}
 		}
 	},
 
