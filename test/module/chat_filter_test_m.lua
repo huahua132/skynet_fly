@@ -13,6 +13,7 @@ function CMD.start()
 	local str = "http://www.baidu.com"
 	local filter_str = chat_filter.filter_chat(str)
 	log.info(str,filter_str)
+	
 	return true
 end
 

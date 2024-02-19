@@ -8,7 +8,7 @@ package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 local file_util = require "file_util"
 local svr_name = file_util.get_cur_dir_name()
 
-local skynet_path = skynet_fly_path .. '/skynet/'
+local skynet_path = file_util.path_join(skynet_fly_path, '/skynet')
 local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
