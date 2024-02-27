@@ -22,8 +22,8 @@ QQ群号：102993581
 	* 支持快进时间。
 	* 支持orm（数据关系映射）目前适配了(mysql,mongo),数据库可无缝切换。
 
-* [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
-* [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
+* [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
+* [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
 
 ## 第三方依赖来源
 * [skynet](https://github.com/cloudwu/skynet)1.7
@@ -494,11 +494,11 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 	适合用于玩一把游戏就退出的微服务架构。
 
 ## 自己动手，实现一个石头剪刀布游戏
-[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/room_game)
+[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly_ss/room_game/)
 
 ## 如何远程rpc调用
 
 具体使用例子可以参照`examples/cluster_client` `examples/cluster_server`
 
-[文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
+[文档链接](https://huahua132.github.io/2023/07/28/skynet_fly_ss/cluster_rpc/)
 
