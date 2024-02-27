@@ -1,7 +1,7 @@
 # ![skynet_fly(1)](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
 ---
 致力于服务端对skynet的最佳实践
-[使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/home/)
+[使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/A_home/)
 
 # 技术交流群
 QQ群号：102993581
