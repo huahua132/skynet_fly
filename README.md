@@ -1,6 +1,10 @@
 # ![skynet_fly(1)](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
 ---
 致力于服务端对skynet的最佳实践
+[使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/home/)
+
+# 技术交流群
+QQ群号：102993581
 
 # skynet_fly简介
 	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
@@ -497,8 +501,4 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 具体使用例子可以参照`examples/cluster_client` `examples/cluster_server`
 
 [文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
-
-# 技术交流群
-加群，能够更快速的响应解决使用中遇到的问题。
-QQ群号：102993581
 
