@@ -94,7 +94,7 @@ function CMD.try_again_reload()
 end
 
 function CMD.check_reload()
-	local module_info_dir = "module_info"
+	local module_info_dir = "module_info." .. load_modsfile
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
 	local load_mods = loadfile (load_modsfile)()

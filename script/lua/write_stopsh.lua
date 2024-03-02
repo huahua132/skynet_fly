@@ -21,6 +21,10 @@ if [ "$#" -lt 1 ]; then
 fi
 ]]
 shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua.$1\n",svr_name)
+shell_str = shell_str .. "rm -f ./skynet.$1.pid\n"
+shell_str = shell_str .. string.format("rm -f ./%s_config.lua.$1.run\n",svr_name)
+shell_str = shell_str .. "rm -f ./$1.old\n"
+shell_str = shell_str .. "rm -rf ./module_info.$1\n"
 shell_str = shell_str .. string.format("echo kill %s $1\n",svr_name)
 
 local shell_path = server_path .. 'script/'
