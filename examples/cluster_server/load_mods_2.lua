@@ -7,8 +7,14 @@ return {
 			--cluster_server用的配置
 			cluster_server = {
 				host = "127.0.0.1:9689",
+			},
+
+			server_cfg = {
+				svr_id = 2,
+				debug_port = 9002,
+				logpath = './logs_2/',
 			}
-		}
+		},
 	},
 
 	test_m = {

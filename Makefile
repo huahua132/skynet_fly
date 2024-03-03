@@ -20,7 +20,7 @@ LUA_INC ?= skynet/3rd/lua
 CFLAGS = -g -O0 -Wall -I$(LUA_INC)
 SHARED := -fPIC --shared
 
-SKYNET := skynet
+SKYNET := skynet/Makefile
 SKYNET_BULDER := skynet/skynet
 
 TLS_LIB=/usr/bin/openssl

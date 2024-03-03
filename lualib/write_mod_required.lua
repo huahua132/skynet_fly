@@ -9,8 +9,10 @@ local ignore_map = {
   ["skynet"] = true,
 }
 
+local loadmodsfile = skynet.getenv("loadmodsfile")
+
 return function(mod_name,loaded)
-	local write_dir = "module_info"
+	local write_dir = "module_info." .. loadmodsfile
 	if not os.execute("mkdir -p " .. write_dir) then
 		skynet.error("write_module_info mkdir err ")
 		return

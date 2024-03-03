@@ -8,23 +8,26 @@ package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 local file_util = require "file_util"
 local svr_name = file_util.get_cur_dir_name()
 
-local skynet_path = skynet_fly_path .. '/skynet/'
+local skynet_path = file_util.path_join(skynet_fly_path, '/skynet')
 local lua_path = skynet_path .. '/3rd/lua/lua'
 local server_path = "./"
+local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
-if [ "$#" -lt 1 ]; then
-    echo "please format script/reload.sh ***_m ***_m"
+if [ "$#" -lt 2 ]; then
+    echo "please format script/reload.sh load_mods.lua ***_m ***_m"
     exit 1
 fi
+load_mods_name=$1
+shift
 ]]
-shell_str = shell_str .. string.format("%s %s/script/lua/console.lua %s %s get_list | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("%s %s/console.lua %s %s ${load_mods_name} get_list | \n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s |\n")
-shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s find_server_id contriner_mgr 2 | \\\n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs -I {} %s %s/script/lua/console.lua %s %s reload {} $* | \n",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} find_server_id contriner_mgr 2 | \\\n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -I {} %s %s/console.lua %s %s ${load_mods_name} reload {} $* | \n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("xargs curl -s | \n")
-shell_str = shell_str .. string.format("xargs %s %s/script/lua/console.lua %s %s handle_reload_result | xargs",lua_path,skynet_fly_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} handle_reload_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
 
 local shell_path = server_path .. 'script/'
 

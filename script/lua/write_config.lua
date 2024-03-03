@@ -13,11 +13,7 @@ local json = require "cjson"
 local table_util = require "table_util"
 local file_util = require "file_util"
 
-if load_mods_name then
-	if string.find(load_mods_name, '.lua', nil, true) then
-		load_mods_name = load_mods_name:sub(1,load_mods_name:len() - 4)
-	end
-end
+load_mods_name = load_mods_name or 'load_mods.lua'
 
 is_daemon = tonumber(is_daemon)
 if not is_daemon or is_daemon == 1 then
@@ -43,7 +39,7 @@ local config = {
 	logpath         = server_path .. 'logs/',
 	logfilename     = 'server.log',
 	logservice      = 'snlua',
-	daemon          = is_daemon and "./skynet.pid" or nil,
+	daemon          = is_daemon and string.format("./skynet.%s.pid", load_mods_name) or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
 	debug_port      = 8888,
@@ -62,13 +58,17 @@ local config = {
 
 	lua_path        = "",
 	enablessl       = true,
-	loadmodsfile    = load_mods_name or "load_mods", --可热更服务启动配置
+	loadmodsfile    = load_mods_name, --可热更服务启动配置
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
 
-local load_mods_f = require(config.loadmodsfile)
-if load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and load_mods_f.share_config_m.default_arg.server_cfg then
+local load_mods_f = loadfile(load_mods_name)
+if load_mods_f then
+	load_mods_f = load_mods_f()
+end
+
+if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and load_mods_f.share_config_m.default_arg.server_cfg then
 	local cfg = load_mods_f.share_config_m.default_arg.server_cfg
 	if cfg.svr_id then
 		config.svr_id = cfg.svr_id
