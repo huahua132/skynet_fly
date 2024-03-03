@@ -1,6 +1,10 @@
 # ![skynet_fly(1)](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
 ---
 致力于服务端对skynet的最佳实践
+[使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/A_home/)
+
+# 技术交流群
+QQ群号：102993581
 
 # skynet_fly简介
 	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
@@ -18,8 +22,8 @@
 	* 支持快进时间。
 	* 支持orm（数据关系映射）目前适配了(mysql,mongo),数据库可无缝切换。
 
-* [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
-* [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
+* [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
+* [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
 
 ## 第三方依赖来源
 * [skynet](https://github.com/cloudwu/skynet)1.7
@@ -63,7 +67,7 @@
       - `reload.sh` 热更某个可热更模块。
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
       - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
-      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh "2023:11:19 11:10:59" 1`
+      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 3. 运行
@@ -73,7 +77,7 @@
    - 如果一切顺利的话，网页将会显示内容。
 5. 热更
     - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
-    - 之后执行 `sh script/check_reload.sh`
+    - 之后执行 `sh script/check_reload.sh load_mods.lua`
     - 再次访问网站就更新了。
     - 也可以观察webapp/logs/server.log
 	
@@ -490,15 +494,11 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 	适合用于玩一把游戏就退出的微服务架构。
 
 ## 自己动手，实现一个石头剪刀布游戏
-[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly/room_game)
+[文档链接](https://huahua132.github.io/2023/07/22/skynet_fly_ss/room_game/)
 
 ## 如何远程rpc调用
 
-具体使用例子可以参照`examples/cluster_client` `examples/cluster_server_1` `examples/cluster_server_2`
+具体使用例子可以参照`examples/cluster_client` `examples/cluster_server`
 
-[文档链接](https://huahua132.github.io/2023/07/28/skynet_fly/cluster_rpc)
-
-# 技术交流群
-加群，能够更快速的响应解决使用中遇到的问题。
-QQ群号：102993581
+[文档链接](https://huahua132.github.io/2023/07/28/skynet_fly_ss/cluster_rpc/)
 

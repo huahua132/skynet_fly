@@ -8,13 +8,24 @@ package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
 local file_util = require "file_util"
 local svr_name = file_util.get_cur_dir_name()
 
-local skynet_path = skynet_fly_path .. '/skynet/'
+local skynet_path = file_util.path_join(skynet_fly_path, '/skynet')
 local server_path = "./"
 local lua_path = skynet_path .. '/3rd/lua/lua'
 
 local shell_str = "#!/bin/bash\n"
-shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua\n",svr_name)
-shell_str = shell_str .. string.format("echo kill %s\n",svr_name)
+shell_str = shell_str .. [[
+if [ "$#" -lt 1 ]; then
+	echo "arg1 [load_mods] 启动的load_mods配置"
+	echo "please format script/stop.sh load_mods.lua"
+	exit 1
+fi
+]]
+shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua.$1\n",svr_name)
+shell_str = shell_str .. "rm -f ./skynet.$1.pid\n"
+shell_str = shell_str .. string.format("rm -f ./%s_config.lua.$1.run\n",svr_name)
+shell_str = shell_str .. "rm -f ./$1.old\n"
+shell_str = shell_str .. "rm -rf ./module_info.$1\n"
+shell_str = shell_str .. string.format("echo kill %s $1\n",svr_name)
 
 local shell_path = server_path .. 'script/'
 

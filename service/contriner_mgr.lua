@@ -18,7 +18,7 @@ local skynet_pack = skynet.pack
 local skynet_ret = skynet.ret
 local pcall = pcall
 
-local loadmodsfile = skynet.getenv("loadmodsfile") .. '.lua'
+local loadmodsfile = skynet.getenv("loadmodsfile")
 
 local g_name_id_list_map = {}
 local g_id_list_map = {}
@@ -106,6 +106,7 @@ local function kill_modules(...)
 		g_watch_map[module_name] = nil
 		g_version_map[module_name] = nil
 	end
+	return module_name_list
 end
 
 local function load_modules(...)
@@ -286,6 +287,7 @@ local CMD = {}
 
 --通知模块退出
 function CMD.kill_modules(source,...)
+	log.info("kill_modules:", ...)
 	return queue(kill_modules,...)
 end
 
