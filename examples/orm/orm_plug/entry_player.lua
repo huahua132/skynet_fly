@@ -1,7 +1,7 @@
-local ormtable = require "ormtable"
-local ormadapter_mysql = require "ormadapter_mysql"
+local ormtable = require "skynet-fly.db.orm.ormtable"
+local ormadapter_mysql = require "skynet-fly.db.ormadapter.ormadapter_mysql"
 local skynet = require "skynet"
-local log = require "log"
+local log = require "skynet-fly.log"
 local assert = assert
 local g_orm_obj = nil
 local M = {}

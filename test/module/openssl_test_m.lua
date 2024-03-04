@@ -1,7 +1,7 @@
 local skynet = require "skynet"
-local crypt_util = require "crypt_util"
-local httpc = require "httpc"
-local log = require "log"
+local crypt_util = require "skynet-fly.utils.crypt_util"
+local httpc = require "http.httpc"
+local log = require "skynet-fly.log"
 local openssl = require "openssl"
 local crypt = require "skynet.crypt"
 

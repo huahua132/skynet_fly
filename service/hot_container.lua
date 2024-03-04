@@ -17,16 +17,16 @@ assert(MODULE_NAME)
 local new_loaded = _loaded
 
 local MODULE_NAME = MODULE_NAME
-local module_info = require "module_info"
-local contriner_client = require "contriner_client"
-local contriner_interface = require "contriner_interface"
+local module_info = require "skynet-fly.etc.module_info"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 contriner_client:close_ready()
 
 local CMD = require(MODULE_NAME)
-local write_mod_required = require "write_mod_required"
-local skynet_util = require "skynet_util"
-local log = require "log"
-local timer = require "timer"
+local write_mod_required = require "skynet-fly.write_mod_required"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local log = require "skynet-fly.log"
+local timer = require "skynet-fly.timer"
 
 local SERVER_STATE_TYPE = contriner_interface.SERVER_STATE_TYPE
 

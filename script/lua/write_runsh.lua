@@ -4,8 +4,8 @@ local skynet_fly_path = ARGV[1]
 assert(skynet_fly_path,'缺少 skynet_fly_path')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
-package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
-local file_util = require "file_util"
+package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
+local file_util = require "skynet-fly.utils.file_util"
 local svr_name = file_util.get_cur_dir_name()
 
 local skynet_path = file_util.path_join(skynet_fly_path, '/skynet')

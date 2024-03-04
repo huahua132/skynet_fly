@@ -6,12 +6,12 @@ local is_daemon = ARGV[3]
 assert(skynet_fly_path, '缺少 skynet_fly_path')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
-package.path = './?.lua;' .. skynet_fly_path .. "/lualib/utils/?.lua;"
+package.path = './?.lua;' .. skynet_fly_path .. "/lualib/?.lua;"
 
 local lfs = require "lfs"
 local json = require "cjson"
-local table_util = require "table_util"
-local file_util = require "file_util"
+local table_util = require "skynet-fly.utils.table_util"
+local file_util = require "skynet-fly.utils.file_util"
 
 load_mods_name = load_mods_name or 'load_mods.lua'
 
@@ -28,11 +28,11 @@ local common_path = "../../common/"
 
 local svr_name = file_util.get_cur_dir_name()
 local config = {
-	thread          = 4,
+	thread          = 8,
 	start           = "main",
 	harbor          = 0,
 	profile         = true,
-	lualoader       = file_util.path_join(skynet_fly_path, '/lualib/loader.lua'),
+	lualoader       = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/loader.lua'),
 	bootstrap       = "snlua bootstrap", --the service for bootstrap
 	logger          = "log_service",
 	loglevel        = "info",
@@ -44,7 +44,7 @@ local config = {
 	svr_name        = svr_name,
 	debug_port      = 8888,
 	skynet_fly_path = skynet_fly_path,
-	preload         = file_util.path_join(skynet_fly_path, '/lualib/preload.lua;'),
+	preload         = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/preload.lua;'),
 	cpath           = file_util.path_join(skynet_fly_path, '/cservice/?.so;') .. skynet_path .. "cservice/?.so;",
 
 	lua_cpath       = file_util.path_join(skynet_fly_path, '/luaclib/?.so;') .. skynet_path .. "luaclib/?.so;",

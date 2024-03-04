@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-local log = require "log"
-local cluster_client = require "cluster_client"
+local log = require "skynet-fly.log"
+local cluster_client = require "skynet-fly.client.cluster_client"
 local CMD = {}
 
 function CMD.start()

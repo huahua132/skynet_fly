@@ -1,10 +1,10 @@
-local watch_syn = require "watch_syn"
+local watch_syn = require "skynet-fly.watch.watch_syn"
 local skynet = require "skynet"
 
-local contriner_client = require "contriner_client"
-local contriner_watch_interface = require "contriner_watch_interface"
-local service_watch_interface = require "service_watch_interface"
-local log = require "log"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local contriner_watch_interface = require "skynet-fly.watch.interface.contriner_watch_interface"
+local service_watch_interface = require "skynet-fly.watch.interface.service_watch_interface"
+local log = require "skynet-fly.log"
 
 contriner_client:register("watch_server_test_m")
 

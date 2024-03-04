@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local contriner_launcher = require "contriner_launcher"
+local contriner_launcher = require "skynet-fly.contriner.contriner_launcher"
 
 skynet.start(function()
 	skynet.call('.logger','lua','add_hook', 'loghook')

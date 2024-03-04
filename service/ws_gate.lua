@@ -1,7 +1,7 @@
 local skynet = require "skynet"
-local socket = require "socket"
-local log = require "log"
-local skynet_util = require "skynet_util"
+local socket = require "skynet.socket"
+local log = require "skynet-fly.log"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 local assert = assert
 local string = string
 

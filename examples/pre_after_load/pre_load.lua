@@ -1,4 +1,4 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 local test = require "test"
 --preload中 require的文件也能热更
 log.info("pre_load load")

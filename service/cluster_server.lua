@@ -1,10 +1,10 @@
 local skynet = require "skynet"
-local cluster = require "cluster"
-local contriner_client = require "contriner_client"
-local rpc_redis = require "rpc_redis"
-local log = require "log"
-local timer = require "timer"
-local skynet_util = require "skynet_util"
+local cluster = require "skynet.cluster"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local rpc_redis = require "skynet-fly.rpc.rpc_redis"
+local log = require "skynet-fly.log"
+local timer = require "skynet-fly.timer"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 
 local pairs = pairs
 local assert = assert

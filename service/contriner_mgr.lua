@@ -1,6 +1,6 @@
 local skynet = require "skynet.manager"
-local skynet_util = require "skynet_util"
-local log = require "log"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local log = require "skynet-fly.log"
 local queue = require "skynet.queue"()
 
 local loadfile = loadfile

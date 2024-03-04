@@ -1,7 +1,7 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local watch_syn = require "watch_syn"
-require "manager"
+local watch_syn = require "skynet-fly.watch.watch_syn"
+require "skynet.manager"
 
 local watch_server = nil
 

@@ -1,4 +1,4 @@
-local errorcode = require "errorcode"
+local errorcode = require "enum.errorcode"
 
 local setmetatable = setmetatable 
 

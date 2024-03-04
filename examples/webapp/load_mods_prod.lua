@@ -15,7 +15,7 @@ return {
 		launch_num = 6,
 		default_arg = {
 			protocol = 'http',
-			dispatch = 'webapp_dispatch',
+			dispatch = 'apps.webapp_dispatch',
 			keep_alive_time = 300,         --最长保活时间
 			second_req_limit = 2000,       --1秒内请求数量限制
 		}

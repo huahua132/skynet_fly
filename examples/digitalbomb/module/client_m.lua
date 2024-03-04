@@ -1,10 +1,10 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local timer = require "timer"
-local websocket = require "websocket"
-local socket = require "socket"
-local pb_netpack = require "pb_netpack"
-local table_util = require "table_util"
+local timer = require "skynet-fly.timer"
+local websocket = require "http.websocket"
+local socket = require "skynet.socket"
+local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local table_util = require "skynet-fly.utils.table_util"
 
 local net_util = nil
 

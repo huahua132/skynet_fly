@@ -1,7 +1,7 @@
-local log = require "log"
-local redis = require "redisf"
-require "redisc"
-local timer = require "timer"
+local log = require "skynet-fly.log"
+local redis = require "skynet-fly.db.redisf"
+require "skynet-fly.db.redisc"
+local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
 
 local CMD = {}
