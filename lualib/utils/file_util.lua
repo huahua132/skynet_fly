@@ -80,7 +80,14 @@ function M.create_luapath(skynet_fly_path)
 	end
 
 	--skynet_fly 3rd下所有文件夹
+	local base3rd = M.path_join(skynet_fly_path, '/3rd')
+	--basexx
+	lua_path = lua_path .. base3rd .. '/basexx-0.4.1/lib/?.lua;'
+	--protobuf
+	lua_path = lua_path .. base3rd .. '/lua-protobuf-0.4.0/?.lua;'
+
 	lua_path = lua_path .. M.path_join(skynet_fly_path, '/3rd/?.lua;')
+
 	for file_name,file_path,file_info in M.diripairs(M.path_join(skynet_fly_path, '/3rd')) do
 		if file_info.mode == 'directory' then
 			lua_path = lua_path .. file_path .. '/?.lua;'
