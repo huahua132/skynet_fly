@@ -10,6 +10,17 @@ local json = require "cjson"
 local json_safe = require "cjson.safe"
 local util = require "cjson.util"
 
+local function json_encode_output_type(value)
+    local text = json.encode(value)
+    if string.match(text, "{.*}") then
+        return "object"
+    elseif string.match(text, "%[.*%]") then
+        return "array"
+    else
+        return "scalar"
+    end
+end
+
 local function gen_raw_octets()
     local chars = {}
     for i = 0, 255 do chars[i + 1] = string.char(i) end
@@ -93,7 +104,7 @@ local cjson_tests = {
     -- Test API variables
     { "Check module name, version",
       function () return json._NAME, json._VERSION end, { },
-      true, { "cjson", "2.1.0.9" } },
+      true, { "cjson", "2.1devel" } },
 
     -- Test decoding simple types
     { "Decode string",
@@ -292,13 +303,8 @@ local cjson_tests = {
       json.encode, { { [1] = "one", [4] = "sparse test" } },
       true, { '["one",null,null,"sparse test"]' } },
     { "Encode sparse array as object",
-      json.encode, { { [1] = "one", [5] = "sparse test" } },
-      true, {
-          util.one_of {
-              '{"5":"sparse test","1":"one"}',
-              '{"1":"one","5":"sparse test"}'
-          }
-      } },
+      json_encode_output_type, { { [1] = "one", [5] = "sparse test" } },
+      true, { 'object' } },
     { "Encode table with numeric string key as object",
       json.encode, { { ["2"] = "numeric string key test" } },
       true, { '{"2":"numeric string key test"}' } },
@@ -363,71 +369,32 @@ local cjson_tests = {
       json.encode_keep_buffer, { true }, true, { true } },
 
     -- Test config API errors
-    -- Function is listed as '?' due to pcall for older versions of Lua
+    -- Function is listed as '?' due to pcall
     { "Set encode_number_precision(0) [throw error]",
       json.encode_number_precision, { 0 },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (expected integer between 1 and 16)",
-              "bad argument #1 to 'cjson.encode_number_precision' (expected integer between 1 and 16)"
-          }
-      } },
+      false, { "bad argument #1 to '?' (expected integer between 1 and 14)" } },
     { "Set encode_number_precision(\"five\") [throw error]",
       json.encode_number_precision, { "five" },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (number expected, got string)",
-              "bad argument #1 to 'cjson.encode_number_precision' (number expected, got string)"
-          }
-      } },
+      false, { "bad argument #1 to '?' (number expected, got string)" } },
     { "Set encode_keep_buffer(nil, true) [throw error]",
       json.encode_keep_buffer, { nil, true },
-      false, {
-          util.one_of {
-              "bad argument #2 to '?' (found too many arguments)",
-              "bad argument #2 to 'cjson.encode_keep_buffer' (found too many arguments)"
-          }
-      } },
+      false, { "bad argument #2 to '?' (found too many arguments)" } },
     { "Set encode_max_depth(\"wrong\") [throw error]",
       json.encode_max_depth, { "wrong" },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (number expected, got string)",
-              "bad argument #1 to 'cjson.encode_max_depth' (number expected, got string)"
-          }
-      } },
+      false, { "bad argument #1 to '?' (number expected, got string)" } },
     { "Set decode_max_depth(0) [throw error]",
       json.decode_max_depth, { "0" },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (expected integer between 1 and 2147483647)",
-              "bad argument #1 to 'cjson.decode_max_depth' (expected integer between 1 and 2147483647)"
-          }
-      } },
+      false, { "bad argument #1 to '?' (expected integer between 1 and 2147483647)" } },
     { "Set encode_invalid_numbers(-2) [throw error]",
       json.encode_invalid_numbers, { -2 },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (invalid option '-2')",
-              "bad argument #1 to 'cjson.encode_invalid_numbers' (invalid option '-2')"
-          }
-      } },
+      false, { "bad argument #1 to '?' (invalid option '-2')" } },
     { "Set decode_invalid_numbers(true, false) [throw error]",
       json.decode_invalid_numbers, { true, false },
-      false, {
-          util.one_of {
-              "bad argument #2 to '?' (found too many arguments)",
-              "bad argument #2 to 'cjson.decode_invalid_numbers' (found too many arguments)"
-          }
-      } },
+      false, { "bad argument #2 to '?' (found too many arguments)" } },
     { "Set encode_sparse_array(\"not quite on\") [throw error]",
       json.encode_sparse_array, { "not quite on" },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (invalid option 'not quite on')",
-              "bad argument #1 to 'cjson.encode_sparse_array' (invalid option 'not quite on')"
-          }
-      } },
+      false, { "bad argument #1 to '?' (invalid option 'not quite on')" } },
+
     { "Reset Lua CJSON configuration", function () json = json.new() end },
     -- Wrap in a function to ensure the table returned by json.new() is used
     { "Check encode_sparse_array()",
@@ -439,12 +406,7 @@ local cjson_tests = {
       true, { "true" } },
     { "Encode (safe) argument validation [throw error]",
       json_safe.encode, { "arg1", "arg2" },
-      false, {
-          util.one_of {
-              "bad argument #1 to '?' (expected 1 argument)",
-              "bad argument #1 to 'cjson.safe.encode' (expected 1 argument)"
-          }
-      } },
+      false, { "bad argument #1 to '?' (expected 1 argument)" } },
     { "Decode (safe) error generation",
       json_safe.decode, { "Oops" },
       true, { nil, "Expected value but found invalid token at character 1" } },
