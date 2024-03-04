@@ -32,7 +32,6 @@ QQ群号：102993581
 * [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.0-0
 * [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
 * [lua-radix-router](https://github.com/vm-001/lua-radix-router)latest
-* [lua-rax](https://github.com/hanxi/lua-rax)latest
 * [luafilesystem](https://github.com/lunarmodules/luafilesystem)1.8.0
 * [luajwtjitsi](https://github.com/jitsi/luajwtjitsi)3.0  自己适配了lua-openssl
 * [lzlib](https://github.com/LuaDist/lzlib)0.4.3
