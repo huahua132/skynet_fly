@@ -1,7 +1,7 @@
-local log = require "log"
-local timer = require "timer"
+local log = require "skynet-fly.log"
+local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
-local time_util = require "time_util"
+local time_util = require "skynet-fly.utils.time_util"
 
 local os = os
 

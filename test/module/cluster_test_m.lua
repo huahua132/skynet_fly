@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-local cluster_client = require "cluster_client"
-local log = require "log"
+local cluster_client = require "skynet-fly.client.cluster_client"
+local log = require "skynet-fly.log"
 
 local function test()
     local test_cli = cluster_client:new("test", "cluster_test_m")
@@ -8,7 +8,7 @@ local function test()
     log.info("one_mod_call:", test_cli:one_mod_call("hello"))
 
     skynet.uniqueservice("cluster_server")
-    skynet.sleep(100)
+    skynet.sleep(200)
 
     --给自己发消息
     test_cli:one_balance_send("hello", "test server")

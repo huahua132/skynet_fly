@@ -1,8 +1,8 @@
 local skynet = require "skynet"
-local log = require "log"
-local contriner_client = require "contriner_client"
-local timer = require "timer"
-local mysqlf = require "mysqlf"
+local log = require "skynet-fly.log"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local timer = require "skynet-fly.timer"
+local mysqlf = require "skynet-fly.db.mysqlf"
 contriner_client:register("mysql_m")
 local CMD = {}
 

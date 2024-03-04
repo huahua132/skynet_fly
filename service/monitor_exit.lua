@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-local skynet_util = require "skynet_util"
-require "manager"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+require "skynet.manager"
 
 local tinsert = table.insert
 local pairs = pairs

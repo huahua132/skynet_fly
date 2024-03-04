@@ -9,14 +9,14 @@ assert(load_modsfile, "缺少 启动配置文件 " .. table.concat(ARGV,','))
 assert(cmd,"缺少命令 " .. table.concat(ARGV,','))
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
-package.path = './?.lua;' .. skynet_fly_path .."/lualib/utils/?.lua;"
+package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
 
 local ARGV_HEAD = 4
 
 local lfs = require "lfs"
-local file_util = require "file_util"
-local table_util = require "table_util"
-local time_util = require "time_util"
+local file_util = require "skynet-fly.utils.file_util"
+local table_util = require "skynet-fly.utils.table_util"
+local time_util = require "skynet-fly.utils.time_util"
 local json = require "cjson"
 debug_port = nil
 local skynet_cfg_path = string.format("%s_config.lua.%s.run",svr_name, load_modsfile)  --读取skynet启动配置

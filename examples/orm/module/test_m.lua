@@ -1,6 +1,6 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local orm_table_client = require "orm_table_client"
+local orm_table_client = require "skynet-fly.client.orm_table_client"
 
 local CMD = {}
 

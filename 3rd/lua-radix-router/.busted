@@ -1,6 +1,0 @@
-return {
-  default = {
-    verbose = true,
-    output = "gtest",
-  },
-}

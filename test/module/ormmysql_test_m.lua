@@ -1,11 +1,11 @@
 local skynet = require "skynet"
-local ormtable = require "ormtable"
-local ormadapter_mysql = require "ormadapter_mysql"
-local math_util = require "math_util"
-local string_util = require "string_util"
-local table_util = require "table_util"
-local mysqlf = require "mysqlf"
-local log = require "log"
+local ormtable = require "skynet-fly.db.orm.ormtable"
+local ormadapter_mysql = require "skynet-fly.db.ormadapter.ormadapter_mysql"
+local math_util = require "skynet-fly.utils.math_util"
+local string_util = require "skynet-fly.utils.string_util"
+local table_util = require "skynet-fly.utils.table_util"
+local mysqlf = require "skynet-fly.db.mysqlf"
+local log = require "skynet-fly.log"
 
 local assert = assert
 

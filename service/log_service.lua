@@ -1,7 +1,7 @@
 local skynet = require "skynet"
-local skynet_util = require "skynet_util"
-local file_util = require "file_util"
-local time_util = require "time_util"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local file_util = require "skynet-fly.utils.file_util"
+local time_util = require "skynet-fly.utils.time_util"
 require "skynet.manager"
 
 local os = os

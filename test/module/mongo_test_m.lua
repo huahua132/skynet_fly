@@ -1,6 +1,6 @@
-local mongof = require "mongof"
+local mongof = require "skynet-fly.db.mongof"
 local skynet = require "skynet"
-local log = require "log"
+local log = require "skynet-fly.log"
 
 local CMD = {}
 

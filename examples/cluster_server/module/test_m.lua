@@ -1,6 +1,6 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local contriner_client = require "contriner_client"
+local contriner_client = require "skynet-fly.client.contriner_client"
 
 contriner_client:register("share_config_m")
 local string = string

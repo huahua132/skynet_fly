@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local chat_filter = require "chat_filter"
-local log = require "log"
+local log = require "skynet-fly.log"
 
 local assert = assert
 

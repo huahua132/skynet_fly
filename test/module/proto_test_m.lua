@@ -1,7 +1,7 @@
-local log = require "log"
-local timer = require "timer"
+local log = require "skynet-fly.log"
+local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
-local pb_netpack = require "pb_netpack"
+local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 
 local CMD = {}
 

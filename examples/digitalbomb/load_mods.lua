@@ -1,4 +1,4 @@
-local net_util = "ws_pbnet_util" --ws_pbnet_util or pbnet_util or jsonet_util or ws_jsonet_util
+local net_util = "skynet-fly.utils.net.ws_pbnet_util" --ws_pbnet_util or pbnet_util or jsonet_util or ws_jsonet_util
 local gate = "ws_gate"		     -- gate or ws_gate
 local protocol = "websocket"     -- websocket  or socket
 
@@ -17,7 +17,7 @@ return {
 					port = 8001,
 					maxclient = 2048,
 				},
-				login_plug = "login_check",
+				login_plug = "login.login_plug",
 				net_util = net_util,
 			},
 
@@ -32,7 +32,7 @@ return {
 		launch_seq = 2,
 		launch_num = 6,
 		default_arg = {
-			hall_plug = "hall_plug",
+			hall_plug = "hall.hall_plug",
 			net_util = net_util,
 		}
 	},
@@ -42,7 +42,7 @@ return {
 		launch_seq = 3,
 		launch_num = 1,
 		default_arg = {
-			alloc_plug = "alloc_plug",
+			alloc_plug = "alloc.alloc_plug",
 			MAX_TABLES = 10000,
 		}
 	},
@@ -53,7 +53,7 @@ return {
 		launch_num = 6,
 		default_arg = {
 			instance_name = "default",
-			table_plug = "table_plug2",
+			table_plug = "table.table_plug2",
 			net_util = net_util,
 			table_conf = {
 				player_num = 2,

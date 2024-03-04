@@ -1,10 +1,10 @@
 local skynet = require "skynet"
 require "skynet.manager"
-local timer = require "timer"
-local log = require "log"
+local timer = require "skynet-fly.timer"
+local log = require "skynet-fly.log"
 local queue = require "skynet.queue"
-local contriner_client = require "contriner_client"
-local skynet_util = require "skynet_util"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 
 local assert = assert
 local x_pcall = x_pcall

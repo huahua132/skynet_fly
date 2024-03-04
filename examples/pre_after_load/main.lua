@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-local contriner_launcher = require "contriner_launcher"
-local env_util = require "env_util"
+local contriner_launcher = require "skynet-fly.contriner.contriner_launcher"
+local env_util = require "skynet-fly.utils.env_util"
 
 skynet.start(function()
 	skynet.error("start pre_after_load!!!>>>>>>>>>>>>>>>>>")

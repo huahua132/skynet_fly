@@ -1,6 +1,6 @@
-local contriner_client = require "contriner_client"
-local timer = require "timer"
-local log = require "log"
+local contriner_client = require "skynet-fly.client.contriner_client"
+local timer = require "skynet-fly.timer"
+local log = require "skynet-fly.log"
 local skynet = require "skynet"
 
 contriner_client:register("B_m")
