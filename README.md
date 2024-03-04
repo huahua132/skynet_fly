@@ -28,7 +28,7 @@ QQ群号：102993581
 ## 第三方依赖来源
 * [skynet](https://github.com/cloudwu/skynet)1.7
 * [basexx](https://github.com/aiq/basexx)0.4.1
-* [lua-cjson](https://github.com/openresty/lua-cjson)2.1.0.9
+* [lua-cjson](https://github.com/cloudwu/lua-cjson)latest
 * [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.0-0
 * [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
 * [lua-radix-router](https://github.com/vm-001/lua-radix-router)latest
