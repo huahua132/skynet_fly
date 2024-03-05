@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local chat_filter = require "chat_filter"
 local log = require "skynet-fly.log"
+local json = require "cjson"
 
 local assert = assert
 
@@ -14,6 +15,14 @@ function CMD.start()
 	local filter_str = chat_filter.filter_chat(str)
 	log.info(str,filter_str)
 	
+	local a = {
+		b = 20000,
+	}
+
+	local astr = json.encode(a)
+	local b = json.decode(astr)
+	log.info(b)
+
 	return true
 end
 
