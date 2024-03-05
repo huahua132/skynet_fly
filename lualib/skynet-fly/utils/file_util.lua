@@ -57,11 +57,14 @@ function M.create_luapath(skynet_fly_path)
 	--server文件夹
 	local lua_path = server_path .. '?.lua;'
 
-	--server 下 module文件夹
+	--server 下 ./module文件夹
 	lua_path = lua_path .. server_path .. 'module/?.lua;'
 
 	--server上上级目录commonlualib文件夹
 	lua_path = lua_path .. common_path .. '?.lua;'
+
+	--server上上级目录commonlualib/module文件夹
+	lua_path = lua_path .. common_path .. '/module/?.lua;'
 
 	--skynet_fly lualib文件夹
 	lua_path = lua_path .. M.path_join(skynet_fly_path, '/lualib/?.lua;')
