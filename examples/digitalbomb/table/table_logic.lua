@@ -2,7 +2,6 @@ local log = require "skynet-fly.log"
 local GAME_STATE_ENUM = require "enum.GAME_STATE"
 local seater = require "table.seater"
 local errorcode = require "enum.errorcode"
-local errors_msg = require "msg.errors_msg"
 local game_msg = require "msg.game_msg"
 local skynet = require "skynet"
 
@@ -20,7 +19,6 @@ function M:new(interface_mgr, table_conf, table_id)
     local m_interface_mgr = interface_mgr
     local t = {
         m_interface_mgr = m_interface_mgr,
-        m_errors_msg = errors_msg:new(m_interface_mgr),
         m_game_msg = game_msg:new(m_interface_mgr),
         m_table_id = table_id,
         m_table_conf = table_conf,

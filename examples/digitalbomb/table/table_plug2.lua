@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local table_logic = require "table.table_logic"
+local errors_msg = require "msg.errors_msg"
 local log = require "skynet-fly.log"
 
 local assert = assert
@@ -30,6 +31,7 @@ end
 
 function M.table_creator(table_id)
     local m_interface_mgr = g_interface_mgr:new(table_id)
+	local m_errors_msg = errors_msg:new(m_interface_mgr)
     local m_logic = table_logic:new(m_interface_mgr, g_table_conf, table_id)
 
     return {
@@ -58,6 +60,12 @@ function M.table_creator(table_id)
 				m_logic:game_status_req(player_id,packname,pack_body)
 			end
 		},
+		handle_end = function(player_id, packname, pack_body, ret, errcode, errmsg)
+			log.info("handle_end >>> ", player_id, packname, ret, errcode, errmsg)
+			if not ret then
+				m_errors_msg:errors(player_id, errcode, errmsg, packname)
+			end
+		end,
 		------------------------------------服务退出回调-------------------------------------
 		herald_exit = function()
 			return m_logic:herald_exit()
