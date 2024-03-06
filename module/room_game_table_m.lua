@@ -346,7 +346,11 @@ function CMD.request(table_id,player_id,packname,pack_body)
     if not func then
         log.info("dorp package ",packname,pack_body)
     else
-        func(player_id,packname,pack_body)
+		if t_info.game_table.handle_end then
+			t_info.game_table.handle_end(player_id,packname,pack_body,func(player_id,packname,pack_body))
+		else
+			func(player_id,packname,pack_body)
+		end
     end
 	return true
 end

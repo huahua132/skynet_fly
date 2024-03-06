@@ -109,7 +109,11 @@ local function handle_msg(agent,packname,pack_body)
 			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,packname,pack_body)
 		end
 	else
-		func(agent.player_id,packname,pack_body)
+		if hall_plug.handle_end then
+			hall_plug.handle_end(agent.player_id,packname,pack_body,func(agent.player_id,packname,pack_body))
+		else
+			func(agent.player_id,packname,pack_body)
+		end
 	end
 end
 --消息分发
