@@ -25,22 +25,18 @@ M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
 local function login_out_req(player_id,packname,pack_body)
 	local ok,errorcode,errormsg = g_interface_mgr:goout(player_id)
-	if not ok then
-		log.error("dispatch err ",errorcode,errormsg)
-		errors_msg:errors(player_id,errorcode,errormsg,packname)
-	else
+	if ok then
 		login_msg:login_out_res(player_id,{player_id = player_id})
 	end
+	return ok,errorcode,errormsg
 end
 
 local function match_req(player_id,packname,pack_body)
 	local ok,errorcode,errormsg = g_interface_mgr:match_join_table(player_id,pack_body.table_name)
-	if not ok then
-		log.error("dispatch err ",errorcode,errormsg)
-		errors_msg:errors(player_id,errorcode,errormsg,packname)
-	else
+	if ok then
 		login_msg:match_res(player_id,{table_id = errorcode})
 	end
+	return ok,errorcode,errormsg
 end
 
 local function server_info_req(player_id,packname,pack_body)
@@ -84,6 +80,14 @@ end
 
 function M.goout(player_id)
 	log.info("hall_plug goout ",player_id)
+end
+
+-- 客户端消息处理结束
+function M.handle_end(player_id, packname, pack_body, ret, errcode, errmsg)
+	log.info("handle_end >>> ", packname, ret, errcode, errmsg)
+	if not ret then
+		errors_msg:errors(player_id, errcode, errmsg, packname)
+	end
 end
 
 ------------------------------------服务退出回调-------------------------------------
