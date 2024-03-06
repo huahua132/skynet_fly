@@ -11,7 +11,7 @@ local M = {}
 	这是一个最简单的示例
 ]]
 
---默认使用logger中间件
+--初始化一个纯净版
 local app = engine_web:new()
 --请求处理
 M.dispatch = engine_web.dispatch(app)
