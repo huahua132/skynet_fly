@@ -119,7 +119,7 @@ end}
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
-	assert(conf_map and conf_map[db_name],"not redis conf")
+	assert(conf_map and conf_map[db_name],"not redis conf:" .. db_name)
 
 	local conf = conf_map[db_name]
 	local t_conn = {
