@@ -66,7 +66,7 @@ local function join_table(agent, player_id, table_name, table_id)
 	local gate = agent.gate
 	local fd = agent.fd
 	local hall_server_id = agent.hall_server_id
-	local table_server_id,table_id,errmsg = xx_pcall(skynet.call,alloc_server_id,"join",player_id, gate, fd, hall_server_id, table_name, table_id)
+	local table_server_id,table_id,errmsg = xx_pcall(skynet.call,alloc_server_id,'lua',"join",player_id, gate, fd, hall_server_id, table_name, table_id)
 	if not table_server_id then
 		return false,table_id,errmsg
 	end
@@ -84,7 +84,7 @@ local function leave(agent)
 	if alloc_client then
 		isok,errcode,errmsg = alloc_client:mod_call('leave',agent.player_id)
 	elseif alloc_server_id then
-		isok,errcode,errmsg = xx_pcall(skynet.call,alloc_server_id,'leave',agent.player_id)
+		isok,errcode,errmsg = xx_pcall(skynet.call,alloc_server_id,'lua','leave',agent.player_id)
 	end
 
 	if not isok then
