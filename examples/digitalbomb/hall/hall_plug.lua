@@ -90,6 +90,15 @@ function M.handle_end(player_id, packname, pack_body, ret, errcode, errmsg)
 	end
 end
 
+--进入桌子回调
+function M.join_table(player_id, table_name, table_id)
+	log.info("join_table >>> ", player_id, table_name, table_id)
+end
+
+--离开桌子回调
+function M.leave_table(player_id, table_name, table_id)
+	log.info("leave_table >>> ", player_id, table_name, table_id)
+end
 ------------------------------------服务退出回调-------------------------------------
 function M.herald_exit()
     log.error("预告退出")
