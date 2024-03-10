@@ -80,6 +80,13 @@ local function join_table(agent, player_id, table_name, table_id)
 	agent.alloc_server_id = alloc_server_id
 	agent.table_server_id = table_server_id
 	agent.table_id = table_id
+	agent.table_name = table_name
+
+	--进入成功的回调
+	if hall_plug.join_table then
+		hall_plug.join_table(player_id, table_name, table_id)
+	end
+
 	return table_id
 end
 --离开桌子
@@ -105,8 +112,8 @@ local function leave(agent)
 	agent.table_server_id = nil
 	agent.table_id = nil
 	agent.table_name = nil
-
-	if hall_plug.leave_table then
+	
+	if table_name and table_id and hall_plug.leave_table then
 		hall_plug.leave_table(agent.player_id, table_name, table_id)
 	end
 
@@ -167,9 +174,6 @@ local function connect(agent,is_reconnect)
 	return login_res
 end
 
-local function clean_agent(player_id)
-	g_player_map[player_id] = nil
-end
 --登出
 local function goout(agent)
 	local player_id = agent.player_id
@@ -180,7 +184,7 @@ local function goout(agent)
 	end
 	hall_plug.goout(player_id)
 	skynet.send(agent.watchdog,'lua','goout',player_id)
-	skynet.fork(clean_agent,player_id)
+	g_player_map[player_id] = nil
 	return true
 end
 
@@ -438,7 +442,7 @@ end
 function CMD.disconnect(gate,fd,player_id)
 	local agent = g_fd_map[fd]
 	if not agent then 
-		log.error("disconnect not agent ",fd,player_id)
+		log.warn("disconnect not agent ",fd,player_id)
 		return
 	end
 
@@ -469,18 +473,18 @@ end
 function CMD.goout(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.error("goout not agent ",player_id)
+		log.warn("goout not agent ",player_id)
 		return
 	end
 
-	if agent.is_goout then
+	if agent.goouting then
 		log.warn("repeat goout ",player_id)
 		return
 	end
 
-	agent.is_goout = true
+	agent.goouting = true
 	local ret,errcode,errmsg = agent.queue(goout,agent)
-	agent.is_goout = false
+	agent.goouting = false
 	return ret,errcode,errmsg
 end
 
