@@ -42,6 +42,13 @@ local function new_join_table(agent, table_name, join_cmd)
 	agent.alloc_client = alloc_client
 	agent.table_server_id = table_server_id
 	agent.table_id = table_id
+	agent.table_name = table_name
+
+	--进入成功的回调
+	if hall_plug.join_table then
+		hall_plug.join_table(player_id, table_name, table_id)
+	end
+
 	return table_id
 end
 
@@ -91,10 +98,18 @@ local function leave(agent)
 		log.error("can`t leave !!! ",agent.player_id,errcode,errmsg)
 		return nil,errcode,errmsg
 	end
+
+	local table_name, table_id = agent.table_name, agent.table_id
 	agent.alloc_client = nil
 	agent.alloc_server_id = nil
 	agent.table_server_id = nil
 	agent.table_id = nil
+	agent.table_name = nil
+
+	if hall_plug.leave_table then
+		hall_plug.leave_table(agent.player_id, table_name, table_id)
+	end
+
 	return true
 end
 
