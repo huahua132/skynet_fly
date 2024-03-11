@@ -121,11 +121,7 @@ function CMD.accept(source,fd,addr)
 end
 
 function CMD.forward(source, fd)
-	if not g_conn_map[fd] then
-		log.warn("forward not exists fd ",fd)
-		return
-	end
-	local c = g_conn_map[fd]
+	local c = assert(g_conn_map[fd], "not exists fd ", fd)
 	c.agent = source
 end
 
