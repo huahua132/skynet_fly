@@ -22,6 +22,12 @@ function M.init()
 		c.res:set_rsp("hello skynet_fly " .. os.date("%Y%m%d %H:%M:%S",time_util.time()),HTTP_STATUS.OK)
 	end)
 
+	app:get("/ping",function(c)
+		c.res:set_json_rsp({
+			message = "pong"
+		})
+	end)
+
 	app:run()
 end
 

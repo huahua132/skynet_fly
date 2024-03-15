@@ -30,6 +30,7 @@ local SELF_ADDRESS
 
 local keep_alive_time = nil          --保活时间
 local second_req_limit = nil         --秒内请求次数限制
+local max_packge_limit = nil         --消息包最大长度
 local check_inval = 60 * 5
 local fd_info_map = {}
 
@@ -121,7 +122,7 @@ local function clear_fd(fd)
 	enter_map[fd] = nil
 end
 
-function SOCKET.enter(fd, ip,port,master_id)
+function SOCKET.enter(fd, ip, port, master_id)
 	if enter_cache:get_cache(fd) then
 		log.warn("repeat enter fd:",fd,ip,port)
 	end
@@ -136,7 +137,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 	new_fd_info.keep_alive = true
 	fd_info_map[fd] = new_fd_info
 
-	local is_ok,handle = pcall(handle_web,fd, ip, port, protocol, handle_func)
+	local is_ok,handle = pcall(handle_web, fd, ip, port, protocol, handle_func, max_packge_limit)
 	if not is_ok then
 		log.warn("handle_web err ",handle)
 		clear_fd(fd)
@@ -162,8 +163,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 			end
 
 			fd_info.state = FD_STATE.reading
-
-			local is_ok,ret = pcall(handle.read_request)
+			local is_ok,ret,header = pcall(handle.read_request)
 			if not is_ok then
 				log.warn("read_request err ",ret)
 				break
@@ -171,7 +171,6 @@ function SOCKET.enter(fd, ip,port,master_id)
 
 			if not ret then break end
 			fd_info.state = FD_STATE.handle_rspping
-
 			local is_ok,ret = x_pcall(handle.handle_response)
 			if not is_ok then
 				log.error("handle_response err ",ret)
@@ -181,7 +180,7 @@ function SOCKET.enter(fd, ip,port,master_id)
 			if not ret then break end
 			keep_alive = fd_info.keep_alive
 		end
-		
+	
 		handle.close()
 		clear_fd(fd)
 		skynet.send(master_id,'lua','socket','closed',fd,ip,port)
@@ -201,6 +200,7 @@ end
 function CMD.start(args)
 	keep_alive_time = args.keep_alive_time or 300       --保活时间
 	second_req_limit = args.second_req_limit or 100     --一秒请求数量限制
+	max_packge_limit = args.max_packge_limit or 8192
 	protocol = args.protocol
 	local lua_file = args.dispatch
 	web = require(lua_file)

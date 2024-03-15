@@ -44,7 +44,7 @@ local function do_response(fd, write, statuscode, bodyfunc, header)
 	end
 end
 
-local function do_request(fd, ip,port, protocol, handle)
+local function do_request(fd, ip, port, protocol, handle, max_packge_limit)
 	socket.start(fd)
 	local interface = gen_interface(protocol, fd)
 	if interface.init then
@@ -61,8 +61,8 @@ local function do_request(fd, ip,port, protocol, handle)
 
   	return {
     	read_request = function()
-			code, url, method, header, body = httpd.read_request(interface.read, 8192)
-			return code
+			code, url, method, header, body = httpd.read_request(interface.read, max_packge_limit)
+			return code, header
     	end,
 
 		handle_response = function()
@@ -79,7 +79,7 @@ local function do_request(fd, ip,port, protocol, handle)
 						req.body = body
 						local code,bodyfunc,rspheader = handle(req)
 						if code == HTTP_STATUS.OK then
-							do_response(fd, interface.write, code, bodyfunc,rspheader)
+							do_response(fd, interface.write, code, bodyfunc, rspheader)
 							return true
 						else
 							do_response(fd, interface.write, code)

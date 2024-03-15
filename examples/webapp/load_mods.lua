@@ -4,7 +4,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			server_cfg = {
-				thread = 2,
+				thread = 8,
 				debug_port = 9001,
 			}
 		}
@@ -27,9 +27,9 @@ return {
 		default_arg = {
 			protocol = 'http',
 			port = 80,         --端口
-			max_client = 2048, --最大连接数
-			second_conn_limit = 2000, --相同ip 1秒内建立连接数限制
-			keep_live_limit = 2000,  --相同ip 保持活跃数量限制
+			max_client = 30000, --最大连接数
+			second_conn_limit = 30000, --相同ip 1秒内建立连接数限制
+			keep_live_limit = 30000,  --相同ip 保持活跃数量限制
 		}
 	}
 }

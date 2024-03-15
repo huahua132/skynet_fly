@@ -4,7 +4,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			server_cfg = {
-				thread = 2,
+				thread = 8,
 				debug_port = 9001,
 			}
 		}
