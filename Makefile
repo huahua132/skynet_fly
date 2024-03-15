@@ -21,7 +21,7 @@ CFLAGS = -g -O0 -Wall -I$(LUA_INC)
 SHARED := -fPIC --shared
 
 SKYNET := skynet/Makefile
-SKYNET_BULDER := skynet/skynet
+SKYNET_BULDER := skynet/skynet/skynet
 
 TLS_LIB=/usr/bin/openssl
 TLS_INC=/usr/include/openssl
