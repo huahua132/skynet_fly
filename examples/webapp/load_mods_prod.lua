@@ -12,7 +12,7 @@ return {
 	
 	web_agent_m = {
 		launch_seq = 1,
-		launch_num = 6,
+		launch_num = 8,
 		default_arg = {
 			protocol = 'http',
 			dispatch = 'apps.webapp_dispatch',
