@@ -37,13 +37,6 @@ local function gen_interface(protocol, fd)
 	end
 end
 
-local function do_response(fd, write, statuscode, bodyfunc, header)
-	local ok, retval = httpd.write_response(write, statuscode, bodyfunc, header)
-	if not ok then
-		error(string.format("httpd.response(%d) : %s", fd, retval))
-	end
-end
-
 local function do_request(fd, ip, port, protocol, handle, max_packge_limit)
 	socket.start(fd)
 	local interface = gen_interface(protocol, fd)
@@ -62,35 +55,27 @@ local function do_request(fd, ip, port, protocol, handle, max_packge_limit)
   	return {
     	read_request = function()
 			code, url, method, header, body = httpd.read_request(interface.read, max_packge_limit)
-			return code, header
+			return code
     	end,
 
 		handle_response = function()
-			if code then
-				if code ~= HTTP_STATUS.OK then
-					do_response(fd, interface.write, code)
-				else
-					if header.upgrade == "websocket" then
-						do_response(fd, interface.write, HTTP_STATUS.Bad_Request)
-					else
-						req.method = method
-						req.url = url
-						req.header = header
-						req.body = body
-						local code,bodyfunc,rspheader = handle(req)
-						if code == HTTP_STATUS.OK then
-							do_response(fd, interface.write, code, bodyfunc, rspheader)
-							return true
-						else
-							do_response(fd, interface.write, code)
-						end
-					end
-				end
+			if code ~= HTTP_STATUS.OK then
+				httpd.write_response(interface.write, code)
 			else
-				if url == sockethelper.socket_error then
-					log.info("httpd : socket closed!!!", fd)
+				if header.upgrade == "websocket" then
+					httpd.write_response(interface.write, code, HTTP_STATUS.Bad_Request)
 				else
-					log.error("httpd : request failed!!!", fd, url)
+					req.method = method
+					req.url = url
+					req.header = header
+					req.body = body
+					local code,bodyfunc,rspheader = handle(req)
+					if code == HTTP_STATUS.OK then
+						httpd.write_response(interface.write, code, bodyfunc, rspheader)
+						return true
+					else
+						httpd.write_response(interface.write, code)
+					end
 				end
 			end
 		end,
