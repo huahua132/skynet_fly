@@ -151,7 +151,7 @@ local function add_key_select(t, entry, is_add)
         else
             if not key_select_map[filed_value] then
                 if t._cache_map then
-                    t._cache_map:set_cache(entry,t)
+                    assert(t._cache_map:set_cache(entry,t), "set_cache err")
                 end
                 key_cache_num_map[filed_value] = {count = 1, total_count = 1} --主键唯一
                 key_select_map[filed_value] = entry
@@ -174,10 +174,10 @@ local function add_key_select(t, entry, is_add)
                     end
                 end
             else
-                if t._cache_map then
-                    t._cache_map:update_cache(entry,t)
-                end
                 res_entry = key_select_map[filed_value]
+                if t._cache_map then
+                    assert(t._cache_map:update_cache(res_entry,t), "update cache err")
+                end
             end
         end
     end
@@ -373,7 +373,7 @@ local function excute_time_out(t, entry)
     local change_flag_map = t._change_flag_map
     if change_flag_map[entry] then
         --还没保存数据 还不能清除
-        t._cache_map:set_cache(entry, t)   --重新设置缓存
+        assert(t._cache_map:set_cache(entry, t), "set cache err")   --重新设置缓存
     else
         del_key_select(t, entry)
     end
