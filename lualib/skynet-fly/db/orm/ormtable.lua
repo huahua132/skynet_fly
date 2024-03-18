@@ -2,7 +2,7 @@ local ormentry = require "skynet-fly.db.orm.ormentry"
 local table_util = require "skynet-fly.utils.table_util"
 local math_util = require "skynet-fly.utils.math_util"
 local queue = require "skynet.queue"
-local cache_help = require "skynet-fly.cache.cache_help"
+local tti = require "skynet-fly.cache.tti"
 local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
@@ -442,7 +442,7 @@ function M:set_cache(expire, inval)
     self._cache_time = expire
 
     if expire > 0 then                                           --0表示缓存不过期
-        self._cache_map = cache_help:new(expire, cache_time_out)
+        self._cache_map = tti:new(expire, cache_time_out)
     end
     
     local week_t = setmetatable({},week_mata)                   --挂载一个弱引用表
