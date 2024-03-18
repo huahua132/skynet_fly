@@ -7,13 +7,13 @@ local cache_help = require "skynet-fly.cache.cache_help"
 local table_pool = require "skynet-fly.pool.table_pool":new(2048)
 local timer = require "skynet-fly.timer"
 local skynet_util = require "skynet-fly.utils.skynet_util"
+local time_util = require "skynet-fly.utils.time_util"
 
 local table  = table
 local string = string
 local pcall = pcall
 local type = type
 local assert = assert
-local os = os
 local pairs = pairs
 local x_pcall = x_pcall
 local next = next
@@ -62,7 +62,7 @@ local enter_cache = cache_help:new(1000,function(fd,addr)
 end)--用于检测是否及时完成链接 请求 响应的流程，没有完成即可能是恶意链接
 
 local function check_func()
-	local now_time = os.time()
+	local now_time = time_util.time()
 	local cnt = 0
 	for fd,info in pairs(fd_info_map) do
 		local sub_time = now_time - info.pre_msg_time
@@ -89,7 +89,7 @@ local CMD = {}
 local function handle_func(req)
 	local fd = req.fd
 	enter_map[fd] = nil
-	local cur_time = os.time()
+	local cur_time = time_util.time()
 	fd_info_map[fd].pre_msg_time = cur_time
 
 	if req_cnt_cache:get_cache(fd) then
@@ -129,7 +129,7 @@ function SOCKET.enter(fd, ip, port, master_id)
 
 	enter_map[fd] = ip
 	enter_cache:set_cache(fd,ip)
-	local conn_time = os.time()
+	local conn_time = time_util.time()
 
 	local new_fd_info = table_pool:get()
 	new_fd_info.pre_msg_time = conn_time
@@ -152,29 +152,27 @@ function SOCKET.enter(fd, ip, port, master_id)
 	socket.onclose(fd, function()
 		fd_info.keep_alive = false
 	end)
+	skynet.retpack(SELF_ADDRESS)
 
-	skynet.fork(function()
-		while keep_alive do
-			fd_info.state = FD_STATE.reading
-			local ret = handle.read_request()
-			if not ret then break end
-			fd_info.state = FD_STATE.handle_rspping
-			local is_ok,ret = x_pcall(handle.handle_response)
-			if not is_ok then
-				log.error("handle_response err ",ret)
-				break
-			end
-
-			if not ret then break end
-			keep_alive = fd_info.keep_alive
+	while keep_alive do
+		fd_info.state = FD_STATE.reading
+		local ret = handle.read_request()
+		if not ret then break end
+		fd_info.state = FD_STATE.handle_rspping
+		local is_ok,ret = x_pcall(handle.handle_response)
+		if not is_ok then
+			log.error("handle_response err ",ret)
+			break
 		end
-	
-		handle.close()
-		clear_fd(fd)
-		skynet.send(master_id,'lua','socket','closed',fd,ip,port)
-	end)
 
-	return SELF_ADDRESS
+		if not ret then break end
+		keep_alive = fd_info.keep_alive
+	end
+
+	handle.close()
+	clear_fd(fd)
+	skynet.send(master_id,'lua','socket','closed',fd,ip,port)
+	return skynet_util.NOT_RET
 end
 
 function SOCKET.close(fd)
