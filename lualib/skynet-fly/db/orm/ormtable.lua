@@ -16,6 +16,7 @@ local type = type
 local ipairs = ipairs
 local sformat = string.format
 local next = next
+local tostring = tostring
 
 local FILED_TYPE = {
     int8         = 1,
@@ -434,7 +435,10 @@ end
 
 local week_mata = {__mode = "kv"}
 -- 设置缓存时间
-function M:set_cache(expire, inval)
+function M:set_cache(expire, inval, cache_limit)
+    if cache_limit then
+        assert(cache_limit > 0, "err cache_limit " .. tostring(cache_limit))
+    end
     assert(not self._is_builder, "builded can`t set_cache")
     assert(not self._time_obj, "repeat time_obj")
     assert(expire >= 0, "err expire " .. expire)                 --缓存时间
@@ -442,7 +446,7 @@ function M:set_cache(expire, inval)
     self._cache_time = expire
 
     if expire > 0 then                                           --0表示缓存不过期
-        self._cache_map = tti:new(expire, cache_time_out)
+        self._cache_map = tti:new(expire, cache_time_out, cache_limit)
     end
     
     local week_t = setmetatable({},week_mata)                   --挂载一个弱引用表
