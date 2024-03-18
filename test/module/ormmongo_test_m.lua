@@ -1085,6 +1085,36 @@ local function test_disconnect()
     delete_table()
 end
 
+local function test_tti()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(6000,500, 10)   --缓存60秒,5秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry_list = {}
+    for i = 1, 11 do
+        local entry = orm_obj:create_one_entry({
+            player_id = tonumber(1000 .. i),
+            role_id = 101,
+            sex = 1,
+        })
+        table.insert(entry_list, entry)
+        skynet.sleep(100)
+    end
+
+    local entry = orm_obj:get_one_entry(10001, 101, 1)
+    assert(entry ~= entry_list[1])
+    local entry2 = orm_obj:get_one_entry(10002, 101, 1)
+    assert(entry2 == entry_list[2])
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1117,9 +1147,12 @@ function CMD.start()
         test_delete_all()
         log.info("test_craete_one>>>>>")
         test_craete_one()
-        log.info("test_craete_one>>>>>")
+        log.info("test_select_one>>>>>")
         test_select_one()
+        log.info("test_disconnect>>>>>")
         test_disconnect()
+        log.info("test_tti>>>>>")
+        test_tti()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
