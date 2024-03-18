@@ -37,7 +37,7 @@ $(CSERVICE_PATH) :
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
-LUA_CLIB = lfs cjson pb zlib chat_filter openssl
+LUA_CLIB = lfs cjson pb zlib chat_filter openssl skiplist
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -58,6 +58,9 @@ $(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
 
 $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
+
+$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.h 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
+	$(CC)  $(CFLAGS)  -I$(LUA_INC) $(SHARED)  $^ -o $@
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
 SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')

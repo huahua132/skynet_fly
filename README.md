@@ -35,6 +35,7 @@ QQ群号：102993581
 * [luafilesystem](https://github.com/lunarmodules/luafilesystem)1.8.0
 * [luajwtjitsi](https://github.com/jitsi/luajwtjitsi)3.0  自己适配了lua-openssl
 * [lzlib](https://github.com/LuaDist/lzlib)0.4.3
+* [lua-zset](https://github.com/xjdrew/lua-zset)latest
 
 ### [官方示例domo](https://github.com/huahua132/skynet_fly_demo)
 
