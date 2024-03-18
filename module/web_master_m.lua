@@ -2,7 +2,7 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local log = require "skynet-fly.log"
-local cache_help = require "skynet-fly.cache.cache_help"
+local tti = require "skynet-fly.cache.tti"
 local string_util = require "skynet-fly.utils.string_util"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local timer = require "skynet-fly.timer"
@@ -38,7 +38,7 @@ local keep_live_list_map = {}                --相同ip的连接fd
 local lock_kick_num_map = {}
 local lock_kick_map = {}
 
-local ip_connnect_cnt_cache = cache_help:new(100,function(ip)
+local ip_connnect_cnt_cache = tti:new(100,function(ip)
 	limit_conn_sum_map[ip] = nil
 end)
 
