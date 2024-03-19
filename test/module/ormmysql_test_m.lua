@@ -1149,24 +1149,27 @@ local function test_tti()
     :string64("email")
     :uint8("sex1")
     :set_keys("player_id","role_id","sex")
-    :set_cache(6000,500, 10)   --缓存60秒,5秒保存一次，最大缓存10条
+    :set_cache(6000,2000, 10)   --缓存60秒,20秒保存一次，最大缓存10条
     :builder(adapter)
 
     local entry_list = {}
-    for i = 1, 11 do
+    for i = 1, 15 do
         local entry = orm_obj:create_one_entry({
             player_id = tonumber(1000 .. i),
             role_id = 101,
             sex = 1,
         })
         table.insert(entry_list, entry)
+        if i == 3 then
+            entry:set("nickname", "ddd")
+        end
         skynet.sleep(100)
     end
 
     local entry = orm_obj:get_one_entry(10001, 101, 1)
     assert(entry ~= entry_list[1])
-    local entry2 = orm_obj:get_one_entry(10002, 101, 1)
-    assert(entry2 == entry_list[2])
+    local entry7 = orm_obj:get_one_entry(10007, 101, 1)
+    assert(entry7 == entry_list[7])
 end
 
 function CMD.start()

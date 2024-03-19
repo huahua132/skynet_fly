@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local time_util = require "skynet-fly.utils.time_util"
 local log = require "skynet-fly.log"
 local zset = require "skynet-fly.3rd.zset"
+local timer = require "skynet-fly.timer"
 local setmetatable = setmetatable
 local os = os
 local ipairs = ipairs
@@ -33,7 +34,7 @@ local function add(self, key, value)
 	return true
 end
 --删除
-local function del(self, key)
+local function del(self, key, isup)
 	local pre_expire_time = self.pre_expire_map[key]
 	if pre_expire_time then
 		local time_map = self.expire_time_map[pre_expire_time]
@@ -51,7 +52,7 @@ local function del(self, key)
 				self.zs:rem(k)
 				self.tt_map[k] = nil
 			end
-			if self.call_back then
+			if self.call_back and not isup then
 				skynet.fork(self.call_back, key, v)
 			end
 			return true
@@ -131,7 +132,7 @@ function M:set_cache(key,value)
 	if self.cache_limit and self.cache_cnt >= self.cache_limit then
 		if not self.tting then
 			self.tting = true
-			skynet.fork(TTI_del, self)
+			timer:new(timer.second * 1, 1, TTI_del, self)
 		end
 	end
 
@@ -151,7 +152,7 @@ function M:update_cache(key,value)
 		return false
 	end
 
-	del(self, key)
+	del(self, key, true)
 	add(self, key, value)
 	return true
 end

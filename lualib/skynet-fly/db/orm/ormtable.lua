@@ -370,26 +370,12 @@ function M:set_keys(...)
     return self
 end
 
-local function excute_time_out(t, entry)
-    local change_flag_map = t._change_flag_map
-    if change_flag_map[entry] then
-        --还没保存数据 还不能清除
-        assert(t._cache_map:set_cache(entry, t), "set cache err")   --重新设置缓存
-    else
-        del_key_select(t, entry)
-    end
-end
-
---缓存到期
-local function cache_time_out(entry, t)
-    t._queue(excute_time_out, t, entry)
-end
-
 --定期保存修改
 local function inval_time_out(week_t)
     local t = next(week_t)
     if not t then return end
-
+    if t._inval_saveting then return end
+    t._inval_saveting = true
     local change_flag_map = t._change_flag_map
     local cur_count = 0
     local once_save = 100
@@ -431,6 +417,23 @@ local function inval_time_out(week_t)
             skynet.sleep(100) --避免失败了请求太过频繁
         end
     end
+    t._inval_saveting = false
+end
+
+local function excute_time_out(t, entry)
+    local change_flag_map = t._change_flag_map
+    if change_flag_map[entry] then
+        --还没保存数据 还不能清除
+        assert(t._cache_map:set_cache(entry, t), "set cache err")   --重新设置缓存
+        skynet.fork(inval_time_out, t._week_t)
+    else
+        del_key_select(t, entry)
+    end
+end
+
+--缓存到期
+local function cache_time_out(entry, t)
+    t._queue(excute_time_out, t, entry)
 end
 
 local week_mata = {__mode = "kv"}
@@ -553,7 +556,7 @@ local function get_entry(t, key_values)
 
     if t._cache_map then
         for _,entry in ipairs(entry_list) do
-            t._cache_map:update_cache(entry, t)
+            assert(t._cache_map:update_cache(entry, t), "err update_cache")
         end
     end
 
@@ -573,7 +576,7 @@ local function get_one_entry(t, key_values)
     end
 
     if t._cache_map then
-        t._cache_map:update_cache(entry, t)
+        assert(t._cache_map:update_cache(entry, t), "err update_cache")
     end
     return entry
 end
