@@ -105,7 +105,6 @@ function M.create_recv(read,unpack)
 			while not is_cancel do
 				local ok,msg = pcall(read,fd)
 				if not ok or msg == false then
-					log.error("read faild ",fd,msg)
 					break
 				end
 	
