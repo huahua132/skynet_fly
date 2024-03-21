@@ -861,7 +861,8 @@ local function test_permanent()
 
     skynet.sleep(1)
 
-    local get_entry_List = orm_obj:get_entry(10001)
+    local get_entry_List,is_cache = orm_obj:get_entry(10001)
+    assert(is_cache)
     local g_entry = get_entry_List[1]
 
     assert(entry == g_entry)
@@ -1138,8 +1139,9 @@ local function test_disconnect()
     os.execute("systemctl start mysql")
     delete_table()
 end
-
+--测试缓存超上限，剔除最快过期
 local function test_tti()
+    delete_table()
     local adapter = ormadapter_mysql:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
@@ -1170,6 +1172,298 @@ local function test_tti()
     assert(entry ~= entry_list[1])
     local entry7 = orm_obj:get_one_entry(10007, 101, 1)
     assert(entry7 == entry_list[7])
+    delete_table()
+end
+
+--测试占位缓存
+local function test_invaild_entry()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500, 100, 10)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1, 1)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001, 1, 1)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry,is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(not entry)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry,is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(not entry)
+
+    skynet.yield()
+    --创建数据因覆盖缓存
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 2})
+    assert(entry)
+
+    skynet.yield()
+    local get_entry, is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    assert(is_cache)
+    assert(get_entry == entry)
+
+    skynet.yield()
+    --查询10001命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001 1 命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001 2 没有
+    local entry_list,is_cache = orm_obj:get_entry(10001, 2)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建 10001 2 2
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 2, sex = 2})
+    assert(entry)
+    --查询10001 2 命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 2)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(is_cache)
+    assert(#entry_list == 2)
+
+    skynet.sleep(600)
+    --查询10001 3 没有
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建10001 3
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 1})
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 应不命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(not is_cache)
+    assert(#entry_list == 3)
+
+    skynet.yield()
+    --创建10001 3 0
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 0})
+    assert(entry)
+    skynet.yield()
+    --查询10001 3 应命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(is_cache)
+    assert(#entry_list == 2)
+
+    skynet.sleep(600)
+    --查询10001 3 2 不存在
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3, 2)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建10001 3 2
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 2})
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 3应不命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(not is_cache)
+    assert(#entry_list == 3)
+
+    skynet.yield()
+    --查询10001 3 3 不存在
+    local entry, iscache = orm_obj:get_one_entry(10001, 3, 3)
+    assert(not is_cache)
+    assert(not entry)
+    skynet.yield()
+    --创建 10001 3 3
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 3})
+    assert(entry)
+
+    skynet.yield()
+    local entry, is_cache = orm_obj:get_one_entry(10001, 3, 3)
+    assert(is_cache)
+    assert(entry)
+
+    skynet.yield()
+    local entry, is_cache = orm_obj:get_entry(10001, 3, 3)
+    assert(is_cache)
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 3应命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(is_cache)
+    assert(#entry_list == 4)
+
+    delete_table()
+
+    --测试全表
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500, 100, 10)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(not is_cache)
+    assert(#entry_list == 0)
+    skynet.yield()
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(is_cache)
+    assert(#entry_list == 0)
+    skynet.yield()
+
+    --创建数据
+    local entry = orm_obj:create_one_entry({player_id = 10001,role_id = 1, sex = 2})
+    assert(entry)
+    skynet.yield()
+   
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(is_cache)
+    assert(#entry_list == 1)
+    skynet.yield()
+
+    skynet.sleep(600)
+
+    --创建数据
+    local entry = orm_obj:create_one_entry({player_id = 10001,role_id = 1, sex = 3})
+    assert(entry)
+    skynet.yield()
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(not is_cache)
+    assert(#entry_list == 2)
+    skynet.yield()
+    
+    delete_table()
+end
+
+--测试永久缓存
+local function test_every_cache()
+    delete_table()
+
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(0, 100)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    --永久缓存，缓存没有就是没有数据，不需要查询数据库
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    --首次查询会命中缓存
+    assert(is_cache)
+    assert(#entry_list == 0)
+    
+    local entry, is_cache = orm_obj:get_one_entry(10001, 1, 1)
+    assert(not entry)
+    assert(is_cache)
+
+    local entry_list = orm_obj:create_entry({
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 3, sex = 1},
+    })
+
+    orm_obj:save_entry(entry_list)
+    
+    orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(0, 100)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry, is_cache = orm_obj:get_one_entry(10001, 4, 1)
+    assert(not entry)
+    assert(is_cache)
+
+    local entry, is_cache = orm_obj:get_one_entry(10001, 1, 1)
+    assert(entry)
+    assert(is_cache)
+
+    delete_table()
 end
 
 function CMD.start()
@@ -1210,6 +1504,10 @@ function CMD.start()
         test_disconnect()
         log.info("test_tti>>>>>")
         test_tti()
+        log.info("test_invaild_entry>>>>>")
+        test_invaild_entry()
+        log.info("test_every_cache>>>>>")
+        test_every_cache()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

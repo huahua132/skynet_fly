@@ -10,13 +10,20 @@ local mata = {
 function M:new(ormtab, entry_data)
     local t = {
         _ormtab = ormtab,
-        _entry_data = {},
+        _entry_data = entry_data,
         _change_map = {},                    --变更的条目
     }
+    
+    setmetatable(t, mata)
+    return t
+end
 
-    for k,v in pairs(entry_data) do
-        t._entry_data[k] = v
-    end
+--新增无效条目数据 用于防止缓存穿透
+function M:new_invaild(entry_data)
+    local t = {
+        _entry_data = entry_data,
+        _invaild = true,
+    }
     
     setmetatable(t, mata)
     return t
@@ -53,6 +60,11 @@ function M:clear_change()
     for filed_name in pairs(change_map) do
         change_map[filed_name] = nil
     end
+end
+
+--是否无效条目
+function M:is_invaild()
+    return self._invaild
 end
 
 return M
