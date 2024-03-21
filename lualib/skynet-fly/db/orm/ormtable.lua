@@ -10,6 +10,7 @@ local log = require "skynet-fly.log"
 local setmetatable = setmetatable
 local assert = assert
 local tinsert = table.insert
+local tremote = table.remove
 local tunpack = table.unpack
 local pairs = pairs
 local type = type
@@ -41,6 +42,9 @@ local FILED_TYPE = {
     text         = 51,
     blob         = 52,
 }
+
+local INVAILD_POINT = {count = 0, total_count = 0}  --无效叶点
+local VAILD_POINT = {count = 1, total_count = 1}    --有效叶点
 
 local FILED_LUA_DEFAULT = {
     [FILED_TYPE.int8] = 0,
@@ -124,6 +128,9 @@ local function check_fileds(t,entry_data)
     end
 end
 
+local del_key_select = nil  --function
+local get_entry = nil       --function
+
 -- 添加进key索引表
 local function add_key_select(t, entry, is_add)
     if not t._cache_time then return entry end
@@ -132,7 +139,7 @@ local function add_key_select(t, entry, is_add)
     local key_list = t._keylist
 
     local res_entry = entry
-
+    local invaild = entry:is_invaild()
     local select_list = {}
     local len = #key_list
     for i = 1,len do
@@ -154,42 +161,58 @@ local function add_key_select(t, entry, is_add)
                 if t._cache_map then
                     assert(t._cache_map:set_cache(entry,t), "set_cache err")
                 end
-                key_cache_num_map[filed_value] = {count = 1, total_count = 1} --主键唯一
+                if invaild then
+                    key_cache_num_map[filed_value] = INVAILD_POINT
+                else
+                    key_cache_num_map[filed_value] = VAILD_POINT
+                end
+                
                 key_select_map[filed_value] = entry
                 for i = #select_list, 1, -1 do
                     local one_select = select_list[i]
-                    one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
+                    if not invaild then
+                        one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
+                    end
 
-                    if is_add then
+                    if is_add and not invaild then
                         --是添加跟着count 一起加一就行
                         if one_select.pc[one_select.k].total_count then
                             one_select.pc[one_select.k].total_count = one_select.pc[one_select.k].total_count + 1
                         end
                     end
                 end
-                t._key_cache_count = t._key_cache_count + 1
+                if not invaild then
+                    t._key_cache_count = t._key_cache_count + 1
+                end
 
-                if is_add then
+                if is_add and not invaild then
                     if t._key_cache_total_count then
                         t._key_cache_total_count = t._key_cache_total_count + 1
                     end
                 end
             else
                 res_entry = key_select_map[filed_value]
-                if t._cache_map then
-                    assert(t._cache_map:update_cache(res_entry,t), "update cache err")
+                if is_add and not invaild and res_entry:is_invaild() then   --是添加并且是无效条目，替换掉
+                    del_key_select(t, res_entry, true)
+                    add_key_select(t, entry, true)
+                    res_entry = entry
+                else
+                    if t._cache_map then
+                        assert(t._cache_map:update_cache(res_entry,t), "update cache err")
+                    end
                 end
             end
         end
     end
 
-    --log.info("add_key_select:",t._key_cache_num_map)
+    --log.info("add_key_select:", invaild, is_add, t._key_cache_num_map, tostring(res_entry))
     return res_entry
 end
 
 -- 设置total_count
 local function set_total_count(t, key_values, total_count)
     if not t._cache_time then return end
+    local key_list = t._keylist
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local len = #key_values
     for i = 1, len do
@@ -218,13 +241,20 @@ local function get_key_select(t, key_values)
         local filed_value = key_values[i]
         if i ~= len then
             if not key_select_map[filed_value] then
-                break
+                return
             end
             key_select_map = key_select_map[filed_value]
             key_cache_num_map = key_cache_num_map[filed_value].sub_map
         else
             local cache = key_cache_num_map[filed_value]
             if not cache then return end
+            if t._cache_time == 0 then      --永久缓存不需要对比total_count，数据全在
+                if key_select_map[filed_value] then
+                    return key_select_map[filed_value], true
+                else
+                    return
+                end
+            end
             if not cache.total_count then return end
             return key_select_map[filed_value], cache.count == cache.total_count
         end
@@ -234,13 +264,13 @@ local function get_key_select(t, key_values)
 end
 
 -- 删除掉key索引表
-local function del_key_select(t, entry, is_del)
+del_key_select = function(t, entry, is_del)
     if not t._cache_time then return end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local key_list = t._keylist
     local select_list = {}
-
+    local invaild = entry:is_invaild()
     local len = #key_list
     for i = 1,len do
         local filed_name = key_list[i]
@@ -257,24 +287,29 @@ local function del_key_select(t, entry, is_del)
             one_select.sv = key_select_map
             tinsert(select_list, one_select)
         else
+            if entry ~= key_select_map[filed_value] then break end
             key_select_map[filed_value] = nil
             key_cache_num_map[filed_value] = nil
-            t._key_cache_count = t._key_cache_count - 1
+            if not invaild then
+                t._key_cache_count = t._key_cache_count - 1
+            end
             if is_del then
-                if t._key_cache_total_count then
+                if not invaild and t._key_cache_total_count then
                     t._key_cache_total_count = t._key_cache_total_count - 1
                 end
             else
+                --仅仅是缓存过期了
                 t._key_cache_total_count = nil
             end
             local rm_k = nil
             for i = #select_list, 1, -1 do
                 local one_select = select_list[i]
-
-                one_select.pc[one_select.k].count = one_select.pc[one_select.k].count - 1
+                if not invaild then
+                    one_select.pc[one_select.k].count = one_select.pc[one_select.k].count - 1
+                end
                 if is_del then
                     --是删除跟着count 一起减一就行
-                    if one_select.pc[one_select.k].total_count then
+                    if not invaild and one_select.pc[one_select.k].total_count then
                         one_select.pc[one_select.k].total_count = one_select.pc[one_select.k].total_count - 1
                     end
                 else
@@ -292,7 +327,10 @@ local function del_key_select(t, entry, is_del)
         end
     end
 
-    --log.info("del_key_select:", t._key_cache_num_map)
+    if t._cache_map then
+        t._cache_map:del_cache(entry)
+    end
+    --log.info("del_key_select:", invaild, is_del, t._key_cache_num_map)
 end
 
 local function init_entry_data(t,entry_data)
@@ -427,13 +465,46 @@ local function excute_time_out(t, entry)
         assert(t._cache_map:set_cache(entry, t), "set cache err")   --重新设置缓存
         skynet.fork(inval_time_out, t._week_t)
     else
-        del_key_select(t, entry)
+        if entry:is_invaild() then
+            del_key_select(t, entry, true)
+        else
+            del_key_select(t, entry)
+        end
     end
 end
 
 --缓存到期
 local function cache_time_out(entry, t)
     t._queue(excute_time_out, t, entry)
+end
+
+--检查key values 是否合法
+local function check_key_values(t, key_values)
+    local keylist = t._keylist
+    local filed_list = t._filed_list
+    local filed_map = t._filed_map
+    for i = 1,#key_values do
+        local filed_name = keylist[i]
+        local value = key_values[i]
+        check_one_filed(t, filed_name, value)
+    end
+end
+
+-- 生成无效数据
+local function create_invaild_entry(t, key_values)
+    --无效数据，只需要添加key的数据就行
+    local keylist = t._keylist
+    local filed_list = t._filed_list
+    local filed_map = t._filed_map
+    local data = {}
+    for i = 1, #keylist do
+        local filed_name = keylist[i]
+        local ft = filed_map[filed_name]
+        local filed_value = key_values[i] or FILED_LUA_DEFAULT[ft]
+        data[filed_name] = filed_value
+    end
+
+    return ormentry:new_invaild(data)
 end
 
 local week_mata = {__mode = "kv"}
@@ -477,7 +548,17 @@ end
 -- 构建表
 function M:builder(adapterinterface)
     assert(#self._keylist > 0, "not set keys")
-    return self._queue(builder, self, adapterinterface)
+    if self._cache_time ~= 0 then
+        return self._queue(builder, self, adapterinterface)
+    else
+        local ret = self._queue(builder, self, adapterinterface)
+        local entry_list = self._queue(get_entry, self, {}, true)  --永久缓存，构建查询出所有数据
+        if not entry_list then
+            return nil
+        else
+            return ret
+        end
+    end 
 end
 
 local function create_entry(t, list)
@@ -530,37 +611,56 @@ function M:set_change_entry(entry)
     self._change_flag_map[entry] = true
 end
 
-local function get_entry(t, key_values)
+get_entry = function(t, key_values, is_init_get_all)
     assert(t._is_builder, "not builder can`t get_entry")
     local key_list = t._keylist
     local entry_list = {}
     local depth = #key_list - #key_values
     local entry_list_map,is_cache_all = get_key_select(t, key_values)
     if not is_cache_all then
-        local entry_data_list = t._adapterinterface:get_entry(key_values)
-        if not entry_data_list or not next(entry_data_list) then return entry_list end
-
-        for i = 1,#entry_data_list do
-            local entry_data = init_entry_data(t, entry_data_list[i])
-            local entry = ormentry:new(t, entry_data)
-            tinsert(entry_list, add_key_select(t, entry))
+        --永久 缓存没有就是没有
+        if t._cache_time == 0 and not is_init_get_all then  --不是永久缓存初始化拉取
+            return entry_list, true
+        else
+            local entry_data_list = t._adapterinterface:get_entry(key_values)
+            if not is_init_get_all and(not entry_data_list or not next(entry_data_list)) then
+                --添加无效条目站位，防止缓存穿透
+                local invaild_entry = create_invaild_entry(t, key_values)
+                add_key_select(t, invaild_entry)
+                set_total_count(t, key_values, 0)
+                return entry_list, false
+            else
+                for i = 1,#entry_data_list do
+                    local entry_data = init_entry_data(t, entry_data_list[i])
+                    local entry = ormentry:new(t, entry_data)
+                    tinsert(entry_list, add_key_select(t, entry))
+                end
+                set_total_count(t, key_values, #entry_data_list)
+                return entry_list, false
+            end
         end
-        set_total_count(t, key_values, #entry_data_list)
     else
         if depth > 0 then
             entry_list = table_util.depth_to_list(entry_list_map, depth)
         else
             entry_list = {entry_list_map}
         end
-    end
 
-    if t._cache_map then
-        for _,entry in ipairs(entry_list) do
-            assert(t._cache_map:update_cache(entry, t), "err update_cache")
+        if t._cache_map then
+            for _,entry in ipairs(entry_list) do
+                assert(t._cache_map:update_cache(entry, t), "err update_cache")
+            end
         end
-    end
 
-    return entry_list,is_cache_all
+        --剔除无效条目
+        for i = #entry_list, 1, -1 do
+            local entry = entry_list[i]
+            if entry:is_invaild() then
+                tremote(entry_list, i)
+            end
+        end
+        return entry_list, true
+    end    
 end
 
 local function get_one_entry(t, key_values)
@@ -568,17 +668,31 @@ local function get_one_entry(t, key_values)
     local key_list = t._keylist
     local entry, is_cache = get_key_select(t, key_values)
     if not is_cache then
-        local entry_data = t._adapterinterface:get_one_entry(key_values)
-        if not entry_data then return nil end
-
-        entry = ormentry:new(t, entry_data)
-        return add_key_select(t, entry)
+        --永久 缓存没有就是没有
+        if t._cache_time == 0 then
+            return nil, true
+        else
+            local entry_data = t._adapterinterface:get_one_entry(key_values)
+            if not entry_data then
+                --添加无效条目站位，防止缓存穿透
+                local invaild_entry = create_invaild_entry(t, key_values)
+                add_key_select(t, invaild_entry)
+                return nil, false
+            else
+                entry = ormentry:new(t, init_entry_data(t, entry_data))
+                return add_key_select(t, entry)
+            end
+        end
     end
 
     if t._cache_map then
         assert(t._cache_map:update_cache(entry, t), "err update_cache")
     end
-    return entry
+
+    if entry and entry:is_invaild() then
+        entry = nil
+    end
+    return entry, true
 end
 
 local function save_entry(t, entry_list)
@@ -657,6 +771,7 @@ end
 function M:get_entry(...)
     local key_values = {...}
     assert(#key_values > 0, "err key_values")
+    check_key_values(self, key_values)
     return self._queue(get_entry, self, key_values)
 end
 
@@ -665,6 +780,7 @@ function M:get_one_entry(...)
     local key_values = {...}
     local key_list = self._keylist
     assert(#key_values == #key_list, "args len err") --查询单条数据，必须提供所有主键
+    check_key_values(self, key_values)
     return self._queue(get_one_entry, self, key_values)
 end
 
@@ -684,6 +800,7 @@ end
 function M:delete_entry(...)
     local key_values = {...}
     assert(#key_values > 0, "not key_values")
+    check_key_values(self, key_values)
     return self._queue(delete_entry, self, key_values)
 end
 
@@ -715,7 +832,7 @@ function M:get_entry_by_data(entry_data)
         local v = assert(entry_data[filed_name], "not exists value filed_name:" .. filed_name)
         tinsert(key_values, v)
     end
-
+    check_key_values(self, key_values)
     return self._queue(get_one_entry, self, key_values)
 end
 
