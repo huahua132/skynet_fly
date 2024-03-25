@@ -77,7 +77,7 @@ function HANDLER.message(fd, msg, msg_type)
 	if agent then
 		skynet.redirect(agent, 0, 'client', fd, msg)
 	else
-		skynet.send(g_watchdog,'lua','socket','data', fd, msg, msg_type)
+		skynet.send(g_watchdog,'lua','socket','data', fd, msg)
 	end
 end
 

@@ -208,8 +208,8 @@ function SOCKET.close(fd)
 	end
 end
 
-function SOCKET.data(msg)
-	log.info('SOCKET.data:',msg)
+function SOCKET.data(fd, msg)
+	log.info('SOCKET.data:',fd, msg)
 end
 
 function CMD.socket(cmd,...)
