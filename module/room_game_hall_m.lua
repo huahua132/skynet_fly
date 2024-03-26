@@ -184,6 +184,7 @@ local function goout(agent)
 	end
 	hall_plug.goout(player_id)
 	skynet.send(agent.watchdog,'lua','goout',player_id)
+	g_fd_map[agent.fd] = nil
 	g_player_map[player_id] = nil
 	return true
 end
@@ -427,8 +428,9 @@ function CMD.connect(gate,fd,player_id,watchdog)
 	else
 		if agent.is_goout then
 			log.error("exiting ....",player_id)
-			return 
+			return
 		end
+		g_fd_map[agent.fd] = nil
 		agent.fd = fd
 		agent.gate = gate
 		agent.watchdog = watchdog
