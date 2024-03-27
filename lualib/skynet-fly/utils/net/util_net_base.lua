@@ -7,6 +7,8 @@ local log = require "skynet-fly.log"
 local pcall = pcall
 local string = string
 local assert = assert
+local tinsert = table.insert
+local pairs = pairs
 
 local M = {}
 
@@ -159,7 +161,7 @@ local function create_ws_gate_send(type)
 end
 
 local function create_ws_gate_broadcast(type)
-	local send_type = 'send_' .. type
+	local send_type = 'broadcast_' .. type
 	return function(pack)
 		return function(gate_list,fd_list,name,tab)
 			assert(gate_list and #gate_list > 0)
@@ -175,11 +177,19 @@ local function create_ws_gate_broadcast(type)
 
 			--大端2字节表示包长度
 			local send_buffer = string.pack(">I2",msg:len()) .. msg
-			
+
+			local gate_fd_list = {}
 			for i = 1,#fd_list do
 				local fd = fd_list[i]
 				local gate = gate_list[i]
-				skynet.send(gate,'lua',send_type,fd,send_buffer)
+				if not gate_fd_list[gate] then
+					gate_fd_list[gate] = {}
+				end
+				tinsert(gate_fd_list[gate], fd)
+			end
+
+			for gate, fd_list in pairs(gate_fd_list) do
+				skynet.send(gate,'lua', send_type, fd_list, send_buffer)
 			end
 		end
 	end

@@ -141,6 +141,30 @@ function CMD.send_binary(_,fd, msg)
 	end
 end
 
+function CMD.broadcast_text(_, fd_list, msg)
+	local len = #fd_list
+	for i = 1, len do
+		local fd = fd_list[i]
+		if websocket.is_close(fd) then
+			log.warn("broadcast_text not exists fd ",fd)
+		else
+			websocket.write(fd, msg, "text")
+		end
+	end
+end
+
+function CMD.broadcast_binary(_, fd_list, msg)
+	local len = #fd_list
+	for i = 1, len do
+		local fd = fd_list[i]
+		if websocket.is_close(fd) then
+			log.warn("broadcast_binary not exists fd ",fd)
+		else
+			websocket.write(fd, msg, "binary")
+		end
+	end
+end
+
 function CMD.kick(_,fd)
 	websocket.close(fd,CLOSE_CODE.normal,CLOSE_REASON[CLOSE_CODE.normal])
 end
