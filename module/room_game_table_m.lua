@@ -76,8 +76,7 @@ end
 local function is_online(table_id,player_id)
 	local player = get_player_info(table_id,player_id)
 	if not player then
-		log.warn("is_online not exists ",table_id,player_id)
-		return
+		return false
 	end
 
 	return player.fd ~= 0

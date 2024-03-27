@@ -300,7 +300,6 @@ end
 function interface:is_online(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.info("is_online not agent ",player_id)
 		return false
 	end
 

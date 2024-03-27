@@ -22,6 +22,7 @@ local g_fd_agent_map = {}
 local g_player_map = {}
 local g_login_lock_map = {}
 
+local interface = {}
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
@@ -41,7 +42,9 @@ local function connect_hall(gate,fd,player_id)
 	local hall_client = nil
 	if old_agent then
 		hall_client = old_agent.hall_client
-		login_plug.repeat_login(player_id)
+		if interface:is_online(player_id) then
+			login_plug.repeat_login(player_id)
+		end
 		close_fd(old_agent.fd)
 	else
 		hall_client = contriner_client:new("room_game_hall_m",nil,function() return false end)
@@ -92,13 +95,11 @@ end
 ----------------------------------------------------------------------------------
 --interface
 ----------------------------------------------------------------------------------
-local interface = {}
 
 function interface:is_online(player_id)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.info("is_online not agent ",player_id)
-		return
+		return false
 	end
 
 	return agent.fd ~= 0
