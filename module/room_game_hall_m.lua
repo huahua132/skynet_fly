@@ -515,14 +515,18 @@ function CMD.start(config)
 	--检查掉线超时，掉线超时还没有重新连接的需要清理
 	local timer_obj = timer:new(timer.minute,timer.loop,function()
 		local cur_time = time_util.skynet_int_time()
+		local disconn_list = {}
 		for _,agent in pairs(g_player_map) do
 			if not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then
-				log.info("disconn_time_out ",agent.player_id)
-				--尝试登出
-				local isok,errorcode,errormsg = interface:goout(agent.player_id)
-				if not isok then
-					log.warn("disconn_time_out goout err ",errorcode,errormsg)
-				end
+				tinsert(disconn_list, agent)
+			end
+		end
+
+		for _,agent in pairs(disconn_list) do
+			--尝试登出
+			local isok,errorcode,errormsg = interface:goout(agent.player_id)
+			if not isok then
+				log.warn("disconn_time_out goout err ",errorcode,errormsg)
 			end
 		end
 	end)
