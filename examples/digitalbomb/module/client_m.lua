@@ -67,6 +67,21 @@ local function repeat_connect_test()
 	connnect()
 end
 
+--重复登录测试(登录成功之后)
+local function repeat_connect1_test()
+	connnect()
+	skynet.sleep(100)
+	connnect()
+end
+
+--重复登录测试(断线重连)
+local function repeat_connect2_test()
+	local fd = connnect()
+	skynet.sleep(100)
+	close(fd)
+	connnect()
+end
+
 --重复退出测试
 local function repeat_loginout_test()
 	local fd = connnect()
@@ -272,6 +287,8 @@ function CMD.start(config)
 	skynet.fork(function()
 		--disconnect_test()
 		--repeat_connect_test()
+		--repeat_connect1_test()
+		--repeat_connect2_test()
 		--repeat_loginout_test()
 
 		--reconnecttest()
