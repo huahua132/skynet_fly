@@ -82,11 +82,12 @@ end
 
 --正在登录中
 function M.logining(player_id)
-	errors_msg:errors(player_id,errorcode.LOGINING,"logining please waiting...")
+	log.info("logining >>> ",player_id)
 end
 
 --重复登录
 function M.repeat_login(player_id)
+	log.info("repeat_login >>> ",player_id)
 	errors_msg:errors(player_id,errorcode.REPAET_LOGIN,"repeat_login")
 end
 

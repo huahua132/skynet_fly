@@ -27,6 +27,7 @@ local g_login_lock_map = {}
 ----------------------------------------------------------------------------------
 
 local function close_fd(fd)
+	if fd <= 0 then return end
 	local agent = g_fd_agent_map[fd]
 	if not agent then
 		log.info("close_fd not agent ",fd)
@@ -202,6 +203,7 @@ function SOCKET.close(fd)
 	local player_id = agent.player_id
 	local player = g_player_map[player_id]
 	if player then
+		player.fd = 0
 		local hall_client = player.hall_client
 		login_plug.disconnect(player_id)
 		hall_client:mod_send('disconnect',agent.gate,fd,player_id)
