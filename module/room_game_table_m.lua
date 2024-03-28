@@ -83,17 +83,17 @@ local function is_online(table_id,player_id)
 end
 
 --发送消息
-local function send_msg(table_id,player_id,packname,pack_body)
+local function send_msg(table_id,player_id,header,body)
 	if not is_online(table_id,player_id) then
 		log.info("send msg not online ",table_id,player_id)
 		return
 	end
 	local player = get_player_info(table_id,player_id)
-    table_plug.send(player.gate,player.fd,packname,pack_body)
+    table_plug.send(player.gate,player.fd,header,body)
 end
 
 --发送消息给部分玩家
-local function send_msg_by_player_list(table_id,player_list,packname,pack_body)
+local function send_msg_by_player_list(table_id,player_list,header,body)
 	local t_info = get_table_info(table_id)
 	if not t_info then
 		log.warn("send_msg_by_player_list not exists table_id = ",table_id)
@@ -121,11 +121,11 @@ local function send_msg_by_player_list(table_id,player_list,packname,pack_body)
 
 	if #gate_list <= 0 then return end
 	
-	table_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	table_plug.broadcast(gate_list,fd_list,header,body)
 end
 
 --广播发送消息
-local function broad_cast_msg(table_id,packname,pack_body,filter_map)
+local function broad_cast_msg(table_id,header,body,filter_map)
 	if not g_table_map[table_id] then
 		log.warn("broad_cast_msg not exists table_id = ",table_id)
 		return
@@ -150,7 +150,7 @@ local function broad_cast_msg(table_id,packname,pack_body,filter_map)
 
 	if #gate_list <= 0 then return end
 	
-	table_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	table_plug.broadcast(gate_list,fd_list,header,body)
 end
 -------------------------------------------------------------------------------
 --interface
@@ -174,16 +174,16 @@ function interface:kick_player(player_id)
 	return kick_player(self.table_id,player_id)
 end
 --给玩家发消息
-function interface:send_msg(player_id,packname,pack_body)
-    return send_msg(self.table_id,player_id,packname,pack_body)
+function interface:send_msg(player_id,header,body)
+    return send_msg(self.table_id,player_id,header,body)
 end
 --给玩家列表发消息
-function interface:send_msg_by_player_list(player_list,packname,pack_body)
-    return send_msg_by_player_list(self.table_id,player_list,packname,pack_body)
+function interface:send_msg_by_player_list(player_list,header,body)
+    return send_msg_by_player_list(self.table_id,player_list,header,body)
 end
 --桌子广播
-function interface:broad_cast_msg(packname,pack_body)
-    return broad_cast_msg(self.table_id,packname,pack_body)
+function interface:broad_cast_msg(header,body)
+    return broad_cast_msg(self.table_id,header,body)
 end
 --用send的方式给大厅发消息
 function interface:send_hall(player_id,cmd,...)
@@ -334,21 +334,21 @@ function CMD.reconnect(gate,fd,table_id,player_id)
 end
 
 --协议消息请求，由hall大厅服转发过来
-function CMD.request(table_id,player_id,packname,pack_body)
+function CMD.request(table_id,player_id,header,body)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 	assert(player_map[player_id])
 	local player = player_map[player_id]
 
-    local func = t_info.game_table.handle[packname]
+    local func = t_info.game_table.handle[header]
     if not func then
-        log.info("dorp package ",packname,pack_body)
+        log.info("dorp package ",header,body)
     else
 		if t_info.game_table.handle_end then
-			t_info.game_table.handle_end(player_id,packname,pack_body,func(player_id,packname,pack_body))
+			t_info.game_table.handle_end(player_id,header,body,func(player_id,header,body))
 		else
-			func(player_id,packname,pack_body)
+			func(player_id,header,body)
 		end
     end
 	return true

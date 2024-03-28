@@ -106,17 +106,17 @@ function interface:is_online(player_id)
 end
 
 --发送消息
-function interface:send_msg(player_id,packname,pack_body)
+function interface:send_msg(player_id,header,body)
 	if not interface:is_online(player_id) then
 		log.info("send msg not online ",player_id)
 		return
 	end
 	local agent = g_player_map[player_id]
-	login_plug.send(agent.gate,agent.fd,packname,pack_body)
+	login_plug.send(agent.gate,agent.fd,header,body)
 end
 
 --发送消息给部分玩家
-function interface:send_msg_by_player_list(player_list,packname,pack_body)
+function interface:send_msg_by_player_list(player_list,header,body)
 	local gate_list = {}
 	local fd_list = {}
 	for i = 1, #player_list do
@@ -136,11 +136,11 @@ function interface:send_msg_by_player_list(player_list,packname,pack_body)
 
 	if #gate_list <= 0 then return end
 
-	login_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	login_plug.broadcast(gate_list,fd_list,header,body)
 end
 
 --广播发送消息
-function interface:broad_cast_msg(packname,pack_body,filter_map)
+function interface:broad_cast_msg(header,body,filter_map)
 	filter_map = filter_map or {}
 
 	local gate_list = {}
@@ -158,7 +158,7 @@ function interface:broad_cast_msg(packname,pack_body,filter_map)
 
 	if #gate_list <= 0 then return end
 
-	login_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	login_plug.broadcast(gate_list,fd_list,header,body)
 end
 ----------------------------------------------------------------------------------
 --CMD
