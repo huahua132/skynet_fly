@@ -26,7 +26,7 @@ QQ群号：102993581
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
 
 ## 第三方依赖来源
-* [skynet](https://github.com/cloudwu/skynet)1.7
+* [skynet](https://github.com/huahua132/skynet.git) 自己维护的fork版本
 * [basexx](https://github.com/aiq/basexx)0.4.1
 * [lua-cjson](https://github.com/cloudwu/lua-cjson)latest
 * [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.0-0
