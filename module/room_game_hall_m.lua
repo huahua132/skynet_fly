@@ -120,39 +120,39 @@ local function leave(agent)
 	return true
 end
 
-local function handle_msg(agent,packname,pack_body)
-	local func = g_handle_map[packname]
+local function handle_msg(agent,header,body)
+	local func = g_handle_map[header]
 	if not func then
 		local table_server_id = agent.table_server_id
 		local table_id = agent.table_id
 		if not table_server_id then
-			log.info("dorp package ",packname,pack_body)
+			log.info("dorp package ",header,body)
 		else
-			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,packname,pack_body)
+			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,header,body)
 		end
 	else
 		if hall_plug.handle_end then
-			hall_plug.handle_end(agent.player_id,packname,pack_body,func(agent.player_id,packname,pack_body))
+			hall_plug.handle_end(agent.player_id,header,body,func(agent.player_id,header,body))
 		else
-			func(agent.player_id,packname,pack_body)
+			func(agent.player_id,header,body)
 		end
 	end
 end
 --消息分发
-local function dispatch(fd,source,packname,pack_body)
+local function dispatch(fd,source,header,body)
 	skynet.ignoreret()
-	if not packname then
-		log.error("unpack err ",packname,pack_body)
+	if not header then
+		log.error("unpack err ",header,body)
 		return
 	end
 
 	local agent = g_fd_map[fd]
 	if not agent then
-		log.error("dispatch not agent ",fd,packname,pack_body)
+		log.error("dispatch not agent ",fd,header,body)
 		return
 	end
 	
-	agent.queue(handle_msg,agent,packname,pack_body)
+	agent.queue(handle_msg,agent,header,body)
 end
 --连接大厅
 local function connect(agent,is_reconnect)
@@ -293,8 +293,9 @@ function interface:goout(player_id)
 	return CMD.goout(player_id)
 end
 --设置消息处理函数
-function interface:handle(packname,func)
-	g_handle_map[packname] = func
+function interface:handle(header,func)
+	assert(not g_handle_map[header], "exists handle : " .. header)
+	g_handle_map[header] = func
 end
 --是否在线
 function interface:is_online(player_id)
@@ -306,17 +307,17 @@ function interface:is_online(player_id)
 	return agent.fd ~= 0
 end
 --发送消息
-function interface:send_msg(player_id,packname,pack_body)
+function interface:send_msg(player_id,header,body)
 	if not interface:is_online(player_id) then
-		log.info("send msg not online ",player_id,packname)
+		log.info("send msg not online ",player_id,header)
 		return
 	end
 	local agent = g_player_map[player_id]
-	hall_plug.send(agent.gate,agent.fd,packname,pack_body)
+	hall_plug.send(agent.gate,agent.fd,header,body)
 end
 
 --发送消息给部分玩家
-function interface:send_msg_by_player_list(player_list,packname,pack_body)
+function interface:send_msg_by_player_list(player_list,header,body)
 	local gate_list = {}
 	local fd_list = {}
 	for i = 1, #player_list do
@@ -336,11 +337,11 @@ function interface:send_msg_by_player_list(player_list,packname,pack_body)
 
 	if #gate_list <= 0 then return end
 
-	hall_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	hall_plug.broadcast(gate_list,fd_list,header,body)
 end
 
 --广播发送消息
-function interface:broad_cast_msg(packname,pack_body,filter_map)
+function interface:broad_cast_msg(header,body,filter_map)
 	filter_map = filter_map or {}
 
 	local gate_list = {}
@@ -358,7 +359,7 @@ function interface:broad_cast_msg(packname,pack_body,filter_map)
 
 	if #gate_list <= 0 then return end
 
-	hall_plug.broadcast(gate_list,fd_list,packname,pack_body)
+	hall_plug.broadcast(gate_list,fd_list,header,body)
 end
 
 --获取大厅id
