@@ -3,6 +3,9 @@ local assert = assert
 local loadfile = loadfile
 local tostring = tostring
 
+local g_svr_id = tonumber(skynet.getenv('svr_id'))
+local g_svr_name = skynet.getenv('svr_name')
+
 local M = {}
 
 --添加服务启动之前加载的文件
@@ -35,6 +38,16 @@ end
 
 function M.get_after_load()
 	return skynet.getenv('afterload')
+end
+
+--获取cluster svr_id
+function M.get_svr_id()
+	return g_svr_id
+end
+
+--获取cluster svrname
+function M.get_svr_name()
+	return g_svr_name
 end
 
 return M
