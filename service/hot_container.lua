@@ -10,8 +10,8 @@ local ARGV = {...}
 MODULE_NAME = ARGV[1]
 local INDEX = tonumber(ARGV[2])
 local LAUNCH_DATE = ARGV[3]
-local LAUNCH_TIME = ARGV[4]
-local VERSION = ARGV[5]
+local LAUNCH_TIME = tonumber(ARGV[4])
+local VERSION = tonumber(ARGV[5])
 assert(MODULE_NAME)
 
 local new_loaded = _loaded
