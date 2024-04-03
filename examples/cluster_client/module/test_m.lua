@@ -34,8 +34,11 @@ function CMD.start()
 		log.info("all_balance_call: ",ret)
 
 		cli:one_broadcast("hello","one_broadcast")
+		log.info("one_broadcast_call:", cli:one_broadcast_call("ping"))
 		cli:all_broadcast("hello","all_broadcast")
+		log.info("all_broadcast_call:", cli:all_broadcast_call("ping"))
 		cli:set_svr_id(1):byid_broadcast("hello","byid_broadcast")
+		log.info("byid_broadcast_call:", cli:set_svr_id(1):byid_broadcast_call("ping"))
 
 		cli:set_instance_name("test_one")
 		cli:set_svr_id(2)
@@ -66,8 +69,11 @@ function CMD.start()
 		log.info("all_balance_call_by_name: ",ret)
 
 		cli:one_broadcast_by_name("hello","one_broadcast_by_name")
+		log.info("one_broadcast_call_by_name:", cli:one_broadcast_call_by_name("ping"))
 		cli:all_broadcast_by_name("hello","all_broadcast_by_name")
+		log.info("all_broadcast_call_by_name:", cli:all_broadcast_call_by_name("ping"))
 		cli:byid_broadcast_by_name("hello","byid_broadcast_by_name")
+		log.info("byid_broadcast_call_by_name:", cli:byid_broadcast_call_by_name("ping"))
 	end)
 
 	return true
