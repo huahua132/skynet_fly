@@ -112,6 +112,10 @@ function M:one_broadcast(...)
 	cluster_client:balance_send("balance_send",self.svr_name,"broadcast",self.module_name,...)
 end
 
+--用简单轮询负载均衡给单个结点的module_name模板用broadcast_call的方式发送消息
+function M:one_broadcast_call(...)
+	return cluster_client:balance_call("balance_call",self.svr_name,"broadcast_call",self.module_name,...)
+end
 --------------------------------------------------------------------------------
 --one
 --------------------------------------------------------------------------------
@@ -148,6 +152,12 @@ function M:byid_broadcast(...)
 	assert(self.svr_id, "not svr_id")
 	cluster_client:balance_send("send_by_id",self.svr_name,self.svr_id,"broadcast",self.module_name,...)
 end
+
+--用svr_id映射的方式给单个结点的module_name模板用broadcast_call的方式发送消息
+function M:byid_broadcast_call(...)
+	assert(self.svr_id, "not svr_id")
+	return cluster_client:balance_call("call_by_id",self.svr_name,self.svr_id,"broadcast_call",self.module_name,...)
+end
 --------------------------------------------------------------------------------
 --all
 --------------------------------------------------------------------------------
@@ -175,6 +185,11 @@ end
 --给所有结点的module_name模板用broadcast的方式发送消息
 function M:all_broadcast(...)
 	cluster_client:balance_send("send_all",self.svr_name,"broadcast",self.module_name,...)
+end
+
+--给所有结点的module_name模板用broadcast_call的方式发送消息
+function M:all_broadcast_call(...)
+ 	return cluster_client:balance_call("call_all",self.svr_name,"broadcast_call",self.module_name,...)
 end
 --------------------------------------------------------------------------------
 --all
@@ -215,6 +230,11 @@ function M:one_broadcast_by_name(...)
 end
 
 
+--用简单轮询负载均衡给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
+function M:one_broadcast_call_by_name(...)
+	assert(self.instance_name,"not instance_name")
+	return cluster_client:balance_call("balance_call",self.svr_name,"broadcast_call_by_name",self.module_name,self.instance_name,...)
+end
 --------------------------------------------------------------------------------
 --one_by_name
 --------------------------------------------------------------------------------
@@ -258,6 +278,13 @@ function M:byid_broadcast_by_name(...)
 	cluster_client:balance_send("send_by_id",self.svr_name,self.svr_id,"broadcast_by_name",self.module_name,self.instance_name,...)
 end
 
+--用svr_id映射的方式给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
+function M:byid_broadcast_call_by_name(...)
+	assert(self.instance_name,"not instance_name")
+	assert(self.svr_id,"not svr_id")
+	return cluster_client:balance_call("call_by_id",self.svr_name,self.svr_id,"broadcast_call_by_name",self.module_name,self.instance_name,...)
+end
+
 --------------------------------------------------------------------------------
 --byid_by_name
 --------------------------------------------------------------------------------
@@ -293,6 +320,12 @@ end
 function M:all_broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	cluster_client:balance_send("send_all",self.svr_name,"broadcast_by_name",self.module_name,self.instance_name,...)
+end
+
+--给所有结点的module_name模板用broadcast_call_by_name的方式发送消息
+function M:all_broadcast_call_by_name(...)
+	assert(self.instance_name,"not instance_name")
+	return cluster_client:balance_call("call_all",self.svr_name,"broadcast_call_by_name",self.module_name,self.instance_name,...)
 end
 --------------------------------------------------------------------------------
 --all_by_name

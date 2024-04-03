@@ -525,6 +525,23 @@ end
 
 --[[
 	函数作用域：M:new 对象的成员函数
+	函数名称：broadcast
+	描述:  广播在module_name服务列表中的服务id skynet call lua消息
+]]
+
+function M:broadcast_call(...)
+	switch_svr(self)
+	local id_list = self.cur_id_list
+	local ret_map = {}
+	for _,id in ipairs(id_list) do
+		ret_map[id] = {skynet.call(id,'lua',...)}
+	end
+
+	return ret_map
+end
+
+--[[
+	函数作用域：M:new 对象的成员函数
 	函数名称：broadcast_by_name
 	描述:  广播在instance_name服务列表中的服务id skynet send lua消息
 ]]
@@ -538,6 +555,27 @@ function M:broadcast_by_name(...)
 	for _,id in ipairs(id_list) do
 		skynet.send(id,'lua',...)
 	end
+end
+
+--[[
+	函数作用域：M:new 对象的成员函数
+	函数名称：broadcast_by_name
+	描述:  广播在instance_name服务列表中的服务id skynet call lua消息
+]]
+
+function M:broadcast_call_by_name(...)
+	assert(self.instance_name,"not instance_name")
+	local cur_name_id_list = self.cur_name_id_list
+	assert(cur_name_id_list[self.instance_name],"not svr " .. self.instance_name)
+	switch_svr(self)
+
+	local id_list = cur_name_id_list[self.instance_name]
+	local ret_map = {}
+	for _,id in ipairs(id_list) do
+		ret_map[id] = {skynet.call(id,'lua',...)}
+	end
+	
+	return ret_map
 end
 
 return M

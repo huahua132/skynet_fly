@@ -62,6 +62,13 @@ function CMD.broadcast(module_name,...)
 	cli:broadcast(...)
 end
 
+--广播call
+function CMD.broadcast_call(module_name, ...)
+	assert(module_name,"not module_name")
+	local cli = g_client_map[module_name]
+	return cli:broadcast_call(...)
+end
+
 --------------------------------------------------------------
 --二级
 --------------------------------------------------------------
@@ -107,6 +114,14 @@ function CMD.broadcast_by_name(module_name,instance_name,...)
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:broadcast_by_name(...)
+end
+
+function CMD.broadcast_call_by_name(module_name,instance_name,...)
+	assert(module_name,"not module_name")
+	assert(instance_name,"not instance_name")
+	local cli = g_client_map[module_name]
+	cli:set_instance_name(instance_name)
+	return cli:broadcast_call_by_name(...)
 end
 
 contriner_client:CMD(CMD)
