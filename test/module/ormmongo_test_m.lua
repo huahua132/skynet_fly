@@ -1190,7 +1190,7 @@ local function test_invaild_entry()
     assert(not entry)
 
     skynet.yield()
-    --创建数据因覆盖缓存
+    --创建数据应覆盖缓存
     local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 2})
     assert(entry)
 
@@ -1301,6 +1301,13 @@ local function test_invaild_entry()
     local entry_list,is_cache = orm_obj:get_entry(10001, 3)
     assert(is_cache)
     assert(#entry_list == 4)
+
+    --等待缓存过期
+    --查询应不命中缓存
+    skynet.sleep(600)
+    local entry, is_cache = orm_obj:get_one_entry(10001, 3, 3)
+    assert(not is_cache)
+    assert(entry)
 
     delete_table()
 

@@ -159,7 +159,7 @@ local function add_key_select(t, entry, is_add)
         else
             if not key_select_map[filed_value] then
                 if t._cache_map then
-                    assert(t._cache_map:set_cache(entry,t), "set_cache err")
+                    t._cache_map:set_cache(entry,t)
                 end
                 if invaild then
                     key_cache_num_map[filed_value] = INVAILD_POINT
@@ -198,7 +198,7 @@ local function add_key_select(t, entry, is_add)
                     res_entry = entry
                 else
                     if t._cache_map then
-                        assert(t._cache_map:update_cache(res_entry,t), "update cache err")
+                        t._cache_map:update_cache(res_entry,t)
                     end
                 end
             end
@@ -462,7 +462,7 @@ local function excute_time_out(t, entry)
     local change_flag_map = t._change_flag_map
     if change_flag_map[entry] then
         --还没保存数据 还不能清除
-        assert(t._cache_map:set_cache(entry, t), "set cache err")   --重新设置缓存
+        t._cache_map:set_cache(entry, t)   --重新设置缓存
         skynet.fork(inval_time_out, t._week_t)
     else
         if entry:is_invaild() then
@@ -648,7 +648,7 @@ get_entry = function(t, key_values, is_init_get_all)
 
         if t._cache_map then
             for _,entry in ipairs(entry_list) do
-                assert(t._cache_map:update_cache(entry, t), "err update_cache")
+                t._cache_map:update_cache(entry, t)
             end
         end
 
@@ -685,8 +685,8 @@ local function get_one_entry(t, key_values)
         end
     end
 
-    if t._cache_map then
-        assert(t._cache_map:update_cache(entry, t), "err update_cache")
+    if entry and t._cache_map then
+        t._cache_map:update_cache(entry, t)
     end
 
     if entry and entry:is_invaild() then
