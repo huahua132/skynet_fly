@@ -444,14 +444,13 @@ end
 function CMD.disconnect(gate,fd,player_id)
 	local agent = g_fd_map[fd]
 	if not agent then 
-		log.warn("disconnect not agent ",fd,player_id)
 		return
 	end
 
 	g_fd_map[fd] = nil
 
 	if fd ~= agent.fd then
-		log.warn("disconnect agent is reconnect ",fd,agent.fd,player_id)
+		log.info("disconnect agent is reconnect ",fd,agent.fd,player_id)
 		return
 	end
 	
