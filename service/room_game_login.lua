@@ -179,8 +179,9 @@ local SOCKET = {}
 function SOCKET.open(fd, addr,gate)
 	gate = gate or g_gate
 	--先设置转发，成功后再建立连接管理映射，不然存在建立连接，客户端立马断开的情况，掉线无法通知到此服务
-	skynet.call(gate,'lua','forward',fd) --设置转发不成功，此处会断言，以下就不会执行了，就当它没有来连接过
-
+	if not skynet.call(gate,'lua','forward',fd) then --设置转发不成功，此处会断言，以下就不会执行了，就当它没有来连接过
+		return
+	end
 	local agent = {
 		fd = fd,
 		addr = addr,
