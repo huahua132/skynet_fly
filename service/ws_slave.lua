@@ -118,7 +118,7 @@ function CMD.accept(source,fd,addr)
 end
 
 function CMD.forward(source, fd)
-	local c = assert(g_conn_map[fd], "not exists fd ", fd)
+	local c = assert(g_conn_map[fd], "not exists fd " .. fd)
 	c.agent = source
 end
 
