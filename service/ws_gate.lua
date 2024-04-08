@@ -4,6 +4,7 @@ local log = require "skynet-fly.log"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local assert = assert
 local string = string
+local pcall = pcall
 
 local g_maxclient = nil
 local g_client_num = 0
@@ -54,15 +55,19 @@ function CMD.open(source,conf)
 		end
 
 		g_fd_map[fd] = true
-		skynet.send(s_id,'lua','accept', fd, addr)
+		local isok, err = pcall(skynet.call, s_id, 'lua', 'accept', fd, addr)
+		if not isok then
+			log.error("ws_gate accept err ", err)
+		end
+		g_fd_map[fd] = nil
+		g_client_num = g_client_num - 1
 	end)
-end
-
-function CMD.closed(_,fd)
-	assert(g_fd_map[fd],"closed not exists fd " .. fd)
-	g_client_num = g_client_num - 1
 end
 
 skynet.start(function()
 	skynet_util.lua_src_dispatch(CMD)
+end)
+
+skynet_util.register_info_func("info:", function()
+	log.info("ws_gate info ", g_client_num)
 end)

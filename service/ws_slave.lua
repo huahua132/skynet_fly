@@ -36,7 +36,6 @@ local CLOSE_REASON = {
 local g_nodelay = nil
 local g_protocol = nil
 local g_watchdog = nil
-local g_gate = nil
 local g_conn_map = {}
 
 local SELF_ADDRESS = nil
@@ -44,7 +43,6 @@ local SELF_ADDRESS = nil
 local function closed(fd)
 	if not g_conn_map[fd] then return end
 	g_conn_map[fd] = nil
-	skynet.send(g_gate,'lua','closed',fd)
 	skynet.send(g_watchdog,'lua','socket','close', fd)
 end
 
@@ -109,7 +107,6 @@ function CMD.open(source,conf)
 	g_protocol = conf.protocol
 	g_watchdog = conf.watchdog
 
-	g_gate = source
 	SELF_ADDRESS = skynet.self()
 end
 
@@ -176,4 +173,12 @@ skynet.start(function()
 	}
 
 	skynet_util.lua_src_dispatch(CMD)
+end)
+
+skynet_util.register_info_func("info", function()
+	local count = 0
+	for k,v in pairs(g_conn_map) do
+		count = count + 1
+	end
+	log.info("ws_slave info ", g_conn_map, count)
 end)
