@@ -89,6 +89,9 @@ end
 function M.repeat_login(player_id)
 	log.info("repeat_login >>> ",player_id)
 	errors_msg:errors(player_id,errorcode.REPAET_LOGIN,"repeat_login")
+	skynet.timeout(100, function()
+		errors_msg:errors(player_id,errorcode.REPAET_LOGIN,"repeat_login2")
+	end)
 end
 
 return M

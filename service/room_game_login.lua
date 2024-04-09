@@ -57,12 +57,18 @@ local function connect_hall(gate,fd,player_id)
 		return
 	end
 
-	g_player_map[player_id] = {
-		player_id = player_id,
-		hall_client = hall_client,
-		gate = gate,
-		fd = fd,
-	}
+	if old_agent then
+		old_agent.hall_client = hall_client
+		old_agent.fd = fd
+		old_agent.gate = gate
+	else
+		g_player_map[player_id] = {
+			player_id = player_id,
+			hall_client = hall_client,
+			gate = gate,
+			fd = fd,
+		}
+	end
 
 	login_plug.login_succ(player_id,ret)
 	return true
@@ -205,10 +211,12 @@ function SOCKET.close(fd)
 	local player_id = agent.player_id
 	local player = g_player_map[player_id]
 	if player then
-		player.fd = 0
-		local hall_client = player.hall_client
-		login_plug.disconnect(player_id)
-		hall_client:mod_send('disconnect',agent.gate,fd,player_id)
+		if fd == player.fd then
+			player.fd = 0
+			local hall_client = player.hall_client
+			login_plug.disconnect(player_id)
+			hall_client:mod_send('disconnect',agent.gate,fd,player_id)
+		end
 	end
 end
 
