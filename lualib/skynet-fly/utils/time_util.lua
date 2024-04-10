@@ -121,14 +121,15 @@ end
 --获取某天某个时间点的时间戳
 --比如昨天 8点12分50 参数就是 -1,8,12,50
 --明天 0点0分0秒 就是 1，0，0，0
-function M.day_time(day,hour,min,sec)
+function M.day_time(day,hour,min,sec,curtime)
 	assert(day)
 	assert(hour >= 0 and hour <= 23,hour)
 	assert(min >= 0 and min <= 59,min)
 	assert(sec >= 0 and sec <= 59,sec)
   
 	local sub_day_time = day * 86400
-	local date = os.date("*t",M.time() + sub_day_time)
+	curtime = curtime or M.time()
+	local date = os.date("*t",curtime + sub_day_time)
 	date.hour = hour
 	date.min = min
 	date.sec = sec
@@ -282,6 +283,16 @@ function M.every_year_day(yday,hour,min,sec)
 	end
 
 	return next_time
+end
+
+--是否跨天
+function M.is_cross_day(pre_time)
+	local next_time = M.day_time(1, 0, 0, 0, pre_time) --传入时间的明天
+	local cur_time = M.time()
+	if cur_time >= next_time then
+		return true
+	end
+	return false
 end
 
 return M
