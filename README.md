@@ -4,7 +4,7 @@
 [使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/A_home/)
 
 ![](https://huahua132.github.io/img/skynet_fly_word/word_3/f.png)
-觉得不错，不妨点个**星星**吧！你的星星是作者持续创作维护的最大动力！
+	觉得不错，不妨点个**星星**吧！你的星星是作者持续创作维护的最大动力！
 
 # 技术交流群
 QQ群号：102993581
