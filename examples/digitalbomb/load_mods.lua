@@ -43,7 +43,8 @@ return {
 		launch_num = 1,
 		default_arg = {
 			alloc_plug = "alloc.alloc_plug",
-			MAX_TABLES = 10000,
+			MAX_TABLES = 10000,				--最多创建1万个桌子
+			max_empty_time = 60,            --空置一分钟就解散
 		}
 	},
 

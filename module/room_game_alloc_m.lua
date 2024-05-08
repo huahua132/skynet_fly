@@ -16,6 +16,7 @@ local next = next
 
 local SELF_ADDRESS = nil
 
+local g_max_empty_time = nil
 local g_alloc_table_id = 1              --桌子id分配
 local INIT_TABLE_ID = g_alloc_table_id  --初始id
 local MAX_TABLE_ID = nil				--最大id
@@ -209,6 +210,17 @@ function CMD.leave(player_id)
     return queue(leave, player_id)
 end
 
+local function check_dismisstable()
+	local cur_time = time_util.time()
+	for table_id,empty_time in pairs(g_empty_map) do
+		local sub_time = cur_time - empty_time
+		local t_info = g_table_map[table_id]
+		if t_info and sub_time >= g_max_empty_time then
+			interface.dismisstable(table_id)
+		end
+	end
+end
+
 function CMD.start(config)
 	SELF_ADDRESS = skynet.self()
 	assert(config.alloc_plug,"not alloc_plug")
@@ -231,6 +243,11 @@ function CMD.start(config)
 			assert(not CMD[name],"repeat cmd " .. name)
 			CMD[name] = func
 		end
+	end
+
+	g_max_empty_time = config.max_empty_time       --设置桌子空置多久后就会解散
+	if g_max_empty_time and g_max_empty_time > 0 then
+		timer:new(timer.second, 0, check_dismisstable)
 	end
 
 	alloc_plug.init(interface)
