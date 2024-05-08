@@ -38,7 +38,7 @@ M.register_cmd = CMD
 function M.init(alloc_mgr) --初始化
 	--初始化的时候不能访问其他服务，用fock让它启动完成再去
 	skynet.fork(function()
-		log.info("创建桌子》》》》》》》》",alloc_mgr.create_table("default"))
+		log.info("创建桌子》》》》》》》》",alloc_mgr.create_table("room_3"))
 	end)
 
 	-- 监听有没有空桌子

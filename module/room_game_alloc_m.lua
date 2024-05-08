@@ -56,8 +56,8 @@ local function create_table(table_name, create_player_id)
 
 	local room_client = contriner_client:new("room_game_table_m",table_name,function() return false end)
 	room_client:set_mod_num(num_id)
-	local table_server_id = room_client:get_mod_server_id()
-	local ok,errocode,errormsg = room_client:mod_call('create_table',table_id,SELF_ADDRESS) 
+	local table_server_id = room_client:get_mod_server_id_by_name()
+	local ok,errocode,errormsg = room_client:mod_call_by_name('create_table',table_id,SELF_ADDRESS) 
 	if ok then
 		g_table_map[table_id] = {
 			room_client = room_client,
@@ -82,7 +82,7 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
 	local table_server_id = t_info.table_server_id
     local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = room_client:mod_call('enter',table_id,player_id,gate,fd,hall_server_id)
+    local ok,errcode,errmsg = room_client:mod_call_by_name('enter',table_id,player_id,gate,fd,hall_server_id)
     if not ok then
         log.info("enter table fail ",player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -126,7 +126,7 @@ local function leave(player_id)
     local t_info = assert(g_player_map[player_id])
     local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = room_client:mod_call('leave',table_id,player_id)
+    local ok,errcode,errmsg = room_client:mod_call_by_name('leave',table_id,player_id)
     if not ok then
         log.info("leave table fail ",table_id,player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -156,7 +156,7 @@ local function dismisstable(table_id)
 		return false
 	end
 	local room_client = t_info.room_client
-	local isok = room_client:mod_call('dismisstable',table_id)
+	local isok = room_client:mod_call_by_name('dismisstable',table_id)
 	if not isok then
 		log.error("dismisstable err ", table_id)
 		return false

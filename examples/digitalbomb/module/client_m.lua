@@ -107,7 +107,7 @@ local function reload_switch_test(mod_name)
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch1:",g_config.net_util,packname,res)
 		if packname == '.login.LoginRes' then
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
 		elseif packname == '.login.serverInfoRes' then
 			login_res = res
 			skynet.wakeup(wi)
@@ -128,7 +128,7 @@ local function reload_switch_test(mod_name)
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch2:",packname,res)
 		if packname == '.login.LoginRes' then
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
 		elseif packname == '.login.serverInfoRes' then
 			new_login_res = res
 			skynet.wakeup(wi)
@@ -205,7 +205,7 @@ local function player_game(login_res)
 			})
 		elseif packname == '.login.LoginRes' then
 			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "default"})
+			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
 		elseif packname == '.login.serverInfoRes' then
 			for k,v in pairs(res) do
 				login_res[k] = v

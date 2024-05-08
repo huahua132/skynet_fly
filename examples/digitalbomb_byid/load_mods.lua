@@ -51,14 +51,14 @@ return {
 	room_game_table_m = {
 		launch_seq = 4,
 		launch_num = 6,
-		default_arg = {
-			instance_name = "default",
-			table_plug = "table.table_plug2",
-			net_util = net_util,
-			table_conf = {
-				player_num = 2,
-			}
-		}
+		mod_args = {
+			{instance_name = "room_1", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_2", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_3", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_4", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_5", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_6", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+		},
 	},
 
 	--测试客户端
