@@ -47,17 +47,17 @@ local function alloc_table_id()
 	return SELF_ADDRESS .. ':' .. table_id,table_id
 end
 
-local function create_table(table_name, create_player_id)
+local function create_table(table_name, ...)
     local table_id,num_id = alloc_table_id()
 	if not table_id then
 		log.info("alloc_table_id err ",table_id)
 		return alloc_plug.tablefull()
 	end
 
-	local room_client = contriner_client:new("room_game_table_m",table_name,function() return false end)
+	local room_client = contriner_client:new("room_game_table_m", table_name, function() return false end)
 	room_client:set_mod_num(num_id)
 	local table_server_id = room_client:get_mod_server_id_by_name()
-	local ok,errocode,errormsg = room_client:mod_call_by_name('create_table',table_id,SELF_ADDRESS) 
+	local ok,errocode,errormsg = room_client:mod_call_by_name('create_table', table_id, SELF_ADDRESS, ...)
 	if ok then
 		g_table_map[table_id] = {
 			room_client = room_client,
@@ -67,7 +67,7 @@ local function create_table(table_name, create_player_id)
 		}
 		local config = errocode
 		g_empty_map[table_id] = time_util.time()
-		alloc_plug.createtable(table_name,table_id,config,create_player_id)
+		alloc_plug.createtable(table_name, table_id, config, ...)
 		return table_id
 	else
 		return nil,errocode,errormsg
@@ -172,8 +172,8 @@ end
 ----------------------------------------------------------------------------------
 local interface = {}
 --创建桌子
-function interface.create_table(table_name)
-	return queue(create_table,table_name)
+function interface.create_table(table_name, ...)
+	return queue(create_table,table_name, ...)
 end
 
 -- 销毁桌子

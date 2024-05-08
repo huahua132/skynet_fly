@@ -38,7 +38,7 @@ M.register_cmd = CMD
 function M.init(alloc_mgr) --初始化
 	--初始化的时候不能访问其他服务，用fock让它启动完成再去
 	skynet.fork(function()
-		log.info("创建桌子》》》》》》》》",alloc_mgr.create_table("room_3"))
+		log.info("创建桌子》》》》》》》》",alloc_mgr.create_table("room_3", 10000111000))
 	end)
 
 	-- 监听有没有空桌子
@@ -107,12 +107,12 @@ function M.match(player_id) --匹配
 end
 
 function M.createtable(table_name, table_id, config, create_player_id) --创建桌子
-	log.info("createtable:",table_id)
+	log.info("createtable:",table_name, table_id, config, create_player_id)
 	assert(not g_table_map[table_id],"repeat table_id")
 	g_table_map[table_id] = {
 		table_id = table_id,
 		table_name = table_name,
-		config = config,
+		config = config,												--桌子服的配置
 		state = GAME_STATE.waiting,
 		player_list = {}
 	}

@@ -232,12 +232,12 @@ end
 -------------------------------------------------------------------------------
 local CMD = {}
 --创建房间
-function CMD.create_table(table_id,alloc_server_id)
+function CMD.create_table(table_id,alloc_server_id, ...)
 	assert(not g_table_map[table_id])
 	g_table_map[table_id] = {
 		alloc_server_id = alloc_server_id,
 		player_map = {},
-		game_table = table_plug.table_creator(table_id,g_config.instance_name),
+		game_table = table_plug.table_creator(table_id, g_config.instance_name, ...),
 	}
 	return true,g_config
 end

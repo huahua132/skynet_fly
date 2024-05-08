@@ -32,10 +32,14 @@ function M.init(interface_mgr)
 	pack_helper.set_packname_id()
 end
 
-function M.table_creator(table_id)
+function M.table_creator(table_id, table_name, ...)
+	local args = {...}
+	local create_player_id = args[1]
     local m_interface_mgr = g_interface_mgr:new(table_id)
 	local m_errors_msg = errors_msg:new(m_interface_mgr)
     local m_logic = table_logic:new(m_interface_mgr, g_table_conf, table_id)
+
+	log.info("table_creator >>> ",table_id, table_name, create_player_id)
 
     return {
         enter = function(player_id)
