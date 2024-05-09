@@ -16,14 +16,14 @@ local M = {}
 --基于skynet gate 的消息发送
 -------------------------------------------------------
 function M.create_gate_send(pack)
-	return function(gate,fd,name,body)
+	return function(gate,fd,header,body)
 		assert(fd)
-		assert(name)
+		assert(header)
 		assert(body)
 	
-		local msg,err = pack(name,body)
+		local msg,err = pack(header,body)
 		if not msg then
-			log.error("util_net_base.pack err ",name,body,err)
+			log.error("util_net_base.pack err ",header,body,err)
 			return
 		end
 	
@@ -35,14 +35,14 @@ end
 --基于skynet gate 的消息广播
 -------------------------------------------------------
 function M.create_gate_broadcast(pack)
-	return function(gate_list,fd_list,name,body)
+	return function(gate_list,fd_list,header,body)
 		assert(fd_list and #fd_list > 0)
-		assert(name)
+		assert(header)
 		assert(body)
 
-		local msg,err = pack(name,body)
+		local msg,err = pack(header,body)
 		if not msg then
-			log.error("util_net_base.pack err ",name,body,err)
+			log.error("util_net_base.pack err ",header,body,err)
 			return
 		end
 
@@ -133,14 +133,14 @@ end
 local function create_ws_gate_send(type)
 	local send_type = 'send_' .. type
 	return function(pack)
-		return function(gate,fd,name,body)
+		return function(gate,fd,header,body)
 			assert(fd)
-			assert(name)
+			assert(header)
 			assert(body)
 		
-			local msg,err = pack(name,body)
+			local msg,err = pack(header,body)
 			if not msg then
-				log.error("util_net_base.pack err ",name,body,err)
+				log.error("util_net_base.pack err ",header,body,err)
 				return
 			end
 		
@@ -163,15 +163,15 @@ end
 local function create_ws_gate_broadcast(type)
 	local send_type = 'broadcast_' .. type
 	return function(pack)
-		return function(gate_list,fd_list,name,body)
+		return function(gate_list,fd_list,header,body)
 			assert(gate_list and #gate_list > 0)
 			assert(fd_list and #fd_list > 0)
-			assert(name)
+			assert(header)
 			assert(body)
 			
-			local msg,err = pack(name,body)
+			local msg,err = pack(header,body)
 			if not msg then
-				log.error("util_net_base.pack err ",name,body,err)
+				log.error("util_net_base.pack err ",header,body,err)
 				return
 			end
 

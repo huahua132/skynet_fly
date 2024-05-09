@@ -21,14 +21,14 @@ function M:new()
 	return t
 end
 
---注册，设置连接信息2秒过期时间，需要1秒调用一次
+--注册，设置连接信息10秒过期时间，需要5秒调用一次
 function M:register(svr_name,svr_id,host)
 	assert(svr_name,"not svr_name")
 	assert(svr_id,"not svr_id")
 	assert(host,"not host")
 
 	local key = string.format("skynet_fly:rpc:%s:%s",svr_name,svr_id)
-	self.cli:set(key,host,"EX",2)
+	self.cli:set(key,host,"EX",10)
 end
 
 --获取结点的ip和端口

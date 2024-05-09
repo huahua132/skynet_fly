@@ -342,10 +342,30 @@ function M:new(module_name,instance_name,can_switch_func)
         balance = 1,
 		cur_name_id_list = g_name_id_list_map[module_name],
 		name_balance = 1,
+
+		send = skynet.send,
+		call = skynet.call,
     }
 
     setmetatable(t,meta)
     return t
+end
+
+--[[
+	函数作用域：M 的成员函数
+	函数名称: new_raw
+	描述:创建一个skynet内部rpc调用对象， send,call 使用 rawsend rawcall
+	参数:
+		- module_name (string): 模块名称，需要send或者call通信的模块名称
+		- instance_name (string): 实例名称，它是模块的二级分类
+		- can_switch_func (function): 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服
+]]
+function M:new_raw(module_name,instance_name,can_switch_func)
+	local t = M:new(module_name,instance_name,can_switch_func)
+	t.send = skynet.rawsend
+	t.call = skynet.rawcall
+
+	return t
 end
 
 --有时候不想创建实例
@@ -437,7 +457,7 @@ end
 ]]
 function M:mod_send(...)
 	switch_svr(self)
-	skynet.send(get_mod(self),'lua',...)
+	self.send(get_mod(self),'lua',...)
 end
 
 --[[
@@ -447,7 +467,7 @@ end
 ]]
 function M:mod_call(...)
 	switch_svr(self)
-	return skynet.call(get_mod(self),'lua',...)
+	return self.call(get_mod(self),'lua',...)
 end
 
 --[[
@@ -457,7 +477,7 @@ end
 ]]
 function M:balance_send(...)
 	switch_svr(self)
-	return skynet.send(get_balance(self),'lua',...)
+	return self.send(get_balance(self),'lua',...)
 end
 
 --[[
@@ -467,7 +487,7 @@ end
 ]]
 function M:balance_call(...)
 	switch_svr(self)
-	return skynet.call(get_balance(self),'lua',...)
+	return self.call(get_balance(self),'lua',...)
 end
 
 --[[
@@ -477,7 +497,7 @@ end
 ]]
 function M:mod_send_by_name(...)
 	switch_svr(self)
-	skynet.send(get_name_mod(self),'lua',...)
+	self.send(get_name_mod(self),'lua',...)
 end
 
 --[[
@@ -487,7 +507,7 @@ end
 ]]
 function M:mod_call_by_name(...)
 	switch_svr(self)
-	return skynet.call(get_name_mod(self),'lua',...)
+	return self.call(get_name_mod(self),'lua',...)
 end
 
 --[[
@@ -497,7 +517,7 @@ end
 ]]
 function M:balance_send_by_name(...)
 	switch_svr(self)
-	skynet.send(get_name_balance(self),'lua',...)
+	self.send(get_name_balance(self),'lua',...)
 end
 
 --[[
@@ -507,7 +527,7 @@ end
 ]]
 function M:balance_call_by_name(...)
 	switch_svr(self)
-	return skynet.call(get_name_balance(self),'lua',...)
+	return self.call(get_name_balance(self),'lua',...)
 end
 
 --[[
@@ -519,7 +539,7 @@ function M:broadcast(...)
 	switch_svr(self)
 	local id_list = self.cur_id_list
 	for _,id in ipairs(id_list) do
-		skynet.send(id,'lua',...)
+		self.send(id,'lua',...)
 	end
 end
 
@@ -534,7 +554,7 @@ function M:broadcast_call(...)
 	local id_list = self.cur_id_list
 	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		ret_map[id] = {skynet.call(id,'lua',...)}
+		ret_map[id] = {self.call(id,'lua',...)}
 	end
 
 	return ret_map
@@ -553,7 +573,7 @@ function M:broadcast_by_name(...)
 
 	local id_list = cur_name_id_list[self.instance_name]
 	for _,id in ipairs(id_list) do
-		skynet.send(id,'lua',...)
+		self.send(id,'lua',...)
 	end
 end
 
@@ -572,7 +592,7 @@ function M:broadcast_call_by_name(...)
 	local id_list = cur_name_id_list[self.instance_name]
 	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		ret_map[id] = {skynet.call(id,'lua',...)}
+		ret_map[id] = {self.call(id,'lua',...)}
 	end
 	
 	return ret_map
