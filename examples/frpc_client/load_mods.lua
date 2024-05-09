@@ -11,14 +11,14 @@ return {
 		},
 	},
 
-	cluster_client_m = {
+
+	frpc_client_m = {
 		launch_seq = 2,
 		launch_num = 1,
 		default_arg = {
 			node_map = {
-				['cluster_server'] = {
+				['frpc_server'] = {
 					[1] = "127.0.0.1:9688",
-					[2] = "127.0.0.1:9689",
 				}
 			}
 		}
