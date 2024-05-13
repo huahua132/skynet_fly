@@ -177,11 +177,11 @@ lpackrequest(lua_State *L) {
 	
 	if (part == 1) {
 		memcpy(buf+bsz, msg, sz);
-		fill_header(buf, bsz + sz);
+		fill_header(buf, bsz + sz - 2);    //-2 有2字节表示包长
 		lua_pushlstring(L, (const char *)buf, bsz + sz);
 		return 1;
 	} else {
-		fill_header(buf, bsz);
+		fill_header(buf, bsz - 2);		  //-2 有2字节表示包长
 		fill_uint32(buf + bsz, sz);
 		bsz += 4;
 		lua_pushlstring(L, (const char *)buf, bsz);

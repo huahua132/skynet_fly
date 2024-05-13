@@ -4,9 +4,10 @@ local rpc_redis = require "skynet-fly.rpc.rpc_redis"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local frpcnet_byid = require "skynet-fly.utils.net.frpcnet_byid"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local env_util = require "skynet-fly.utils.env_util"
+local frpcpack = require "frpcpack.core"
+local socket = require "skynet.socket"
 
 local pairs = pairs
 local assert = assert
@@ -16,12 +17,13 @@ local type = type
 local string = string
 local pcall = pcall
 local tremove = table.remove
+local ipairs = ipairs
+local tostring = tostring
 
 local g_gate = nil
 local g_svr_name = env_util.get_svr_name()
 local g_svr_id = env_util.get_svr_id()
 local g_fd_agent_map = {}                           --fd 连接管理
-local g_cluster_map = {}                            --集群映射
 
 contriner_client:register("share_config_m")
 
@@ -40,56 +42,45 @@ local function close_fd(fd)
 	skynet.send(agent.gate, 'lua', 'kick', fd)
 end
 
-local function send_msg(fd, req_packbody, pack_id, lua_msgs)
-	if type(lua_msgs) == 'table' then
-		lua_msgs = skynet.packstring(lua_msgs)
+local function response(fd, session, isok, msg, sz)
+	local rsp = frpcpack.packresponse(session, isok, msg, sz)
+	if type(rsp) == 'table' then
+		for i = 1, #rsp do
+			socket.lwrite(fd, rsp[i])
+		end
+	else
+		socket.write(fd, rsp)
 	end
-
-	local packbody = {
-		module_name = req_packbody.module_name,
-		session_id = req_packbody.session_id,
-		mod_num = req_packbody.mod_num,
-		lua_msgs = lua_msgs,
-	}
-	
-	frpcnet_byid.send(g_gate, fd, pack_id, packbody)
 end
 
 local HANDLE = {}
 
-HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, packbody)
+HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
     local agent = g_fd_agent_map[fd]
     if not agent then
         log.warn("hand_shake fd not exists ", fd)
         return
     end
-
-	local lua_msgs = skynet.unpack(packbody.lua_msgs)
-    local cluster_name = lua_msgs[1]
-    local cluster_svr_id = lua_msgs[2]
+	--log.info("hand_shake :", pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+	local cluster_name, cluster_svr_id = skynet.unpack(msg, sz)
     if not cluster_name or not cluster_svr_id then
         log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id)
         return
     end
 
     local name = cluster_name .. ':' .. cluster_svr_id
-    if g_cluster_map[name] then
-        log.warn("hand_shake err is exists cluster connect ", name)
-		send_msg(fd, packbody, FRPC_PACK_ID.hand_shake_rsp, {"exists"})
-        return
-    end
-
-    g_cluster_map[name] = agent
+	agent.login_time_out:cancel()
     agent.is_hand_shake = true
     agent.cluster_name = cluster_name
     agent.cluster_svr_id = cluster_svr_id
 	agent.name = name
 	
-	send_msg(fd, packbody, FRPC_PACK_ID.hand_shake_rsp, {"ok"})
+	local msg = skynet.packstring("ok")
+	response(fd, session_id, true, msg)
 end
 
-local function create_handle(func, is_need_rsp)
-	return function(fd, packbody)
+local function create_handle(func)
+	return function(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
 		local agent = g_fd_agent_map[fd]
 		if not agent then
 			log.warn("agent not exists ", fd)
@@ -97,121 +88,125 @@ local function create_handle(func, is_need_rsp)
 		end
 
 		if not agent.is_hand_shake then
-			log.warn("agent not hand_shake ", fd)
-			send_msg(fd, packbody, FRPC_PACK_ID.call_error, {"not hand_shake"})
+			log.warn("agent not hand_shake ", fd, session_id)
 			return 
 		end
 
-		local module_name = packbody.module_name
 		local cli = g_client_map[module_name]
 		if not cli then
 			log.warn("frpc module_name not exists ",module_name, agent.name)
-			send_msg(fd, packbody, FRPC_PACK_ID.call_error, {"module_name not exists"})
+			if iscall then
+				response(fd, session_id, false, " module_name not exists :" .. tostring(module_name))
+			end
 			return
 		end
 
-		if not is_need_rsp then
-			func(fd, packbody)
+		if ispart then
+			local req = agent.large_request[session_id] or {module_name = module_name, iscall = iscall, mod_num = mod_num}
+			agent.large_request[session_id] = req
+			frpcpack.append(req, msg, sz)
+			return
 		else
+			local req = agent.large_request[session_id]
+			if req then
+				agent.large_request[session_id] = nil
+				frpcpack.append(req, msg, sz)
+				msg, sz = frpcpack.concat(req)
+				module_name = req.module_name
+				iscall = req.iscall
+				mod_num = req.mod_num
+			end
 
-			local isok, msg, sz = pcall(func, fd, packbody)
-			local lua_msgs = skynet.tostring(msg, sz)
+			if not msg and iscall then
+				response(fd, session_id, false, "Invalid large req from " .. agent.name)
+				return
+			end
+		end
+
+		if not iscall then
+			func(agent, module_name, mod_num, msg, sz)
+		else
+			local isok, msg, sz = pcall(func, agent, module_name, mod_num, msg, sz)
 			if not isok then
-				send_msg(fd, packbody, FRPC_PACK_ID.call_error, lua_msgs)
+				response(fd, session_id, false, "call err " .. msg)
 			else
-				send_msg(fd, packbody, FRPC_PACK_ID.call_rsp, lua_msgs)
+				response(fd, session_id, true, msg, sz)
 			end
 		end
 	end
 end
 
-HANDLE[FRPC_PACK_ID.balance_send] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.balance_send] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	cli:balance_send(packbody.lua_msgs)
+	cli:balance_send(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
-	local mod_num = packbody.mod_num
+HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
-	cli:mod_send(packbody.lua_msgs)
+	cli:mod_send(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	cli:broadcast(packbody.lua_msgs)
+	cli:broadcast(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.balance_send_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.balance_send_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	cli:balance_send_by_name(packbody.lua_msgs)
+	cli:balance_send_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
-	local mod_num = packbody.mod_num
+HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
-	cli:mod_send_by_name(packbody.lua_msgs)
+	cli:mod_send_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	cli:broadcast_by_name(packbody.lua_msgs)
+	cli:broadcast_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.balance_call] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.balance_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:balance_call(packbody.lua_msgs)
-end, true)
+	return cli:balance_call(msg, sz)
+end)
 
-HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
-	local mod_num = packbody.mod_num
+HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
-	return cli:mod_call(packbody.lua_msgs)
-end, true)
+	return cli:mod_call(msg, sz)
+end)
 
-HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:broadcast_call(packbody.lua_msgs)
-end, true)
+	return cli:broadcast_call(msg, sz)
+end)
 
-HANDLE[FRPC_PACK_ID.balance_call_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.balance_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:balance_call_by_name(packbody.lua_msgs)
-end, true)
+	return cli:balance_call_by_name(msg, sz)
+end)
 
-HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
-	local mod_num = packbody.mod_num
+HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
-	return cli:mod_call_by_name(packbody.lua_msgs)
-end, true)
+	return cli:mod_call_by_name(msg, sz)
+end)
 
-HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, packbody)
-	local module_name = packbody.module_name
+HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:broadcast_call_by_name(packbody.lua_msgs)
-end, true)
+	return cli:broadcast_call_by_name(msg, sz)
+end)
 
-local function handle_dispatch(fd, pack_id, packbody)
+local function handle_dispatch(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
     local func = HANDLE[pack_id]
     if not func then
         log.error("unknown pack_id ", pack_id)
         return
     end
-    func(fd, packbody)
+    func(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
 end
 
 local CMD = {}
@@ -234,6 +229,8 @@ function SOCKET.open(fd, addr, gate)
         is_hand_shake = nil,                                            --是否握手了
         cluster_name  = nil,                                            --连接的集群服务名
         cluster_svr_id = nil,                                           --连接的集群服务ID
+
+		large_request = {},
 	}
 	g_fd_agent_map[fd] = agent
 end
@@ -246,9 +243,6 @@ function SOCKET.close(fd)
 	end
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
-    if agent.name then
-        g_cluster_map[agent.name] = nil
-    end
 	agent.login_time_out:cancel()
 end
 
@@ -284,7 +278,7 @@ skynet.start(function()
     skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
-		unpack = frpcnet_byid.unpack,
+		unpack = frpcpack.unpackrequest,
 		dispatch = function(fd,source,...)
 			skynet.ignoreret()
 			handle_dispatch(fd, ...)

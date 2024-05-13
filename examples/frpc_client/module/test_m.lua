@@ -6,33 +6,30 @@ local CMD = {}
 function CMD.start()
 	skynet.fork(function()
 		local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
-
-		--cli:one_balance_send("hello","one_balance_send")
-		-- cli:one_mod_send("hello","one_mod_send")
-		-- cli:set_svr_id(1):byid_balance_send("hello","byid_balance_send")
-		-- cli:set_svr_id(1):byid_mod_send("hello","byid_mod_send")
-		local pre_time = skynet.time()
-		for i = 1,10000 do
+		cli:one_balance_send("hello","one_balance_send")
+		cli:one_mod_send("hello","one_mod_send")
+		cli:set_svr_id(1):byid_balance_send("hello","byid_balance_send")
+		cli:set_svr_id(1):byid_mod_send("hello","byid_mod_send")
+		for i = 1,3 do
 			log.info("balance ping ", i, cli:one_balance_call("ping"))
 		end
-		log.info("use time :",10000 / (skynet.time() - pre_time))
-		-- for i = 1,3 do
-		-- 	log.info("mod ping ",i,cli:one_mod_call("ping"))
-		-- end
-		-- for i = 1,3 do
-		-- 	log.info("byid ping ",i,cli:set_svr_id(2):byid_balance_call("ping"))
-		-- end
-		-- for i = 1,3 do
-		-- 	log.info("byid ping ",i,cli:set_svr_id(1):byid_mod_call("ping"))
-		-- end
+		for i = 1,3 do
+			log.info("mod ping ",i,cli:one_mod_call("ping"))
+		end
+		for i = 1,3 do
+			log.info("byid ping ",i,cli:set_svr_id(2):byid_balance_call("ping"))
+		end
+		for i = 1,3 do
+			log.info("byid ping ",i,cli:set_svr_id(1):byid_mod_call("ping"))
+		end
 		
-		-- cli:all_mod_send("hello","all_mod_send")
-		-- local ret = cli:all_mod_call("ping")
-		-- log.info("all_mod_call: ",ret)
+		cli:all_mod_send("hello","all_mod_send")
+		local ret = cli:all_mod_call("ping")
+		log.info("all_mod_call: ",ret)
 
-		-- cli:all_balance_send("hello","all_balance_send")
-		-- local ret = cli:all_balance_call("ping")
-		-- log.info("all_balance_call: ",ret)
+		cli:all_balance_send("hello","all_balance_send")
+		local ret = cli:all_balance_call("ping")
+		log.info("all_balance_call: ",ret)
 
 		-- cli:one_broadcast("hello","one_broadcast")
 		-- log.info("one_broadcast_call:", cli:one_broadcast_call("ping"))
