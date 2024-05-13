@@ -195,9 +195,9 @@ lpackrequest(lua_State *L) {
 		lua_pushlstring(L, (const char *)buf, bsz + sz);
 		return 1;
 	} else {
-		fill_header(buf, bsz - 2);		  //-2 有2字节表示包长
 		fill_uint32(buf + bsz, sz);
 		bsz += 4;
+		fill_header(buf, bsz - 2);		  //-2 有2字节表示包长
 		lua_pushlstring(L, (const char *)buf, bsz);
 
 		lua_createtable(L, part, 0);

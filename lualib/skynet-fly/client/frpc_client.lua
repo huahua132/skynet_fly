@@ -2,6 +2,8 @@
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
+local frpcpack = require "frpcpack.core"
+local log = require "skynet-fly.log"
 
 local setmetatable = setmetatable
 local assert = assert
@@ -90,8 +92,23 @@ function M:set_svr_id(id)
 	return self
 end
 
+local function unpack_rsp(rsp)
+	if type(rsp) == 'table' then
+		local msg, sz = frpcpack.concat(rsp)
+		if not msg then
+			log.error("concat rsp err ", #rsp)
+			return
+		end
+
+		rsp = skynet.tostring(msg, sz)
+		skynet.trash(msg, sz)
+	end
+
+	return skynet.unpack(rsp)
+end
+
 local function unpack_broadcast(rsp)
-	local ret_map = skynet.unpack(rsp)
+	local ret_map = unpack_rsp(rsp)
 	for sid, luastr in pairs(ret_map) do
 		ret_map[sid] = {skynet.unpack(luastr)}
 	end
@@ -112,9 +129,10 @@ function M:one_balance_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
+	
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -132,7 +150,7 @@ function M:one_mod_call(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -176,7 +194,7 @@ function M:byid_balance_call(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -196,7 +214,7 @@ function M:byid_mod_call(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -239,7 +257,7 @@ function M:all_balance_call(...)
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {skynet.unpack(rsp)}
+			result = {unpack_rsp(rsp)}
 		})
 	end
 	return ret_list
@@ -261,7 +279,7 @@ function M:all_mod_call(...)
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {skynet.unpack(rsp)}
+			result = {unpack_rsp(rsp)}
 		})
 	end
 	return ret_list
@@ -312,7 +330,7 @@ function M:one_balance_call_by_name(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -332,7 +350,7 @@ function M:one_mod_call_by_name(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -382,7 +400,7 @@ function M:byid_balance_call_by_name(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -404,7 +422,7 @@ function M:byid_mod_call_by_name(...)
 	)
 	return {
 		cluster_name = cluster_name,
-		result = {skynet.unpack(rsp)}
+		result = {unpack_rsp(rsp)}
 	}
 end
 
@@ -455,7 +473,7 @@ function M:all_balance_call_by_name(...)
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {skynet.unpack(rsp)}
+			result = {unpack_rsp(rsp)}
 		})
 	end
 	return ret_list
@@ -479,7 +497,7 @@ function M:all_mod_call_by_name(...)
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {skynet.unpack(rsp)}
+			result = {unpack_rsp(rsp)}
 		})
 	end
 	return ret_list
