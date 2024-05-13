@@ -15,12 +15,18 @@ local function test1()
 	-- msg(userdata)		 skyent.pack 打包好的lua消息
 	-- sz(uint32)			 msg 消息长度
 	-- is_call(uint8)	     是否call调用
-    local msg, sz = skynet.pack("hello", 123456)
-    local msgbuff = frpcpack.packrequest(25, "modulessss_m", 65532, 22222222, msg, sz, 1)
-    local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
-    msgbuff =  msgbuff:sub(3)
-    log.info("msgbuff:", #msgbuff)
-    local pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
+    local session_id = 0
+    local g_svr_name = "frpc_client"
+    local g_svr_id = 1
+    local msg, sz = skynet.pack(g_svr_name, g_svr_id)
+	log.info("hand_shake:", g_svr_name, g_svr_id, msg, sz)
+	local req = frpcpack.packrequest(1, "hand_shake", session_id, 0, msg, sz, 1)
+	log.info("hand_shake1 :", #req)
+
+    local sz = (req:byte(1) << 8) + req:byte(2)
+    req =  req:sub(3)
+    log.info("msgbuff:", #req)
+    local pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(req)
     log.info("unpack ret :", pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
     log.info("unpack lua msg :", skynet.unpack(msg, sz))
 end
@@ -93,10 +99,10 @@ local function test4()
 end
 
 function CMD.start()
-    --test1()
+    test1()
     --test2()
     --test3()
-    test4()
+    --test4()
     return true
 end
 

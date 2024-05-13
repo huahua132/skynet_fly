@@ -2,9 +2,6 @@
 
 local enum = {
     hand_shake              = 1,             --握手
-    hand_shake_rsp          = 2,             --握手回复
-    call_rsp                = 3,             --call消息回应
-    call_error              = 4,             --call调用s端出错
 
     balance_send            = 100,           --简单轮询负载均衡
     mod_send                = 101,
