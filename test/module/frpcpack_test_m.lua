@@ -19,15 +19,15 @@ local function test1()
     local g_svr_name = "frpc_client"
     local g_svr_id = 1
     local msg, sz = skynet.pack(g_svr_name, g_svr_id)
-	log.info("hand_shake:", g_svr_name, g_svr_id, msg, sz)
-	local req = frpcpack.packrequest(1, "hand_shake", session_id, 0, msg, sz, 1)
-	log.info("hand_shake1 :", #req)
+	log.info("pack:", g_svr_name, g_svr_id, msg, sz)
+	local req = frpcpack.packrequest(1, "module_name", "instance_name", session_id, 0, msg, sz, 1)
+	log.info("pack :", #req)
 
     local sz = (req:byte(1) << 8) + req:byte(2)
     req =  req:sub(3)
     log.info("msgbuff:", #req)
-    local pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(req)
-    log.info("unpack ret :", pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+    local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(req)
+    log.info("unpack ret :", pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
     log.info("unpack lua msg :", skynet.unpack(msg, sz))
 end
 
@@ -36,6 +36,7 @@ local function test2()
     local pack_id = 88
     local session_id = 5555555
     local module_name = "mmm_modasdj_m"
+    local instance_name = "dddxxxx"
     
     local t = {}
     for i = 1, 100000 do
@@ -45,7 +46,7 @@ local function test2()
     local msg,sz = skynet.pack(t)
     log.info("sz:", sz, sz / 1024)  --超过32k 需要分包
 
-    local msgbuff, padding = frpcpack.packrequest(pack_id, module_name, session_id, 20000, msg, sz, 1)
+    local msgbuff, padding = frpcpack.packrequest(pack_id, module_name, instance_name, session_id, 20000, msg, sz, 1)
     log.info("msgbuff:", #msgbuff)
     for i, v in ipairs(padding) do
         log.info("padding:", i, #v)
@@ -53,17 +54,17 @@ local function test2()
 
     local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
-    local pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
-    log.info("unpack msgbuff:", pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+    local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
+    log.info("unpack msgbuff:", pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 
-    local req = {module_name = module_name, iscall = iscall, mod_num = mod_num}
+    local req = {module_name = module_name, instance_name = instance_name, iscall = iscall, mod_num = mod_num}
     frpcpack.append(req, msg, sz)
 
     for i, v in ipairs(padding) do
         local sz = (v:byte(1) << 8) + v:byte(2)
         local msgbuff = v:sub(3)
-        local pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
-        log.info("unpack padding ", i, ':', pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+        local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
+        log.info("unpack padding ", i, ':', pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
         frpcpack.append(req, msg, sz)
     end
 

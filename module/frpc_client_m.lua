@@ -139,7 +139,7 @@ local function add_node(svr_name,svr_id,host)
 
 	local session_id = new_session_id()
 	local msg, sz = skynet.pack(g_svr_name, g_svr_id)
-	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", session_id, 0, msg, sz, 1)
+	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
 	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 	if not isok then
 		log.error("frpc client hand_shake err ", svr_name, svr_id, host, tostring(rsp))
@@ -312,19 +312,19 @@ end
 local CMD = {}
 
 --轮询给单个集群结点发
-function CMD.balance_send(svr_name, module_name, packid, mod_num, msg, sz)
+function CMD.balance_send(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel = get_balance_channel(svr_name)
 	if not channel then
 		log.error("frpc balance_send get channel err ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
-	local req, padding = frpcpack.packrequest(packid, module_name, new_session_id(), mod_num or 0, msg, sz, 0)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
 	channel:request(req, nil ,padding)
 end
 
 --轮询给单个集群结点发
-function CMD.balance_call(svr_name, module_name, packid, mod_num, msg, sz)
+function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name = get_balance_channel(svr_name)
 	if not channel then
 		log.error("frpc balance_call get channel err ",svr_name, module_name, skynet.unpack(msg, sz))
@@ -332,37 +332,38 @@ function CMD.balance_call(svr_name, module_name, packid, mod_num, msg, sz)
 		return
 	end
 	local session_id = new_session_id()
-	local req, padding = frpcpack.packrequest(packid, module_name, session_id, mod_num or 0, msg, sz, 1)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
 	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 	if not isok then
 		log.error("frpc balance_call req err ", isok, tostring(rsp))
 		return
 	end
+
 	return cluster_name, rsp
 end
 
 --指定结点id发
-function CMD.send_by_id(svr_name, svr_id, module_name, packid, mod_num, msg, sz)
+function CMD.send_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc send_by_id  err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
-	local req, padding = frpcpack.packrequest(packid, module_name, new_session_id(), mod_num or 0, msg, sz, 0)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
 	channel:request(req, nil, padding)
 end
 
 --指定结点id发
-function CMD.call_by_id(svr_name, svr_id, module_name, packid, mod_num, msg, sz)
-	local channel, session_id, cluster_name = get_svr_id_channel(svr_name, svr_id)
+function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
+	local channel, cluster_name = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc call_by_id err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
 	local session_id = new_session_id()
-	local req, padding = frpcpack.packrequest(packid, module_name, session_id, mod_num or 0, msg, sz, 1)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
 	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 	if not isok then
 		log.error("frpc call_by_id req err ", isok, tostring(rsp))
@@ -372,7 +373,7 @@ function CMD.call_by_id(svr_name, svr_id, module_name, packid, mod_num, msg, sz)
 end
 
 --给集群所有结点发
-function CMD.send_all(svr_name, module_name, packid, mod_num, msg, sz)
+function CMD.send_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		log.error("frpc send_all err ", svr_name, module_name, skynet.unpack(msg, sz))
@@ -380,7 +381,7 @@ function CMD.send_all(svr_name, module_name, packid, mod_num, msg, sz)
 		return
 	end
 
-	local req, padding = frpcpack.packrequest(packid, module_name, new_session_id(), mod_num or 0, msg, sz, 0)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
 	for cluster_name, channel in pairs(channel_map) do
 		local isok, rsp = pcall(channel.request, channel, req, nil, padding)
 		if not isok then
@@ -390,7 +391,7 @@ function CMD.send_all(svr_name, module_name, packid, mod_num, msg, sz)
 end
 
 --给集群所有结点发
-function CMD.call_all(svr_name, module_name, packid, mod_num, msg, sz)
+function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		log.error("frpc call_all err ", svr_name, module_name, skynet.unpack(msg, sz))
@@ -400,7 +401,7 @@ function CMD.call_all(svr_name, module_name, packid, mod_num, msg, sz)
 
 	local session_id = new_session_id()
 	local cluster_rsp_map = {}
-	local req, padding = frpcpack.packrequest(packid, module_name, session_id, mod_num or 0, msg, sz, 1)
+	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
 	for cluster_name, channel in pairs(channel_map) do
 		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 		if not isok then

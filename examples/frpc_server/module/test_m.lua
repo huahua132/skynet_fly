@@ -10,7 +10,7 @@ local g_config = nil
 local CMD = {}
 
 function CMD.hello(who)
-	log.info(string.format("%s send hello msg for me",who))
+	log.info(string.format("%s send hello msg for me " .. g_config.instance_name, who))
 end
 
 function CMD.ping()
