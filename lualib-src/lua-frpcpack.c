@@ -91,7 +91,8 @@ return_buffer(lua_State *L, const char * buffer, int sz) {
 /*
 	args： 参数
 	pack_id(uint8)		 协议号
-	module_name(string)  调用模块ID
+	module_name(string)  调用模块服务ID
+	instance_name(string) 模块服务下的名字
 	session_id(uint32)	 标识消息 0表示不需要回应
 	mod_num(int64)		 用于模除的num
 	msg(userdata)		 skyent.pack 打包好的lua消息
@@ -121,33 +122,44 @@ return_buffer(lua_State *L, const char * buffer, int sz) {
 
 static int
 lpackrequest(lua_State *L) {
-	void *msg = lua_touserdata(L, 5);
+	void *msg = lua_touserdata(L, 6);
 	if (msg == NULL) {
 		return luaL_error(L, "Invalid request message");
 	}
-	uint32_t sz = (uint32_t)luaL_checkinteger(L, 6);
+	uint32_t sz = (uint32_t)luaL_checkinteger(L, 7);
 
 	uint8_t pack_id = (uint8_t)luaL_checkinteger(L, 1);
-	size_t namelen = 0;
-	const char *name = lua_tolstring(L, 2, &namelen);
-	if (name == NULL || namelen < 1 || namelen > 255) {
+	size_t module_name_len = 0;
+	const char *module_name = lua_tolstring(L, 2, &module_name_len);
+	if (module_name == NULL || module_name_len < 0 || module_name_len > 255) {
 		skynet_free(msg);
-		if (name == NULL) {
-			luaL_error(L, "name is not a string, it's a %s", lua_typename(L, lua_type(L, 2)));
+		if (module_name == NULL) {
+			luaL_error(L, "module_name is not a string, it's a %s", lua_typename(L, lua_type(L, 2)));
 		} else {
-			luaL_error(L, "name is too long %s", name);
+			luaL_error(L, "module_name is too long %s", module_name);
 		}
 	}
 
-	uint32_t session_id = (uint32_t)luaL_checkinteger(L, 3);
+	size_t instance_name_len = 0;
+	const char *instance_name = lua_tolstring(L, 3, &instance_name_len);
+	if (instance_name == NULL || instance_name_len < 0 || instance_name_len > 255) {
+		skynet_free(msg);
+		if (instance_name == NULL) {
+			luaL_error(L, "instance_name is not a string, it's a %s", lua_typename(L, lua_type(L, 2)));
+		} else {
+			luaL_error(L, "instance_name is too long %s", instance_name);
+		}
+	}
 
-	int64_t mod_num = (int64_t)luaL_checkinteger(L, 4);
+	uint32_t session_id = (uint32_t)luaL_checkinteger(L, 4);
+
+	int64_t mod_num = (int64_t)luaL_checkinteger(L, 5);
 	if (mod_num < 0) {
 		skynet_free(msg);
 		return luaL_error(L, "Invalid request mod_num %lld", mod_num);
 	}
 
-	uint8_t is_call = (uint8_t)luaL_checkinteger(L, 7);
+	uint8_t is_call = (uint8_t)luaL_checkinteger(L, 8);
 
 	int part = (sz - 1) / FRPCPACK_MULTI_PART + 1;
 	uint8_t buf[FRPCPACK_TEMP_LENGTH];
@@ -158,10 +170,12 @@ lpackrequest(lua_State *L) {
 		flag = FRPCPACK_FLAG_PART_H;
 	}
 	
-	uint32_t bsz = 5 + namelen;    //sz(uint16) + flag(uint8) + pack_id(uint8) + namesz(uint8) = 5字节
+	uint32_t bsz = 6 + module_name_len + instance_name_len;    //sz(uint16) + flag(uint8) + pack_id(uint8) + modulenamelen(uint8) + instancenamelen = 6字节
 	buf[3] = pack_id;
-	buf[4] = namelen;
-	memcpy(buf + 5, name, namelen);
+	buf[4] = module_name_len;
+	buf[5] = instance_name_len;
+	memcpy(buf + 6, module_name, module_name_len);
+	memcpy(buf + 6 + module_name_len, instance_name, instance_name_len);
 	fill_uint32(buf + bsz, session_id);
 	bsz += 4;
 	if (is_call == 1) {	
@@ -201,12 +215,13 @@ unpackmreq_part(lua_State *L, const uint8_t * buf, int sz) {
 	uint32_t session = unpack_uint32(buf+1);
 	lua_pushnil(L);				//pack_id
 	lua_pushnil(L);				//module_name
+	lua_pushnil(L);				//instance_name
 	lua_pushinteger(L, session); //session_id
 	lua_pushnil(L);				 //mod_num
 	return_buffer(L, (const char *)buf+5, sz-5);
 	lua_pushboolean(L, padding);
 
-	return 7;
+	return 8;
 }
 
 static int
@@ -215,50 +230,53 @@ unpackrequest(lua_State *L, const uint8_t *msg, int sz, uint8_t is_rsp, uint8_t 
 		return luaL_error(L, "Invalid frpcpack message (size=%d)", sz);
 	}
 	uint8_t pack_id = msg[1];
-	int namesz = msg[2];
+	int module_name_len = msg[2];
+	int instance_name_len = msg[3];
 
-	int min_len = 7;			// flag + pack_id + namesz + session 
+	int min_len = 8 + module_name_len + instance_name_len;			// flag + pack_id + module_name_len + instance_name_len + session 
 	if (is_mod == FRPCPACK_FLAG_MOD) {
 		min_len += 8;			//需要mod多8字节的mod
 	}
 	if (is_part_h == 1) {
 		min_len += 4;			//分包头 多4字节的长度
 	}
-	if (sz < namesz + min_len) {
+	if (sz < min_len) {
 		return luaL_error(L, "Invalid frpcpack message (size=%d)", sz);
 	}
 
-	int offset = 3;
-	lua_pushinteger(L, pack_id);							//返回pack_id
-	lua_pushlstring(L, (const char *)msg + offset, namesz); //返回module_name
-	offset += namesz;
+	int offset = 4;		//flag + pack_id + module_name_len + instance_name_len
+	lua_pushinteger(L, pack_id);										//返回pack_id
+	lua_pushlstring(L, (const char *)msg + offset, module_name_len); 	//返回module_name
+	offset += module_name_len;
+	lua_pushlstring(L, (const char *)msg + offset, instance_name_len);  //返回instance_name
+	offset += instance_name_len;
 	uint32_t session = unpack_uint32(msg + offset);
 	offset += 4;
-	lua_pushinteger(L, (uint32_t)session);					//返回session_id
+	lua_pushinteger(L, (uint32_t)session);								//返回session_id
 	if (is_mod == FRPCPACK_FLAG_MOD) {
 		int64_t mod_num = unpack_int64(msg + offset);
 		offset += 8;
-		lua_pushinteger(L, (int64_t)mod_num);				//返回mod_num
+		lua_pushinteger(L, (int64_t)mod_num);							//返回mod_num
 	} else {
-		lua_pushnil(L);										//返回mod_num
+		lua_pushnil(L);													//返回mod_num
 	}
 
 	if (is_part_h == 1) {
-		lua_pushnil(L);	                                     //返回msg
-		uint32_t msgsz = unpack_uint32(msg + offset);	 	 //返回msgsz
+		lua_pushnil(L);	                                     			//返回msg
+		uint32_t msgsz = unpack_uint32(msg + offset);	 	 			//返回msgsz
 		lua_pushinteger(L, (uint32_t)msgsz);
-		lua_pushboolean(L, 1);								 //是否分包
+		lua_pushboolean(L, 1);								 			//是否分包
 	} else {
-		return_buffer(L, (const char *)msg + offset, sz - offset); //返回msg msgsz
-		lua_pushboolean(L, 0);							     //是否分包
+		return_buffer(L, (const char *)msg + offset, sz - offset); 		//返回msg msgsz
+		lua_pushboolean(L, 0);							     			//是否分包
 	}
 	
 	if (is_rsp == FRPCPACK_FLAG_RSP) {
-		lua_pushboolean(L, 1);								 //是否需要回复
+		lua_pushboolean(L, 1);								 			//是否需要回复
 	} else {
-		lua_pushboolean(L, 0);								 //是否需要回复
+		lua_pushboolean(L, 0);								 			//是否需要回复
 	}
-	return 8;
+	return 9;
 }
 
 static int

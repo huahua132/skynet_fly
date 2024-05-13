@@ -554,7 +554,12 @@ function M:broadcast_call(...)
 	local id_list = self.cur_id_list
 	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		ret_map[id] = {self.call(id,'lua',...)}
+		if self.call == skynet.rawcall then
+			local msg, sz = self.call(id,'lua',...)
+			ret_map[id] = skynet.tostring(msg, sz)
+		else
+			ret_map[id] = {self.call(id,'lua',...)}
+		end
 	end
 
 	return ret_map
@@ -592,7 +597,12 @@ function M:broadcast_call_by_name(...)
 	local id_list = cur_name_id_list[self.instance_name]
 	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		ret_map[id] = {self.call(id,'lua',...)}
+		if self.call == skynet.rawcall then
+			local msg, sz = self.call(id,'lua',...)
+			ret_map[id] = skynet.tostring(msg, sz)
+		else
+			ret_map[id] = {self.call(id,'lua',...)}
+		end
 	end
 	
 	return ret_map

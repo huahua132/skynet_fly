@@ -55,13 +55,13 @@ end
 
 local HANDLE = {}
 
-HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
     local agent = g_fd_agent_map[fd]
     if not agent then
         log.warn("hand_shake fd not exists ", fd)
         return
     end
-	--log.info("hand_shake :", pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+	--log.info("hand_shake :", pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 	local cluster_name, cluster_svr_id = skynet.unpack(msg, sz)
     if not cluster_name or not cluster_svr_id then
         log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id)
@@ -80,7 +80,7 @@ HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, session_id,
 end
 
 local function create_handle(func)
-	return function(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+	return function(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 		local agent = g_fd_agent_map[fd]
 		if not agent then
 			log.warn("agent not exists ", fd)
@@ -94,7 +94,7 @@ local function create_handle(func)
 
 		local cli = g_client_map[module_name]
 		if not cli then
-			log.warn("frpc module_name not exists ",module_name, agent.name)
+			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name)
 			if iscall then
 				response(fd, session_id, false, " module_name not exists :" .. tostring(module_name))
 			end
@@ -102,7 +102,7 @@ local function create_handle(func)
 		end
 
 		if ispart then
-			local req = agent.large_request[session_id] or {module_name = module_name, iscall = iscall, mod_num = mod_num}
+			local req = agent.large_request[session_id] or {module_name = module_name, instance_name = instance_name, iscall = iscall, mod_num = mod_num}
 			agent.large_request[session_id] = req
 			frpcpack.append(req, msg, sz)
 			return
@@ -124,9 +124,9 @@ local function create_handle(func)
 		end
 
 		if not iscall then
-			func(agent, module_name, mod_num, msg, sz)
+			func(agent, module_name, instance_name, mod_num, msg, sz)
 		else
-			local isok, msg, sz = pcall(func, agent, module_name, mod_num, msg, sz)
+			local isok, msg, sz = pcall(func, agent, module_name, instance_name, mod_num, msg, sz)
 			if not isok then
 				response(fd, session_id, false, "call err " .. msg)
 			else
@@ -136,77 +136,91 @@ local function create_handle(func)
 	end
 end
 
-HANDLE[FRPC_PACK_ID.balance_send] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.balance_send] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:balance_send(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
 	cli:mod_send(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, mod_num, msg, sz)
-	local cli = g_client_map[module_name]
-	cli:broadcast(msg, sz)
+HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+	skynet.trash(msg, sz)
+	local cli = g_client_map[module_name]					
+	cli:broadcast(msgstr)
 end)
 
-HANDLE[FRPC_PACK_ID.balance_send_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.balance_send_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
+	cli:set_instance_name(instance_name)
 	cli:balance_send_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
+	cli:set_instance_name(instance_name)
 	cli:set_mod_num(mod_num)
 	cli:mod_send_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+	skynet.trash(msg, sz)
 	local cli = g_client_map[module_name]
-	cli:broadcast_by_name(msg, sz)
+	cli:set_instance_name(instance_name)
+	cli:broadcast_by_name(msgstr)
 end)
 
-HANDLE[FRPC_PACK_ID.balance_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.balance_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	return cli:balance_call(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
 	return cli:mod_call(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+	skynet.trash(msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:broadcast_call(msg, sz)
+	return skynet.packstring(cli:broadcast_call(msgstr))
 end)
 
-HANDLE[FRPC_PACK_ID.balance_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.balance_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
+	cli:set_instance_name(instance_name)
 	return cli:balance_call_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
+	cli:set_instance_name(instance_name)
 	cli:set_mod_num(mod_num)
 	return cli:mod_call_by_name(msg, sz)
 end)
 
-HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, mod_num, msg, sz)
+HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+	skynet.trash(msg, sz)
 	local cli = g_client_map[module_name]
-	return cli:broadcast_call_by_name(msg, sz)
+	cli:set_instance_name(instance_name)
+	return skynet.packstring(cli:broadcast_call_by_name(msgstr))
 end)
 
-local function handle_dispatch(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
     local func = HANDLE[pack_id]
     if not func then
         log.error("unknown pack_id ", pack_id)
         return
     end
-    func(fd, pack_id, module_name, session_id, mod_num, msg, sz, ispart, iscall)
+    func(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 end
 
 local CMD = {}
