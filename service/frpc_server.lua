@@ -55,13 +55,13 @@ end
 
 local HANDLE = {}
 
-HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
-    local agent = g_fd_agent_map[fd]
+local function hand_shake(fd, session_id, msg, sz)
+	local agent = g_fd_agent_map[fd]
     if not agent then
         log.warn("hand_shake fd not exists ", fd)
         return
     end
-	--log.info("hand_shake :", pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
+
 	local cluster_name, cluster_svr_id = skynet.unpack(msg, sz)
     if not cluster_name or not cluster_svr_id then
         log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id)
@@ -80,18 +80,12 @@ HANDLE[FRPC_PACK_ID.hand_shake] = function(fd, pack_id, module_name, instance_na
 end
 
 local function create_handle(func)
-	return function(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
+	return function(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 		local agent = g_fd_agent_map[fd]
 		if not agent then
 			log.warn("agent not exists ", fd)
 			return
 		end
-
-		if not agent.is_hand_shake then
-			log.warn("agent not hand_shake ", fd, session_id)
-			return 
-		end
-
 		local cli = g_client_map[module_name]
 		if not cli then
 			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name)
@@ -100,29 +94,6 @@ local function create_handle(func)
 			end
 			return
 		end
-
-		if ispart then
-			local req = agent.large_request[session_id] or {module_name = module_name, instance_name = instance_name, iscall = iscall, mod_num = mod_num}
-			agent.large_request[session_id] = req
-			frpcpack.append(req, msg, sz)
-			return
-		else
-			local req = agent.large_request[session_id]
-			if req then
-				agent.large_request[session_id] = nil
-				frpcpack.append(req, msg, sz)
-				msg, sz = frpcpack.concat(req)
-				module_name = req.module_name
-				iscall = req.iscall
-				mod_num = req.mod_num
-			end
-
-			if not msg and iscall then
-				response(fd, session_id, false, "Invalid large req from " .. agent.name)
-				return
-			end
-		end
-
 		if not iscall then
 			func(agent, module_name, instance_name, mod_num, msg, sz)
 		else
@@ -215,12 +186,51 @@ HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, modu
 end)
 
 local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
+	local agent = g_fd_agent_map[fd]
+	if not agent then
+		log.warn("agent not exists ", fd)
+		return
+	end
+
+	if not agent.is_hand_shake then
+		if pack_id ~= FRPC_PACK_ID.hand_shake then
+			log.warn("agent not hand_shake ", fd, session_id)
+		else
+			hand_shake(fd, session_id, msg, sz)
+		end
+		return
+	end
+
+	if ispart then
+		local req = agent.large_request[session_id] or {module_name = module_name, instance_name = instance_name, iscall = iscall, mod_num = mod_num, pack_id = pack_id}
+		agent.large_request[session_id] = req
+		frpcpack.append(req, msg, sz)
+		return
+	else
+		local req = agent.large_request[session_id]
+		if req then
+			agent.large_request[session_id] = nil
+			frpcpack.append(req, msg, sz)
+			msg, sz = frpcpack.concat(req)
+			module_name = req.module_name
+			instance_name = req.instance_name
+			iscall = req.iscall
+			mod_num = req.mod_num
+			pack_id = req.pack_id
+		end
+
+		if not msg and iscall then
+			response(fd, session_id, false, "Invalid large req from " .. agent.name)
+			return
+		end
+	end
+
     local func = HANDLE[pack_id]
     if not func then
         log.error("unknown pack_id ", pack_id)
         return
     end
-    func(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
+    func(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 end
 
 local CMD = {}

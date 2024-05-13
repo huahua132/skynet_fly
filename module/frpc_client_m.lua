@@ -19,6 +19,7 @@ local next = next
 local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
+local type = type
 local pcall = pcall
 local coroutine = coroutine
 local tostring = tostring
@@ -369,6 +370,7 @@ function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mo
 		log.error("frpc call_by_id req err ", isok, tostring(rsp))
 		return
 	end
+
 	return cluster_name, rsp
 end
 

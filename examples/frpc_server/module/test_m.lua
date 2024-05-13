@@ -19,6 +19,10 @@ function CMD.ping()
 	return string.format("pong %s %s %s",g_config.instance_name,conf.host,skynet.self())
 end
 
+function CMD.large_msg(list)
+	return list
+end
+
 function CMD.start(config)
 	g_config = config
 	return true
