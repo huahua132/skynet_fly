@@ -124,6 +124,8 @@ local function is_exists_node(svr_name, svr_id)
 	return true
 end
 
+local del_node = nil  --function
+
 local function add_node(svr_name,svr_id,host)
 	svr_id = tonumber(svr_id)
 	assert(svr_name, "not svr_name")
@@ -146,6 +148,10 @@ local function add_node(svr_name,svr_id,host)
 		log.error("frpc client hand_shake err ", svr_name, svr_id, host, tostring(rsp))
 		return
 	end
+
+	socket.onclose(channel.__sock[1], function(fd)
+		del_node(svr_name, svr_id)
+	end)
 
 	if not g_node_info_map[svr_name] then
 		g_node_info_map[svr_name] = {
@@ -178,7 +184,7 @@ local function add_node(svr_name,svr_id,host)
 	wakeup_svr_id_map(cluster_name)
 end
 
-local function del_node(svr_name,svr_id)
+del_node = function(svr_name,svr_id)
 	svr_id = tonumber(svr_id)
 	assert(svr_name, "not svr_name")
 	assert(svr_id, "not svr_id")
@@ -211,8 +217,8 @@ local function del_node(svr_name,svr_id)
 	tremove(host_list,del_index)
 	id_name_map[svr_id] = nil
 	id_host_map[svr_id] = nil
-	local channel = channel_map[svr_id]
-	channel_map[svr_id] = nil
+	local channel = channel_map[cluster_name]
+	channel_map[cluster_name] = nil
 
 	node_info.balance = 1
 	if not next(name_list) then
