@@ -182,10 +182,20 @@ local function test_large_msg()
    print_all_broad_cast_ret("all_broadcast_call_by_name", ret)
 end
 
+--服务掉线测试
+local function test_disconnect()
+	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	while true do
+		log.info("balance ping ", cli:one_balance_call("ping"))
+		skynet.sleep(100)
+	end
+end
+
 function CMD.start()
 	skynet.fork(function()
 		--test_base_msg()
-		test_large_msg()
+		--test_large_msg()
+		test_disconnect()
 	end)
 
 	return true
