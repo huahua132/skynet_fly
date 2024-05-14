@@ -489,7 +489,7 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
 ## 如何远程rpc调用
 
-具体使用例子可以参照`examples/cluster_client` `examples/cluster_server`
+具体使用例子可以参照`examples/frpc_client` `examples/frpc_server`
 
 ## 完整项目示例
 * **[中国象棋](https://github.com/huahua132/skynet_fly_demo)**
