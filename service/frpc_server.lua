@@ -83,11 +83,13 @@ local function create_handle(func)
 	return function(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 		local agent = g_fd_agent_map[fd]
 		if not agent then
+			skynet.trash(msg, sz)
 			log.warn("agent not exists ", fd)
 			return
 		end
 		local cli = g_client_map[module_name]
 		if not cli then
+			skynet.trash(msg, sz)
 			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name)
 			if iscall then
 				response(fd, session_id, false, " module_name not exists :" .. tostring(module_name))

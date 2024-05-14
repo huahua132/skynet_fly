@@ -193,6 +193,7 @@ lpackrequest(lua_State *L) {
 		memcpy(buf+bsz, msg, sz);
 		fill_header(buf, bsz + sz - 2);    //-2 有2字节表示包长
 		lua_pushlstring(L, (const char *)buf, bsz + sz);
+		skynet_free(msg);
 		return 1;
 	} else {
 		fill_uint32(buf + bsz, sz);
@@ -202,6 +203,7 @@ lpackrequest(lua_State *L) {
 
 		lua_createtable(L, part, 0);
 		packreq_multi(L, session_id, msg, sz);
+		skynet_free(msg);
 		return 2;
 	}
 }
