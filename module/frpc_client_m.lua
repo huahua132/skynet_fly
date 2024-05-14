@@ -25,7 +25,6 @@ local coroutine = coroutine
 local tostring = tostring
 local spackstring = skynet.packstring
 
-local g_reqtab = {}
 local UINIT32MAX = math_util.uint32max
 local g_node_info_map = {}
 local g_node_map = {}
