@@ -33,7 +33,7 @@ local function alloc_table_id()
 	local table_id = nil
 	local cur_start_id = g_alloc_table_id
 	while not table_id do
-		if not g_table_map[SELF_ADDRESS .. ':' .. g_alloc_table_id] then
+		if not g_table_map[g_alloc_table_id] then
 			table_id = g_alloc_table_id
 		end
 		g_alloc_table_id = g_alloc_table_id + 1
@@ -45,17 +45,13 @@ local function alloc_table_id()
 		end
 	end
 
-	if not table_id then
-		return nil
-	end
-
 	return SELF_ADDRESS .. ':' .. table_id,table_id
 end
 
 local function create_table(table_name, ...)
     local table_id,num_id = alloc_table_id()
-	if not num_id then
-		log.info("alloc_table_id err tablefull")
+	if not table_id then
+		log.info("alloc_table_id err ",table_id)
 		return alloc_plug.tablefull()
 	end
 
