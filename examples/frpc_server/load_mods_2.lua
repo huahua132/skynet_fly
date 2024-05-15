@@ -13,6 +13,7 @@ return {
 					port = 9689,
 					maxclient = 2048,
 				},
+				secret_key = "fdgdoasldjdsflkdsjfdslfknmlsdfndsj3e34dsfjkb",				--密钥
 			},
 
 			server_cfg = {
