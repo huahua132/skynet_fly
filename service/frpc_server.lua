@@ -23,7 +23,8 @@ local tostring = tostring
 local g_gate = nil
 local g_svr_name = env_util.get_svr_name()
 local g_svr_id = env_util.get_svr_id()
-local g_fd_agent_map = {}                           --fd 连接管理
+local g_fd_agent_map = {}                           --	fd 连接管理
+local g_secret_key = nil							--  密钥
 
 contriner_client:register("share_config_m")
 
@@ -62,7 +63,9 @@ local function hand_shake(fd, session_id, msg, sz)
         return
     end
 
-	local cluster_name, cluster_svr_id = skynet.unpack(msg, sz)
+	local hand_stop, info = skynet.unpack(msg, sz)
+
+	local cluster_name, cluster_svr_id = info.cluster_name, info.cluster_svr_id
     if not cluster_name or not cluster_svr_id then
         log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id)
         return
@@ -70,10 +73,11 @@ local function hand_shake(fd, session_id, msg, sz)
 
     local name = cluster_name .. ':' .. cluster_svr_id
 	agent.login_time_out:cancel()
-    agent.is_hand_shake = true
     agent.cluster_name = cluster_name
     agent.cluster_svr_id = cluster_svr_id
 	agent.name = name
+
+	agent.is_hand_shake = true
 	
 	local msg = skynet.packstring("ok")
 	response(fd, session_id, true, msg)
@@ -291,6 +295,7 @@ skynet.start(function()
 	local conf = confclient:mod_call('query','frpc_server')
 	assert(conf.host,"not host")
 	
+	g_secret_key = conf.secret_key
 	local register = conf.register
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()
