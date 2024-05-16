@@ -129,6 +129,8 @@ function M:one_balance_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
+
+	if not cluster_name then return end
 	
 	return {
 		cluster_name = cluster_name,
@@ -148,6 +150,9 @@ function M:one_mod_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -166,6 +171,9 @@ function M:one_broadcast_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = unpack_broadcast(rsp)
@@ -192,6 +200,9 @@ function M:byid_balance_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -212,6 +223,9 @@ function M:byid_mod_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call,self.mod_num or SELF_ADDRESS, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -232,6 +246,8 @@ function M:byid_broadcast_call(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = unpack_broadcast(rsp),
@@ -253,6 +269,9 @@ function M:all_balance_call(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
+
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
@@ -275,6 +294,9 @@ function M:all_mod_call(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
+
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
@@ -297,6 +319,9 @@ function M:all_broadcast_call(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
+
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
@@ -328,6 +353,9 @@ function M:one_balance_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -348,6 +376,9 @@ function M:one_mod_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -369,6 +400,9 @@ function M:one_broadcast_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = unpack_broadcast(rsp)
@@ -398,6 +432,9 @@ function M:byid_balance_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -420,6 +457,9 @@ function M:byid_mod_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = {unpack_rsp(rsp)}
@@ -442,6 +482,9 @@ function M:byid_broadcast_call_by_name(...)
 	local cluster_name, rsp = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
+
+	if not cluster_name then return end
+
 	return {
 		cluster_name = cluster_name,
 		result = unpack_broadcast(rsp)
@@ -469,6 +512,9 @@ function M:all_balance_call_by_name(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
+
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
@@ -493,6 +539,9 @@ function M:all_mod_call_by_name(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
+
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
@@ -517,6 +566,9 @@ function M:all_broadcast_call_by_name(...)
 	local cluster_rsp_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
+	
+	if not cluster_rsp_map then return end
+
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		tinsert(ret_list, {
