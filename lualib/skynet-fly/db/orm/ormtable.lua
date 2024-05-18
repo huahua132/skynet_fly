@@ -351,6 +351,7 @@ end
 
 local M = {
     FILED_TYPE = FILED_TYPE,
+    FILED_LUA_DEFAULT = FILED_LUA_DEFAULT,
 }
 local mata = {__index = M, __gc = function(t)
     if t._time_obj then
