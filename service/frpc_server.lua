@@ -295,7 +295,7 @@ skynet.start(function()
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()
 		--一秒写一次
-		local timer_obj = timer:new(timer.second * 5,timer.loop,function()
+		local timer_obj = timer:new(timer.second * 1,timer.loop,function()
 			rpccli:register(g_svr_name,g_svr_id,conf.host)
 		end)
 		timer_obj:after_next()
