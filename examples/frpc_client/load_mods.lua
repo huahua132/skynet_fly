@@ -18,8 +18,16 @@ return {
 		default_arg = {
 			node_map = {
 				['frpc_server'] = {
-					[1] = "127.0.0.1:9688",
-					[2] = "127.0.0.1:9689",
+					[1] = {
+						svr_id = 1,
+						host = "127.0.0.1:9688",
+						secret_key = 'sdfdsoifhkjguihre234wedfoih24',
+					},
+					[2] = {
+						svr_id = 2,
+						host = "127.0.0.1:9689",
+						secret_key = 'safdsifuhiu34yjfindskj43hqfo32yosd',
+					}
 				}
 			}
 		}

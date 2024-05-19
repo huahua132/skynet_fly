@@ -25,6 +25,8 @@ local g_svr_name = env_util.get_svr_name()
 local g_svr_id = env_util.get_svr_id()
 local g_fd_agent_map = {}                           --fd 连接管理
 
+local g_secret_key = nil						    --连接密钥
+
 contriner_client:register("share_config_m")
 
 local g_client_map = setmetatable({},{__index = function(t,key)
@@ -62,11 +64,22 @@ local function hand_shake(fd, session_id, msg, sz)
         return
     end
 
-	local cluster_name, cluster_svr_id = skynet.unpack(msg, sz)
+	local info = skynet.unpack(msg, sz)
+	local cluster_name, cluster_svr_id = info.cluster_name, info.cluster_svr_id
     if not cluster_name or not cluster_svr_id then
-        log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id)
+        log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id, agent.addr, fd)
         return
     end
+
+	--检查密钥
+	if g_secret_key	then
+		local secret_key = info.secret_key
+		if not secret_key or secret_key ~= g_secret_key then
+			log.warn("hand_shake err secret_key err ", cluster_name, cluster_svr_id, agent.addr, fd)
+			response(fd, session_id, true, skynet.packstring("secret_key err"))
+			return
+		end
+	end
 
     local name = cluster_name .. ':' .. cluster_svr_id
 	agent.login_time_out:cancel()
@@ -75,8 +88,7 @@ local function hand_shake(fd, session_id, msg, sz)
     agent.cluster_svr_id = cluster_svr_id
 	agent.name = name
 	
-	local msg = skynet.packstring("ok")
-	response(fd, session_id, true, msg)
+	response(fd, session_id, true, skynet.packstring("ok"))
 end
 
 local function create_handle(func)
@@ -290,15 +302,17 @@ skynet.start(function()
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','frpc_server')
 	assert(conf.host,"not host")
+
+	g_secret_key = conf.secret_key
 	
 	local register = conf.register
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()
-		--一秒写一次
-		local timer_obj = timer:new(timer.second * 1,timer.loop,function()
-			rpccli:register(g_svr_name,g_svr_id,conf.host)
-		end)
-		timer_obj:after_next()
+		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key)
+		--1秒写一次
+		timer:new(timer.second,timer.loop,function()
+			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key)
+		end):after_next()
 	end
 
     skynet.register_protocol {

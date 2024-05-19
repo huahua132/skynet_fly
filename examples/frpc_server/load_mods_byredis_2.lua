@@ -14,6 +14,7 @@ return {
 					port = 9689,
 					maxclient = 2048,
 				},
+				secret_key = "safdsifuhiu34yjfindskj43hqfo32yosd"
 			},
 
 			redis = {
@@ -28,7 +29,7 @@ return {
 
 			server_cfg = {
 				svr_id = 2,
-				debug_port = 9011,
+				debug_port = 9002,
 				logpath = './logs_2/',
 			}
 		}
