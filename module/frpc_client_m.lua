@@ -125,7 +125,30 @@ end
 
 local del_node = nil  --function
 
-local function add_node(svr_name,svr_id,host)
+local function do_hand_shake_channel(channel, secret_key)
+	local session_id = new_session_id()
+	local info = {
+		cluster_name = g_svr_name,
+		cluster_svr_id = g_svr_id,
+		secret_key = secret_key,
+	}
+	local msg, sz = skynet.pack(info)
+	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
+	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
+	if not isok then
+		log.warn("frpc client hand_shake err ", tostring(rsp))
+		return
+	end
+	local ret = skynet.unpack(rsp)
+	if ret ~= "ok" then
+		log.warn("frpc client hand_shake err ", ret)
+		return
+	end
+	
+	return true
+end
+
+local function add_node(svr_name, svr_id, host, secret_key)
 	svr_id = tonumber(svr_id)
 	assert(svr_name, "not svr_name")
 	assert(svr_id, "not svr_id")
@@ -139,12 +162,8 @@ local function add_node(svr_name,svr_id,host)
         nodelay = true,
     }
 
-	local session_id = new_session_id()
-	local msg, sz = skynet.pack(g_svr_name, g_svr_id)
-	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
-	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
-	if not isok then
-		log.error("frpc client hand_shake err ", svr_name, svr_id, host, tostring(rsp))
+	if not do_hand_shake_channel(channel, secret_key) then
+		log.warn("frpc client hand_shake err ", svr_name, svr_id, host)
 		return
 	end
 
@@ -431,13 +450,13 @@ function CMD.start(config)
 			--redis服务发现方式
 			local rpccli = rpc_redis:new()
 			for svr_name,node in pairs(node_map) do
-				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name,function(event,name,id,host)
+				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name, function(event, name, id, host, secret_key)
 					if event == 'set' then            --设置
-						local old_host = get_node_host(name,id)
+						local old_host = get_node_host(name, id)
 						if old_host ~= host then
-							del_node(name,id)
-							add_node(name,id,host)
-							log.error("change cluster node :",name,id,old_host,host)
+							del_node(name, id)
+							add_node(name, id, host, secret_key)
+							log.error("change cluster node :",name, id, old_host, host)
 						end
 					elseif event == 'expired' then    --过期
 						del_node(name,id)
@@ -449,22 +468,22 @@ function CMD.start(config)
 				end)
 			end
 		else
-			for svr_name,node in pairs(node_map) do
-				for svr_id,host in pairs(node) do
-					add_node(svr_name,svr_id,host)
-				end
-			end
-			--本机配置方式
-			local ti = timer:new(timer.second * 1, 0, function()
+			local function add_node_info()
 				for svr_name,node in pairs(node_map) do
-					for svr_id,host in pairs(node) do
+					for _,info in pairs(node) do
+						local svr_id = info.svr_id
+						local host = info.host
+						local secret_key = info.secret_key
 						if not is_exists_node(svr_name, svr_id) then
-							add_node(svr_name, svr_id, host)
+							add_node(svr_name, svr_id, host, secret_key)
 						end
 					end
 				end
-			end)
-			ti:after_next()
+			end
+
+			add_node_info()
+			--本机配置方式
+			local ti = timer:new(timer.second * 1, 0, add_node_info):after_next()
 		end
 	end)
 	
