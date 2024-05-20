@@ -38,7 +38,6 @@ local function close_fd(fd)
 	if fd <= 0 then return end
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.info("close_fd not agent ",fd)
 		return
 	end
 	skynet.send(agent.gate, 'lua', 'kick', fd)
@@ -286,6 +285,16 @@ end
 
 function SOCKET.data(fd, msg)
 	log.info('SOCKET.data:',fd, msg)
+end
+
+function SOCKET.error(fd, msg)
+	log.info("socket error:", fd, msg)
+	close_fd(fd)
+end
+
+function SOCKET.warning(fd, size)
+	-- size K bytes havn't send out in fd
+	log.info("socket warning", fd, size)
 end
 
 function CMD.socket(cmd,...)
