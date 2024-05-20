@@ -14,7 +14,8 @@ return {
 					port = 9689,
 					maxclient = 2048,
 				},
-				secret_key = "safdsifuhiu34yjfindskj43hqfo32yosd"
+				secret_key = "safdsifuhiu34yjfindskj43hqfo32yosd",--验证密钥
+				is_encrypt = true,                                --是否加密传输
 			},
 
 			redis = {

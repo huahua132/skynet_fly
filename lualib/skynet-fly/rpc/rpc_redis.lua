@@ -23,15 +23,22 @@ function M:new()
 end
 
 --注册，设置连接信息10秒过期时间，需要1秒调用一次
-function M:register(svr_name, svr_id, host, secret_key)
+function M:register(svr_name, svr_id, host, secret_key, is_encrypt)
 	assert(svr_name,"not svr_name")
 	assert(svr_id,"not svr_id")
 	assert(host,"not host")
 
 	local key = string.format("skynet_fly:rpc:%s:%s",svr_name, svr_id)
-	local info = host
+	local info = nil
 	if secret_key then
 		info = host .. '_' .. secret_key
+	else
+		info = host .. '_' .. '#'
+	end
+	if is_encrypt then
+		info = info .. '_' .. 1
+	else
+		info = info .. '_' .. '#'
 	end
 	self.cli:set(key, info, "EX", 10)
 end
@@ -46,14 +53,11 @@ function M:get_node_host(svr_name, svr_id)
 	if not info then return end
 
 	local info_list = string_util.split(info, '_')
-	local host = info
-	local secret_key = nil
-	if next(info_list) then
-		host = info_list[1]
-		secret_key = info_list[2]
-	end
+	local host = info_list[1]
+	local secret_key = info_list[2] ~= "#" and info_list[2] or nil 
+	local is_encrypt = info_list[3] ~= "#" and true or nil 
 
-	return host, secret_key
+	return host, secret_key, is_encrypt
 end
 
 --监听结点host
@@ -65,9 +69,9 @@ function M:watch(svr_name,call_back)
 		local split_str = string_util.split(key,':')
 		local svr_id = tonumber(split_str[#split_str])
 		if event == 'set' then
-			local host, secret_key = self:get_node_host(svr_name,svr_id)
+			local host, secret_key, is_encrypt = self:get_node_host(svr_name,svr_id)
 			if host then
-				call_back(event, svr_name, svr_id, host, secret_key)
+				call_back(event, svr_name, svr_id, host, secret_key, is_encrypt)
 			else
 				call_back("get_failed",svr_name, svr_id)
 			end
