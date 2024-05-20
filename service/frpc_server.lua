@@ -371,10 +371,10 @@ skynet.start(function()
 	local register = conf.register
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()
-		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key)
+		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		--1秒写一次
 		timer:new(timer.second,timer.loop,function()
-			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key)
+			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		end):after_next()
 	end
 

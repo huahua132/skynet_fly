@@ -504,13 +504,13 @@ function CMD.start(config)
 			--redis服务发现方式
 			local rpccli = rpc_redis:new()
 			for svr_name,node in pairs(node_map) do
-				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name, function(event, name, id, host, secret_key)
+				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name, function(event, name, id, host, secret_key, is_encrypt)
 					if event == 'set' then            --设置
 						local old_host = get_node_host(name, id)
 						if old_host ~= host then
 							del_node(name, id)
-							add_node(name, id, host, secret_key)
-							log.error("change cluster node :",name, id, old_host, host)
+							add_node(name, id, host, secret_key, is_encrypt)
+							log.error("change cluster node :",name, id, old_host, host, secret_key, is_encrypt)
 						end
 					elseif event == 'expired' then    --过期
 						del_node(name,id)
