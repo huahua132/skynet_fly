@@ -13,7 +13,8 @@ return {
 					port = 9688,
 					maxclient = 2048,
 				},
-				secret_key = "sdfdsoifhkjguihre234wedfoih24"
+				secret_key = "sdfdsoifhkjguihre234wedfoih24",
+				is_encrypt = true,
 			},
 
 			server_cfg = {
