@@ -8,6 +8,7 @@ local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local env_util = require "skynet-fly.utils.env_util"
 local frpcpack = require "frpcpack.core"
 local socket = require "skynet.socket"
+local crypt = require "skynet.crypt"
 
 local pairs = pairs
 local assert = assert
@@ -26,6 +27,7 @@ local g_svr_id = env_util.get_svr_id()
 local g_fd_agent_map = {}                           --fd 连接管理
 
 local g_secret_key = nil						    --连接密钥
+local g_is_encrypt = nil 							--是否加密传输
 
 contriner_client:register("share_config_m")
 
@@ -64,6 +66,57 @@ local function hand_shake(fd, session_id, msg, sz)
     end
 
 	local info = skynet.unpack(msg, sz)
+	if agent.is_challenge_ok and agent.msg_secret then
+		info = crypt.desdecode(agent.msg_secret, info)
+		info = skynet.unpack(info)
+	end
+	if (g_secret_key or g_is_encrypt) and not agent.is_challenge_ok then			--交换密钥
+		local step = info.step
+		if step == 1 then									--stop 1 S2C 8bytes random challenge
+			local challenge = crypt.randomkey()
+			agent.challenge = challenge
+
+			local c = crypt.base64encode(challenge)
+			response(fd, session_id, true, skynet.packstring(c))
+		elseif step == 2 then								--交换公钥
+			local client_key = info.client_key
+			if not client_key then
+				log.warn("hand_shake err not client_key", fd, session_id)
+				return
+			end
+
+			client_key = crypt.base64decode(client_key)
+			if #client_key ~= 8 then
+				log.warn("hand_shake err client_key len ", fd, session_id, #client_key)
+				return
+			end
+
+			agent.client_key = client_key
+
+			local server_key = crypt.randomkey()
+			agent.msg_secret = crypt.dhsecret(client_key, server_key)
+			response(fd, session_id, true, skynet.packstring(crypt.base64encode(crypt.dhexchange(server_key))))
+		elseif step == 3 then
+			local challenge = info.challenge
+			if not challenge then
+				log.warn("hand_shake err not challenge", fd, session_id)
+				return
+			end
+
+			local hmac = crypt.hmac64(agent.challenge, agent.msg_secret)
+			if hmac ~= challenge then
+				log.warn("hand_shake err challenge", fd, session_id)
+				return
+			end
+
+			response(fd, session_id, true, skynet.packstring("ok"))
+			agent.is_challenge_ok = true
+		else
+			log.warn("hand_shake unknown step ", step)
+		end
+		return
+	end
+	
 	local cluster_name, cluster_svr_id = info.cluster_name, info.cluster_svr_id
     if not cluster_name or not cluster_svr_id then
         log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id, agent.addr, fd)
@@ -313,6 +366,7 @@ skynet.start(function()
 	assert(conf.host,"not host")
 
 	g_secret_key = conf.secret_key
+	g_is_encrypt = conf.is_encrypt
 	
 	local register = conf.register
 	if register == 'redis' then --注册到redis

@@ -9,6 +9,7 @@ local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local env_util = require "skynet-fly.utils.env_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local frpcpack = require "frpcpack.core"
+local crypt = require "skynet.crypt"
 
 local string = string
 local tonumber = tonumber
@@ -125,30 +126,82 @@ end
 
 local del_node = nil  --function
 
-local function do_hand_shake_channel(channel, secret_key)
-	local session_id = new_session_id()
+local function do_hand_shake_channel(channel, secret_key, is_encrypt)
+	local msg_secret = nil
+
+	local function hand_shake_req(info)
+		local session_id = new_session_id()
+		local msg, sz = nil, nil
+		if msg_secret then
+			local msg_buff = skynet.packstring(info)
+			msg_buff = crypt.desencode(msg_secret, msg_buff)
+			msg, sz = skynet.pack(msg_buff)
+		else
+			msg,sz = skynet.pack(info)
+		end
+		local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
+		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
+		if not isok then
+			log.warn("frpc client hand_shake err ", tostring(rsp))
+			return
+		end
+
+		local ret = skynet.unpack(rsp)
+		return ret
+	end
+
+	if (secret_key or is_encrypt) then
+		local info = {
+			step = 1,
+		}
+
+		local challenge = hand_shake_req(info)
+		if not challenge then
+			log.warn("frpc client hand_shake get challenge err")
+			return
+		end
+
+		challenge = crypt.base64decode(challenge)
+
+		local client_key = crypt.randomkey()
+		info.step = 2
+		info.client_key = crypt.base64encode((crypt.dhexchange(client_key)))
+		local server_key = hand_shake_req(info)
+		if not server_key then
+			log.warn("frpc client hand_shake get server_key err")
+			return
+		end
+		server_key = crypt.base64decode(server_key)
+		local secret = crypt.dhsecret(server_key, client_key)
+
+		info.client_key = nil
+		info.step = 3
+		info.challenge = crypt.hmac64(challenge, secret)
+		local ret = hand_shake_req(info)
+		if ret ~= 'ok' then
+			log.warn("frpc client hand_shake msg_secret err")
+			return
+		end
+
+		msg_secret = secret
+	end
+
 	local info = {
 		cluster_name = g_svr_name,
 		cluster_svr_id = g_svr_id,
 		secret_key = secret_key,
 	}
-	local msg, sz = skynet.pack(info)
-	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
-	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
-	if not isok then
-		log.warn("frpc client hand_shake err ", tostring(rsp))
-		return
-	end
-	local ret = skynet.unpack(rsp)
+
+	local ret = hand_shake_req(info)
 	if ret ~= "ok" then
 		log.warn("frpc client hand_shake err ", ret)
 		return
 	end
 	
-	return true
+	return true, msg_secret
 end
 
-local function add_node(svr_name, svr_id, host, secret_key)
+local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 	svr_id = tonumber(svr_id)
 	assert(svr_name, "not svr_name")
 	assert(svr_id, "not svr_id")
@@ -161,8 +214,9 @@ local function add_node(svr_name, svr_id, host, secret_key)
         response = read_response,
         nodelay = true,
     }
-
-	if not do_hand_shake_channel(channel, secret_key) then
+	
+	local isok, msg_secret = do_hand_shake_channel(channel, secret_key, is_encrypt) 
+	if not isok then
 		log.warn("frpc client hand_shake err ", svr_name, svr_id, host)
 		return
 	end
@@ -474,8 +528,9 @@ function CMD.start(config)
 						local svr_id = info.svr_id
 						local host = info.host
 						local secret_key = info.secret_key
+						local is_encrypt = info.is_encrypt
 						if not is_exists_node(svr_name, svr_id) then
-							add_node(svr_name, svr_id, host, secret_key)
+							add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 						end
 					end
 				end
