@@ -4,6 +4,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local frpcpack = require "frpcpack.core"
 local log = require "skynet-fly.log"
+local crypt = require "skynet.crypt"
 
 local setmetatable = setmetatable
 local assert = assert
@@ -92,7 +93,7 @@ function M:set_svr_id(id)
 	return self
 end
 
-local function unpack_rsp(rsp)
+local function unpack_rsp(rsp, secret)
 	if type(rsp) == 'table' then
 		local msg, sz = frpcpack.concat(rsp)
 		if not msg then
@@ -104,11 +105,14 @@ local function unpack_rsp(rsp)
 		skynet.trash(msg, sz)
 	end
 
+	if secret then
+		rsp = crypt.desdecode(secret, rsp)
+	end
 	return skynet.unpack(rsp)
 end
 
-local function unpack_broadcast(rsp)
-	local ret_map = unpack_rsp(rsp)
+local function unpack_broadcast(rsp, secret)
+	local ret_map = unpack_rsp(rsp, secret)
 	for sid, luastr in pairs(ret_map) do
 		ret_map[sid] = {skynet.unpack(luastr)}
 	end
@@ -126,7 +130,7 @@ end
 
 --用简单轮询负载均衡给单个结点的module_name模板用balance_call的方式发送消息
 function M:one_balance_call(...)
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -134,7 +138,7 @@ function M:one_balance_call(...)
 	
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -147,7 +151,7 @@ end
 
 --用简单轮询负载均衡给单个结点的module_name模板用mod_call的方式发送消息
 function M:one_mod_call(...)
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -155,7 +159,7 @@ function M:one_mod_call(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -168,7 +172,7 @@ end
 
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast_call的方式发送消息
 function M:one_broadcast_call(...)
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 
@@ -176,7 +180,7 @@ function M:one_broadcast_call(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = unpack_broadcast(rsp)
+		result = unpack_broadcast(rsp, secret)
 	}
 end
 --------------------------------------------------------------------------------
@@ -197,7 +201,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用balance_call的方式发送消息
 function M:byid_balance_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -205,7 +209,7 @@ function M:byid_balance_call(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -220,7 +224,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用mod_call的方式发送消息
 function M:byid_mod_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call,self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -228,7 +232,7 @@ function M:byid_mod_call(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -243,14 +247,14 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用broadcast_call的方式发送消息
 function M:byid_broadcast_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 	if not cluster_name then return end
 
 	return {
 		cluster_name = cluster_name,
-		result = unpack_broadcast(rsp),
+		result = unpack_broadcast(rsp, secret),
 	}
 end
 --------------------------------------------------------------------------------
@@ -266,7 +270,7 @@ end
 
 --给所有结点的module_name模板用balance_call的方式发送消息
 function M:all_balance_call(...)
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -274,9 +278,10 @@ function M:all_balance_call(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {unpack_rsp(rsp)}
+			result = {unpack_rsp(rsp, secret)}
 		})
 	end
 	return ret_list
@@ -291,7 +296,7 @@ end
 
 --给所有结点的module_name模板用mod_call的方式发送消息
 function M:all_mod_call(...)
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -299,9 +304,10 @@ function M:all_mod_call(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {unpack_rsp(rsp)}
+			result = {unpack_rsp(rsp, secret)}
 		})
 	end
 	return ret_list
@@ -316,7 +322,7 @@ end
 
 --给所有结点的module_name模板用broadcast_call的方式发送消息
 function M:all_broadcast_call(...)
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 
@@ -324,9 +330,10 @@ function M:all_broadcast_call(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = unpack_broadcast(rsp)
+			result = unpack_broadcast(rsp, secret)
 		})
 	end
 	return ret_list
@@ -350,7 +357,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用balance_call_by_name的方式发送消息
 function M:one_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -358,7 +365,7 @@ function M:one_balance_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -373,7 +380,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用mod_call_by_name的方式发送消息
 function M:one_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
 
@@ -381,7 +388,7 @@ function M:one_mod_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -397,7 +404,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
 function M:one_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 
@@ -405,7 +412,7 @@ function M:one_broadcast_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = unpack_broadcast(rsp)
+		result = unpack_broadcast(rsp, secret)
 	}
 end
 --------------------------------------------------------------------------------
@@ -429,7 +436,7 @@ end
 function M:byid_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -437,7 +444,7 @@ function M:byid_balance_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -454,7 +461,7 @@ end
 function M:byid_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
 
@@ -462,7 +469,7 @@ function M:byid_mod_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp)}
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 
@@ -479,7 +486,7 @@ end
 function M:byid_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = frpc_client_m:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 
@@ -487,7 +494,7 @@ function M:byid_broadcast_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = unpack_broadcast(rsp)
+		result = unpack_broadcast(rsp, secret)
 	}
 end
 
@@ -509,7 +516,7 @@ end
 --给所有结点的module_name模板用balance_call_by_name的方式发送消息
 function M:all_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -517,9 +524,10 @@ function M:all_balance_call_by_name(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {unpack_rsp(rsp)}
+			result = {unpack_rsp(rsp, secret)}
 		})
 	end
 	return ret_list
@@ -536,7 +544,7 @@ end
 --给所有结点的module_name模板用mod_call_by_name的方式发送消息
 function M:all_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -544,9 +552,10 @@ function M:all_mod_call_by_name(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = {unpack_rsp(rsp)}
+			result = {unpack_rsp(rsp, secret)}
 		})
 	end
 	return ret_list
@@ -563,7 +572,7 @@ end
 --给所有结点的module_name模板用broadcast_call_by_name的方式发送消息
 function M:all_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 	
@@ -571,9 +580,10 @@ function M:all_broadcast_call_by_name(...)
 
 	local ret_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
-			result = unpack_broadcast(rsp)
+			result = unpack_broadcast(rsp, secret)
 		})
 	end
 	return ret_list

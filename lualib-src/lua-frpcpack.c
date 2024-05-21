@@ -122,17 +122,26 @@ return_buffer(lua_State *L, const char * buffer, int sz) {
 
 static int
 lpackrequest(lua_State *L) {
-	void *msg = lua_touserdata(L, 6);
-	if (msg == NULL) {
-		return luaL_error(L, "Invalid request message");
+	int sz;
+	void *msg;
+	uint8_t need_free = 0;
+	if (lua_type(L, 6) == LUA_TLIGHTUSERDATA) {
+		msg = lua_touserdata(L, 6);
+		sz = luaL_checkinteger(L, 7);
+		need_free = 1;
+	} else {
+		size_t ssz;
+		msg = (void *)luaL_checklstring(L,6,&ssz);
+		sz = (int)ssz;
 	}
-	uint32_t sz = (uint32_t)luaL_checkinteger(L, 7);
 
 	uint8_t pack_id = (uint8_t)luaL_checkinteger(L, 1);
 	size_t module_name_len = 0;
 	const char *module_name = lua_tolstring(L, 2, &module_name_len);
 	if (module_name == NULL || module_name_len < 0 || module_name_len > 255) {
-		skynet_free(msg);
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
 		if (module_name == NULL) {
 			luaL_error(L, "module_name is not a string, it's a %s", lua_typename(L, lua_type(L, 2)));
 		} else {
@@ -143,7 +152,9 @@ lpackrequest(lua_State *L) {
 	size_t instance_name_len = 0;
 	const char *instance_name = lua_tolstring(L, 3, &instance_name_len);
 	if (instance_name == NULL || instance_name_len < 0 || instance_name_len > 255) {
-		skynet_free(msg);
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
 		if (instance_name == NULL) {
 			luaL_error(L, "instance_name is not a string, it's a %s", lua_typename(L, lua_type(L, 2)));
 		} else {
@@ -155,7 +166,9 @@ lpackrequest(lua_State *L) {
 
 	int64_t mod_num = (int64_t)luaL_checkinteger(L, 5);
 	if (mod_num < 0) {
-		skynet_free(msg);
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
 		return luaL_error(L, "Invalid request mod_num %lld", mod_num);
 	}
 
@@ -193,7 +206,9 @@ lpackrequest(lua_State *L) {
 		memcpy(buf+bsz, msg, sz);
 		fill_header(buf, bsz + sz - 2);    //-2 有2字节表示包长
 		lua_pushlstring(L, (const char *)buf, bsz + sz);
-		skynet_free(msg);
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
 		return 1;
 	} else {
 		fill_uint32(buf + bsz, sz);
@@ -203,7 +218,9 @@ lpackrequest(lua_State *L) {
 
 		lua_createtable(L, part, 0);
 		packreq_multi(L, session_id, msg, sz);
-		skynet_free(msg);
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
 		return 2;
 	}
 }
