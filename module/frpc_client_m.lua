@@ -134,10 +134,9 @@ local function do_hand_shake_channel(channel, secret_key, is_encrypt)
 		local msg, sz = nil, nil
 		if msg_secret then
 			local msg_buff = skynet.packstring(info)
-			msg_buff = crypt.desencode(msg_secret, msg_buff)
-			msg, sz = skynet.pack(msg_buff)
+			msg = crypt.desencode(msg_secret, msg_buff)
 		else
-			msg,sz = skynet.pack(info)
+			msg, sz = skynet.pack(info)
 		end
 		local req, padding = frpcpack.packrequest(FRPC_PACK_ID.hand_shake, "hand_shake", "", session_id, 0, msg, sz, 1)
 		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
@@ -230,6 +229,7 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 			name_list = {},           --结点名称列表
 			host_list = {},			  --结点地址列表
 			channel_map = {},		  --连接列表
+			secret_map = {},		  --密钥列表
 			id_host_map = {},
 			id_name_map = {},		  --svr_id映射结点名称
 			balance = 1,              --简单轮询负载均衡
@@ -244,6 +244,7 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 	local host_list = node_info.host_list
 	local id_host_map = node_info.id_host_map
 	local channel_map = node_info.channel_map
+	local secret_map = node_info.secret_map
 
 	local cluster_name = svr_name .. ':' .. svr_id
 	tinsert(name_list,cluster_name)
@@ -251,6 +252,10 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 	id_name_map[svr_id] = cluster_name
 	id_host_map[svr_id] = host
 	channel_map[cluster_name] = channel
+
+	if is_encrypt then
+		secret_map[cluster_name] = msg_secret
+	end
 
 	wakeup_svr_name_map(svr_name)
 	wakeup_svr_id_map(cluster_name)
@@ -273,6 +278,7 @@ del_node = function(svr_name,svr_id)
 	local host_list = node_info.host_list
 	local id_host_map = node_info.id_host_map
 	local channel_map = node_info.channel_map
+	local secret_map = node_info.secret_map
 
 	local del_index = nil
 	for i = #name_list,1,-1 do
@@ -291,6 +297,7 @@ del_node = function(svr_name,svr_id)
 	id_host_map[svr_id] = nil
 	local channel = channel_map[cluster_name]
 	channel_map[cluster_name] = nil
+	secret_map[cluster_name] = nil
 
 	node_info.balance = 1
 	if not next(name_list) then
@@ -331,11 +338,13 @@ local function get_balance_channel(svr_name)
 
 	local name_list = node_info.name_list
 	local channel_map = node_info.channel_map
+	local secret_map = node_info.secret_map
 	
 	local index = get_balance(node_info)
 	local cluster_name = name_list[index]
 	local channel = channel_map[cluster_name]
-	return channel, cluster_name
+	local secret = secret_map[cluster_name]
+	return channel, cluster_name, secret
 end
 
 --指定svr_id拿channel
@@ -357,8 +366,10 @@ local function get_svr_id_channel(svr_name, svr_id)
 	local node_info = g_node_info_map[svr_name]
 	local name_list = node_info.name_list
 	local channel_map = node_info.channel_map
+	local secret_map = node_info.secret_map
 	local channel = channel_map[cluster_name]
-	return channel, cluster_name
+	local secret = secret_map[cluster_name]
+	return channel, cluster_name, secret
 end
 
 --拿svr_name所有channel
@@ -381,22 +392,30 @@ local function get_svr_name_all_channel(svr_name)
 
 	local name_list = node_info.name_list
 	local channel_map = node_info.channel_map
-	
-	local index = get_balance(node_info)
-	local cluster_name = name_list[index]
-	local channel = channel_map[cluster_name]
-	return channel_map
+	local secret_map = node_info.secret_map
+
+	return channel_map, secret_map
 end
 
 local CMD = {}
 
+local function crypt_msg(secret, msg, sz)
+	local msg_buff = skynet.tostring(msg, sz)
+	skynet.trash(msg, sz)
+	msg_buff = crypt.desencode(secret, msg_buff)
+	return msg_buff
+end
+
 --轮询给单个集群结点发
 function CMD.balance_send(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel = get_balance_channel(svr_name)
+	local channel, _, secret = get_balance_channel(svr_name)
 	if not channel then
 		log.error("frpc balance_send get channel err ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
+	end
+	if secret then
+		msg, sz = crypt_msg(secret, msg, sz)
 	end
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
 	channel:request(req, nil ,padding)
@@ -404,11 +423,14 @@ end
 
 --轮询给单个集群结点发
 function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel, cluster_name = get_balance_channel(svr_name)
+	local channel, cluster_name, secret = get_balance_channel(svr_name)
 	if not channel then
 		log.error("frpc balance_call get channel err ",svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
+	end
+	if secret then
+		msg, sz = crypt_msg(secret, msg, sz)
 	end
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
@@ -418,16 +440,19 @@ function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num,
 		return
 	end
 
-	return cluster_name, rsp
+	return cluster_name, rsp, secret
 end
 
 --指定结点id发
 function CMD.send_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel = get_svr_id_channel(svr_name, svr_id)
+	local channel, _, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc send_by_id  err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
+	end
+	if secret then
+		msg, sz = crypt_msg(secret, msg, sz)
 	end
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
 	channel:request(req, nil, padding)
@@ -435,11 +460,14 @@ end
 
 --指定结点id发
 function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel, cluster_name = get_svr_id_channel(svr_name, svr_id)
+	local channel, cluster_name, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc call_by_id err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
+	end
+	if secret then
+		msg, sz = crypt_msg(secret, msg, sz)
 	end
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
@@ -449,20 +477,36 @@ function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mo
 		return
 	end
 
-	return cluster_name, rsp
+	return cluster_name, rsp, secret
 end
 
 --给集群所有结点发
 function CMD.send_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel_map = get_svr_name_all_channel(svr_name)
+	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		log.error("frpc send_all err ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
 
-	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", new_session_id(), mod_num or 0, msg, sz, 0)
+	local msg_buff = skynet.tostring(msg, sz)
+	skynet.trash(msg, sz)
+
+	local multreq, multpadding = nil, nil					--没有加密的话，可以发相同的包
+	local session_id = new_session_id()
 	for cluster_name, channel in pairs(channel_map) do
+		local req, padding
+		local secret = secret_map[cluster_name]
+		if secret then
+			local curmsg, cursz = crypt.desencode(secret, msg_buff)
+			req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, curmsg, cursz, 0)
+		else
+			if not multreq then
+				multreq, multpadding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg_buff, nil, 0)
+			end
+			req, padding = multreq, multpadding
+		end
+
 		local isok, rsp = pcall(channel.request, channel, req, nil, padding)
 		if not isok then
 			log.error("frpc send_all req err ", cluster_name, isok, tostring(rsp))
@@ -472,17 +516,31 @@ end
 
 --给集群所有结点发
 function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
-	local channel_map = get_svr_name_all_channel(svr_name)
+	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		log.error("frpc call_all err ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
 
+	local msg_buff = skynet.tostring(msg, sz)
+	skynet.trash(msg, sz)
 	local session_id = new_session_id()
 	local cluster_rsp_map = {}
-	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
+	local multreq, multpadding = nil, nil					--没有加密的话，可以发相同的包
 	for cluster_name, channel in pairs(channel_map) do
+		local req, padding
+		local secret = secret_map[cluster_name]
+		if secret then
+			local curmsg, cursz = crypt.desencode(secret, msg_buff)
+			req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, curmsg, cursz, 1)
+		else
+			if not multreq then
+				multreq, multpadding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg_buff, nil, 1)
+			end
+			req, padding = multreq, multpadding
+		end
+
 		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 		if not isok then
 			log.error("frpc call_all req err ", cluster_name, isok, tostring(rsp))
@@ -490,7 +548,7 @@ function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg
 			cluster_rsp_map[cluster_name] = rsp
 		end
 	end
-	return cluster_rsp_map
+	return cluster_rsp_map, secret_map
 end
 
 function CMD.start(config)

@@ -59,16 +59,21 @@ end
 local HANDLE = {}
 
 local function hand_shake(fd, session_id, msg, sz)
+	local msgbuff = skynet.tostring(msg, sz)
+	skynet.trash(msg, sz)
+
 	local agent = g_fd_agent_map[fd]
     if not agent then
         log.warn("hand_shake fd not exists ", fd)
         return
     end
 
-	local info = skynet.unpack(msg, sz)
+	local info = nil
 	if agent.is_challenge_ok and agent.msg_secret then
-		info = crypt.desdecode(agent.msg_secret, info)
+		info = crypt.desdecode(agent.msg_secret, msgbuff)
 		info = skynet.unpack(info)
+	else
+		info = skynet.unpack(msgbuff)
 	end
 	if (g_secret_key or g_is_encrypt) and not agent.is_challenge_ok then			--交换密钥
 		local step = info.step
@@ -167,6 +172,13 @@ local function create_handle(func)
 			if not isok then
 				response(fd, session_id, false, "call err " .. msg)
 			else
+				if g_is_encrypt then
+					if type(msg) == 'userdata' then
+						msg = skynet.tostring(msg, sz)
+					end
+					msg = crypt.desencode(agent.msg_secret, msg) --加密回复消息
+					sz = nil
+				end
 				response(fd, session_id, true, msg, sz)
 			end
 		end
@@ -185,8 +197,11 @@ HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, module_name, insta
 end)
 
 HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
-	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
-	skynet.trash(msg, sz)
+	local msgstr = msg
+	if type(msg) == 'userdata' then
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		skynet.trash(msg, sz)
+	end
 	local cli = g_client_map[module_name]					
 	cli:broadcast(msgstr)
 end)
@@ -205,8 +220,11 @@ HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, module_nam
 end)
 
 HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
-	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
-	skynet.trash(msg, sz)
+	local msgstr = msg
+	if type(msg) == 'userdata' then
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		skynet.trash(msg, sz)
+	end
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:broadcast_by_name(msgstr)
@@ -224,8 +242,11 @@ HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, module_name, insta
 end)
 
 HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
-	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
-	skynet.trash(msg, sz)
+	local msgstr = msg
+	if type(msg) == 'userdata' then
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		skynet.trash(msg, sz)
+	end
 	local cli = g_client_map[module_name]
 	return skynet.packstring(cli:broadcast_call(msgstr))
 end)
@@ -244,8 +265,11 @@ HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, module_nam
 end)
 
 HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
-	local msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
-	skynet.trash(msg, sz)
+	local msgstr = msg
+	if type(msg) == 'userdata' then
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		skynet.trash(msg, sz)
+	end
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	return skynet.packstring(cli:broadcast_call_by_name(msgstr))
@@ -254,12 +278,14 @@ end)
 local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
+		skynet.trash(msg, sz)
 		log.warn("agent not exists ", fd)
 		return
 	end
 
 	if not agent.is_hand_shake then
 		if pack_id ~= FRPC_PACK_ID.hand_shake then
+			skynet.trash(msg, sz)
 			log.warn("agent not hand_shake ", fd, session_id)
 		else
 			hand_shake(fd, session_id, msg, sz)
@@ -293,9 +319,27 @@ local function handle_dispatch(fd, pack_id, module_name, instance_name, session_
 
     local func = HANDLE[pack_id]
     if not func then
-        log.error("unknown pack_id ", pack_id)
+		skynet.trash(msg, sz)
+        log.error("unknown pack_id ", pack_id, agent.name)
+		if iscall then
+			response(fd, session_id, false, "unknown pack_id = " .. pack_id .. ' name = ' .. agent.name)
+		end
         return
     end
+
+	if g_is_encrypt then
+		local info = skynet.tostring(msg, sz)
+		skynet.trash(msg, sz)
+		local isok
+		isok, msg = pcall(crypt.desdecode, agent.msg_secret, info)
+		if not isok then
+			log.error("desdecode err ", agent.name)
+			if iscall then
+				response(fd, session_id, false, "desdecode err name = " .. agent.name)
+				return
+			end
+		end
+	end
     func(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 end
 

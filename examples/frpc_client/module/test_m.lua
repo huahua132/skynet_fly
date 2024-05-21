@@ -191,11 +191,31 @@ local function test_disconnect()
 	end
 end
 
+--压测 
+local function test_benchmark()
+	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local max_count = 10000
+
+	local msgsz = 1024
+	local msg = ""
+	for i = 1, msgsz do
+		msg = msg .. math.random(1,9)
+	end
+	
+	local pre_time = skynet.time()
+	for i = 1, max_count do
+		cli:set_svr_id(1):byid_mod_call("ping", msg)
+	end
+
+	log.info("tps:", max_count / (skynet.time() - pre_time))
+end
+
 function CMD.start()
 	skynet.fork(function()
 		--test_base_msg()
 		--test_large_msg()
-		test_disconnect()
+		--test_disconnect()
+		test_benchmark()
 	end)
 
 	return true
