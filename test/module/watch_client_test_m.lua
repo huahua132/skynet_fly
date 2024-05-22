@@ -41,30 +41,24 @@ local function test_unwatch()
     end)
 
     while watch_client:is_watch("unwatch_data") do
-        local v, event = watch_client:await_update("unwatch_data")
-        log.info("test_unwatch:", v, event)
-        if event == watch_syn.EVENT_TYPE.unwatch then
-            break
-        end
+        local v = watch_client:await_update("unwatch_data")
+        log.info("test_unwatch:", v)
     end
 end
 
 --测试热更失败应还能正常与旧服务工作
 local function test_reloaderr()
     watch_client:watch("test_reloaderr_data")
-    while true do
-        local v, event = watch_client:await_update("test_reloaderr_data")
-        log.info("test_reloaderr:", v, event)
-        if event == watch_syn.EVENT_TYPE.unwatch then
-            break
-        end
+    while watch_client:is_watch("test_reloaderr_data") do
+        local v = watch_client:await_update("test_reloaderr_data")
+        log.info("test_reloaderr:", v)
     end
 end
 
 function CMD.start()
     skynet.fork(function()
-        --local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
-        local rpc_interface = service_watch_interface:new('.watch_server_test_m')      --适用于监听不是可热更的服务
+        local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
+        --local rpc_interface = service_watch_interface:new('.watch_server_test_m')      --适用于监听不是可热更的服务
         watch_client = watch_syn.new_client(rpc_interface)
         log.info("start test_syn")
         test_syn()
