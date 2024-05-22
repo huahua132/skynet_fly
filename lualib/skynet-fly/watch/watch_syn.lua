@@ -214,7 +214,7 @@ function client:watch(name)
                 if not_update_cnt % 100 == 0 then
                     --正常不会有这么多次，出现这种情况，肯定是有bug流量没切过去
                     log.warn("watch move times abnormal ", not_update_cnt)
-                elseif not_update_cnt > 10000 then
+                elseif not_update_cnt > 1000 then
                     --避免出现这种情况导致死循环
                     log.error("watch move times fatal ", not_update_cnt)
                     break
