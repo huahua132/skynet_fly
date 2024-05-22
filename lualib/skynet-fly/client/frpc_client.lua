@@ -2,6 +2,8 @@
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
+local watch_syn = require "skynet-fly.watch.watch_syn" 
+local watch_interface = require "skynet-fly.watch.interface.contriner_watch_interface"
 local frpcpack = require "frpcpack.core"
 local log = require "skynet-fly.log"
 local crypt = require "skynet.crypt"
@@ -17,10 +19,35 @@ contriner_client:register("frpc_client_m")
 
 local M = {}
 local meta = {__index = M}
-local frpc_client_m = nil
+local g_frpc_client = nil
+local g_watch_client = nil
+local g_active_map = {}						--活跃列表
 local SELF_ADDRESS = skynet.self()
 
 local g_instance_map = {}
+
+--同步活跃列表数据
+local function syn_active_map()
+	g_watch_client:watch("active")
+	while g_watch_client:is_watch("active") do
+		g_active_map = g_watch_client:await_update("active")
+	end
+end
+
+--判断是否活跃
+function M:is_active(svr_name, svr_id)
+	if not g_active_map[svr_name] then
+		return false
+	end
+
+	if not svr_id then return true end
+
+	if not g_active_map[svr_name][svr_id] then
+		return false
+	end
+
+	return true
+end
 
 --[[
 	函数作用域：M 的成员函数
@@ -39,8 +66,10 @@ function M:new(svr_name,module_name,instance_name)
 		instance_name = instance_name,
 	}
 
-	if not frpc_client_m then
-		frpc_client_m = contriner_client:new("frpc_client_m")
+	if not g_frpc_client then
+		g_frpc_client = contriner_client:new("frpc_client_m")
+		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
+		skynet.fork(syn_active_map)
 	end
 
 	setmetatable(t,meta)
@@ -123,14 +152,14 @@ end
 --------------------------------------------------------------------------------
 --用简单轮询负载均衡给单个结点的module_name模板用balance_send的方式发送消息
 function M:one_balance_send(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send, nil, spack(...)
 	)
 end
 
 --用简单轮询负载均衡给单个结点的module_name模板用balance_call的方式发送消息
 function M:one_balance_call(...)
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -144,14 +173,14 @@ end
 
 --用简单轮询负载均衡给单个结点的module_name模板用mod_send的方式发送消息
 function M:one_mod_send(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
 
 --用简单轮询负载均衡给单个结点的module_name模板用mod_call的方式发送消息
 function M:one_mod_call(...)
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -165,14 +194,14 @@ end
 
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast的方式发送消息
 function M:one_broadcast(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast, nil, spack(...)
 	)
 end
 
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast_call的方式发送消息
 function M:one_broadcast_call(...)
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 
@@ -193,7 +222,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用balance_send的方式发送消息
 function M:byid_balance_send(...)
 	assert(self.svr_id, "not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send, nil, spack(...)
 	)
 end
@@ -201,7 +230,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用balance_call的方式发送消息
 function M:byid_balance_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -216,7 +245,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用mod_send的方式发送消息
 function M:byid_mod_send(...)
 	assert(self.svr_id, "not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
@@ -224,7 +253,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用mod_call的方式发送消息
 function M:byid_mod_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call,self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -239,7 +268,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用broadcast的方式发送消息
 function M:byid_broadcast(...)
 	assert(self.svr_id, "not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast, nil, spack(...)
 	)
 end
@@ -247,7 +276,7 @@ end
 --用svr_id映射的方式给单个结点的module_name模板用broadcast_call的方式发送消息
 function M:byid_broadcast_call(...)
 	assert(self.svr_id, "not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 	if not cluster_name then return end
@@ -263,14 +292,14 @@ end
 
 --给所有结点的module_name模板用balance_send的方式发送消息
 function M:all_balance_send(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send, nil, spack(...)
 	)
 end
 
 --给所有结点的module_name模板用balance_call的方式发送消息
 function M:all_balance_call(...)
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call, nil, spack(...)
 	)
 
@@ -289,14 +318,14 @@ end
 
 --给所有结点的module_name模板用mod_send的方式发送消息
 function M:all_mod_send(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
 
 --给所有结点的module_name模板用mod_call的方式发送消息
 function M:all_mod_call(...)
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -315,14 +344,14 @@ end
 
 --给所有结点的module_name模板用broadcast的方式发送消息
 function M:all_broadcast(...)
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast, nil, spack(...)
 	)
 end
 
 --给所有结点的module_name模板用broadcast_call的方式发送消息
 function M:all_broadcast_call(...)
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 
@@ -349,7 +378,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用balance_send_by_name的方式发送消息
 function M:one_balance_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send_by_name, nil, spack(...)
 	)
 end
@@ -357,7 +386,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用balance_call_by_name的方式发送消息
 function M:one_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -372,7 +401,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用mod_send_by_name的方式发送消息
 function M:one_mod_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send",self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
@@ -380,7 +409,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用mod_call_by_name的方式发送消息
 function M:one_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
 
@@ -395,7 +424,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast_by_name的方式发送消息
 function M:one_broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"balance_send", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_by_name, nil, spack(...)
 	)
 end
@@ -404,7 +433,7 @@ end
 --用简单轮询负载均衡给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
 function M:one_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"balance_call", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 
@@ -427,7 +456,7 @@ end
 function M:byid_balance_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id",self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send_by_name, nil, spack(...)
 	)
 end
@@ -436,7 +465,7 @@ end
 function M:byid_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -452,7 +481,7 @@ end
 function M:byid_mod_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
@@ -461,7 +490,7 @@ end
 function M:byid_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS,spack(...)
 	)
 
@@ -477,7 +506,7 @@ end
 function M:byid_broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_by_name, nil, spack(...)
 	)
 end
@@ -486,7 +515,7 @@ end
 function M:byid_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
-	local cluster_name, rsp, secret = frpc_client_m:balance_call(
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
 		"call_by_id", self.svr_name, self.svr_id, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 
@@ -508,7 +537,7 @@ end
 --给所有结点的module_name模板用balance_send_by_name的方式发送消息
 function M:all_balance_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_send_by_name, nil, spack(...)
 	)
 end
@@ -516,7 +545,7 @@ end
 --给所有结点的module_name模板用balance_call_by_name的方式发送消息
 function M:all_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.balance_call_by_name, nil, spack(...)
 	)
 
@@ -536,7 +565,7 @@ end
 --给所有结点的module_name模板用mod_send_by_name的方式发送消息
 function M:all_mod_send_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_send_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 end
@@ -544,7 +573,7 @@ end
 --给所有结点的module_name模板用mod_call_by_name的方式发送消息
 function M:all_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.mod_call_by_name, self.mod_num or SELF_ADDRESS, spack(...)
 	)
 
@@ -564,7 +593,7 @@ end
 --给所有结点的module_name模板用broadcast_by_name的方式发送消息
 function M:all_broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	frpc_client_m:balance_send(
+	g_frpc_client:balance_send(
 		"send_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_by_name, nil, spack(...)
 	)
 end
@@ -572,7 +601,7 @@ end
 --给所有结点的module_name模板用broadcast_call_by_name的方式发送消息
 function M:all_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
-	local cluster_rsp_map, secret_map = frpc_client_m:balance_call(
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 	

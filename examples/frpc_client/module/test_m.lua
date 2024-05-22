@@ -210,12 +210,26 @@ local function test_benchmark()
 	log.info("tps:", max_count / (skynet.time() - pre_time))
 end
 
+--测试watch_syn活跃同步
+local function test_watch_syn()
+	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	while true do
+		skynet.sleep(100)
+		if frpc_client:is_active("frpc_server") then
+			log.info("balance ping ", cli:one_balance_call("ping"))
+		else
+			log.info("not active")
+		end
+	end
+end
+
 function CMD.start()
 	skynet.fork(function()
 		--test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
-		test_benchmark()
+		--test_benchmark()
+		test_watch_syn()
 	end)
 
 	return true
