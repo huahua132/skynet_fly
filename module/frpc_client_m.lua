@@ -10,6 +10,7 @@ local env_util = require "skynet-fly.utils.env_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local frpcpack = require "frpcpack.core"
 local crypt = require "skynet.crypt"
+local watch_syn = require "skynet-fly.watch.watch_syn"
 
 local string = string
 local tonumber = tonumber
@@ -37,6 +38,9 @@ local g_session_id = 0
 
 local g_wait_svr_name_map = {}					  --等待channel准备好请求携程列表
 local g_wait_svr_id_map = {}				      --等待指定svr_id上线的携程列表
+
+local g_watch_server = nil
+local g_active_map = {}							  --活跃列表
 
 local function add_wait_svr_name_map(svr_name, co)
 	if not g_wait_svr_name_map[svr_name] then
@@ -234,7 +238,10 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 			id_name_map = {},		  --svr_id映射结点名称
 			balance = 1,              --简单轮询负载均衡
 		}
+
+		g_active_map[svr_name] = {}
 	end
+	g_active_map[svr_name][svr_id] = true
 
 	local node_info = g_node_info_map[svr_name]
 	local id_name_map = node_info.id_name_map
@@ -259,6 +266,8 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 
 	wakeup_svr_name_map(svr_name)
 	wakeup_svr_id_map(cluster_name)
+
+	g_watch_server:publish("active", g_active_map)
 end
 
 del_node = function(svr_name,svr_id)
@@ -300,9 +309,14 @@ del_node = function(svr_name,svr_id)
 	secret_map[cluster_name] = nil
 
 	node_info.balance = 1
+
+	g_active_map[svr_name][svr_id] = nil
 	if not next(name_list) then
+		g_active_map[svr_name] = nil
 		g_node_info_map[svr_name] = nil
 	end
+
+	g_watch_server:publish("active", g_active_map)
 	channel:close()
 end
 
@@ -596,9 +610,11 @@ function CMD.start(config)
 
 			add_node_info()
 			--本机配置方式
-			local ti = timer:new(timer.second * 1, 0, add_node_info):after_next()
+			timer:new(timer.second * 1, 0, add_node_info):after_next()
 		end
 	end)
+
+	g_watch_server:register("active", g_active_map)
 	
 	return true
 end
@@ -610,5 +626,7 @@ function CMD.exit()
 	end
 	return true
 end
+
+g_watch_server = watch_syn.new_server(CMD)
 
 return CMD
