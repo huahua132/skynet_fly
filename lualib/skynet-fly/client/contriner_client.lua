@@ -400,6 +400,7 @@ end
 function M:set_mod_num(num)
 	assert(type(num) == 'number')
 	self.mod_num = num
+	return self
 end
 --[[
 	函数作用域：M:new 对象的成员函数
@@ -411,6 +412,7 @@ end
 function M:set_instance_name(name)
 	assert(type(name) == 'string')
 	self.instance_name = name
+	return self
 end
 --[[
 	函数作用域：M:new 对象的成员函数

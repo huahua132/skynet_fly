@@ -44,415 +44,220 @@ QQ群号：102993581
 
 ### [API 文档](https://huahua132.github.io/2023/12/17/skynet_fly_api/module/)
 
-## 快速开始 http服务 (运行examples/webapp)
+## 快速开始 简单可热更服务 (运行examples/AB_question)
+* **构建服务**
+	- `cd examples/digitalbomb/`
+	- `sh ../../binshell/make_server.sh ../../`
 
-1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
-	- `git clone https://github.com/huahua132/skynet_fly`
-	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
-    - `make linux`
-2. 构建skynet_config, webapp运维脚本
-    - `cd examples/webapp/`
-    - `sh ../../binshell/make_server.sh ../../`
-    - 如果一些顺利的话将会生成script文件夹，文件夹下有:
-      - `run.sh` 运行并配置日志分割
-      - `stop.sh` 停止
-      - `restart.sh` 重启
-      - `reload.sh` 热更某个可热更模块。
-      - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
-      - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
-      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
-      - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
-    - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
-3. 运行
-   - `sh script/run.sh load_mods.lua 0`
-   - **load_mods.lua**是指启动用的配置文件。
-   - **0**表示不用后台运行。不传就是后台运行。`sh script/run.sh load_mods.lua`。
-   - 后台运行，日志会写入log文件。
-4. 访问
-   - 浏览器打开 `x.x.x.x:8688`
-   - 如果一切顺利的话，网页将会显示内容。
-5. 热更
-    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
-    - 之后执行 `sh script/check_reload.sh load_mods.lua`
-    - 再次访问网站就更新了。
-    - 也可以观察webapp/logs/server.log
-	
+* **运行服务**
+	`sh script/run.sh load_mods.lua 0`
 
-http服务已经接入了涵曦的[wlua](https://github.com/hanxi/wlua),扩展了路由和中间件模式，完整示例请看运行examples/webapp 源码。
-默认webapp运行的是`webapp_dispatch.lua`，想要切换其他示例，只需要更改`load_mods.lua`中的dispatch即可。
+这个简单的示例是`A服务`像`B服务`发送hello消息，得到回应后打印。
+A服务
+```lua 
+function CMD.send_msg_to_b()
+    for i = 1,4 do
+        local ret = contriner_client:instance("B_m"):balance_call("hello")                  --简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)
+        log.info("balance_call send_msg_to_b:", i, ret)
+        --对应send发送方式 balance_send
+    end
+    for i = 1,4 do
+        local ret = contriner_client:instance("B_m"):set_mod_num(1):mod_call("hello")       --模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
+        log.info("mod_call send_msg_to_b:", i, ret)
+        --对应send发送方式 mod_call
+    end
+
+    local ret = contriner_client:instance("B_m"):broadcast_call("hello")                    --给B_m所有服务发
+    log.info("broadcast_call:", ret)
+    --对应dend发送方式 broadcast
+
+    --by_name方式   相当于提供子名字，有时候相同的服务可能会划分不同的职责，比如一个游戏可能分为A玩法，B玩法，大体逻辑相同，只有很小的区别，这时候可以用子名字，而不用再写一个可热更服务模块了。
+    --by_name方式调用我们必须指定`instance_name`，调用API都是在后面加了_by_name
+
+    for i = 1,4 do
+        local ret = contriner_client:instance("B_m", "test_one"):balance_call_by_name("hello")  --简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)会排除非test_one的服务。
+        log.info("balance_call_by_name send_msg_to_b test_one:", i, ret)
+        --对应send发送方式 balance_send_by_name
+    end
+
+    for i = 1,4 do
+        local ret = contriner_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       --模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
+        log.info("mod_call_by_name send_msg_to_b test_two:", i, ret)
+        --对应send发送方式 mod_call_by_name
+    end
+
+    local ret = contriner_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    --给B_m 子名字为test_two所有服务发
+    log.info("broadcast_by_name:", ret)
+    --对应dend发送方式 broadcast_by_name
+end
+```
+B服务
 ```lua
-return {
-	web_agent_m = {
-		launch_seq = 1,
-		launch_num = 6,
-		default_arg = {
-			protocol = 'http',
-			dispatch = 'apps.webapp_dispatch',
-		}
-	},
+function CMD.hello()
+    return "HEELO A I am is " .. skynet.address(skynet.self())
+end
+```
 
-	web_master_m = {
-		launch_seq = 2,
-		launch_num = 1,
-		default_arg = {
-			protocol = 'http',
-			port = 80,
-		}
-	}
+### 执行结果解析
+
+`balance_call` 调用4次分别发给了服务地址为`:0000000f`,`:00000010`,`:00000011`,`:00000012`
+`mod_call` 调用4次一直发给服务地址为`:00000010`
+`broadcast_call` 调用发给了所有`B_m`服务。
+`balance_call_by_name` 调用四次轮询发给了`:0000000f`,`:00000010`,因为`:00000011`,`:00000012`子名字是`test_two`所有排除了。
+`mod_call_by_name` 调用四次一直发给了`:00000012`是在映射到了子名字为`test_two`的服务中。
+`broadcast_call_by_name` 调用发给了`B_m`子名字为`test_two`的服务中。
+```
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 1 "HEELO A I am is :0000000f"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 2 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 3 "HEELO A I am is :00000011"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 4 "HEELO A I am is :00000012"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 1 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 2 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 3 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 4 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:59]"broadcast_call:" {
+        [15] =  {
+                [1] = "HEELO A I am is :0000000f",
+        }
+        [16] =  {
+                [1] = "HEELO A I am is :00000010",
+        }
+        [17] =  {
+                [1] = "HEELO A I am is :00000011",
+        }
+        [18] =  {
+                [1] = "HEELO A I am is :00000012",
+        }
+}
+
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 1 "HEELO A I am is :0000000f"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 2 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 3 "HEELO A I am is :0000000f"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 4 "HEELO A I am is :00000010"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 1 "HEELO A I am is :00000012"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 2 "HEELO A I am is :00000012"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 3 "HEELO A I am is :00000012"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 4 "HEELO A I am is :00000012"
+[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:78]"broadcast_call_by_name:" {
+        [17] =  {
+                [1] = "HEELO A I am is :00000011",
+        }
+        [18] =  {
+                [1] = "HEELO A I am is :00000012",
+        }
 }
 ```
 
-* **处理没有命中路由**
-
+### 热更
+在`B_m.lua`随意加个空格，在执行`sh script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
+旧的`B_m`将会十分钟检查一次，看还有没有访问者需要访问，然后`CMD.check_exit()`也是同意退出的，就是再调用`CMD.exit()`，如果返回`true`,服务将会再十分钟后调用`skynet.exit()`
+而A服务将会切换访问到新启动的`B_m`服务。
 ```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
+function CMD.check_exit()
+    log.error("检查退出")
+    return true
+end
 
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
+function CMD.exit()
+    log.error("退出")
+    return true
+end
+```
+### 结果解析
+可以看到热更后访问的服务地址都已经改变了。
+```
+[:0000000f][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
+[:00000010][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
+[:00000011][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
+[:00000012][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
+[:00000013][20240523 17:14:41 89]LAUNCH snlua hot_container B_m 1 2024-05-23[17:14:41] 1716455681 2
+[:00000014][20240523 17:14:41 90]LAUNCH snlua hot_container B_m 2 2024-05-23[17:14:41] 1716455681 2
+[:00000015][20240523 17:14:41 90]LAUNCH snlua hot_container B_m 3 2024-05-23[17:14:41] 1716455681 2
+[:00000016][20240523 17:14:41 91]LAUNCH snlua hot_container B_m 4 2024-05-23[17:14:41] 1716455681 2
+[:0000000f][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
+[:00000010][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
+[:00000011][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
+[:0000000e][20240523 17:14:41 91][info][A_m][./module/A_m.lua:14]"updated B_m"
+[:00000012][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
+[:0000000d][20240523 17:14:41 91]127.0.0.1:34774 disconnect
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 1 "HEELO A I am is :00000013"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 2 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 3 "HEELO A I am is :00000015"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 4 "HEELO A I am is :00000016"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 1 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 2 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 3 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 4 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:59]"broadcast_call:" {
+        [21] =  {
+                [1] = "HEELO A I am is :00000015",
+        }
+        [19] =  {
+                [1] = "HEELO A I am is :00000013",
+        }
+        [20] =  {
+                [1] = "HEELO A I am is :00000014",
+        }
+        [22] =  {
+                [1] = "HEELO A I am is :00000016",
+        }
+}
 
-	--注册没有找到的路径处理函数
-	app:set_no_route(function(c)
-		local method = c.req.method
-		log.error("no route handle begin 1:",method)
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 1 "HEELO A I am is :00000013"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 2 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 3 "HEELO A I am is :00000013"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 4 "HEELO A I am is :00000014"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 1 "HEELO A I am is :00000016"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 2 "HEELO A I am is :00000016"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 3 "HEELO A I am is :00000016"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 4 "HEELO A I am is :00000016"
+[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:78]"broadcast_call_by_name:" {
+        [21] =  {
+                [1] = "HEELO A I am is :00000015",
+        }
+        [22] =  {
+                [1] = "HEELO A I am is :00000016",
+        }
+}
+```
+### 加速时间
+由于我们想测试旧服务退出，又不像改代码，又不想等太久，我们可以利用加速时间的方式来做到。
+首先通过`debug_console`调用gc 快速消除对旧服务地址的引用。
+`nc 127.0.0.1 8888`
+`gc`
+`gc`
 
-		c:next()
+然后调用快进时间快进1个小时
+`sh script/fasttime.sh load_mods.lua '2024:05:23 18:00:00' 1`
+然后在用`debug_console`看看还有哪些服务在
+`nc 127.0.0.1 8888`
+`mem`
+
+```
+:00000004       115.50 Kb (snlua cdummy)
+:00000006       107.77 Kb (snlua datacenterd)
+:00000007       135.83 Kb (snlua service_mgr)
+:00000008       109.16 Kb (snlua service_provider)
+:00000009       107.21 Kb (snlua service_cell ltls_holder)
+:0000000b       121.97 Kb (snlua monitor_exit)
+:0000000c       138.60 Kb (snlua contriner_mgr)
+:0000000d       219.57 Kb (snlua debug_console 8888)
+:0000000e       254.48 Kb (snlua hot_container A_m 1 2024-05-23[17:14:09] 1716455649 1)
+:00000013       201.17 Kb (snlua hot_container B_m 1 2024-05-23[17:14:41] 1716455681 2)
+:00000014       192.19 Kb (snlua hot_container B_m 2 2024-05-23[17:14:41] 1716455681 2)
+:00000015       186.07 Kb (snlua hot_container B_m 3 2024-05-23[17:14:41] 1716455681 2)
+:00000016       177.21 Kb (snlua hot_container B_m 4 2024-05-23[17:14:41] 1716455681 2)
+```
+可以看到，只存在版本二的B_m服务了。
 	
-		log.error("not route handle end 1:",c.res.status,c.res.resp_header,c.res.body)
-	end,
-	function(c)
-		local method = c.req.method
-		log.error("no route handle begin 2:",method)
-
-		c:next()
-	
-		log.error("not route handle end 2:",c.res.status,c.res.resp_header,c.res.body)
-	end)
-	
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **params路径方式**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-	
-	--/login 路径不会命中
-	--/login/123 会命中
-	app:get("/login/:player_id/*",function(c)
-		local params = c.params
-		local player_id = params.player_id
-
-		log.error("params:",params)
-		log.error("path:",c.req.path)
-		log.error("body:",c.req.body,c.req.body_raw)
-
-		c.res:set_rsp("hello " .. player_id,HTTP_STATUS.OK)
-	end)
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **query 和 post from**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-
-	app:post("/login",function(c)
-		local player_id = c.req.query.player_id
-		assert(player_id)
-
-		log.error("query:",c.req.query)
-		log.error("post from:",c.req.body)
-
-		c.res:set_rsp("hello " .. player_id,HTTP_STATUS.OK)
-	end)
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **json请求**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-
-	app:post("/login",function(c)
-		local player_id = c.req.query.player_id
-		assert(player_id)
-
-		log.error("query:",c.req.query)
-		log.error("json body:",c.req.body)
-
-		local rsp = {
-			msg = "hello " .. player_id
-		}
-		c.res:set_json_rsp(rsp)
-	end)
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **自定义中间件**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-
-	--自定义中间件
-	app:use(function(c)
-		log.info("process begin :",c.req.path,c.req.method)
-
-		--执行下一个中间件
-		c:next()
-
-		log.info("process end :",c.req.path,c.req.method)
-	end)
-
-	app:get("/",function(c)
-		log.info("end point process ",c.req.path,c.req.method)
-		c.res:set_rsp("hello skynet_fly",HTTP_STATUS.OK)
-	end)
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **多路由组**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-	do
-		local v1 = app:group("v1")
-		v1:get('/login',function(c)
-			log.info("v1 login ")
-		end)
-
-		v1:get('/logout',function(c)
-			log.info("v1 logout ")
-		end)
-	end
-
-	do
-		local v2 = app:group("v2")
-		v2:get('/login',function(c)
-			log.info("v2 login ")
-		end)
-
-		v2:get('/logout',function(c)
-			log.info("v2 logout ")
-		end)
-	end
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **多路由组中间件**
-
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-	do
-		local v1 = app:group("v1")
-		--注册v1路由组的中间件
-		v1:use(function(c)
-			log.info("process begin v1 mid ",c.req.path,c.req.method)
-			c:next()
-			log.info("process end v1 mid ",c.req.path,c.req.method)
-		end)
-		v1:get('/login',function(c)
-			log.info("v1 login ")
-		end)
-
-		v1:get('/logout',function(c)
-			log.info("v1 logout ")
-		end)
-	end
-
-	do
-		local v2 = app:group("v2")
-		--注册v2路由组的中间件
-		v2:use(function(c)
-			log.info("process begin v2 mid ",c.req.path,c.req.method)
-			c:next()
-			log.info("process end v2 mid ",c.req.path,c.req.method)
-		end)
-		v2:get('/login',function(c)
-			log.info("v2 login ")
-		end)
-
-		v2:get('/logout',function(c)
-			log.info("v2 logout ")
-		end)
-	end
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **单文件**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-
-	app:static_file('/login/test.webp','./static/test.webp')
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **资源文件夹**
-```lua
---初始化一个纯净版
-local app = engine_web:new()
---请求处理
-M.dispatch = engine_web.dispatch(app)
-
---初始化
-function M.init()
-	--注册全局中间件
-	app:use(logger_mid())
-
-	app:static_dir("/login","./static/imgs")
-
-	app:run()
-end
-
---服务退出
-function M.exit()
-
-end
-```
-
-* **Benchmark**
-
-`skynet_fly`
-```
-30 threads and 1000 connections
-Thread Stats   Avg      Stdev     Max   +/- Stdev
-Latency    43.07ms    5.32ms 423.34ms   95.72%
-Req/Sec   761.97     93.59     1.00k    82.94%
-680746 requests in 30.10s, 52.60MB read
-Requests/sec:  22619.75
-Transfer/sec:      1.75MB
-```
-`gin`
-```
-30 threads and 1000 connections
-Thread Stats   Avg      Stdev     Max   +/- Stdev
-Latency    10.91ms   10.15ms 421.71ms   82.49%
-Req/Sec     3.43k     1.09k   30.39k    77.92%
-3051430 requests in 30.11s, 325.93MB read
-Requests/sec: 101354.20
-Transfer/sec:     10.83MB
-```
-
-gin还是快啊
-
-## 快速开始 游戏服务 (运行examples/digitalbomb)
+## 快速开始 房间类游戏服务 (运行examples/digitalbomb)
 
 * **构建服务**
 	- `cd examples/digitalbomb/`
 	- `sh ../../binshell/make_server.sh ../../`
 
 * **运行服务**
-	`sh script/run.sh`
+	`sh script/run.sh load_mods.lua 0`
 
 基于tcp长连接实现不停服更新 `digitalbomb` 数字炸弹游戏。
 除了登录 `login` 服不能热更。
@@ -488,6 +293,39 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 	旧连接跟旧服务通信。
 	新连接跟新服务通信。
 	适合用于玩一把游戏就退出的微服务架构。
+
+## 快速开始 http服务 (运行examples/webapp)
+
+1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
+	- `git clone https://github.com/huahua132/skynet_fly`
+	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
+    - `make linux`
+2. 构建skynet_config, webapp运维脚本
+    - `cd examples/webapp/`
+    - `sh ../../binshell/make_server.sh ../../`
+    - 如果一些顺利的话将会生成script文件夹，文件夹下有:
+      - `run.sh` 运行并配置日志分割
+      - `stop.sh` 停止
+      - `restart.sh` 重启
+      - `reload.sh` 热更某个可热更模块。
+      - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
+      - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
+      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
+      - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
+    - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
+3. 运行
+   - `sh script/run.sh load_mods.lua 0`
+   - **load_mods.lua**是指启动用的配置文件。
+   - **0**表示不用后台运行。不传就是后台运行。`sh script/run.sh load_mods.lua`。
+   - 后台运行，日志会写入log文件。
+4. 访问
+   - 浏览器打开 `x.x.x.x:8688`
+   - 如果一切顺利的话，网页将会显示内容。
+5. 热更
+    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
+    - 之后执行 `sh script/check_reload.sh load_mods.lua`
+    - 再次访问网站就更新了。
+    - 也可以观察webapp/logs/server.log
 
 ## 如何远程rpc调用
 
