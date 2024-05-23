@@ -5,9 +5,11 @@ return {
 	},
     B_m = {
         launch_seq = 2,
-		launch_num = 2,
+		launch_num = 4,
 		mod_args = {
 			{instance_name = "test_one"},
+			{instance_name = "test_one"},
+			{instance_name = "test_two"},
 			{instance_name = "test_two"},
 		}
     }
