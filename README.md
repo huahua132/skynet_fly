@@ -157,7 +157,7 @@ end
 
 ### 热更
 在`B_m.lua`随意加个空格，再执行`sh script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
-旧的`B_m`将会十分钟检查一次，看还有没有访问者需要访问，然后`CMD.check_exit()`也是同意退出的，就是再调用`CMD.exit()`，如果返回`true`,服务将会在十分钟后调用`skynet.exit()`
+旧的`B_m`将会十分钟检查一次，直到没有访问者，`CMD.check_exit()`也是同意退出的，再调用`CMD.exit()`，如果返回`true`,服务将会在十分钟后调用`skynet.exit()`
 而A服务将会切换访问到新启动的`B_m`服务。
 ```lua
 function CMD.check_exit()
