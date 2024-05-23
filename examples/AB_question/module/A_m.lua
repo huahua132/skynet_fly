@@ -17,7 +17,7 @@ end)
 local CMD = {}
 
 function CMD.start()
-    timer:new(timer.second * 10,timer.loop,CMD.send_msg_to_b)
+    timer:new(timer.second * 3,timer.loop,CMD.send_msg_to_b)
     return true
 end
 
@@ -44,11 +44,11 @@ function CMD.check_exit()
 end
 
 function CMD.send_msg_to_b()
-    local ret = contriner_client:instance("B_m"):mod_call("hello")
+    local ret = contriner_client:instance("B_m"):balance_call("hello")
     log.info("send_msg_to_b:",ret)
-    local ret = contriner_client:instance("B_m","test_one"):mod_call("hello")
+    local ret = contriner_client:instance("B_m","test_one"):mod_call_by_name("hello")
     log.info("send_msg_to_b test_one:",ret)
-    local ret = contriner_client:instance("B_m","test_two"):mod_call("hello")
+    local ret = contriner_client:instance("B_m","test_two"):mod_call_by_name("hello")
     log.info("send_msg_to_b test_two:",ret)
 end
 
