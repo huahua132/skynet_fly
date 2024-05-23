@@ -52,46 +52,53 @@ QQ群号：102993581
 * **运行服务**
 	`sh script/run.sh load_mods.lua 0`
 
-这个简单的示例是`A服务`像`B服务`发送hello消息，得到回应后打印。
-A服务
+这个简单的示例是`A服务`向`B服务`发送hello消息，得到回应后打印。
+
+### A服务消息发送内容
 ```lua 
 function CMD.send_msg_to_b()
     for i = 1,4 do
-        local ret = contriner_client:instance("B_m"):balance_call("hello")                  --简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)
+		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)
+        local ret = contriner_client:instance("B_m"):balance_call("hello")                  
         log.info("balance_call send_msg_to_b:", i, ret)
         --对应send发送方式 balance_send
     end
     for i = 1,4 do
-        local ret = contriner_client:instance("B_m"):set_mod_num(1):mod_call("hello")       --模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
+		--模除映射方式  (用1模除以B_m的服务数量从而达到映射发送到固定服务的目的,不调用set_mod_num指定mod时，mod默认等于skynet.self()）
+        local ret = contriner_client:instance("B_m"):set_mod_num(1):mod_call("hello")
         log.info("mod_call send_msg_to_b:", i, ret)
         --对应send发送方式 mod_call
     end
-
-    local ret = contriner_client:instance("B_m"):broadcast_call("hello")                    --给B_m所有服务发
+	--给B_m所有服务发
+    local ret = contriner_client:instance("B_m"):broadcast_call("hello")
     log.info("broadcast_call:", ret)
-    --对应dend发送方式 broadcast
+    --对应send发送方式 broadcast
 
-    --by_name方式   相当于提供子名字，有时候相同的服务可能会划分不同的职责，比如一个游戏可能分为A玩法，B玩法，大体逻辑相同，只有很小的区别，这时候可以用子名字，而不用再写一个可热更服务模块了。
+    --by_name方式   相当于提供子名字，有时候相同的服务可能会划分不同的职责，比如一个游戏可能分为A玩法，B玩法。
+	--大体逻辑相同，只有很小的区别，这时候可以用子名字，而不用再写一个可热更服务模块了。
     --by_name方式调用我们必须指定`instance_name`，调用API都是在后面加了_by_name
 
     for i = 1,4 do
-        local ret = contriner_client:instance("B_m", "test_one"):balance_call_by_name("hello")  --简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)会排除非test_one的服务。
+		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)会排除非test_one的服务。
+        local ret = contriner_client:instance("B_m", "test_one"):balance_call_by_name("hello")  
         log.info("balance_call_by_name send_msg_to_b test_one:", i, ret)
         --对应send发送方式 balance_send_by_name
     end
 
     for i = 1,4 do
-        local ret = contriner_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       --模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
+		--模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
+        local ret = contriner_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       
         log.info("mod_call_by_name send_msg_to_b test_two:", i, ret)
         --对应send发送方式 mod_call_by_name
     end
 
-    local ret = contriner_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    --给B_m 子名字为test_two所有服务发
+	--给B_m 子名字为test_two所有服务发
+    local ret = contriner_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    
     log.info("broadcast_by_name:", ret)
     --对应dend发送方式 broadcast_by_name
 end
-```
-B服务
+``` 
+### B服务
 ```lua
 function CMD.hello()
     return "HEELO A I am is " .. skynet.address(skynet.self())
@@ -103,9 +110,9 @@ end
 `balance_call` 调用4次分别发给了服务地址为`:0000000f`,`:00000010`,`:00000011`,`:00000012`
 `mod_call` 调用4次一直发给服务地址为`:00000010`
 `broadcast_call` 调用发给了所有`B_m`服务。
-`balance_call_by_name` 调用四次轮询发给了`:0000000f`,`:00000010`,因为`:00000011`,`:00000012`子名字是`test_two`所有排除了。
-`mod_call_by_name` 调用四次一直发给了`:00000012`是在映射到了子名字为`test_two`的服务中。
-`broadcast_call_by_name` 调用发给了`B_m`子名字为`test_two`的服务中。
+`balance_call_by_name` 调用四次轮询发给了`:0000000f`,`:00000010`,因为`:00000011`,`:00000012`子名字是`test_two`所以排除了。
+`mod_call_by_name` 调用四次一直发给了`:00000012`(`B_m`子名字为`test_two`中的一个)。
+`broadcast_call_by_name` 调用发给了所有`B_m`子名字为`test_two`的服务中。
 ```
 [:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 1 "HEELO A I am is :0000000f"
 [:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 2 "HEELO A I am is :00000010"
@@ -149,8 +156,8 @@ end
 ```
 
 ### 热更
-在`B_m.lua`随意加个空格，在执行`sh script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
-旧的`B_m`将会十分钟检查一次，看还有没有访问者需要访问，然后`CMD.check_exit()`也是同意退出的，就是再调用`CMD.exit()`，如果返回`true`,服务将会再十分钟后调用`skynet.exit()`
+在`B_m.lua`随意加个空格，再执行`sh script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
+旧的`B_m`将会十分钟检查一次，看还有没有访问者需要访问，然后`CMD.check_exit()`也是同意退出的，就是再调用`CMD.exit()`，如果返回`true`,服务将会在十分钟后调用`skynet.exit()`
 而A服务将会切换访问到新启动的`B_m`服务。
 ```lua
 function CMD.check_exit()
@@ -221,14 +228,14 @@ end
 }
 ```
 ### 加速时间
-由于我们想测试旧服务退出，又不像改代码，又不想等太久，我们可以利用加速时间的方式来做到。
+由于我们想测试旧服务退出，又不想改代码，又不想等太久，我们可以利用加速时间的方式来做到。
 首先通过`debug_console`调用gc 快速消除对旧服务地址的引用。
 `nc 127.0.0.1 8888`
 `gc`
 `gc`
 
 然后调用快进时间快进1个小时
-`sh script/fasttime.sh load_mods.lua '2024:05:23 18:00:00' 1`
+`sh script/fasttime.sh load_mods.lua '2023:05:23 18:00:00' 1`
 然后在用`debug_console`看看还有哪些服务在
 `nc 127.0.0.1 8888`
 `mem`
