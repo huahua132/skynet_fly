@@ -48,8 +48,7 @@ QQ群号：102993581
 
 1. 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
 	- `git clone https://github.com/huahua132/skynet_fly`
-	- 安装MakeRequests.sh中依赖的库。
-	- 根据系统手动安装。
+	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
     - `make linux`
 2. 构建skynet_config, webapp运维脚本
     - `cd examples/webapp/`
@@ -66,8 +65,11 @@ QQ群号：102993581
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 3. 运行
    - `sh script/run.sh load_mods.lua 0`
+   - **load_mods.lua**是指启动用的配置文件。
+   - **0**表示不用后台运行。不传就是后台运行。`sh script/run.sh load_mods.lua`。
+   - 后台运行，日志会写入log文件。
 4. 访问
-   - 浏览器打开 `x.x.x.x:80`
+   - 浏览器打开 `x.x.x.x:8688`
    - 如果一切顺利的话，网页将会显示内容。
 5. 热更
     - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
