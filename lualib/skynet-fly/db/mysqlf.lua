@@ -15,6 +15,7 @@ local mt = {__index = M}
 function M:new(db_name)
 	local client = contriner_client:new("mysql_m",db_name)
 	local t = {
+		db_name = db_name,
 		client = client
 	}
 
@@ -36,11 +37,19 @@ function M:instance(db_name)
 end
 
 function M:query(sql_str)
-	return self.client:balance_call("query",sql_str)
+	if self.db_name then
+		return self.client:balance_call_by_name("query", sql_str)
+	else
+		return self.client:balance_call("query",sql_str)
+	end
 end
 
 function M:max_packet_size()
-	return self.client:balance_call("max_packet_size")
+	if self.db_name then
+		return self.client:balance_call_by_name("max_packet_size")
+	else
+		self.client:balance_call("max_packet_size")
+	end
 end
 
 return M
