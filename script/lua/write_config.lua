@@ -24,7 +24,7 @@ end
 
 local skynet_path = file_util.path_join(skynet_fly_path, '/skynet/')
 local server_path = "./"
-local common_path = "../../common/"
+local common_path = "../../commonlualib/"
 
 local svr_name = file_util.get_cur_dir_name()
 local config = {

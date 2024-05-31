@@ -67,7 +67,7 @@ function CMD.send_msg_to_b()
 		--模除映射方式  (用1模除以B_m的服务数量从而达到映射发送到固定服务的目的,不调用set_mod_num指定mod时，mod默认等于skynet.self()）
         local ret = contriner_client:instance("B_m"):set_mod_num(1):mod_call("hello")
         log.info("mod_call send_msg_to_b:", i, ret)
-        --对应send发送方式 mod_call
+        --对应send发送方式 mod_send
     end
 	--给B_m所有服务发
     local ret = contriner_client:instance("B_m"):broadcast_call("hello")
@@ -89,7 +89,7 @@ function CMD.send_msg_to_b()
 		--模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
         local ret = contriner_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       
         log.info("mod_call_by_name send_msg_to_b test_two:", i, ret)
-        --对应send发送方式 mod_call_by_name
+        --对应send发送方式 mod_send_by_name
     end
 
 	--给B_m 子名字为test_two所有服务发
