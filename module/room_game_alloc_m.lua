@@ -79,7 +79,7 @@ local function create_table(table_name, ...)
 	end
 end
 
-local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
+local function join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
     local t_info = g_table_map[table_id]
     if not t_info then
         return alloc_plug.table_not_exists()
@@ -87,7 +87,7 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
 	local table_server_id = t_info.table_server_id
     local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = room_client:mod_call_by_name('enter',table_id,player_id,gate,fd,hall_server_id)
+    local ok,errcode,errmsg = room_client:mod_call_by_name('enter',table_id,player_id,gate,fd,is_ws,hall_server_id)
     if not ok then
         log.info("enter table fail ",player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -101,7 +101,7 @@ local function join(player_id, gate, fd, hall_server_id, table_name, table_id)
     end
 end
 
-local function match_join(player_id, gate, fd, hall_server_id, table_name)
+local function match_join(player_id, gate, fd, is_ws, hall_server_id, table_name)
     assert(not g_player_map[player_id])
     local table_id = alloc_plug.match(player_id)
     local ok,errcode,errmsg
@@ -113,10 +113,10 @@ local function match_join(player_id, gate, fd, hall_server_id, table_name)
         end
     end
 
-    return join(player_id, gate, fd, hall_server_id, table_name, table_id)
+    return join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
 end
 
-local function create_join(player_id, gate, fd, hall_server_id, table_name)
+local function create_join(player_id, gate, fd, is_ws, hall_server_id, table_name)
 	assert(not g_player_map[player_id])
 	local ok,errcode,errmsg = create_table(table_name)
 	if not ok then
@@ -124,7 +124,7 @@ local function create_join(player_id, gate, fd, hall_server_id, table_name)
 	end
 
 	local table_id = ok
-	return join(player_id, gate, fd, hall_server_id, table_name)
+	return join(player_id, gate, fd, is_ws, hall_server_id, table_name)
 end
 
 local function leave(player_id)
@@ -195,18 +195,18 @@ end
 ----------------------------------------------------------------------------------
 local CMD = {}
 --创建进入房间
-function CMD.create_join(player_id, gate, fd, hall_server_id, table_name)
-	return queue(create_join, player_id, gate, fd, hall_server_id, table_name)
+function CMD.create_join(player_id, gate, fd, is_ws, hall_server_id, table_name)
+	return queue(create_join, player_id, gate, fd, is_ws, hall_server_id, table_name)
 end
 
 --匹配进入房间
-function CMD.match_join(player_id, gate, fd, hall_server_id, table_name)
-    return queue(match_join, player_id, gate, fd, hall_server_id, table_name)
+function CMD.match_join(player_id, gate, fd, is_ws, hall_server_id, table_name)
+    return queue(match_join, player_id, gate, fd, is_ws, hall_server_id, table_name)
 end
 
 --指定房间进入
-function CMD.join(player_id, gate, fd, hall_server_id, table_name, table_id)
-    return queue(join, player_id, gate, fd, hall_server_id, table_name, table_id)
+function CMD.join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
+    return queue(join, player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
 end
 
 --离开房间

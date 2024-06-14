@@ -8,6 +8,9 @@ local errorcode = require "enum.errorcode"
 local errors_msg = require "msg.errors_msg"
 local game_msg = require "msg.game_msg"
 
+local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
+local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
 local string = string
 local assert = assert
 local ipairs = ipairs
@@ -24,9 +27,15 @@ local MINE_MAX = 100
 
 local M = {}
 
-M.send = require(module_cfg.net_util).send
+--发包函数
+M.send = pbnet_util.send
 --广播函数
-M.broadcast = require(module_cfg.net_util).broadcast
+M.broadcast = pbnet_util.broadcast
+
+--发包函数
+M.ws_send = ws_pbnet_util.send
+--广播函数
+M.ws_broadcast = ws_pbnet_util.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr

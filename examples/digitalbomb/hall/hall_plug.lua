@@ -12,15 +12,28 @@ local pcall = pcall
 local next = next
 local assert = assert
 
+local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
+local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
 local g_fd_map = {}
 local g_interface_mgr = nil
 
 local M = {}
 
-M.unpack = require(module_cfg.net_util).unpack
-M.send = require(module_cfg.net_util).send
+--解包函数
+M.unpack = pbnet_util.unpack
+--发包函数
+M.send = pbnet_util.send
 --广播函数
-M.broadcast = require(module_cfg.net_util).broadcast
+M.broadcast = pbnet_util.broadcast
+
+--解包函数
+M.ws_unpack = ws_pbnet_util.unpack
+--发包函数
+M.ws_send = ws_pbnet_util.send
+--广播函数
+M.ws_broadcast = ws_pbnet_util.broadcast
+
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
 local function login_out_req(player_id,packname,pack_body)

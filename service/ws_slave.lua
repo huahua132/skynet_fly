@@ -60,7 +60,7 @@ function HANDLER.connect(fd)
 		addr = addr,
 	}
 
-	skynet.send(g_watchdog,'lua','socket','open',fd,addr,SELF_ADDRESS)
+	skynet.send(g_watchdog,'lua', 'socket', 'open', fd, addr, SELF_ADDRESS, true)
 end
 
 function HANDLER.handshake(fd,header,url)
