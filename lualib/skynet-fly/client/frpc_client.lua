@@ -66,15 +66,17 @@ function M:new(svr_name,module_name,instance_name)
 		instance_name = instance_name,
 	}
 
-	if not g_frpc_client then
-		g_frpc_client = contriner_client:new("frpc_client_m")
-		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
-		skynet.fork(syn_active_map)
-	end
-
 	setmetatable(t,meta)
 
 	return t
+end
+
+do
+	contriner_client:add_queryed_cb("frpc_client_m", function()
+		g_frpc_client = contriner_client:new("frpc_client_m")
+		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
+		skynet.fork(syn_active_map)
+	end)
 end
 
 --有时候并不想创建实例
