@@ -112,6 +112,10 @@ function CMD.start(cfg)
 		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
 	end
 
+	local funcs = skynet_util.get_start_after_funcs()
+	for _,func in ipairs(funcs) do
+		func(cfg)
+	end
 	contriner_client:open_ready()
 	contriner_interface.set_server_state(SERVER_STATE_TYPE.starting)
 	return ret

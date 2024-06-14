@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
@@ -154,7 +155,7 @@ skynet.exit = function()
 end
 
 --查询所有服务的地址
-skynet.init(function()
+skynet_util.hook_start_after(function()
 	local module_base = module_info.get_base_info()
 	if not module_base.module_name then                     --不是热更模块，监听所有地址
 		monitor_all()
