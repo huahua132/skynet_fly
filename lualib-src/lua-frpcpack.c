@@ -334,7 +334,7 @@ lunpackrequest(lua_State *L) {
 static int
 lpackresponse(lua_State *L) {
 	uint32_t session = (uint32_t)luaL_checkinteger(L,1);
-	// clusterd.lua:command.socket call lpackresponse,
+	// frpc_server.lua:command.socket call lpackresponse,
 	// and the msg/sz is return by skynet.rawcall , so don't free(msg)
 	int ok = lua_toboolean(L,2);
 	void * msg;
@@ -414,12 +414,12 @@ lunpackresponse(lua_State *L) {
 		lua_pushboolean(L, 0);
 		lua_pushlstring(L, buf+5, sz-5);
 		return 3;
-	case 1:	// ok
-	case 8:	// multi end
+	case 1:	// FRPCPACK_FLAG_WHOLE
+	case 8:	// FRPCPACK_FLAG_PART_E
 		lua_pushboolean(L, 1);
 		lua_pushlstring(L, buf+5, sz-5);
 		return 3;
-	case 2:	// multi begin
+	case 2:	// FRPCPACK_FLAG_PART_H
 		if (sz != 9) {
 			return 0;
 		}
@@ -428,11 +428,122 @@ lunpackresponse(lua_State *L) {
 		lua_pushinteger(L, sz);							//包总长度
 		lua_pushboolean(L, 1);							//是否分包
 		return 4;
-	case 4:	// multi part
+	case 4:	// FRPCPACK_FLAG_PART_C
 		lua_pushboolean(L, 1);
 		lua_pushlstring(L, buf+5, sz-5);
 		lua_pushboolean(L, 1);							//是否分包
 		return 4;
+	default:
+		return 0;
+	}
+}
+
+//打包pub推送消息
+static int
+lpackpubmessage(lua_State *L) {
+	void * msg;
+	size_t sz;
+	if (lua_type(L,2) == LUA_TSTRING) {
+		msg = (void *)lua_tolstring(L, 2, &sz);
+	} else {
+		msg = lua_touserdata(L,2);
+		sz = (size_t)luaL_checkinteger(L, 3);
+	}
+
+	size_t channel_name_len = 0;
+	const char *channel_name = lua_tolstring(L, 1, &channel_name_len);
+	if (channel_name == NULL || channel_name_len < 0 || channel_name_len > 255) {
+		if (channel_name == NULL) {
+			luaL_error(L, "channel_name is not a string, it's a %s", lua_typename(L, lua_type(L, 1)));
+		} else {
+			luaL_error(L, "channel_name is too long %s", channel_name);
+		}
+	}
+
+	uint8_t pack_id = (uint8_t)luaL_checkinteger(L, 4);
+
+	if (sz > FRPCPACK_MULTI_PART) {
+		int part = (sz - 1) / FRPCPACK_MULTI_PART + 1;
+		lua_createtable(L, part+1, 0);
+		uint8_t buf[FRPCPACK_TEMP_LENGTH];
+
+		// multi part begin
+		fill_header(buf, 7 + channel_name_len);  // 两字节 sz
+		buf[2] = FRPCPACK_FLAG_PART_H;  		 // 1 分包头
+		fill_uint32(buf + 3, (uint32_t)sz);      // 4字节sz
+		buf[7] = pack_id;					     // 1字节PACK_id
+		buf[8] = channel_name_len;				 // 1字节名字长度
+		memcpy(buf + 9, channel_name, channel_name_len);
+		lua_pushlstring(L, (const char *)buf, 9 + channel_name_len);
+		lua_rawseti(L, -2, 1);
+
+		char * ptr = msg;
+		int i;
+		for (i=0;i<part;i++) {
+			int s;
+			if (sz > FRPCPACK_MULTI_PART) {
+				s = FRPCPACK_MULTI_PART;
+				buf[2] = FRPCPACK_FLAG_PART_C;  //1字节小分包
+			} else {
+				s = sz;
+				buf[2] = FRPCPACK_FLAG_PART_E;  //1字节分包尾
+			}
+			fill_header(buf, s+1);				//2字节长度
+			memcpy(buf+3,ptr,s);
+			lua_pushlstring(L, (const char *)buf, s+3);
+			lua_rawseti(L, -2, i+2);
+			sz -= s;
+			ptr += s;
+		}
+		return 1;
+	}
+
+	uint8_t buf[FRPCPACK_TEMP_LENGTH];
+	fill_header(buf, sz + channel_name_len + 3); //2字节长度
+	buf[2] = FRPCPACK_FLAG_WHOLE;	//1字节表示整包
+	buf[3] = pack_id;
+	buf[4] = channel_name_len;		//1字节名字长度
+	memcpy(buf + 5, channel_name, channel_name_len);
+	memcpy(buf + 5 + channel_name_len, msg, sz);
+
+	lua_pushlstring(L, (const char *)buf, sz + 5 + channel_name_len);
+	return 1;
+}
+
+static int
+lunpackpubmessage(lua_State *L) {
+	size_t sz;
+	const char * buf = luaL_checklstring(L, 1, &sz);
+	if (sz < 1) {
+		return 0;
+	}
+	printf("%d\n", buf[0]);
+	switch(buf[0]) {
+	case 1:	// FRPCPACK_FLAG_WHOLE
+		if (sz < 3) {
+			return 0;
+		}
+		lua_pushboolean(L, 1);
+		lua_pushlstring(L, buf+1, sz-1);
+		return 2;
+	case 8:	// FRPCPACK_FLAG_PART_E
+		lua_pushboolean(L, 1);
+		lua_pushlstring(L, buf+1, sz-1);
+		return 2;
+	case 2:	// FRPCPACK_FLAG_PART_H
+		if (sz < 7) {
+			return 0;
+		}
+		sz = unpack_uint32((const uint8_t *)buf+1);
+		lua_pushboolean(L, 1);
+		lua_pushinteger(L, sz);							//包总长度
+		lua_pushboolean(L, 1);							//是否分包
+		return 3;
+	case 4:	// FRPCPACK_FLAG_PART_C
+		lua_pushboolean(L, 1);
+		lua_pushlstring(L, buf+1, sz-1);
+		lua_pushboolean(L, 1);							//是否分包
+		return 3;
 	default:
 		return 0;
 	}
@@ -497,6 +608,8 @@ luaopen_frpcpack_core(lua_State *L) {
 		{ "unpackrequest", lunpackrequest},
 		{ "packresponse", lpackresponse},
 		{ "unpackresponse", lunpackresponse},
+		{ "packpubmessage", lpackpubmessage},
+		{ "unpackpubmessage", lunpackpubmessage},
 		{ "append", lappend },
 		{ "concat", lconcat },
 		{ NULL, NULL},

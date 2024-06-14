@@ -99,11 +99,31 @@ local function test4()
     log.info("luamsg:", skynet.unpack(msg))
 end
 
+--测试pub推送包
+local function test5()
+    local msz, luasz = skynet.pack("hello", "frpc")
+    local pack_id = 125
+    local channel_name = "event_hello"
+    local msgbuff = frpcpack.packpubmessage(channel_name, msz, luasz, pack_id)
+    local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
+    msgbuff = msgbuff:sub(3)
+    log.info("msgbuff:", #channel_name, luasz, sz, msgbuff:byte(1))
+    local isok, msg, padding = frpcpack.unpackpubmessage(msgbuff)
+    log.info("retmsg:", isok, msg:len(), padding)
+    local pack_id = msg:byte(1)
+    local channel_sz = msg:byte(2)
+    local channel_name = msg:sub(3, channel_sz + 2)
+    msg = msg:sub(channel_sz + 3)
+    log.info("channel_name:", channel_name, pack_id)
+    log.info("laumsg:", skynet.unpack(msg))
+end
+
 function CMD.start()
-    test1()
+    --test1()
     --test2()
     --test3()
     --test4()
+    test5()
     return true
 end
 

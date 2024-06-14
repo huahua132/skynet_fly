@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local frpc_client = require "skynet-fly.client.frpc_client"
+local watch_client = require "skynet-fly.rpc.watch_client"
 local CMD = {}
 
 -- 测试基础消息
@@ -229,7 +230,7 @@ function CMD.start()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()
-		test_watch_syn()
+		--test_watch_syn()
 	end)
 
 	return true
@@ -238,5 +239,9 @@ end
 function CMD.exit()
 	return true
 end
+
+watch_client.watch("frpc_server", "test_pub", function()
+
+end)
 
 return CMD

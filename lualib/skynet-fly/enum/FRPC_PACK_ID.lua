@@ -3,6 +3,12 @@
 local enum = {
     hand_shake              = 1,             --握手
 
+    pubmessage              = 10,            --推送消息
+    sub                     = 11,            --订阅
+    unsub                   = 12,            --取消订阅
+    subsyn                  = 13,            --订阅同步
+    unsubsyn                = 14,            --取消订阅同步
+
     balance_send            = 100,           --简单轮询负载均衡
     mod_send                = 101,
     broadcast               = 102,
