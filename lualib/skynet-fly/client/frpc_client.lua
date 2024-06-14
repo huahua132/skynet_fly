@@ -22,6 +22,7 @@ local meta = {__index = M}
 local g_frpc_client = nil
 local g_watch_client = nil
 local g_active_map = {}						--活跃列表
+local g_handler_map = {}
 local SELF_ADDRESS = skynet.self()
 
 local g_instance_map = {}
@@ -30,7 +31,24 @@ local g_instance_map = {}
 local function syn_active_map()
 	g_watch_client:watch("active")
 	while g_watch_client:is_watch("active") do
-		g_active_map = g_watch_client:await_update("active")
+		local new_active_map = g_watch_client:await_update("active")
+		for svr_name, map in pairs(new_active_map) do
+			for svr_id, id in pairs(map) do
+				local old_id = nil
+				if g_active_map[svr_name] and g_active_map[svr_name][svr_id] then
+					old_id = g_active_map[svr_name][svr_id]
+				end
+
+				if old_id ~= id then
+					local handlers = g_handler_map[svr_name]
+					for i = 1, #handlers do
+						local handler = handlers[i]
+						skynet.fork(handler, svr_name, svr_id)
+					end
+				end
+			end
+		end
+		g_active_map = new_active_map
 	end
 end
 
@@ -47,6 +65,14 @@ function M:is_active(svr_name, svr_id)
 	end
 
 	return true
+end
+
+--监听上线
+function M:watch_up(svr_name, handler)
+	if not g_handler_map[svr_name] then
+		g_handler_map[svr_name] = {}
+	end
+	tinsert(g_handler_map[svr_name], handler)
 end
 
 --[[
@@ -66,15 +92,16 @@ function M:new(svr_name,module_name,instance_name)
 		instance_name = instance_name,
 	}
 
-	if not g_frpc_client then
+	setmetatable(t,meta)
+	return t
+end
+
+do
+	contriner_client:add_queryed_cb("frpc_client_m", function()
 		g_frpc_client = contriner_client:new("frpc_client_m")
 		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
 		skynet.fork(syn_active_map)
-	end
-
-	setmetatable(t,meta)
-
-	return t
+	end)
 end
 
 --有时候并不想创建实例

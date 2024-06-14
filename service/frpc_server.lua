@@ -1,4 +1,4 @@
-local skynet = require "skynet"
+local skynet = require "skynet.manager"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local rpc_redis = require "skynet-fly.rpc.rpc_redis"
 local log = require "skynet-fly.log"
@@ -9,6 +9,7 @@ local env_util = require "skynet-fly.utils.env_util"
 local frpcpack = require "frpcpack.core"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
+local math_util = require "skynet-fly.utils.math_util"
 
 local pairs = pairs
 local assert = assert
@@ -28,6 +29,8 @@ local g_fd_agent_map = {}                           --fd 连接管理
 
 local g_secret_key = nil						    --连接密钥
 local g_is_encrypt = nil 							--是否加密传输
+
+local g_sub_map = {}								--订阅表
 
 contriner_client:register("share_config_m")
 
@@ -53,6 +56,28 @@ local function response(fd, session, isok, msg, sz)
 		end
 	else
 		socket.write(fd, rsp)
+	end
+end
+
+local function pub_message(agent_map, channel_name, pack_id, msg, sz)
+	log.info("pub_message:", channel_name, pack_id)
+	local pubmsg = frpcpack.packpubmessage(channel_name, msg, sz, pack_id)
+	for agent,_ in pairs(agent_map) do
+		local fd = agent.fd
+		local msg = pubmsg 
+		if g_is_encrypt then
+			if type(msg) == 'userdata' then
+				msg = skynet.tostring(msg, sz)
+			end
+			msg = crypt.desencode(agent.msg_secret, msg) --加密回复消息
+		end
+		if type(msg) == 'table' then
+			for i = 1, #msg do
+				socket.lwrite(fd, msg[i])
+			end
+		else
+			socket.lwrite(fd, msg)			--都用lwrite 避免 消息穿插 pub_message 没有用session来标识消息
+		end
 	end
 end
 
@@ -138,12 +163,18 @@ local function hand_shake(fd, session_id, msg, sz)
 		end
 	end
 
+	local is_watch = info.is_watch
+
     local name = cluster_name .. ':' .. cluster_svr_id
 	agent.login_time_out:cancel()
     agent.is_hand_shake = true
     agent.cluster_name = cluster_name
     agent.cluster_svr_id = cluster_svr_id
 	agent.name = name
+	agent.is_watch = is_watch								--是否是订阅连接
+	if is_watch then
+		agent.sub_map = {}									--订阅列表
+	end
 	
 	response(fd, session_id, true, skynet.packstring("ok"))
 end
@@ -275,6 +306,26 @@ HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, modu
 	return skynet.packstring(cli:broadcast_call_by_name(msgstr))
 end)
 
+--订阅
+HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local channel_name,address = skynet.unpack(msg, sz)	--订阅渠道名
+	skynet.trash(msg, sz)
+	if not agent.is_watch then
+		log.warn("drop message not watch conn sub", agent.fd, agent.addr)
+		return
+	end
+
+	local sub_map = agent.sub_map
+	sub_map[channel_name] = true
+	
+	if not g_sub_map[channel_name] then
+		g_sub_map[channel_name] = {}
+	end
+	g_sub_map[channel_name][agent] = true
+	
+	pub_message({[agent] = true}, channel_name, FRPC_PACK_ID.sub, skynet.packstring(address))
+end)
+
 local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
@@ -400,14 +451,43 @@ function CMD.socket(cmd,...)
 	f(...)
 end
 
+--推送消息
+function CMD.publish(channel_name, msg, sz)
+	local agent_map = g_sub_map[channel_name]
+	if not agent_map then 
+		skynet.trash(msg, sz)
+		return
+	end
+
+	local isok, err = pcall(pub_message, agent_map, channel_name, FRPC_PACK_ID.pubmessage, msg, sz)
+
+	skynet.trash(msg, sz)
+	if not isok then
+		log.warn("publish err ", channel_name, err)
+	end
+end
+
 contriner_client:CMD(CMD)
 
 skynet.start(function()
+	skynet.register('.frpc_server')
 	skynet_util.lua_dispatch(CMD)
 
 	local confclient = contriner_client:new("share_config_m")
 	local conf = confclient:mod_call('query','frpc_server')
 	assert(conf.host,"not host")
+
+	skynet.register_protocol {
+		id = skynet.PTYPE_CLIENT,
+		name = "client",
+		unpack = frpcpack.unpackrequest,
+		dispatch = function(fd,source,...)
+			skynet.ignoreret()
+			handle_dispatch(fd, ...)
+		end,
+	}
+	g_gate = skynet.newservice("gate")
+	skynet.call(g_gate,'lua','open',conf.gateconf)
 
 	g_secret_key = conf.secret_key
 	g_is_encrypt = conf.is_encrypt
@@ -421,16 +501,4 @@ skynet.start(function()
 			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		end):after_next()
 	end
-
-    skynet.register_protocol {
-		id = skynet.PTYPE_CLIENT,
-		name = "client",
-		unpack = frpcpack.unpackrequest,
-		dispatch = function(fd,source,...)
-			skynet.ignoreret()
-			handle_dispatch(fd, ...)
-		end,
-	}
-	g_gate = skynet.newservice("gate")
-	skynet.call(g_gate,'lua','open',conf.gateconf)
 end)
