@@ -411,16 +411,6 @@ skynet.start(function()
 
 	g_secret_key = conf.secret_key
 	g_is_encrypt = conf.is_encrypt
-	
-	local register = conf.register
-	if register == 'redis' then --注册到redis
-		local rpccli = rpc_redis:new()
-		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
-		--1秒写一次
-		timer:new(timer.second,timer.loop,function()
-			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
-		end):after_next()
-	end
 
     skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
@@ -433,4 +423,14 @@ skynet.start(function()
 	}
 	g_gate = skynet.newservice("gate")
 	skynet.call(g_gate,'lua','open',conf.gateconf)
+
+	local register = conf.register
+	if register == 'redis' then --注册到redis
+		local rpccli = rpc_redis:new()
+		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
+		--1秒写一次
+		timer:new(timer.second,timer.loop,function()
+			rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
+		end):after_next()
+	end
 end)
