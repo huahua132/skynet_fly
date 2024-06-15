@@ -21,6 +21,7 @@ local M = {}
 local meta = {__index = M}
 local g_frpc_client = nil
 local g_watch_client = nil
+local g_is_load_watch = false
 local g_active_map = {}						--活跃列表
 local g_handler_map = {}
 local SELF_ADDRESS = skynet.self()
@@ -92,17 +93,21 @@ function M:new(svr_name,module_name,instance_name)
 		instance_name = instance_name,
 	}
 
+	if not g_frpc_client then
+		g_frpc_client = contriner_client:new("frpc_client_m")
+		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
+		skynet.fork(syn_active_map)
+		if not g_is_load_watch then
+			g_is_load_watch = true
+			g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
+			skynet.fork(syn_active_map)
+		end
+	end
+
 	setmetatable(t,meta)
 	return t
 end
 
-do
-	contriner_client:add_queryed_cb("frpc_client_m", function()
-		g_frpc_client = contriner_client:new("frpc_client_m")
-		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
-		skynet.fork(syn_active_map)
-	end)
-end
 
 --有时候并不想创建实例
 function M:instance(svr_name,module_name,instance_name)

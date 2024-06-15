@@ -10,6 +10,7 @@ local retpack = skynet.retpack
 local tunpack = table.unpack
 local NOT_RET = {}
 
+local g_start_after_func = {}
 
 local M = {
     NOT_RET = NOT_RET
@@ -91,6 +92,15 @@ function M.register_info_func(info_name,info_func)
     assert(not g_info_func_map[info_name], " exists " .. info_name)
 
     g_info_func_map[info_name] = info_func
+end
+
+--hook 可热更服务start_after
+function M.hook_start_after(func)
+    table.insert(g_start_after_func, func)
+end
+
+function M.get_start_after_funcs()
+    return g_start_after_func
 end
 
 return M

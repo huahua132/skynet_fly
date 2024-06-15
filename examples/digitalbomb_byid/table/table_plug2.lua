@@ -7,6 +7,9 @@ local log = require "skynet-fly.log"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
 
+local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
+local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
+
 local assert = assert
 
 local g_table_conf = module_cfg.table_conf
@@ -19,9 +22,15 @@ local MINE_MAX = 100
 
 local M = {}
 
-M.send = require(module_cfg.net_util).send
+--发包函数
+M.send = pbnet_byid.send
 --广播函数
-M.broadcast = require(module_cfg.net_util).broadcast
+M.broadcast = pbnet_byid.broadcast
+
+--发包函数
+M.ws_send = ws_pbnet_byid.send
+--广播函数
+M.ws_broadcast = ws_pbnet_byid.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr

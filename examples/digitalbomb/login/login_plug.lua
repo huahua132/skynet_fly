@@ -7,6 +7,9 @@ local errorcode = require "enum.errorcode"
 local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
 
+local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
+local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
 local assert = assert
 local x_pcall = x_pcall
 
@@ -20,11 +23,19 @@ local room_game_login = confclient:mod_call('query','room_game_login')
 --登录检测的超时时间
 M.time_out = timer.second * 5
 --解包函数
-M.unpack = require(room_game_login.net_util).unpack
+M.unpack = pbnet_util.unpack
 --发包函数
-M.send = require(room_game_login.net_util).send
+M.send = pbnet_util.send
 --广播函数
-M.broadcast = require(room_game_login.net_util).broadcast
+M.broadcast = pbnet_util.broadcast
+
+--解包函数
+M.ws_unpack = ws_pbnet_util.unpack
+--发包函数
+M.ws_send = ws_pbnet_util.send
+--广播函数
+M.ws_broadcast = ws_pbnet_util.broadcast
+
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr

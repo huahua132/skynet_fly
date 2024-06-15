@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
@@ -153,19 +154,6 @@ skynet.exit = function()
 	return skynet_exit()
 end
 
---查询所有服务的地址
-skynet.init(function()
-	local module_base = module_info.get_base_info()
-	if not module_base.module_name then                     --不是热更模块，监听所有地址
-		monitor_all()
-	end
-	skynet.fork(function()
-		for mod_name,_ in pairs(g_register_map) do
-			local id_list = g_mod_svr_ids_map[mod_name]
-		end
-	end)
-end)
-
 local function get_balance(t)
     local id_list = t.cur_id_list
     local len = #id_list
@@ -223,8 +211,20 @@ function M:open_switch()
 	is_close_swtich = false
 end
 
+skynet.init(function()
+	local module_base = module_info.get_base_info()
+	if not module_base.module_name then                     --不是热更模块，监听所有地址
+		monitor_all()
+	end
+end)
+
 --模块必须全部启动好了才能查询访问其他服务
 function M:open_ready()
+	skynet.fork(function()
+		for mod_name,_ in pairs(g_register_map) do
+			local id_list = g_mod_svr_ids_map[mod_name]
+		end
+	end)
 	is_ready = true
 end
 

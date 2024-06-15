@@ -61,7 +61,7 @@ function M.new_server(CMD)
 
     CMD[watch_cmd] = function(source, name, old_version)
         local w_map = assert(watch_map[name], "not exists watch name " .. name)
-        assert(not w_map[source], "exists watch " .. source)
+        assert(not w_map[source], "exists watch " .. skynet.address(source))
         local version = version_map[name]
         local is_firsts = is_first_map[name]
         local v = value_map[name]

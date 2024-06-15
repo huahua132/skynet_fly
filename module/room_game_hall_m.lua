@@ -8,7 +8,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local string_util = require "skynet-fly.utils.string_util"
 local time_util = require "skynet-fly.utils.time_util"
 
-contriner_client:register("room_game_alloc_m")
+contriner_client:register("room_game_alloc_m", "share_config_m")
 
 local assert = assert
 local pcall = pcall
@@ -24,7 +24,8 @@ local g_fd_map = {}
 local g_handle_map = {}
 
 local hall_plug = nil
-local g_msg_send = nil
+
+local EMPTY = {}
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ local function new_join_table(agent, table_name, join_cmd)
 	local player_id = agent.player_id
 	local hall_server_id = agent.hall_server_id
 
-	local table_server_id,table_id,errmsg = alloc_client:mod_call(join_cmd, player_id, gate, fd, hall_server_id, table_name)
+	local table_server_id,table_id,errmsg = alloc_client:mod_call(join_cmd, player_id, gate, fd, agent.is_ws, hall_server_id, table_name)
 	if not table_server_id then
 		return false,table_id,errmsg
 	end
@@ -73,7 +74,7 @@ local function join_table(agent, player_id, table_name, table_id)
 	local gate = agent.gate
 	local fd = agent.fd
 	local hall_server_id = agent.hall_server_id
-	local table_server_id,table_id,errmsg = xx_pcall(skynet.call,alloc_server_id,'lua',"join",player_id, gate, fd, hall_server_id, table_name, table_id)
+	local table_server_id,table_id,errmsg = xx_pcall(skynet.call, alloc_server_id, 'lua', "join", player_id, gate, fd, agent.is_ws, hall_server_id, table_name, table_id)
 	if not table_server_id then
 		return false,table_id,errmsg
 	end
@@ -96,13 +97,13 @@ local function leave(agent)
 	local alloc_client = agent.alloc_client           --走匹配的
 	local alloc_server_id = agent.alloc_server_id     --直接进入房间的
 	if alloc_client then
-		isok,errcode,errmsg = alloc_client:mod_call('leave',agent.player_id)
+		isok,errcode,errmsg = alloc_client:mod_call('leave', agent.player_id)
 	elseif alloc_server_id then
-		isok,errcode,errmsg = xx_pcall(skynet.call,alloc_server_id,'lua','leave',agent.player_id)
+		isok,errcode,errmsg = xx_pcall(skynet.call, alloc_server_id, 'lua', 'leave', agent.player_id)
 	end
 
 	if not isok then
-		log.error("can`t leave !!! ",agent.player_id,errcode,errmsg)
+		log.error("can`t leave !!! ", agent.player_id, errcode, errmsg)
 		return nil,errcode,errmsg
 	end
 
@@ -120,7 +121,7 @@ local function leave(agent)
 	return true
 end
 
-local function handle_msg(agent,header,body)
+local function handle_msg(agent, header, body)
 	local func = g_handle_map[header]
 	if not func then
 		local table_server_id = agent.table_server_id
@@ -128,34 +129,41 @@ local function handle_msg(agent,header,body)
 		if not table_server_id then
 			log.info("dorp package ",header,body)
 		else
-			skynet.send(table_server_id,'lua','request',table_id,agent.player_id,header,body)
+			skynet.send(table_server_id, 'lua', 'request', table_id, agent.player_id, header, body)
 		end
 	else
 		if hall_plug.handle_end then
-			hall_plug.handle_end(agent.player_id,header,body,func(agent.player_id,header,body))
+			hall_plug.handle_end(agent.player_id, header, body, func(agent.player_id,header,body))
 		else
-			func(agent.player_id,header,body)
+			func(agent.player_id, header, body)
 		end
 	end
 end
 --消息分发
-local function dispatch(fd,source,header,body)
+local function dispatch(fd, source, msg, sz)
 	skynet.ignoreret()
-	if not header then
-		log.error("unpack err ",header,body)
+	local agent = g_fd_map[fd]
+	if not agent then
+		log.error("dispatch msg not agent ", fd)
 		return
 	end
 
-	local agent = g_fd_map[fd]
-	if not agent then
-		log.error("dispatch not agent ",fd,header,body)
+	local unpack = nil
+	if agent.is_ws then
+		unpack = hall_plug.ws_unpack
+	else
+		unpack = hall_plug.unpack
+	end
+	local header, body = unpack(msg, sz)
+	if not header then
+		log.error("unpack err ",header, body)
 		return
 	end
 	
-	agent.queue(handle_msg,agent,header,body)
+	agent.queue(handle_msg, agent, header, body)
 end
 --连接大厅
-local function connect(agent,is_reconnect)
+local function connect(agent, is_reconnect)
 	local gate = agent.gate
 	local fd = agent.fd
 	local player_id = agent.player_id
@@ -167,7 +175,7 @@ local function connect(agent,is_reconnect)
 		local table_server_id = agent.table_server_id
 		local table_id = agent.table_id
 		if table_server_id then
-			skynet.send(table_server_id,'lua','reconnect',gate,fd,table_id,player_id)
+			skynet.send(table_server_id, 'lua', 'reconnect', gate, fd, agent.is_ws, table_id, player_id)
 		end
 	end
 
@@ -179,11 +187,11 @@ local function goout(agent)
 	local player_id = agent.player_id
 	local isok,errcode,errmsg = leave(agent)
 	if not isok then
-		log.error("can`t leave !!! ",player_id,errcode,errmsg)
+		log.error("can`t leave !!! ",player_id, errcode, errmsg)
 		return nil,errcode,errmsg
 	end
 	hall_plug.goout(player_id)
-	skynet.send(agent.watchdog,'lua','goout',player_id)
+	skynet.send(agent.watchdog, 'lua', 'goout', player_id)
 	g_fd_map[agent.fd] = nil
 	g_player_map[player_id] = nil
 	return true
@@ -195,74 +203,74 @@ local CMD = {}
 ----------------------------------------------------------------------------------
 local interface = {}
 --创建进入房间
-function interface:create_join_table(player_id,table_name)
+function interface:create_join_table(player_id, table_name)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.warn("create_join_table agent not exists ",player_id)
+		log.warn("create_join_table agent not exists ", player_id)
 		return
 	end
 
 	if agent.table_lock then
-		log.warn("create_join_table is lock ",player_id,table_name)
+		log.warn("create_join_table is lock ", player_id, table_name)
 		return
 	end
 
 	--已经存在房间了
 	if agent.table_server_id then
-		log.warn("create_join_table table_server_id is exists",player_id)
+		log.warn("create_join_table table_server_id is exists", player_id)
 		return
 	end
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(create_join_table,agent,table_name)
+	local ret,errcode,errmsg = agent.queue(create_join_table, agent, table_name)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
 
 
 --匹配进入
-function interface:match_join_table(player_id,table_name)
+function interface:match_join_table(player_id, table_name)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.warn("match_join_table agent not exists ",player_id)
+		log.warn("match_join_table agent not exists ", player_id)
 		return
 	end
 
 	if agent.table_lock then
-		log.warn("match_join_table is lock ",player_id,table_name)
+		log.warn("match_join_table is lock ", player_id, table_name)
 		return
 	end
 
 	--已经存在房间了
 	if agent.table_server_id then
-		log.warn("match_join_table table_server_id is exists",player_id)
+		log.warn("match_join_table table_server_id is exists", player_id)
 		return
 	end
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(match_join_table,agent,table_name)
+	local ret,errcode,errmsg = agent.queue(match_join_table, agent, table_name)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
 
 --进入房间
-function interface:join_table(player_id,table_name,table_id)
+function interface:join_table(player_id, table_name, table_id)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.warn("join agent not exists ",player_id)
+		log.warn("join agent not exists ", player_id)
 		return
 	end
 
 	if agent.table_lock then
-		log.warn("join is lock ",player_id,table_name)
+		log.warn("join is lock ", player_id, table_name)
 		return
 	end
 
 	--已经存在房间了
 	if agent.table_server_id then
-		log.warn("join table_server_id is exists",player_id)
+		log.warn("join table_server_id is exists", player_id)
 		return
 	end
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(join_table,agent,player_id,table_name,table_id)
+	local ret,errcode,errmsg = agent.queue(join_table, agent, player_id, table_name, table_id)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
@@ -284,7 +292,7 @@ function interface:leave_table(player_id)
 	end
 
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(leave,agent)
+	local ret,errcode,errmsg = agent.queue(leave, agent)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
@@ -307,19 +315,27 @@ function interface:is_online(player_id)
 	return agent.fd ~= 0
 end
 --发送消息
-function interface:send_msg(player_id,header,body)
+function interface:send_msg(player_id, header, body)
 	if not interface:is_online(player_id) then
-		log.info("send msg not online ",player_id,header)
+		log.info("send msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
-	hall_plug.send(agent.gate,agent.fd,header,body)
+	if agent.is_ws then
+		hall_plug.ws_send(agent.gate, agent.fd, header, body)
+	else
+		hall_plug.send(agent.gate, agent.fd, header, body)
+	end
 end
 
 --发送消息给部分玩家
-function interface:send_msg_by_player_list(player_list,header,body)
+function interface:send_msg_by_player_list(player_list, header, body)
 	local gate_list = {}
 	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
 	for i = 1, #player_list do
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
@@ -327,39 +343,61 @@ function interface:send_msg_by_player_list(player_list,header,body)
 			log.info("send_msg_by_player_list not exists ",player_id)
 		else
 			if agent.fd > 0 then
-				tinsert(gate_list, agent.gate)
-				tinsert(fd_list, agent.fd)
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
 			else
 				log.info("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
 
-	if #gate_list <= 0 then return end
+	if #gate_list > 0 then
+		hall_plug.broadcast(gate_list, fd_list, header, body)
+	end
 
-	hall_plug.broadcast(gate_list,fd_list,header,body)
+	if #ws_gate_list > 0 then
+		hall_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 
 --广播发送消息
-function interface:broad_cast_msg(header,body,filter_map)
-	filter_map = filter_map or {}
+function interface:broad_cast_msg(header, body, filter_map)
+	filter_map = filter_map or EMPTY
 
 	local gate_list = {}
 	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
 	for player_id,agent in pairs(g_player_map) do
 		if not filter_map[player_id] then
 			if agent.fd > 0 then
-				tinsert(gate_list, agent.gate)
-				tinsert(fd_list, agent.fd)
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
 			else
 				log.info("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
 
-	if #gate_list <= 0 then return end
+	if #gate_list > 0 then
+		hall_plug.broadcast(gate_list, fd_list, header, body)
+	end
 
-	hall_plug.broadcast(gate_list,fd_list,header,body)
+	if #ws_gate_list > 0 then
+		hall_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 
 --获取大厅id
@@ -409,9 +447,9 @@ end
 --CMD
 ----------------------------------------------------------------------------------
 
-function CMD.connect(gate,fd,player_id,watchdog)
+function CMD.connect(gate, fd, is_ws, player_id, watchdog)
 	--先设置转发，成功后再建立连接管理映射，不然存在建立连接，客户端立马断开的情况，掉线无法通知到此服务
-	if not skynet.call(gate,'lua','forward',fd) then --设置转发不成功，此处会断言，以下就不会执行了，就当它没有来连接过
+	if not skynet.call(gate,'lua','forward',fd) then
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -425,6 +463,7 @@ function CMD.connect(gate,fd,player_id,watchdog)
 			queue = queue(),
 			hall_server_id = SELF_ADDRESS,
 			dis_conn_time = 0,         --掉线时间
+			is_ws = is_ws,			   --是否websocket连接
 		}
 		g_player_map[player_id] = agent
 	else
@@ -436,6 +475,7 @@ function CMD.connect(gate,fd,player_id,watchdog)
 		agent.fd = fd
 		agent.gate = gate
 		agent.watchdog = watchdog
+		agent.is_ws = is_ws
 		is_reconnect = true
 	end
 
@@ -497,9 +537,24 @@ function CMD.start(config)
 
 	hall_plug = require(config.hall_plug)
 	assert(hall_plug.init,"not init")             --初始化
-	assert(hall_plug.unpack,"not unpack")         --解包函数
-	assert(hall_plug.send,"not send")             --发包函数
-	assert(hall_plug.broadcast,"not broadcast")   --广播发包函数
+
+	skynet.fork(function ()
+		local confclient = contriner_client:new("share_config_m")
+		local room_game_login = confclient:mod_call('query','room_game_login')
+
+		if room_game_login.gateconf then
+			assert(hall_plug.unpack,"hall_plug not unpack")              --解包函数
+			assert(hall_plug.send,"hall_plug not send")                  --发包函数
+			assert(hall_plug.broadcast,"hall_plug not broadcast")   				   --广播发包函数
+		end
+	
+		if room_game_login.wsgateconf then
+			assert(hall_plug.ws_unpack,"hall_plug not ws_unpack")        --ws解包函数
+			assert(hall_plug.ws_send,"hall_plug not ws_send")            --ws发包函数
+			assert(hall_plug.ws_broadcast,"hall_plug not ws_broadcast")  --ws广播发包函数
+		end
+	end)
+
 	assert(hall_plug.connect,"not connect")       --连接大厅
 	assert(hall_plug.disconnect,"not disconnect") --掉线
 	assert(hall_plug.reconnect,"not reconnect")   --重连
@@ -537,7 +592,9 @@ function CMD.start(config)
 	skynet.register_protocol {
 		id = skynet.PTYPE_CLIENT,
 		name = "client",
-		unpack = hall_plug.unpack,
+		unpack = function(msg, sz)
+			return msg, sz
+		end,
 		dispatch = dispatch,
 	}
 
