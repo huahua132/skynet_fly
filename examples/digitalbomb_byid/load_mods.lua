@@ -8,13 +8,13 @@ return {
 			room_game_login = {
 				--gate连接配置
 				gateconf = {
-					address = '127.0.0.1',
+					address = '0.0.0.0',
 					port = 8001,
 					maxclient = 2048,
 				},
 				--wsgate连接配置
 				wsgateconf = {
-					address = '127.0.0.1',
+					address = '0.0.0.0',
 					port = 8002,
 					maxclient = 2048,
 				},
