@@ -492,6 +492,7 @@ skynet.start(function()
 	g_secret_key = conf.secret_key
 	g_is_encrypt = conf.is_encrypt
 	
+
 	local register = conf.register
 	if register == 'redis' then --注册到redis
 		local rpccli = rpc_redis:new()

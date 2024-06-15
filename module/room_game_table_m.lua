@@ -1,6 +1,8 @@
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
+local contriner_client = require "skynet-fly.client.contriner_client"
+contriner_client:register("share_config_m")
 
 local assert = assert
 local next = next
@@ -83,17 +85,21 @@ local function is_online(table_id,player_id)
 end
 
 --发送消息
-local function send_msg(table_id,player_id,header,body)
+local function send_msg(table_id, player_id, header, body)
 	if not is_online(table_id,player_id) then
-		log.info("send msg not online ",table_id,player_id)
+		log.info("send msg not online ",table_id, player_id)
 		return
 	end
-	local player = get_player_info(table_id,player_id)
-    table_plug.send(player.gate,player.fd,header,body)
+	local player = get_player_info(table_id, player_id)
+	if player.is_ws then
+		table_plug.ws_send(player.gate, player.fd, header, body)
+	else
+		table_plug.send(player.gate, player.fd, header, body)
+	end
 end
 
 --发送消息给部分玩家
-local function send_msg_by_player_list(table_id,player_list,header,body)
+local function send_msg_by_player_list(table_id, player_list, header, body)
 	local t_info = get_table_info(table_id)
 	if not t_info then
 		log.warn("send_msg_by_player_list not exists table_id = ",table_id)
@@ -104,6 +110,9 @@ local function send_msg_by_player_list(table_id,player_list,header,body)
 
 	local gate_list = {}
 	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
 	for i = 1,#player_list do
 		local player_id = player_list[i]
 		local player = player_map[player_id]
@@ -111,21 +120,30 @@ local function send_msg_by_player_list(table_id,player_list,header,body)
 			log.info("send_msg_by_player_list not exists ",player_id)
 		else
 			if player.fd > 0 then
-				tinsert(gate_list,player.gate)
-				tinsert(fd_list,player.fd)
+				if player.is_ws then
+					tinsert(ws_gate_list, player.gate)
+					tinsert(ws_fd_list, player.fd)
+				else
+					tinsert(gate_list, player.gate)
+					tinsert(fd_list, player.fd)
+				end
 			else
 				log.info("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
 
-	if #gate_list <= 0 then return end
+	if #gate_list > 0 then
+		table_plug.broadcast(gate_list, fd_list, header, body)
+	end
 	
-	table_plug.broadcast(gate_list,fd_list,header,body)
+	if #ws_gate_list > 0 then
+		table_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 
 --广播发送消息
-local function broad_cast_msg(table_id,header,body,filter_map)
+local function broad_cast_msg(table_id, header, body, filter_map)
 	if not g_table_map[table_id] then
 		log.warn("broad_cast_msg not exists table_id = ",table_id)
 		return
@@ -137,20 +155,33 @@ local function broad_cast_msg(table_id,header,body,filter_map)
 
 	local gate_list = {}
 	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
 	for player_id,player in pairs(player_map) do
 		if not filter_map[player_id] then
 			if player.fd > 0 then
-				tinsert(gate_list,player.gate)
-				tinsert(fd_list,player.fd)
+				if player.is_ws then
+					tinsert(ws_gate_list, player.gate)
+					tinsert(ws_fd_list, player.fd)
+				else
+					tinsert(gate_list, player.gate)
+					tinsert(fd_list, player.fd)
+				end
 			else
 				log.info("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
 
-	if #gate_list <= 0 then return end
-	
-	table_plug.broadcast(gate_list,fd_list,header,body)
+	if #gate_list > 0 then
+		table_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		table_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 -------------------------------------------------------------------------------
 --interface
@@ -243,7 +274,7 @@ function CMD.create_table(table_id,alloc_server_id, ...)
 end
 
 --进入房间
-function CMD.enter(table_id,player_id,gate,fd,hall_server_id)
+function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -255,6 +286,7 @@ function CMD.enter(table_id,player_id,gate,fd,hall_server_id)
 		fd = fd,
 		gate = gate,
 		hall_server_id = hall_server_id,     --大厅服id
+		is_ws = is_ws,
 	}
 
 	local player = player_map[player_id]
@@ -319,7 +351,7 @@ function CMD.disconnect(gate,fd,table_id,player_id)
 end
 
 --重新连接
-function CMD.reconnect(gate,fd,table_id,player_id)
+function CMD.reconnect(gate,fd,is_ws,table_id,player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -328,6 +360,7 @@ function CMD.reconnect(gate,fd,table_id,player_id)
 	local player = player_map[player_id]
 	player.fd = fd
 	player.gate = gate
+	player.is_ws = is_ws
 
 	t_info.game_table.reconnect(player_id)
 	return true
@@ -357,12 +390,26 @@ end
 function CMD.start(config)
 	g_config = config
 	assert(config.table_plug, "not table_plug")
-	assert(config.table_conf,"not table_conf")	
+	assert(config.table_conf,"not table_conf")
+
 	table_plug = require (config.table_plug)
 	assert(table_plug.init,"not table_plug init")                 --初始化
 	assert(table_plug.table_creator,"not table_creator")          --桌子建造者
-    assert(table_plug.send,"not send")                            --消息发送函数
-	assert(table_plug.broadcast,"not broadcast")   				  --广播发包函数
+
+	skynet.fork(function()
+		local confclient = contriner_client:new("share_config_m")
+		local room_game_login = confclient:mod_call('query','room_game_login')
+
+		if room_game_login.gateconf then
+			assert(table_plug.send,"table_plug not send")                  --发包函数
+			assert(table_plug.broadcast,"table_plug not broadcast")   	  --广播发包函数
+		end
+	
+		if room_game_login.wsgateconf then
+			assert(table_plug.ws_send,"table_plug not ws_send")            --ws发包函数
+			assert(table_plug.ws_broadcast,"table_plug not ws_broadcast")  --ws广播发包函数
+		end
+	end)
 
     table_plug.init(interface)
 	local tmp_table = table_plug.table_creator(1,config.instance_name)

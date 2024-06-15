@@ -1,7 +1,3 @@
-local net_util = "skynet-fly.utils.net.ws_pbnet_byid" --ws_pbnet_byid or pbnet_byid or jsonet_byid or ws_jsonet_byid
-local gate = "ws_gate"		     -- gate or ws_gate
-local protocol = "websocket"     -- websocket  or socket
-
 return {
 	--共享配置
 	share_config_m = {
@@ -10,15 +6,19 @@ return {
 		default_arg = {
 			--room_game_login用的配置
 			room_game_login = {
-				gateservice = gate, --gate 或者 ws_gate
 				--gate连接配置
 				gateconf = {
-					address = '127.0.0.1',
+					address = '0.0.0.0',
 					port = 8001,
 					maxclient = 2048,
 				},
+				--wsgate连接配置
+				wsgateconf = {
+					address = '0.0.0.0',
+					port = 8002,
+					maxclient = 2048,
+				},
 				login_plug = "login.login_plug",
-				net_util = net_util,
 			},
 
 			server_cfg = {
@@ -33,7 +33,6 @@ return {
 		launch_num = 6,
 		default_arg = {
 			hall_plug = "hall.hall_plug",
-			net_util = net_util,
 		}
 	},
 
@@ -53,12 +52,12 @@ return {
 		launch_seq = 4,
 		launch_num = 6,
 		mod_args = {
-			{instance_name = "room_1", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
-			{instance_name = "room_2", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
-			{instance_name = "room_3", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
-			{instance_name = "room_4", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
-			{instance_name = "room_5", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
-			{instance_name = "room_6", table_plug = "table.table_plug2", net_util = net_util, table_conf = {player_num = 2,}},
+			{instance_name = "room_1", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
+			{instance_name = "room_2", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
+			{instance_name = "room_3", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
+			{instance_name = "room_4", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
+			{instance_name = "room_5", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
+			{instance_name = "room_6", table_plug = "table.table_plug2", table_conf = {player_num = 2,}},
 		},
 	},
 
@@ -68,8 +67,8 @@ return {
 		launch_num = 2,
 		delay_run = true,       --延迟运行
 		mod_args = {
-			{account = "skynet",password = '123456',player_id = 10000,net_util = net_util,protocol = protocol},
-			{account = "skynet_fly",password = '123456',player_id = 10001,net_util = net_util,protocol = protocol},
+			{account = "skynet",password = '123456',player_id = 10000, protocol = "websocket"},
+			{account = "skynet_fly",password = '123456',player_id = 10001, protocol = "socket"},
 		}
 	}
 }
