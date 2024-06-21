@@ -34,14 +34,14 @@ function CMD.open(source,conf)
 	local port = assert(conf.port,"conf not port")
 	
 	local listen_fd = socket.listen(address,port)
-	log.error(string.format("listen websocket port:%s protocol:%s",port,protocol))
+	log.info(string.format("listen websocket port:%s protocol:%s",port,protocol))
 
 	local balance = 1
 	local s_len = #g_slave_list
 	socket.start(listen_fd,function(fd,addr)
 		assert(not g_fd_map[fd],"repeat fd " .. fd)
 		if g_client_num >= g_maxclient then
-			log.error("ws_gate connect full ",port,g_client_num,g_maxclient,fd,addr)
+			log.warn("ws_gate connect full ",port,g_client_num,g_maxclient,fd,addr)
 			socket.close_fd(fd)
 			return
 		end

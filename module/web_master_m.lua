@@ -193,7 +193,7 @@ function CMD.start(args)
 	assert(port, "[serverd] need port")
 	SELF_ADDRESS = skynet.self()
 	listen_fd = socket.listen(host, port)
-	log.error(string.format("Listening %s://%s:%s max_client[%s] id[%s]", protocol, host, port, max_client,listen_fd))
+	log.info(string.format("Listening %s://%s:%s max_client[%s] id[%s]", protocol, host, port, max_client,listen_fd))
 
 	socket.start(listen_fd, function(fd, addr)
 		if not agent_client then
@@ -232,7 +232,7 @@ end
 
 --取消退出
 function CMD.cancel_exit()
-	log.error("取消退出")
+	log.info("取消退出")
 	CMD.start(g_config)
 end
 
