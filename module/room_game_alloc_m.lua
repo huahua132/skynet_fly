@@ -154,7 +154,10 @@ end
 
 --销毁房间
 local function dismisstable(table_id)
-	local t_info = assert(g_table_map[table_id])
+	local t_info = g_table_map[table_id]
+	if not t_info then
+		return
+	end
 	local player_list = t_info.player_list
 	if #player_list > 0 then
 		log.warn("can`t dismisstable is have player ",table_id,table.concat(player_list,','))
@@ -220,7 +223,7 @@ local function check_dismisstable()
 		local sub_time = cur_time - empty_time
 		local t_info = g_table_map[table_id]
 		if t_info and sub_time >= g_max_empty_time then
-			interface.dismisstable(table_id)
+			skynet.fork(interface.dismisstable, table_id)
 		end
 	end
 end
@@ -251,7 +254,7 @@ function CMD.start(config)
 
 	g_max_empty_time = config.max_empty_time       --设置桌子空置多久后就会解散
 	if g_max_empty_time and g_max_empty_time > 0 then
-		timer:new(timer.second, 0, check_dismisstable)
+		timer:new(timer.minute * 10, 0, check_dismisstable)
 	end
 
 	alloc_plug.init(interface)
