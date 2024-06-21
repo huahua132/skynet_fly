@@ -582,11 +582,11 @@ function CMD.start(config)
 						if old_host ~= host then
 							del_node(name, id)
 							add_node(name, id, host, secret_key, is_encrypt)
-							log.error("change cluster node :",name, id, old_host, host, secret_key, is_encrypt)
+							log.info("change cluster node :",name, id, old_host, host, secret_key, is_encrypt)
 						end
 					elseif event == 'expired' then    --过期
 						del_node(name,id)
-						log.error("down cluster node :",name,id)
+						log.info("down cluster node :",name,id)
 					elseif event == 'get_failed' then --拿不到配置，通常是因为redis挂了，或者key被意外删除，或者redis出现性能瓶颈了
 						del_node(name,id)
 						log.error("get_failed cluster node :",name,id)
