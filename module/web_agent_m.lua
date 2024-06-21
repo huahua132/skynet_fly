@@ -56,7 +56,7 @@ end
 
 local enter_cache = tti:new(1000,function(fd,addr) 
 	if enter_map[fd] then
-		log.error("enter_timer_out:",fd,addr)
+		log.warn("enter_timer_out:",fd,addr)
 		skynet.fork(close_fd,fd)
 	end
 end)--用于检测是否及时完成链接 请求 响应的流程，没有完成即可能是恶意链接
@@ -210,12 +210,12 @@ end
 
 --确认退出
 function CMD.fix_exit()
-	log.error("web_agent_module exit begin!")
+	log.info("web_agent_module exit begin!")
 	for fd,info in pairs(fd_info_map) do
-		log.error("web_agent_module exit id:",fd)
+		log.info("web_agent_module exit id:",fd)
 		skynet.fork(close_fd,fd)
 	end
-	log.error("web_agent_module exit end!")
+	log.info("web_agent_module exit end!")
 end
 
 --执行退出
