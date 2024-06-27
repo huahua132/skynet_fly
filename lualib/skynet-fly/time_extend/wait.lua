@@ -6,6 +6,7 @@ local setmetatable = setmetatable
 local assert = assert
 local coroutine = coroutine
 local pairs = pairs
+local next = next
 
 local M = {}
 local mata = {__index = M}
@@ -34,6 +35,10 @@ function M:wait(k)
     skynet.wait(co)
     ti:cancel()
     map[k][co] = nil
+
+    if not next(map[k]) then
+        map[k] = nil
+    end
 end
 
 function M:wakeup(k)
@@ -45,7 +50,6 @@ function M:wakeup(k)
     for co,_ in pairs(m) do
         skynet.wakeup(co)
     end
-    map[k] = nil
 end
 
 return M

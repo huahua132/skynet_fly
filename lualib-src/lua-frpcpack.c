@@ -461,6 +461,7 @@ lpackpubmessage(lua_State *L) {
 	}
 
 	uint8_t pack_id = (uint8_t)luaL_checkinteger(L, 4);
+	uint32_t session = (uint32_t)luaL_checkinteger(L, 5);
 
 	if (sz > FRPCPACK_MULTI_PART) {
 		int part = (sz - 1) / FRPCPACK_MULTI_PART + 1;
@@ -468,13 +469,14 @@ lpackpubmessage(lua_State *L) {
 		uint8_t buf[FRPCPACK_TEMP_LENGTH];
 
 		// multi part begin
-		fill_header(buf, 7 + channel_name_len);  // 两字节 sz
+		fill_header(buf, 11 + channel_name_len);  // 两字节 sz
 		buf[2] = FRPCPACK_FLAG_PART_H;  		 // 1 分包头
 		fill_uint32(buf + 3, (uint32_t)sz);      // 4字节sz
 		buf[7] = pack_id;					     // 1字节PACK_id
-		buf[8] = channel_name_len;				 // 1字节名字长度
-		memcpy(buf + 9, channel_name, channel_name_len);
-		lua_pushlstring(L, (const char *)buf, 9 + channel_name_len);
+		fill_uint32(buf + 8, session);           // 4字节session
+		buf[12] = channel_name_len;				 // 1字节名字长度
+		memcpy(buf + 13, channel_name, channel_name_len);
+		lua_pushlstring(L, (const char *)buf, 13 + channel_name_len);
 		lua_rawseti(L, -2, 1);
 
 		char * ptr = msg;
@@ -499,14 +501,15 @@ lpackpubmessage(lua_State *L) {
 	}
 
 	uint8_t buf[FRPCPACK_TEMP_LENGTH];
-	fill_header(buf, sz + channel_name_len + 3); //2字节长度
+	fill_header(buf, sz + channel_name_len + 7); //2字节长度
 	buf[2] = FRPCPACK_FLAG_WHOLE;	//1字节表示整包
 	buf[3] = pack_id;
-	buf[4] = channel_name_len;		//1字节名字长度
-	memcpy(buf + 5, channel_name, channel_name_len);
-	memcpy(buf + 5 + channel_name_len, msg, sz);
+	fill_uint32(buf + 4, session);  //4字节session
+	buf[8] = channel_name_len;		//1字节名字长度
+	memcpy(buf + 9, channel_name, channel_name_len);
+	memcpy(buf + 9 + channel_name_len, msg, sz);
 
-	lua_pushlstring(L, (const char *)buf, sz + 5 + channel_name_len);
+	lua_pushlstring(L, (const char *)buf, sz + 9 + channel_name_len);
 	return 1;
 }
 

@@ -411,6 +411,8 @@ end
 ]]
 function M:set_instance_name(name)
 	assert(type(name) == 'string')
+	local cur_name_id_list = self.cur_name_id_list
+	assert(cur_name_id_list[name],"not svr " .. name)
 	self.instance_name = name
 	return self
 end

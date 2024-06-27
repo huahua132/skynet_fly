@@ -21,7 +21,7 @@ local M = {}
 local meta = {__index = M}
 local g_frpc_client = nil
 local g_watch_client = nil
-local g_is_load_watch = false
+
 local g_active_map = {}						--活跃列表
 local g_handler_map = {}
 local SELF_ADDRESS = skynet.self()
@@ -42,9 +42,11 @@ local function syn_active_map()
 
 				if old_id ~= id then
 					local handlers = g_handler_map[svr_name]
-					for i = 1, #handlers do
-						local handler = handlers[i]
-						skynet.fork(handler, svr_name, svr_id)
+					if handlers then
+						for i = 1, #handlers do
+							local handler = handlers[i]
+							skynet.fork(handler, svr_name, svr_id)
+						end
 					end
 				end
 			end
@@ -66,6 +68,19 @@ function M:is_active(svr_name, svr_id)
 	end
 
 	return true
+end
+
+--获取指定svr_name活跃的svr_id
+function M:get_active_svr_ids(svr_name)
+	local list = {}
+	local map = g_active_map[svr_name]
+	if map then
+		for svr_id in pairs(map) do
+			tinsert(list, svr_id)
+		end
+	end
+
+	return list
 end
 
 --监听上线
@@ -95,19 +110,17 @@ function M:new(svr_name,module_name,instance_name)
 
 	if not g_frpc_client then
 		g_frpc_client = contriner_client:new("frpc_client_m")
-		g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
-		skynet.fork(syn_active_map)
-		if not g_is_load_watch then
-			g_is_load_watch = true
-			g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
-			skynet.fork(syn_active_map)
-		end
 	end
 
 	setmetatable(t,meta)
+
 	return t
 end
 
+contriner_client:add_queryed_cb("frpc_client_m", function()
+	g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
+	skynet.fork(syn_active_map)
+end)
 
 --有时候并不想创建实例
 function M:instance(svr_name,module_name,instance_name)
@@ -652,5 +665,19 @@ end
 --------------------------------------------------------------------------------
 --all_by_name
 --------------------------------------------------------------------------------
+
+--sub 订阅
+function M:sub(channel_name, unique_name)
+	assert(channel_name, "not channel_name")
+	assert(unique_name, "not unique_name")
+	return g_frpc_client:balance_call("sub", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name, unique_name)
+end
+
+--取消 订阅
+function M:unsub(channel_name, unique_name)
+	assert(channel_name, "not channel_name")
+	assert(unique_name, "not unique_name")
+	return g_frpc_client:balance_call("unsub", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name, unique_name)
+end
 
 return M
