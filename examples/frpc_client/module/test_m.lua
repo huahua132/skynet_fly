@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local frpc_client = require "skynet-fly.client.frpc_client"
 local watch_client = require "skynet-fly.rpc.watch_client"
+local timer = require "skynet-fly.timer"
 local CMD = {}
 
 -- 测试基础消息
@@ -233,6 +234,27 @@ function CMD.start()
 		--test_watch_syn()
 	end)
 
+	timer:new(timer.second * 5, 1, function()
+		watch_client.watch("frpc_server", "test_pub", "handle_name2", function(...)
+			log.info("watch msg handle_name2 >>>> ", ...)
+		end)
+
+		watch_client.unwatch_byid("frpc_server", 1, "test_pub", "handle_name1")
+
+		watch_client.watch_byid("frpc_server", 1, "test_pub", "handle_name2", function(...)
+			log.info("watch_byid msg handle_name2 >>>> ", ...)
+		end)
+		
+		timer:new(timer.second * 5, 1, function()
+			watch_client.unwatch("frpc_server", "test_pub", "handle_name2")
+			watch_client.unwatch("frpc_server", "test_pub", "handle_name1")
+			
+			timer:new(timer.second * 5, 1, function()
+				watch_client.unwatch_byid("frpc_server", 1, "test_pub", "handle_name2")
+			end)
+		end)
+	end)
+
 	return true
 end
 
@@ -240,8 +262,12 @@ function CMD.exit()
 	return true
 end
 
-watch_client.watch("frpc_server", "test_pub", function()
+watch_client.watch("frpc_server", "test_pub", "handle_name1", function(...)
+	log.info("watch msg handle_name1 >>>> ", ...)
+end)
 
+watch_client.watch_byid("frpc_server", 1, "test_pub", "handle_name1", function(...)
+	log.info("watch_byid msg handle_name1 >>>> ", ...)
 end)
 
 return CMD

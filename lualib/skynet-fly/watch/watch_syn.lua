@@ -2,7 +2,8 @@ local skynet = require "skynet"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local log = require "skynet-fly.log"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
-local SERVER_STATE_TYPE = contriner_interface.SERVER_STATE_TYPE
+local SYSCMD = require "skynet-fly.enum.SYSCMD"
+local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 
 local assert = assert
 local setmetatable = setmetatable
@@ -11,8 +12,8 @@ local coroutine = coroutine
 local tinsert = table.insert
 local tremove = table.remove
 
-local watch_cmd = "_watch"
-local unwatch_cmd = "_unwatch"
+local watch_cmd = SYSCMD.watch_cmd
+local unwatch_cmd = SYSCMD.unwatch_cmd
 
 local M = {}
 

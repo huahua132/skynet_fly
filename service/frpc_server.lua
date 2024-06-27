@@ -21,6 +21,7 @@ local pcall = pcall
 local tremove = table.remove
 local ipairs = ipairs
 local tostring = tostring
+local next = next
 
 local g_gate = nil
 local g_svr_name = env_util.get_svr_name()
@@ -29,6 +30,8 @@ local g_fd_agent_map = {}                           --fd 连接管理
 
 local g_secret_key = nil						    --连接密钥
 local g_is_encrypt = nil 							--是否加密传输
+local g_session_id = 0
+local UINIT32MAX = math_util.uint32max
 
 local g_sub_map = {}								--订阅表
 
@@ -38,6 +41,14 @@ local g_client_map = setmetatable({},{__index = function(t,key)
 	t[key] = contriner_client:new_raw(key)
 	return t[key]
 end})
+
+local function new_session_id()
+	if g_session_id >= UINIT32MAX then
+		g_session_id = 0
+	end
+	g_session_id = g_session_id + 1
+	return g_session_id
+end
 
 local function close_fd(fd)
 	if fd <= 0 then return end
@@ -60,23 +71,30 @@ local function response(fd, session, isok, msg, sz)
 end
 
 local function pub_message(agent_map, channel_name, pack_id, msg, sz)
-	log.info("pub_message:", channel_name, pack_id)
-	local pubmsg = frpcpack.packpubmessage(channel_name, msg, sz, pack_id)
+	local session = new_session_id()
+	local pubmsg = nil
 	for agent,_ in pairs(agent_map) do
 		local fd = agent.fd
-		local msg = pubmsg 
+		local sendmsg = nil 
 		if g_is_encrypt then
-			if type(msg) == 'userdata' then
-				msg = skynet.tostring(msg, sz)
+			local luamsg = msg
+			if type(luamsg) == 'userdata' then
+				luamsg = skynet.tostring(msg, sz)
 			end
-			msg = crypt.desencode(agent.msg_secret, msg) --加密回复消息
+			luamsg = crypt.desencode(agent.msg_secret, luamsg) --加密回复消息
+			sendmsg = frpcpack.packpubmessage(channel_name, luamsg, nil, pack_id, session)
+		else
+			if not pubmsg then
+				pubmsg = frpcpack.packpubmessage(channel_name, msg, sz, pack_id, session)
+			end
+			sendmsg = pubmsg
 		end
-		if type(msg) == 'table' then
-			for i = 1, #msg do
-				socket.lwrite(fd, msg[i])
+		if type(sendmsg) == 'table' then
+			for i = 1, #sendmsg do
+				socket.lwrite(fd, sendmsg[i])
 			end
 		else
-			socket.lwrite(fd, msg)			--都用lwrite 避免 消息穿插 pub_message 没有用session来标识消息
+			socket.lwrite(fd, sendmsg)			--都用lwrite 避免 消息穿插 pub_message 没有用session来标识消息
 		end
 	end
 end
@@ -177,9 +195,19 @@ local function hand_shake(fd, session_id, msg, sz)
 	end
 	
 	response(fd, session_id, true, skynet.packstring("ok"))
+
+	log.info("connected from " .. cluster_name .. ' addr ' .. agent.addr)
 end
 
-local function create_handle(func)
+local function get_module_cli(module_name, instance_name)
+	local cli = g_client_map[module_name]
+	if instance_name then
+		cli:set_instance_name(instance_name)
+	end
+	return cli
+end
+
+local function create_handle(func, is_check_module_name, is_check_instance_name)
 	return function(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 		local agent = g_fd_agent_map[fd]
 		if not agent then
@@ -187,8 +215,13 @@ local function create_handle(func)
 			log.warn("agent not exists ", fd)
 			return
 		end
-		local cli = g_client_map[module_name]
-		if not cli then
+		local isok = true
+		if is_check_module_name and is_check_instance_name then
+			isok = pcall(get_module_cli, module_name, instance_name)
+		elseif is_check_module_name then
+			isok = pcall(get_module_cli, module_name)
+		end
+		if not isok then
 			skynet.trash(msg, sz)
 			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name)
 			if iscall then
@@ -219,13 +252,13 @@ end
 HANDLE[FRPC_PACK_ID.balance_send] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:balance_send(msg, sz)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.mod_send] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
 	cli:mod_send(msg, sz)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
@@ -235,20 +268,20 @@ HANDLE[FRPC_PACK_ID.broadcast] = create_handle(function(agent, module_name, inst
 	end
 	local cli = g_client_map[module_name]					
 	cli:broadcast(msgstr)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.balance_send_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:balance_send_by_name(msg, sz)
-end)
+end, true, true)
 
 HANDLE[FRPC_PACK_ID.mod_send_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:set_mod_num(mod_num)
 	cli:mod_send_by_name(msg, sz)
-end)
+end, true, true)
 
 HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
@@ -259,18 +292,18 @@ HANDLE[FRPC_PACK_ID.broadcast_by_name] = create_handle(function(agent, module_na
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:broadcast_by_name(msgstr)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.balance_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	return cli:balance_call(msg, sz)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.mod_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_mod_num(mod_num)
 	return cli:mod_call(msg, sz)
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
@@ -280,20 +313,20 @@ HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name,
 	end
 	local cli = g_client_map[module_name]
 	return skynet.packstring(cli:broadcast_call(msgstr))
-end)
+end, true)
 
 HANDLE[FRPC_PACK_ID.balance_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	return cli:balance_call_by_name(msg, sz)
-end)
+end, true, true)
 
 HANDLE[FRPC_PACK_ID.mod_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	cli:set_mod_num(mod_num)
 	return cli:mod_call_by_name(msg, sz)
-end)
+end, true, true)
 
 HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
@@ -304,11 +337,11 @@ HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, modu
 	local cli = g_client_map[module_name]
 	cli:set_instance_name(instance_name)
 	return skynet.packstring(cli:broadcast_call_by_name(msgstr))
-end)
+end, true, true)
 
 --订阅
 HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
-	local channel_name,address = skynet.unpack(msg, sz)	--订阅渠道名
+	local channel_name, address, unique_name = skynet.unpack(msg, sz)	--订阅渠道名
 	skynet.trash(msg, sz)
 	if not agent.is_watch then
 		log.warn("drop message not watch conn sub", agent.fd, agent.addr)
@@ -321,9 +354,31 @@ HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_n
 	if not g_sub_map[channel_name] then
 		g_sub_map[channel_name] = {}
 	end
+
 	g_sub_map[channel_name][agent] = true
 	
-	pub_message({[agent] = true}, channel_name, FRPC_PACK_ID.sub, skynet.packstring(address))
+	pub_message({[agent] = true}, channel_name, FRPC_PACK_ID.sub, skynet.packstring(address, unique_name))
+end)
+
+--取消订阅
+HANDLE[FRPC_PACK_ID.unsub] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local channel_name, address, unique_name = skynet.unpack(msg, sz)	--订阅渠道名
+	skynet.trash(msg, sz)
+	if not agent.is_watch then
+		log.warn("drop message not watch conn unsub", agent.fd, agent.addr)
+		return
+	end
+
+	local sub_map = agent.sub_map
+	sub_map[channel_name] = nil
+	if g_sub_map[channel_name] then
+		g_sub_map[channel_name][agent] = nil
+		if not next(g_sub_map[channel_name]) then
+			g_sub_map[channel_name] = nil
+		end
+	end
+
+	pub_message({[agent] = true}, channel_name, FRPC_PACK_ID.unsub, skynet.packstring(address, unique_name))
 end)
 
 local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
@@ -429,6 +484,19 @@ function SOCKET.close(fd)
 	agent.fd = 0
 	g_fd_agent_map[fd] = nil
 	agent.login_time_out:cancel()
+
+	local sub_map = agent.sub_map
+	if sub_map then
+		for channel_name in pairs(sub_map) do
+			g_sub_map[channel_name][agent] = nil
+			if not next(g_sub_map[channel_name]) then
+				g_sub_map[channel_name] = nil
+			end
+			log.info("释放 channel_name >>> ",fd, channel_name)
+		end
+	end
+
+	log.info("disconnect " .. tostring(agent.cluster_name) .. ' addr ' .. tostring(agent.addr))
 end
 
 function SOCKET.data(fd, msg)

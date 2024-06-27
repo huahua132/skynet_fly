@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local frpcpack = require "frpcpack.core"
 local skynet = require "skynet"
 local netpack = require "skynet.netpack"
+local math_util = require "skynet-fly.utils.math_util"
 
 local CMD = {}
 
@@ -104,17 +105,19 @@ local function test5()
     local msz, luasz = skynet.pack("hello", "frpc")
     local pack_id = 125
     local channel_name = "event_hello"
-    local msgbuff = frpcpack.packpubmessage(channel_name, msz, luasz, pack_id)
+    local session = math_util.uint32max
+    local msgbuff = frpcpack.packpubmessage(channel_name, msz, luasz, pack_id, session)
     local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
     log.info("msgbuff:", #channel_name, luasz, sz, msgbuff:byte(1))
     local isok, msg, padding = frpcpack.unpackpubmessage(msgbuff)
     log.info("retmsg:", isok, msg:len(), padding)
     local pack_id = msg:byte(1)
-    local channel_sz = msg:byte(2)
-    local channel_name = msg:sub(3, channel_sz + 2)
-    msg = msg:sub(channel_sz + 3)
-    log.info("channel_name:", channel_name, pack_id)
+    local sesion = msg:byte(2) | msg:byte(3)<<8 | msg:byte(4)<<16 | msg:byte(5)<<24;
+    local channel_sz = msg:byte(6)
+    local channel_name = msg:sub(7, channel_sz + 6)
+    msg = msg:sub(channel_sz + 7)
+    log.info("channel_name:", channel_name, pack_id, session, sesion)
     log.info("laumsg:", skynet.unpack(msg))
 end
 

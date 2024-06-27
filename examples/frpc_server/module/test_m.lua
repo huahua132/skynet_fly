@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local watch_server = require "skynet-fly.rpc.watch_server"
+local module_info = require "skynet-fly.etc.module_info"
 
 contriner_client:register("share_config_m")
 local string = string
@@ -30,14 +31,18 @@ end
 
 function CMD.start(config)
 	g_config = config
-	skynet.fork(function()
-		local i = 0
-		while true do
-			watch_server.publish("testpub", "hello testpub", i)
-			skynet.sleep(100)
-			i = i + 1
-		end
-	end)
+	local base_info = module_info.get_base_info()
+	if base_info.index == 1 then
+		skynet.fork(function()
+			local i = 0
+			while true do
+				--log.info("publish >>> ", i)
+				watch_server.publish("test_pub", "hello test_pub", i)
+				skynet.sleep(100)
+				i = i + 1
+			end
+		end)
+	end
 	return true
 end
 
