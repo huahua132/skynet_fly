@@ -70,13 +70,13 @@ skynet_util.extend_cmd_func(SYSCMD.frpcpubmsg, function(session, svr_name, svr_i
         local args = {skynet.unpack(msg)}
         if channel_map then
             for handle_name,handler in pairs(channel_map) do
-                skynet.fork(handler, tunpack(args))
+                skynet.fork(handler, cluster_name, tunpack(args))
             end
         end
 
         if channel_svr_id_map then
             for handle_name,handler in pairs(channel_svr_id_map) do
-                skynet.fork(handler, tunpack(args))
+                skynet.fork(handler, cluster_name, tunpack(args))
             end
         end
     end
@@ -160,7 +160,7 @@ local function watch(svr_name, channel_name, handle_name, handler)
         g_watch_channel_name_map[svr_name][channel_name] = {}
         is_new = true
     end
-
+    assert(not g_watch_channel_name_map[svr_name][channel_name][handle_name], "exists handle_name " .. handle_name)
     g_watch_channel_name_map[svr_name][channel_name][handle_name] = handler
     if is_new and contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         local svr_list = frpc_client:get_active_svr_ids(svr_name)
@@ -233,7 +233,7 @@ local function watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
         g_watch_channel_svr_id_map[svr_name][svr_id][channel_name] = {}
         is_new = true
     end
-
+    assert(not g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name], "exists handle_name " .. handle_name)
     g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name] = handler
     if is_new and contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         watch_channel_name(svr_name, svr_id, channel_name)
