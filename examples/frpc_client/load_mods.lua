@@ -24,12 +24,12 @@ return {
 						secret_key = 'sdfdsoifhkjguihre234wedfoih24',
 						is_encrypt = true,
 					},
-					-- [2] = {
-					-- 	svr_id = 2,
-					-- 	host = "127.0.0.1:9689",
-					-- 	secret_key = 'safdsifuhiu34yjfindskj43hqfo32yosd',
-					-- 	is_encrypt = true,
-					-- }
+					[2] = {
+						svr_id = 2,
+						host = "127.0.0.1:9689",
+						secret_key = 'safdsifuhiu34yjfindskj43hqfo32yosd',
+						is_encrypt = true,
+					}
 				}
 			}
 		}
