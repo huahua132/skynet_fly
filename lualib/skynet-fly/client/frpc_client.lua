@@ -680,4 +680,17 @@ function M:unsub(channel_name, unique_name)
 	return g_frpc_client:balance_call("unsub", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name, unique_name)
 end
 
+--subsyn 订阅同步
+function M:subsyn(channel_name, version)
+	assert(channel_name, "not channel_name")
+	assert(version, "not version")
+	return g_frpc_client:balance_call("subsyn", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name, version)
+end
+
+--unsubsyn 取消订阅同步
+function M:unsubsyn(channel_name)
+	assert(channel_name, "not channel_name")
+	return g_frpc_client:balance_call("unsubsyn", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name)
+end
+
 return M

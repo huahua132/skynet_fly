@@ -42,16 +42,25 @@ function CMD.start(config)
 				i = i + 1
 			end
 		end)
-		--large msg
-		skynet.fork(function()
-			while true do
-				local str = ""
-				for i = 1, 1024 * 100 do
-					str = str .. '1'
-				end
-				watch_server.publish("test_pub_large", str)
+		-- --large msg
+		-- skynet.fork(function()
+		-- 	while true do
+		-- 		local str = ""
+		-- 		for i = 1, 1024 * 100 do
+		-- 			str = str .. '1'
+		-- 		end
+		-- 		watch_server.publish("test_pub_large", str)
 
-				skynet.sleep(1000)
+		-- 		skynet.sleep(1000)
+		-- 	end
+		-- end)
+
+		skynet.fork(function()
+			local i = 0
+			while true do
+				watch_server.pubsyn("test_syn", "hello test_syn", i)
+				skynet.sleep(100)
+				i = i + 1
 			end
 		end)
 	end

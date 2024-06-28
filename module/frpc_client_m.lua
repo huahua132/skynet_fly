@@ -15,6 +15,9 @@ local wait = require "skynet-fly.time_extend.wait"
 local string_util = require "skynet-fly.utils.string_util"
 local watch_server = require "skynet-fly.rpc.watch_server"
 local SYSCMD = require "skynet-fly.enum.SYSCMD"
+local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
+local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 
 local string = string
 local tonumber = tonumber
@@ -249,6 +252,7 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 			watch_connecting = {},    --是否watch连接中
 			watch_channel_map = {},   --监听连接表
 			watch_secret_map = {},    --监听密钥表
+			watch_syn_map = {},		  --监听同步列表信息
 		}
 
 		g_active_map[svr_name] = {}
@@ -310,6 +314,7 @@ del_node = function(svr_name,svr_id)
 	local watch_connecting = node_info.watch_connecting
 	local watch_channel_map = node_info.watch_channel_map
 	local watch_secret_map = node_info.watch_secret_map
+	local watch_syn_map = node_info.watch_syn_map
 
 	local del_index = nil
 	for i = #name_list,1,-1 do
@@ -349,6 +354,7 @@ del_node = function(svr_name,svr_id)
 	end
 	secret_map[cluster_name] = nil
 	watch_secret_map[cluster_name] = nil
+	watch_syn_map[cluster_name] = nil
 	log.info("disconnect to " .. cluster_name .. ' host ' .. host)
 end
 
@@ -366,6 +372,22 @@ local function connect_watch(host, secret_key, is_encrypt)
 	end
 	
 	return channel, msg_secret
+end
+
+local function rsp_source_map(channel_info, ret, version, luamsg)
+	if not channel_info then return end
+	local source_map = channel_info.source_map
+	local source_v_map = channel_info.source_v_map
+	if not source_map then return end
+
+	for source,response in pairs(source_map) do
+		local v = source_v_map[source]
+		if version ~= v then
+			response(true, ret, version, luamsg)
+			source_map[source] = nil
+			source_v_map[source] = nil
+		end
+	end
 end
 
 local function add_node_watch(cluster_name)
@@ -399,14 +421,19 @@ local function add_node_watch(cluster_name)
 
 	local watch_channel_map = node_info.watch_channel_map
 	local watch_secret_map = node_info.watch_secret_map
+	local watch_syn_map = node_info.watch_syn_map
 	watch_channel_map[cluster_name] = channel
 	watch_secret_map[cluster_name] = msg_secret
+	watch_syn_map[cluster_name] = {}
 
 	g_wait_watch_svr_name:wakeup(svr_name)
 	g_wait_watch_svr_id:wakeup(cluster_name)
 
 	local sub_watch_map = {}
 	log.info("watch connected to " .. cluster_name .. ' host ' .. host)
+
+	local watch_syn_info = watch_syn_map[cluster_name]
+
 	skynet.fork(function()
 		while true do
 			local isok, rsp = pcall(channel.response, channel, read_pub_response)
@@ -474,7 +501,14 @@ local function add_node_watch(cluster_name)
 						end
 					end
 				elseif pack_id == FRPC_PACK_ID.subsyn then
-
+					local version, luamsg = skynet.unpack(rsp)
+					local channel_info = watch_syn_info[channel_name]
+					if channel_info then
+						channel_info.version = version
+						channel_info.luamsg = luamsg
+						channel_info.req_syned = false
+						rsp_source_map(channel_info, WATCH_SYN_RET.syn, version, luamsg)
+					end
 				elseif pack_id == FRPC_PACK_ID.unsubsyn then
 
 				else
@@ -486,9 +520,27 @@ local function add_node_watch(cluster_name)
 		channel:close()
 		watch_channel_map[cluster_name] = nil
 		watch_secret_map[cluster_name] = nil
+		watch_syn_map[cluster_name] = nil
+
+		
+		for channel_name,channel_info in pairs(watch_syn_info) do
+			rsp_source_map(channel_info, WATCH_SYN_RET.disconnect)
+		end
+
 		log.info("watch disconnected ", cluster_name, host)
 	end)
 end
+
+contriner_interface.hook_fix_exit_after(function()
+	for svr_name, node_info in pairs(g_node_info_map) do
+		local watch_syn_map = node_info.watch_syn_map
+		for cluster_name, watch_syn_info in pairs(watch_syn_map) do
+			for channel_name,channel_info in pairs(watch_syn_info) do
+				rsp_source_map(channel_info, WATCH_SYN_RET.move)
+			end
+		end
+	end
+end)
 
 local function get_balance(node_info)
 	local name_list = node_info.name_list
@@ -591,10 +643,11 @@ local function get_watch_channel(svr_name, svr_id)
 	end
 
 	local watch_secret_map = node_info.watch_secret_map
+	local watch_syn_map = node_info.watch_syn_map
 	local channel = watch_channel_map[cluster_name]	
 	local secret = watch_secret_map[cluster_name]
-
-	return channel, cluster_name, secret
+	local watch_syn_info = watch_syn_map[cluster_name]
+	return channel, cluster_name, secret, watch_syn_info
 end
 
 local CMD = {}
@@ -765,7 +818,10 @@ function CMD.sub(svr_name, svr_id, source, channel_name, unique_name)
 	end
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.sub, "", "", session_id, 0, msg_buff, nil, 0)
-	channel:request(req, nil, padding)
+	local isok, err = pcall(channel.request, channel, req, nil, padding)
+	if not isok then 
+		return nil, err
+	end
 	return true
 end
 
@@ -782,7 +838,92 @@ function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
 	end
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.unsub, "", "", session_id, 0, msg_buff, nil, 0)
-	channel:request(req, nil, padding)
+	local isok, err = pcall(channel.request, channel, req, nil, padding)
+	if not isok then 
+		return nil, err
+	end
+	return true
+end
+
+--订阅同步
+function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
+	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+		return WATCH_SYN_RET.move
+	end
+	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
+	if not channel then
+		log.error("frpc watch err ", svr_name, source, channel_name)
+		return nil, "not watch channel"
+	end
+
+	local channel_info = watch_syn_info[channel_name]
+	if not channel_info or not channel_info.version or channel_info.version == version then
+		if not channel_info then
+			watch_syn_info[channel_name] = {}
+			channel_info = watch_syn_info[channel_name]
+		end
+		if not channel_info.source_map then
+			channel_info.source_map = {}
+			channel_info.source_v_map = {}
+		end                                                          
+		local source_map = channel_info.source_map
+		local source_v_map = channel_info.source_v_map
+		assert(not source_map[source], "repeat subsyn ", cluster_name, channel_name)
+		
+		source_map[source] = skynet.response()
+		source_v_map[source] = version
+		
+		if not channel_info.req_syned then
+			channel_info.req_syned = true
+			local msg_buff = skynet.packstring(channel_name, channel_info.version or 0)
+			if secret then
+				msg_buff = crypt.desencode(secret, msg_buff)
+			end
+			local session_id = new_session_id()
+			local req, padding = frpcpack.packrequest(FRPC_PACK_ID.subsyn, "", "", session_id, 0, msg_buff, nil, 0)
+			local isok, err = pcall(channel.request, channel, req, nil, padding)
+			if not isok then 
+				return nil, err
+			end
+		end
+
+		return skynet_util.NOT_RET
+	else
+		return WATCH_SYN_RET.syn, channel_info.luamsg, channel_info.version
+	end
+end
+
+--取消订阅同步
+function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
+	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
+	if not channel then
+		log.error("frpc watch err ", svr_name, source, channel_name)
+		return nil, "not watch channel"
+	end
+	local channel_info = watch_syn_info[channel_name]
+	if not channel_info then return end
+
+	local source_map = channel_info.source_map
+	if not source_map then return end
+	local rsp = source_map[source]
+	source_map[source] = nil
+	if not rsp then return end
+	rsp(true, WATCH_SYN_RET.unsyn)
+
+	if next(source_map) then
+		return
+	end
+
+	local msg_buff = skynet.packstring(channel_name)
+	if secret then
+		msg_buff = crypt.desencode(secret, msg_buff)
+	end
+	local session_id = new_session_id()
+	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.unsubsyn, "", "", session_id, 0, msg_buff, nil, 0)
+	local isok, err = pcall(channel.request, channel, req, nil, padding)
+	if not isok then 
+		return nil, err
+	end
 	return true
 end
 

@@ -38,6 +38,9 @@ local SERVER_STATE = SERVER_STATE_TYPE.loading
 --启动成功之后回调列表
 local g_start_after_cb = {}
 
+--确定退出之后的回调列表
+local g_fix_exit_after_cb = {}
+
 --contriner_interface
 function contriner_interface.get_server_state()
 	return SERVER_STATE
@@ -45,6 +48,10 @@ end
 
 function contriner_interface.hook_start_after(cb)
 	table.insert(g_start_after_cb, cb)
+end
+
+function contriner_interface.hook_fix_exit_after(cb)
+	table.insert(g_fix_exit_after_cb, cb)
 end
 
 local contriner_client = require "skynet-fly.client.contriner_client"
@@ -153,6 +160,9 @@ function CMD.close()
 	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
 	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
+	for _,func in ipairs(g_fix_exit_after_cb) do
+		skynet.fork(func)
+	end
 	SERVER_STATE = SERVER_STATE_TYPE.fix_exited
 end
 

@@ -81,7 +81,7 @@ end
 
 local function call_back_updated(updated)
 	for _,func in ipairs(updated) do
-		func()
+		skynet.fork(func)
 	end
 end
 
@@ -106,7 +106,7 @@ end
 
 local function call_back_queryed(queryed)
 	for _,func in ipairs(queryed) do
-		func()
+		skynet.fork(func)
 	end
 end
 
@@ -134,10 +134,7 @@ local function monitor_all()
 		while not IS_CLOSE do
 			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
 			for mod_name,_ in pairs(mod_version_map) do
-				if not g_register_map[mod_name] then
-					g_register_map[mod_name] = true
-					local id_list = g_mod_svr_ids_map[mod_name]
-				end
+				local id_list = g_mod_svr_ids_map[mod_name]
 			end
 		end
 	end)
