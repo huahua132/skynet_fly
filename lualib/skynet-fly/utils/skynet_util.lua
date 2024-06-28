@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local module_info = require "skynet-fly.etc.module_info"
 
 local tonumber = tonumber
 local assert = assert
@@ -104,6 +105,17 @@ function M.extend_cmd_func(cmd_name, func)
     assert(g_CMD, "please set_cmd_table")
     assert(not g_CMD[cmd_name], "exists cmd_name " .. tostring(cmd_name))
     g_CMD[cmd_name] = func
+end
+
+--是否可热更服务
+function M.is_hot_container_server()
+    local base_info = module_info.get_base_info()
+    local unique_name = nil
+    if base_info.index then                         --是可热更服务
+        return true
+    else
+        return false
+    end
 end
 
 return M
