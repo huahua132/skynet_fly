@@ -270,4 +270,8 @@ watch_client.watch_byid("frpc_server", 1, "test_pub", "handle_name1", function(.
 	log.info("watch_byid msg handle_name1 >>>> ", ...)
 end)
 
+watch_client.watch_byid("frpc_server", 1, "test_pub_large", "xxxx", function(...)
+	log.info("watch_byid test_pub_large ")
+end)
+
 return CMD

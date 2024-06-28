@@ -31,6 +31,7 @@ local tostring = tostring
 local spackstring = skynet.packstring
 local error = error
 local coroutine = coroutine
+local math = math
 
 local UINIT32MAX = math_util.uint32max
 local g_node_info_map = {}
@@ -242,8 +243,8 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 			id_host_map = {},
 			id_name_map = {},		  --svr_id映射结点名称
 			balance = 1,              --简单轮询负载均衡
-			secret_key = secret_key,  --连接密钥
-			is_encrypt = is_encrypt,  --是否加密消息
+			secret_key_map = {},	  --连接密钥表
+			is_encrypt_map = {},	  --是否加密消息
 			
 			watch_connecting = {},    --是否watch连接中
 			watch_channel_map = {},   --监听连接表
@@ -263,12 +264,17 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 	local id_host_map = node_info.id_host_map
 	local channel_map = node_info.channel_map
 	local secret_map = node_info.secret_map
+	local secret_key_map = node_info.secret_key_map
+	local is_encrypt_map = node_info.is_encrypt_map
 
 	tinsert(name_list,cluster_name)
 	tinsert(host_list,host)
 	id_name_map[svr_id] = cluster_name
 	id_host_map[svr_id] = host
 	channel_map[cluster_name] = channel
+
+	secret_key_map[cluster_name] = secret_key
+	is_encrypt_map[cluster_name] = is_encrypt
 
 	if is_encrypt then
 		secret_map[cluster_name] = msg_secret
@@ -299,6 +305,8 @@ del_node = function(svr_name,svr_id)
 	local id_host_map = node_info.id_host_map
 	local channel_map = node_info.channel_map
 	local secret_map = node_info.secret_map
+	local secret_key_map = node_info.secret_key_map
+	local is_encrypt_map = node_info.is_encrypt_map
 	local watch_connecting = node_info.watch_connecting
 	local watch_channel_map = node_info.watch_channel_map
 	local watch_secret_map = node_info.watch_secret_map
@@ -321,6 +329,8 @@ del_node = function(svr_name,svr_id)
 	id_host_map[svr_id] = nil
 	local channel = channel_map[cluster_name]
 	channel_map[cluster_name] = nil
+	secret_key_map[cluster_name] = nil
+	is_encrypt_map[cluster_name] = nil
 
 	watch_connecting[cluster_name] = nil
 	local watch_channel = watch_channel_map[cluster_name]
@@ -373,7 +383,10 @@ local function add_node_watch(cluster_name)
 	local host = id_host_map[svr_id]
 	assert(host, "not host")
 
-	local secret_key, is_encrypt = node_info.secret_key, node_info.is_encrypt
+	local secret_key_map = node_info.secret_key_map
+	local is_encrypt_map = node_info.is_encrypt_map
+
+	local secret_key, is_encrypt = secret_key_map[cluster_name], is_encrypt_map[cluster_name]
 	local isok, channel, msg_secret = pcall(connect_watch, host, secret_key, is_encrypt)
 
 	watch_connecting[cluster_name] = nil
@@ -393,7 +406,7 @@ local function add_node_watch(cluster_name)
 	g_wait_watch_svr_id:wakeup(cluster_name)
 
 	local sub_watch_map = {}
-
+	log.info("watch connected to " .. cluster_name .. ' host ' .. host)
 	skynet.fork(function()
 		while true do
 			local isok, rsp = pcall(channel.response, channel, read_pub_response)
@@ -401,63 +414,79 @@ local function add_node_watch(cluster_name)
 				log.error("watch message err ", cluster_name, rsp)
 				break
 			end
-
+			local isok,pack_id, session, channel_name
 			if type(rsp) == 'table' then
-				local msg, sz = frpcpack.concat(rsp)
-				if not msg then
-					log.error("concat rsp err ", #rsp)
-					return
+				--large msg
+				local head_msg = rsp[1]
+				if not head_msg then
+					log.error("watch message not head_msg ", cluster_name)
+				else
+					local totalsz = head_msg:byte(1) | head_msg:byte(2)<<8 | head_msg:byte(3)<<16 | head_msg:byte(4)<<24
+					pack_id = head_msg:byte(5)
+					session = head_msg:byte(6) | head_msg:byte(7)<<8 | head_msg:byte(8)<<16 | head_msg:byte(9)<<24
+					local channel_sz = head_msg:byte(10)
+					channel_name = head_msg:sub(11)
+					rsp[1] = totalsz
+					local msg, sz = frpcpack.concat(rsp)
+					if not msg then
+						log.error("watch message concat rsp err ", #rsp, cluster_name)
+					else
+						log.warn_fmt("watch large msg size = %dkb from %s", math.floor(totalsz / 1024), cluster_name)
+						rsp = skynet.tostring(msg, sz)
+						skynet.trash(msg, sz)
+						isok = true
+					end
 				end
-		
-				rsp = skynet.tostring(msg, sz)
-				skynet.trash(msg, sz)
+			else
+				pack_id = rsp:byte(1)
+				session = rsp:byte(2) | rsp:byte(3)<<8 | rsp:byte(4)<<16 | rsp:byte(5)<<24
+				local channel_sz = rsp:byte(6)
+				channel_name = rsp:sub(7, channel_sz + 6)
+				rsp = rsp:sub(channel_sz + 7)
+				isok = true
 			end
 
-			local pack_id = rsp:byte(1)
-			local session = rsp:byte(2) | rsp:byte(3)<<8 | rsp:byte(4)<<16 | rsp:byte(5)<<24;
-			local channel_sz = rsp:byte(6)
-			local channel_name = rsp:sub(7, channel_sz + 6)
-			rsp = rsp:sub(channel_sz + 7)
-		
-			if msg_secret then
-				rsp = crypt.desdecode(msg_secret, rsp)
-			end			
-
-			if pack_id == FRPC_PACK_ID.pubmessage then
-				local source_map = sub_watch_map[channel_name]
-				if source_map then
-					for _, source in pairs(source_map) do
-						skynet.send(source, 'lua', SYSCMD.frpcpubmsg, session, svr_name, svr_id, channel_name, rsp)
+			if isok then
+				if msg_secret then
+					rsp = crypt.desdecode(msg_secret, rsp)
+				end			
+			
+				if pack_id == FRPC_PACK_ID.pubmessage then
+					local source_map = sub_watch_map[channel_name]
+					if source_map then
+						for _, source in pairs(source_map) do
+							skynet.send(source, 'lua', SYSCMD.frpcpubmsg, session, svr_name, svr_id, channel_name, rsp)
+						end
 					end
-				end
-			elseif pack_id == FRPC_PACK_ID.sub then
-				local source, unique_name = skynet.unpack(rsp)
-				if not sub_watch_map[channel_name] then
-					sub_watch_map[channel_name] = {}
-				end
-				sub_watch_map[channel_name][unique_name] = source
-			elseif pack_id == FRPC_PACK_ID.unsub then
-				local source, unique_name = skynet.unpack(rsp)
-				if sub_watch_map[channel_name] then
-					sub_watch_map[channel_name][unique_name] = nil
-
-					if not next(sub_watch_map[channel_name]) then
-						sub_watch_map[channel_name] = nil
+				elseif pack_id == FRPC_PACK_ID.sub then
+					local source, unique_name = skynet.unpack(rsp)
+					if not sub_watch_map[channel_name] then
+						sub_watch_map[channel_name] = {}
 					end
+					sub_watch_map[channel_name][unique_name] = source
+				elseif pack_id == FRPC_PACK_ID.unsub then
+					local source, unique_name = skynet.unpack(rsp)
+					if sub_watch_map[channel_name] then
+						sub_watch_map[channel_name][unique_name] = nil
+
+						if not next(sub_watch_map[channel_name]) then
+							sub_watch_map[channel_name] = nil
+						end
+					end
+				elseif pack_id == FRPC_PACK_ID.subsyn then
+
+				elseif pack_id == FRPC_PACK_ID.unsubsyn then
+
+				else
+					log.warn("unknown pub msg ",cluster_name, pack_id)
 				end
-			elseif pack_id == FRPC_PACK_ID.subsyn then
-
-			elseif pack_id == FRPC_PACK_ID.unsubsyn then
-
-			else
-				log.warn("unknown pub msg ",cluster_name, pack_id)
 			end
 		end
 
 		channel:close()
 		watch_channel_map[cluster_name] = nil
 		watch_secret_map[cluster_name] = nil
-		log.info("closed watch ", cluster_name, host)
+		log.info("watch disconnected ", cluster_name, host)
 	end)
 end
 
@@ -767,7 +796,7 @@ function CMD.start(config)
 	g_wait_svr_id = wait:new(time_out)
 	g_wait_watch_svr_name = wait:new(time_out)
 	g_wait_watch_svr_id = wait:new(time_out)
-	log.info("start >>>>>>>>>")
+	
 	skynet.fork(function()
 		if watch == 'redis' then
 			--redis服务发现方式

@@ -520,10 +520,10 @@ lunpackpubmessage(lua_State *L) {
 	if (sz < 1) {
 		return 0;
 	}
-	printf("%d\n", buf[0]);
+	
 	switch(buf[0]) {
 	case 1:	// FRPCPACK_FLAG_WHOLE
-		if (sz < 3) {
+		if (sz < 7) {
 			return 0;
 		}
 		lua_pushboolean(L, 1);
@@ -534,12 +534,11 @@ lunpackpubmessage(lua_State *L) {
 		lua_pushlstring(L, buf+1, sz-1);
 		return 2;
 	case 2:	// FRPCPACK_FLAG_PART_H
-		if (sz < 7) {
+		if (sz < 11) {
 			return 0;
 		}
-		sz = unpack_uint32((const uint8_t *)buf+1);
 		lua_pushboolean(L, 1);
-		lua_pushinteger(L, sz);							//包总长度
+		lua_pushlstring(L, buf+1, sz-1);
 		lua_pushboolean(L, 1);							//是否分包
 		return 3;
 	case 4:	// FRPCPACK_FLAG_PART_C
