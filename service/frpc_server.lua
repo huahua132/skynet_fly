@@ -219,14 +219,15 @@ local function create_handle(func, is_check_module_name, is_check_instance_name)
 			return
 		end
 		local isok = true
+		local err 
 		if is_check_module_name and is_check_instance_name then
-			isok = pcall(get_module_cli, module_name, instance_name)
+			isok, err = pcall(get_module_cli, module_name, instance_name)
 		elseif is_check_module_name then
-			isok = pcall(get_module_cli, module_name)
+			isok, err = pcall(get_module_cli, module_name)
 		end
 		if not isok then
 			skynet.trash(msg, sz)
-			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name)
+			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name, err)
 			if iscall then
 				response(fd, session_id, false, " module_name not exists :" .. tostring(module_name))
 			end
