@@ -492,11 +492,10 @@ function SOCKET.close(fd)
 			if not next(g_sub_map[channel_name]) then
 				g_sub_map[channel_name] = nil
 			end
-			log.info("释放 channel_name >>> ",fd, channel_name)
 		end
 	end
-
-	log.info("disconnect " .. tostring(agent.cluster_name) .. ' addr ' .. tostring(agent.addr))
+	
+	log.info_fmt("disconnected %s addr %s is_watch %s", agent.cluster_name, agent.addr, agent.is_watch)
 end
 
 function SOCKET.data(fd, msg)
