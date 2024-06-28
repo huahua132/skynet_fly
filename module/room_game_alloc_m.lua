@@ -5,6 +5,7 @@ local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local timer = require "skynet-fly.timer"
 local time_util = require "skynet-fly.utils.time_util"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 
 contriner_client:register("room_game_table_m")
 
@@ -247,8 +248,7 @@ function CMD.start(config)
 
 	if alloc_plug.register_cmd then
 		for name,func in pairs(alloc_plug.register_cmd) do
-			assert(not CMD[name],"repeat cmd " .. name)
-			CMD[name] = func
+			skynet_util.extend_cmd_func(name, func)
 		end
 	end
 
