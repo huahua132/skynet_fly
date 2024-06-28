@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
 local contriner_client = require "skynet-fly.client.contriner_client"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 contriner_client:register("share_config_m")
 
 local assert = assert
@@ -422,8 +423,7 @@ function CMD.start(config)
 
 	if table_plug.register_cmd then
 		for name,func in pairs(table_plug.register_cmd) do
-			assert(not CMD[name],"repeat cmd " .. name)
-			CMD[name] = func
+			skynet_util.extend_cmd_func(name, func)
 		end
 	end
 	
