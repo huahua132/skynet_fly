@@ -11,6 +11,8 @@ local retpack = skynet.retpack
 local tunpack = table.unpack
 local NOT_RET = {}
 
+local g_is_regiter = false
+
 local g_CMD = nil
 
 local M = {
@@ -22,6 +24,9 @@ local M = {
     cmd_func 函数表
 ]]
 function M.lua_dispatch(cmd_func) 
+    assert(not g_is_regiter, "repeat lua_dispatch")
+    
+    g_is_regiter = true
     assert(cmd_func)
     
     skynet.dispatch('lua',function(session,source,cmd,...)
@@ -41,6 +46,9 @@ function M.lua_dispatch(cmd_func)
 end
 
 function M.lua_src_dispatch(cmd_func)
+    assert(not g_is_regiter, "repeat lua_src_dispatch")
+    g_is_regiter = true
+
     assert(cmd_func)
     
     skynet.dispatch('lua',function(session,source,cmd,...)
