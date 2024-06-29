@@ -600,7 +600,7 @@ local function get_svr_name_all_channel(svr_name)
 	assert(g_node_map[svr_name], "not exists svr_name " .. svr_name)       --没有配置连接该服务
 	local node_info = g_node_info_map[svr_name]
 	if not node_info then
-		g_wait_svr_name:wait()
+		g_wait_svr_name:wait(svr_name)
 	end
 
 	node_info = g_node_info_map[svr_name]
