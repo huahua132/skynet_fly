@@ -28,6 +28,7 @@ local g_register_map = {}    --注册表
 local g_week_visitor_map = {} --弱访问者
 local g_instance_map = {}     --常驻实例
 local g_queryed_map = {}      --查询到地址的回调列表
+local g_querycbed_map = {}	  --查询到地址已执行回调列表
 local g_updated_map = {}      --更新地址的回调列表
 local SERVICE_NAME = SERVICE_NAME
 --弱引用原表
@@ -120,7 +121,8 @@ g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 	add_id_list_week(key,t[key])
 	register_visitor(t[key])
 	local queryed = g_queryed_map[key]
-	if queryed then
+	if queryed and not g_querycbed_map[key] then
+		g_querycbed_map[key] = true
 		skynet.fork(call_back_queryed, queryed)
 	end
 	return t[key],g_mod_svr_version_map[key]
