@@ -46,7 +46,6 @@ local g_session_id = 0
 
 local g_wait_svr_name = nil					  --等待channel准备好的
 local g_wait_svr_id	= nil			      	  --等待指定svr_id准备好
-local g_wait_watch_svr_name = nil             --等待watch channel准备好
 local g_wait_watch_svr_id = nil               --等待指定watch svr_id准备好
 
 local g_watch_server = nil
@@ -414,7 +413,6 @@ local function add_node_watch(cluster_name)
 	watch_connecting[cluster_name] = nil
 	if not isok then
 		log.error("connect_watch err ", channel, cluster_name)
-		g_wait_watch_svr_name:wakeup(svr_name)
 		g_wait_watch_svr_id:wakeup(cluster_name)
 		return
 	end
@@ -426,7 +424,6 @@ local function add_node_watch(cluster_name)
 	watch_secret_map[cluster_name] = msg_secret
 	watch_syn_map[cluster_name] = {}
 
-	g_wait_watch_svr_name:wakeup(svr_name)
 	g_wait_watch_svr_id:wakeup(cluster_name)
 
 	local sub_watch_map = {}
@@ -632,7 +629,7 @@ local function get_watch_channel(svr_name, svr_id)
 	if not watch_channel_map[cluster_name] then                            --不存在连接
 		--watch 连接惰性建立，因为可能不是必须要建立(可能业务逻辑不需要watch其他服务)
 		skynet.fork(add_node_watch, cluster_name)
-		g_wait_watch_svr_name:wait(svr_name)
+		g_wait_watch_svr_id:wait(cluster_name)
 	end
 
 	node_info = g_node_info_map[svr_name]
@@ -935,7 +932,6 @@ function CMD.start(config)
 	local time_out = config.time_out or 1000
 	g_wait_svr_name = wait:new(time_out)
 	g_wait_svr_id = wait:new(time_out)
-	g_wait_watch_svr_name = wait:new(time_out)
 	g_wait_watch_svr_id = wait:new(time_out)
 	
 	skynet.fork(function()
