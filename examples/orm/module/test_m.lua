@@ -32,7 +32,7 @@ local function test()
     log.info("res_list:", res_list)
 
     --创建单个冲突
-    local ret = client:create_one_entry({player_id = 10001})
+    local isok,ret = pcall(client.create_one_entry, client, {player_id = 10001})
     log.info("create_one_entry 1>>> ",ret)
 
     --创建单个成功
