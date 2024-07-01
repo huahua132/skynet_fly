@@ -34,6 +34,7 @@ module_info.set_base_info {
 }
 
 local SERVER_STATE = SERVER_STATE_TYPE.loading
+local IS_CLOSE_HOT_RELOAD = false
 
 --启动成功之后回调列表
 local g_start_after_cb = {}
@@ -52,6 +53,10 @@ end
 
 function contriner_interface.hook_fix_exit_after(cb)
 	table.insert(g_fix_exit_after_cb, cb)
+end
+
+function contriner_interface.close_hotreload()
+	IS_CLOSE_HOT_RELOAD = true
 end
 
 local contriner_client = require "skynet-fly.client.contriner_client"
@@ -151,6 +156,11 @@ function CMD.start(cfg)
 	else
 		SERVER_STATE = SERVER_STATE_TYPE.start_failed
 	end
+
+	if INDEX == 1 and IS_CLOSE_HOT_RELOAD then
+		skynet.send('.contriner_mgr', 'lua', 'close_loads', SELF_ADDRESS, MODULE_NAME)
+	end
+
 	return ret
 end
 

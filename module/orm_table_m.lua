@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local log = require "skynet-fly.log"
+local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local assert = assert
 local pairs = pairs
 local type = type
@@ -12,6 +13,8 @@ local g_orm_obj = nil
 local G_ISCLOSE = false
 
 local g_handle = {}
+
+contriner_interface.close_hotreload()
 
 --------------------常用handle定义------------------
 --批量创建数据
