@@ -25,6 +25,7 @@ local g_id_list_map = {}
 local g_watch_map = {}
 local g_version_map = {}
 local g_monitor_new_map = {}
+local g_close_load_map = {}
 
 skynet_util.register_info_func("id_list",function()
 	return g_id_list_map
@@ -111,7 +112,15 @@ end
 
 local function load_modules(...)
 	local module_name_list = {...}
-	assert(#module_name_list >= 1, "not args ")
+	for i = #module_name_list, 1, -1 do
+		local mod_name = module_name_list[i]
+		if g_close_load_map[mod_name] then
+			tremove(module_name_list, i)
+			log.warn("loading close load module_name = ", mod_name)
+		end
+	end
+
+	if #module_name_list <= 0 then return end
 	local load_mods = loadfile(loadmodsfile)()
 	assert(load_mods,"not load_mods")
 
@@ -283,6 +292,12 @@ local function unmonitor_new(source)
 	return true
 end
 
+local function close_loads(module_names)
+	for _,module_name in ipairs(module_names) do
+		g_close_load_map[module_name] = true
+	end
+end
+
 local CMD = {}
 
 --通知模块退出
@@ -328,6 +343,12 @@ end
 --取消监听new模块启动
 function CMD.unmonitor_new(source)
 	queue(unmonitor_new,source)
+end
+
+--关闭指定模块加载
+function CMD.close_loads(source, ...)
+	local module_names = {...}
+	queue(close_loads, module_names)
 end
 
 skynet.start(function()
