@@ -23,7 +23,7 @@ end
 -- 不存在就创建
 function handle.not_exist_create(entry_data)
     local player_id = assert(entry_data.player_id)
-    local entry = g_orm_obj:get_entry(player_id)
+    local entry = g_orm_obj:get_one_entry(player_id)
     if entry then
         return
     end
