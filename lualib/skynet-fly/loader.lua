@@ -73,7 +73,7 @@ main(select(2, table.unpack(args)))
 
 if after_load then
 	for pat in string.gmatch(after_load, "([^;]+);*") do
-		loadfile (pat)()
+		loadfile(pat)()
 	end
 	after_load = nil
 end
