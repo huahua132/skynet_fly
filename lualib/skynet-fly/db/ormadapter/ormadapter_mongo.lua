@@ -1,19 +1,11 @@
-local contriner_client = require "skynet-fly.client.contriner_client"
 local table_util = require "skynet-fly.utils.table_util"
-local string_util = require "skynet-fly.utils.string_util"
 local mongof = require "skynet-fly.db.mongof"
 local log = require "skynet-fly.log"
-
-local FILED_TYPE = require "skynet-fly.db.orm.ormtable".FILED_TYPE
 
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
 local error = error
-local next = next
-local tunpack = table.unpack
-local type = type
-local tonumber = tonumber
 local tinsert = table.insert
 local pcall = pcall
 

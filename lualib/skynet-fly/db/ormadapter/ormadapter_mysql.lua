@@ -297,7 +297,6 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     local function entry_data_to_list(entry_data)
         for i = 1,#filed_list do
             local fn = filed_list[i]
-            local ft = filed_map[fn]
             local fv = entry_data[fn]
 
             if type(fv) == 'string' then

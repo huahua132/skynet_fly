@@ -178,7 +178,7 @@ local function reload_reconnet_test(mod_name)
 
 	local new_login_res = nil
 	local wi = coroutine.running()
-	local fd = connnect(function(_,packid,res)
+	local _ = connnect(function(_,packid,res)
 		log.info("reload_reconnet_test dispatch2:",g_config.protocol,packid,res)
 		if packid == msg_id.login_LoginRes then
 			skynet.wakeup(wi)
@@ -249,13 +249,13 @@ end
 
 --玩游戏过程中重连
 local function player_game_reconnect()
-	local fd = player_game()
+	player_game()
 
 	--玩个5秒断开
 	skynet.sleep(500)
 	--重新连接
 	log.info("重新连接:",g_config)
-	local fd = player_game()
+	player_game()
 end
 
 --游戏开始-热更-重连-再重开游戏
@@ -263,7 +263,7 @@ local function player_reload_reconnect(mod_name)
 	local begin_login_res = {}
 	local reconnect_login_res = {}
 	local restart_login_res = {}
-	local fd = player_game(begin_login_res)
+	player_game(begin_login_res)
 
 	--玩个3秒断开
 	skynet.sleep(300)

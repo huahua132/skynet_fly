@@ -72,13 +72,6 @@ local TYPE_REMAIN_TIME_FUNC = {
     end
 }
 
-local TYPE_INVAL_TIME_MAP = {
-    [M.EVERY_MINUTE] = timer.minute,
-    [M.EVERY_HOUR] = timer.hour,
-    [M.EVERY_DAY] = timer.day,
-    [M.EVERY_WEEK] = timer.day * 7,
-}
-
 local mata = {
     __index = function(tb, k)
         local v = rawget(M,k)

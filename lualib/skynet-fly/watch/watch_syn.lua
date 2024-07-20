@@ -104,9 +104,12 @@ function M.new_server(CMD)
         end
     end
 
-    local cancel_exit = CMD['cancel_exit']
+    local old_cancel_exit = CMD['cancel_exit']
     CMD['cancel_exit'] = function()
         is_exit = false
+        if old_cancel_exit then
+            old_cancel_exit()
+        end
     end
 
     setmetatable(t, server_mt)
@@ -256,7 +259,6 @@ end
 function client:await_get(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
     local version = self.version_map[name]
-    local event_type = nil
     if not version then
         self._add_wait(name)
     end

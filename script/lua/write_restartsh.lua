@@ -6,11 +6,8 @@ assert(skynet_fly_path,'缺少 skynet_fly_path')
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
 package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
 local file_util = require "skynet-fly.utils.file_util"
-local svr_name = file_util.get_cur_dir_name()
 
-local skynet_path = file_util.path_join(skynet_fly_path, '/skynet')
 local server_path = "./"
-local lua_path = skynet_path .. '/3rd/lua/lua'
 
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[

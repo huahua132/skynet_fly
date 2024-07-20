@@ -4,7 +4,6 @@ local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local queue = require "skynet.queue"
 local timer = require "skynet-fly.timer"
-local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
@@ -15,7 +14,6 @@ local assert = assert
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
 
-local g_fd_map = {}
 local g_interface_mgr = nil
 
 local M = {}

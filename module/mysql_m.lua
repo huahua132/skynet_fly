@@ -15,8 +15,11 @@ local function keep_alive()
 	g_ti = timer:new(timer.second * 10,timer.loop,function()
 		if g_db_conn then
 			local ok,ret = pcall(g_db_conn.ping,g_db_conn)
+			if not ok then
+				log.error("keep_alive err ", ret)
+			end
 		else
-			log.error("keep_alive not conn")
+			log.error("keep_alive not conn ", g_db_conf)
 		end
 	end)
 	g_ti:after_next()

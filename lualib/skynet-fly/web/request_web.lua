@@ -10,7 +10,6 @@ local parse_query = urllib.parse_query
 local parse_url = urllib.parse
 
 local M = {}
-local mt = { __index = M }
 local empty_table = {}
 
 -- new request: init args/body etc from http request

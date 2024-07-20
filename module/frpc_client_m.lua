@@ -31,7 +31,6 @@ local tunpack = table.unpack
 local type = type
 local pcall = pcall
 local tostring = tostring
-local spackstring = skynet.packstring
 local error = error
 local coroutine = coroutine
 local math = math
@@ -448,7 +447,7 @@ local function add_node_watch(cluster_name)
 					local totalsz = head_msg:byte(1) | head_msg:byte(2)<<8 | head_msg:byte(3)<<16 | head_msg:byte(4)<<24
 					pack_id = head_msg:byte(5)
 					session = head_msg:byte(6) | head_msg:byte(7)<<8 | head_msg:byte(8)<<16 | head_msg:byte(9)<<24
-					local channel_sz = head_msg:byte(10)
+					--local channel_sz = head_msg:byte(10)
 					channel_name = head_msg:sub(11)
 					rsp[1] = totalsz
 					local msg, sz = frpcpack.concat(rsp)
@@ -489,7 +488,7 @@ local function add_node_watch(cluster_name)
 					end
 					sub_watch_map[channel_name][unique_name] = source
 				elseif pack_id == FRPC_PACK_ID.unsub then
-					local source, unique_name = skynet.unpack(rsp)
+					local _, unique_name = skynet.unpack(rsp)
 					if sub_watch_map[channel_name] then
 						sub_watch_map[channel_name][unique_name] = nil
 
@@ -587,7 +586,6 @@ local function get_svr_id_channel(svr_name, svr_id)
 		return false
 	end
 	local node_info = g_node_info_map[svr_name]
-	local name_list = node_info.name_list
 	local channel_map = node_info.channel_map
 	local secret_map = node_info.secret_map
 	local channel = channel_map[cluster_name]
@@ -608,7 +606,6 @@ local function get_svr_name_all_channel(svr_name)
 		return false
 	end
 
-	local name_list = node_info.name_list
 	local channel_map = node_info.channel_map
 	local secret_map = node_info.secret_map
 
@@ -803,7 +800,7 @@ end
 
 --订阅
 function CMD.sub(svr_name, svr_id, source, channel_name, unique_name)
-	local channel, cluster_name, secret = get_watch_channel(svr_name, svr_id)
+	local channel, _, secret = get_watch_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc watch err ", svr_name, source, channel_name)
 		return nil, "not watch channel"
@@ -824,7 +821,7 @@ end
 
 --取消订阅
 function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
-	local channel, cluster_name, secret = get_watch_channel(svr_name, svr_id)
+	local channel, _, secret = get_watch_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc watch err ", svr_name, source, channel_name)
 		return nil, "not watch channel"
@@ -892,7 +889,7 @@ end
 
 --取消订阅同步
 function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
-	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
+	local channel, _, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc watch err ", svr_name, source, channel_name)
 		return nil, "not watch channel"

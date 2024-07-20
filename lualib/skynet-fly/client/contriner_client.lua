@@ -137,7 +137,7 @@ local function monitor_all()
 			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
 			for mod_name,_ in pairs(mod_version_map) do
 				g_register_map[mod_name] = true
-				local id_list = g_mod_svr_ids_map[mod_name]
+				local _ = g_mod_svr_ids_map[mod_name]
 			end
 		end
 	end)
@@ -222,7 +222,7 @@ end)
 function M:open_ready()
 	skynet.fork(function()
 		for mod_name,_ in pairs(g_register_map) do
-			local id_list = g_mod_svr_ids_map[mod_name]
+			local _ = g_mod_svr_ids_map[mod_name]
 		end
 	end)
 	is_ready = true

@@ -1,8 +1,6 @@
 local msg_id = require "enum.msg_id"
 local setmetatable = setmetatable
 
-local interface_mgr = nil
-
 local M = {}
 local meta = {__index = M}
 

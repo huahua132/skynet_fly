@@ -118,7 +118,6 @@ end
 --是否可热更服务
 function M.is_hot_container_server()
     local base_info = module_info.get_base_info()
-    local unique_name = nil
     if base_info.index then                         --是可热更服务
         return true
     else

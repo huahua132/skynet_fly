@@ -26,8 +26,8 @@ end
 
 LUA_SERVICE = nil
 LUA_PRELOAD = nil
-package.path , LUA_PATH = LUA_PATH
-package.cpath , LUA_CPATH = LUA_CPATH
+package.path , LUA_PATH = LUA_PATH, nil
+package.cpath , LUA_CPATH = LUA_CPATH, nil
 
 local service_path = string.match(pattern, "(.*/)[^/?]+$")
 

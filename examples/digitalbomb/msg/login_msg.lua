@@ -1,7 +1,5 @@
 local setmetatable = setmetatable
 
-local interface_mgr = nil
-
 local M = {}
 local meta = {__index = M}
 
