@@ -7,22 +7,6 @@ print = log.info
 
 local S1 = snapshot()
 
-local tmp = {
-    player = {
-        uid = 1,
-        camps = {
-            {campid = 1},
-            {campid = 2},
-        },
-    },
-    player2 = {
-        roleid = 2,
-    },
-    [3] = {
-        player1 = 1,
-    },
-}
-
 local a = {}
 local c = {}
 a.b = c
@@ -33,7 +17,7 @@ local foo = function()
     print(msg)
 end
 
-local co = coroutine.create(function ()
+local _ = coroutine.create(function ()
     print("hello world")
 end)
 

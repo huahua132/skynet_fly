@@ -18,8 +18,6 @@ skynet.start(function()
 	end
 	local nocache_over_time = skynet.time()
 
-	local now_time = skynet.time()
-
 	log.info("cachetest use time:",cache_over_time - cache_pre_time)
 	log.info("ncachetest use time:",nocache_over_time - nocache_pre_time)
 

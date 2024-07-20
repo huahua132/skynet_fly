@@ -290,8 +290,6 @@ function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
 		is_ws = is_ws,
 	}
 
-	local player = player_map[player_id]
-
 	local isok,errcode,errmsg = t_info.game_table.enter(player_id)
 	if not isok then
 		return isok,errcode,errmsg
@@ -309,7 +307,6 @@ function CMD.leave(table_id,player_id)
 
 	assert(player_map[player_id])
 
-	local player = player_map[player_id]
 	local isok,errcode,errmsg = t_info.game_table.leave(player_id)
 	if not isok then
 		return isok,errcode,errmsg
@@ -373,7 +370,6 @@ function CMD.request(table_id,player_id,header,body)
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 	assert(player_map[player_id])
-	local player = player_map[player_id]
 
     local func = t_info.game_table.handle[header]
     if not func then

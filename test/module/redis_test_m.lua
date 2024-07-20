@@ -76,7 +76,7 @@ local function expired_key_watch_test()
 		"__keyspace@0__:test**"
 	}
 
-	local cancel = redis.new_watch("game",{},sub_list,function(msg,key,pkey)
+	local _ = redis.new_watch("game",{},sub_list,function(msg,key,pkey)
 		log.info("expired_key_watch_test:",msg,key,pkey)
 	end)
 
@@ -107,7 +107,7 @@ local function disconnect_watch()
 
 	local cli = redis.new_client("game")
 
-	local cancel = redis.new_watch("game",sub_list,{},function(msg,key,pkey)
+	local _ = redis.new_watch("game",sub_list,{},function(msg,key,pkey)
 		log.info("watch:",msg,key,pkey)
 	end)
 

@@ -1,7 +1,6 @@
 local cjson_safe  = require 'cjson.safe'
 local basexx = require 'skynet-fly.3rd.basexx'
 local openssl = require "openssl"
-local digest = assert(openssl.digest)
 local hmac = assert(openssl.hmac)
 local pkey = assert(openssl.pkey)
 local x509 = assert(openssl.x509)

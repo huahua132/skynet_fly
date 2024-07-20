@@ -58,8 +58,8 @@ function command:script_run(script_str,...)
 end
 
 local function get_line_info()
-	local info = debug_getinfo(3,"Sl")
-	local lineinfo = info.short_src .. ":" .. info.currentline
+	local info = debug_getinfo(3,"Sl") 
+	return info.short_src .. ":" .. info.currentline
 end
 
 --给redis命令施加保护执行

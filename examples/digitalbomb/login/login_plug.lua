@@ -1,6 +1,5 @@
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local contriner_client = require "skynet-fly.client.contriner_client"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 local timer = require "skynet-fly.timer"
 local errorcode = require "enum.errorcode"
@@ -11,14 +10,10 @@ local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
 
 local assert = assert
-local x_pcall = x_pcall
 
 local g_interface_mgr = nil
 
 local M = {}
-
-local confclient = contriner_client:new("share_config_m")
-local room_game_login = confclient:mod_call('query','room_game_login')
 
 --登录检测的超时时间
 M.time_out = timer.second * 5

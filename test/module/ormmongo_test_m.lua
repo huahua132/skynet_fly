@@ -49,7 +49,7 @@ end
 local function test_alter_table()
     test_create_table()
     local adapter = ormadapter_mongo:new("admin")
-    local orm_obj = ormtable:new("t_player")
+    local _ = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
     :int8("sex")
@@ -76,12 +76,12 @@ local function test_create_entry()
 
     --主键冲突
     local new_data = {player_id = 10001,role_id = 1, sex = 1}
-    local isok, ret = pcall(orm_obj.create_one_entry, orm_obj, new_data)
+    local isok = pcall(orm_obj.create_one_entry, orm_obj, new_data)
     assert(not isok)
 
     --缺少主键数据
     local new_data = {player_id = 10001,role_id = 2}
-    local isok,res = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok) --会崩溃报错
 
     --新建多条数据
@@ -100,107 +100,107 @@ local function test_create_entry()
     -- 新增数据值范围要合理
 
     local new_data = {player_id = 100055,role_id = 1, sex = -128}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 10005,role_id = 1, sex = -129}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 10006,role_id = 1, sex = 128}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100066,role_id = 1, sex = 127}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
     
     local new_data = {player_id = 10007,role_id = 1, sex = 1, sex1 = 256}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100077,role_id = 1, sex = 1, sex1 = 255}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 10008,role_id = 1, sex = 1, sex1 = -1}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100088,role_id = 1, sex = 1, sex1 = 0}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 11007,role_id = 1, sex = 1, sex2 = 32768}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 110077,role_id = 1, sex = 1, sex2 = 32767}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 11008,role_id = 1, sex = 1, sex2 = -32769}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 110088,role_id = 1, sex = 1, sex2 = -32768}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 12007,role_id = 1, sex = 1, sex3 = 65536}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 120077,role_id = 1, sex = 1, sex3 = 65535}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 12008,role_id = 1, sex = 1, sex3 = -1}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 120088,role_id = 1, sex = 1, sex3 = 0}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 13007,role_id = 1, sex = 1, sex4 = 2147483648}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 130077,role_id = 1, sex = 1, sex4 = 2147483647}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 13008,role_id = 1, sex = 1, sex4 = -2147483649}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 130088,role_id = 1, sex = 1, sex4 = -2147483648}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 14007,role_id = 1, sex = 1, sex5 = 4294967296}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 140077,role_id = 1, sex = 1, sex5 = 4294967295}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 14008,role_id = 1, sex = 1, sex5 = -1}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 140088,role_id = 1, sex = 1, sex5 = 0}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 15007,role_id = 1, sex = 1, sex6 = 9223372036854775808}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 150077,role_id = 1, sex = 1, sex6 = 9223372036854775807}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 15008,role_id = 1, sex = 1, sex6 = -9223372036854775809}
@@ -216,7 +216,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10009,role_id = 1, sex = 1, nickname = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -224,7 +224,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100099,role_id = 1, sex = 1, nickname = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -232,7 +232,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10010,role_id = 1, sex = 1, email = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -240,7 +240,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100100,role_id = 1, sex = 1, email = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -248,7 +248,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10011,role_id = 1, sex = 1, sex7 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -256,7 +256,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100111,role_id = 1, sex = 1, sex7 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -264,7 +264,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10012,role_id = 1, sex = 1, sex8 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -272,7 +272,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100122,role_id = 1, sex = 1, sex8 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -280,7 +280,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10013,role_id = 1, sex = 1, sex9 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -288,7 +288,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100133,role_id = 1, sex = 1, sex9 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -296,7 +296,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10014,role_id = 1, sex = 1, sex10 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -304,7 +304,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100144,role_id = 1, sex = 1, sex10 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -312,7 +312,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10015,role_id = 1, sex = 1, sex11 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     
@@ -321,7 +321,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100155,role_id = 1, sex = 1, sex11 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -329,7 +329,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10016,role_id = 1, sex = 1, sex12 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -337,7 +337,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100166,role_id = 1, sex = 1, sex12 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -345,7 +345,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10017,role_id = 1, sex = 1, sex13 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -353,7 +353,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100177,role_id = 1, sex = 1, sex13 = test_str}
-    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     delete_table()
@@ -501,7 +501,7 @@ end
 --测试删除数据
 local function test_delete_entry()
     local orm_obj = test_create_table()
-    local res = orm_obj:create_entry({
+    local _ = orm_obj:create_entry({
         {player_id = 10004,role_id = 1, sex = 1, nickname = "ddasda", sex1 = 222},
         {player_id = 10004,role_id = 1, sex = 2, nickname = "ddasda", sex1 = 223},
         {player_id = 10004,role_id = 1, sex = 3, nickname = "ddasda", sex1 = 224},
@@ -586,7 +586,7 @@ local function test_cache_entry()
 
     skynet.sleep(300)
     --查询延迟缓存时间 重置为5秒
-    local rr_list = orm_obj:get_entry(10001)
+    local _ = orm_obj:get_entry(10001)
     skynet.sleep(300)
     local rrr_list,is_cache = orm_obj:get_entry(10001)
     local rrr_entry = assert(rrr_list[1])
@@ -646,9 +646,9 @@ local function test_cache_entry()
     assert(not is_cache)
 
     --删除数据后拿取关联多条，应命中缓存
-    local entry_list = orm_obj:get_entry(10003)
+    local _ = orm_obj:get_entry(10003)
     orm_obj:delete_entry(10003, 3, 2)
-    local gg_entry_list,is_cache = orm_obj:get_entry(10003)
+    local _,is_cache = orm_obj:get_entry(10003)
     assert(is_cache)
     
     delete_table()
@@ -852,12 +852,12 @@ local function test_get_all()
 
     skynet.sleep(300)
 
-    local get_entry_list,is_cache = orm_obj:get_entry(10002) --保活
+    local _,is_cache = orm_obj:get_entry(10002) --保活
     assert(not is_cache)
     skynet.sleep(300)
     
     assert(orm_obj._key_cache_count == 6 and orm_obj._key_cache_total_count == nil)
-    local get_entry_list,is_cache = orm_obj:get_all_entry()
+    local _,is_cache = orm_obj:get_all_entry()
     assert(not is_cache)
     assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
 
@@ -884,7 +884,7 @@ local function test_delete_all()
     :set_cache(500,500)   --5秒保存一次
     :builder(adapter)
 
-    local entry_list = orm_obj:create_entry({
+    local _ = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -905,7 +905,7 @@ local function test_delete_all()
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 0)
 
-    local entry_list = orm_obj:create_one_entry({player_id = 10002, role_id = 1, sex = 1})
+    local _ = orm_obj:create_one_entry({player_id = 10002, role_id = 1, sex = 1})
     assert(orm_obj._key_cache_count == 1 and orm_obj._key_cache_total_count == 1)
 
     local entry_list = orm_obj:get_all_entry()
@@ -936,7 +936,7 @@ local function test_craete_one()
 
     --缺少主键数据
     local new_data = {player_id = 10001,role_id = 2}
-    local isok,res = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok) --会崩溃报错
 
     delete_table()
@@ -971,10 +971,10 @@ local function test_select_one()
     assert(entry:get('sex') == new_data_list[1].sex)
 
     --缺少2个参数
-    local isok,entry_list = pcall(orm_obj.get_one_entry, orm_obj, 10002)
+    local isok = pcall(orm_obj.get_one_entry, orm_obj, 10002)
     assert(not isok)
     --缺少1个参数
-    local isok,entry_list = pcall(orm_obj.get_one_entry, orm_obj, 10002, 1)
+    local isok = pcall(orm_obj.get_one_entry, orm_obj, 10002, 1)
     assert(not isok)
 
     --查询不存在数据
@@ -1121,7 +1121,7 @@ end
 --测试占位缓存
 local function test_invaild_entry()
     delete_table()
-    local adapter = ormadapter_mysql:new("admin")
+    local adapter = ormadapter_mongo:new("admin")
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
@@ -1278,7 +1278,7 @@ local function test_invaild_entry()
 
     skynet.yield()
     --查询10001 3 3 不存在
-    local entry, iscache = orm_obj:get_one_entry(10001, 3, 3)
+    local entry = orm_obj:get_one_entry(10001, 3, 3)
     assert(not is_cache)
     assert(not entry)
     skynet.yield()

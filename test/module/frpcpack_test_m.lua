@@ -24,7 +24,7 @@ local function test1()
 	local req = frpcpack.packrequest(1, "module_name", "instance_name", session_id, 0, msg, sz, 1)
 	log.info("pack :", #req)
 
-    local sz = (req:byte(1) << 8) + req:byte(2)
+    local _ = (req:byte(1) << 8) + req:byte(2)
     req =  req:sub(3)
     log.info("msgbuff:", #req)
     local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(req)
@@ -53,7 +53,7 @@ local function test2()
         log.info("padding:", i, #v)
     end
 
-    local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
+    local _ = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
     local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
     log.info("unpack msgbuff:", pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
@@ -62,7 +62,7 @@ local function test2()
     frpcpack.append(req, msg, sz)
 
     for i, v in ipairs(padding) do
-        local sz = (v:byte(1) << 8) + v:byte(2)
+        local _ = (v:byte(1) << 8) + v:byte(2)
         local msgbuff = v:sub(3)
         local pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall = frpcpack.unpackrequest(msgbuff)
         log.info("unpack padding ", i, ':', pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
@@ -81,7 +81,7 @@ end
 local function test3()
     local session = 58989789
     local msgbuff = frpcpack.packresponse(session, false, "hello frpcpack")
-    local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
+    local _ = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
 
     log.info("retmsg:", frpcpack.unpackresponse(msgbuff))
@@ -92,7 +92,7 @@ local function test4()
     local msg, sz = skynet.pack("hello", "frpc")
     local session = 589897854329
     local msgbuff = frpcpack.packresponse(session, true, msg, sz)
-    local sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
+    local _ = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
 
     local session, isok, msg, padding = frpcpack.unpackresponse(msgbuff)

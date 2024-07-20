@@ -238,7 +238,6 @@ function M:game_status_req(player_id, packname, pack_body)
         return
     end
 
-    local seater = self.m_seat_list[seat_id]
     local doing_seat_player = nil
     local doing_player_id = 0
     local doing_seat_id = 0

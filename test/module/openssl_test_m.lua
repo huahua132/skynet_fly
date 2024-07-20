@@ -5,8 +5,6 @@ local log = require "skynet-fly.log"
 local openssl = require "openssl"
 local crypt = require "skynet.crypt"
 
-
-local dh = openssl.dh
 local pkey = openssl.pkey
 
 local assert = assert

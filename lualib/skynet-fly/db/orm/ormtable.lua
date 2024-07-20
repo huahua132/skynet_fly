@@ -212,7 +212,6 @@ end
 -- 设置total_count
 local function set_total_count(t, key_values, total_count)
     if not t._cache_time then return end
-    local key_list = t._keylist
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local len = #key_values
     for i = 1, len do
@@ -234,8 +233,6 @@ local function get_key_select(t, key_values)
     if not t._cache_time then return end
     local key_select_map = t._key_select_map
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
-    local key_list = t._keylist
-    local maxlen = #key_list
     local len = #key_values
     for i = 1, len do
         local filed_value = key_values[i]
@@ -482,8 +479,6 @@ end
 --检查key values 是否合法
 local function check_key_values(t, key_values)
     local keylist = t._keylist
-    local filed_list = t._filed_list
-    local filed_map = t._filed_map
     for i = 1,#key_values do
         local filed_name = keylist[i]
         local value = key_values[i]
@@ -495,7 +490,6 @@ end
 local function create_invaild_entry(t, key_values)
     --无效数据，只需要添加key的数据就行
     local keylist = t._keylist
-    local filed_list = t._filed_list
     local filed_map = t._filed_map
     local data = {}
     for i = 1, #keylist do
@@ -666,7 +660,6 @@ end
 
 local function get_one_entry(t, key_values)
     assert(t._is_builder, "not builder can`t get_one_entry")
-    local key_list = t._keylist
     local entry, is_cache = get_key_select(t, key_values)
     if not is_cache then
         --永久 缓存没有就是没有

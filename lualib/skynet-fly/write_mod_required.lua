@@ -17,7 +17,6 @@ return function(mod_name,loaded)
 		skynet.error("write_module_info mkdir err ")
 		return
 	end
-	local pre_time = os.time()
 	local info_file_name = mod_name .. '.required'
 	local info_file_dir = write_dir .. '/' .. info_file_name
 	local info_file = io.open(info_file_dir,'w+')

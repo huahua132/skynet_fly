@@ -12,10 +12,7 @@ local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
 local tsort = table.sort
-local skynet_send = skynet.send
 local skynet_call = skynet.call
-local skynet_pack = skynet.pack
-local skynet_ret = skynet.ret
 local pcall = pcall
 
 local loadmodsfile = skynet.getenv("loadmodsfile")

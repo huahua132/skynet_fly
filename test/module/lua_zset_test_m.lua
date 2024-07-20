@@ -124,7 +124,7 @@ local function test2()
     dump_rank_range(sl, r1, r2)
     dump_rank_range(sl, r2, r1)
     
-    local s1, s2 = 10, 20
+    
     local function dump_score_range(sl, s1, s2)
         print("score range:", s1, s2)
         local t = sl:get_score_range(s1, s2)

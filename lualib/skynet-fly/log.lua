@@ -18,8 +18,6 @@ local schar = string.char
 local math_floor = math.floor
 local osdate = os.date
 
-local ADDRESS = skynet.address(skynet.self())
-
 local M = {
 	INFO = 0,
 	DEBUG = 1,
