@@ -105,7 +105,7 @@ end
 local function match_join(player_id, gate, fd, is_ws, hall_server_id, table_name)
     assert(not g_player_map[player_id])
     local table_id = alloc_plug.match(player_id)
-    local ok,errcode,errmsg
+    local _,errcode,errmsg
     if not table_id then
         table_id,errcode,errmsg = create_table(table_name)
         if not table_id then
@@ -125,7 +125,7 @@ local function create_join(player_id, gate, fd, is_ws, hall_server_id, table_nam
 	end
 
 	local table_id = ok
-	return join(player_id, gate, fd, is_ws, hall_server_id, table_name)
+	return join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
 end
 
 local function leave(player_id)
