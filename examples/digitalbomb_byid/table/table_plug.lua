@@ -47,11 +47,9 @@ function M.init(interface_mgr)
 end
 
 function M.table_creator(table_id)
-	local m_HANDLE = {}
 	local m_interface_mgr = g_interface_mgr:new(table_id)
 	local m_errors_msg = errors_msg:new(m_interface_mgr)
 	local m_game_msg = game_msg:new(m_interface_mgr)
-	local m_table_id = table_id
     local m_game_state = GAME_STATE_ENUM.waiting --参与游戏的玩家座位号
     local m_mine = 0                             --雷
     local m_doing_seat_id = nil                  --操作座位号
@@ -252,7 +250,6 @@ function M.table_creator(table_id)
 					return
 				end
 
-				local seater = m_seat_list[seat_id]
 				local doing_seat_player = nil
 				local doing_player_id = 0
 				local doing_seat_id = 0
