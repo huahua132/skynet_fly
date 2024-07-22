@@ -75,9 +75,9 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
             local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):subsyn(channel_name, version)
             if not ret then
                 log.warn_fmt("watch_channel_name err %s ",version)
-                break                                               --退出 有watch_up重启拉起
+                break                                               --退出 有watch_up重新拉起
             elseif ret == WATCH_SYN_RET.disconnect or ret == WATCH_SYN_RET.unsyn then
-                break                                               --退出 有watch_up重启拉起
+                break                                               --退出 有watch_up重新拉起
             elseif ret == WATCH_SYN_RET.move then
                 skynet.sleep(10)
                 log.warn("watch_channel_name move ", cluster_name, channel_name)
