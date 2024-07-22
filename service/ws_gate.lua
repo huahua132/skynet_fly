@@ -68,6 +68,6 @@ skynet.start(function()
 	skynet_util.lua_src_dispatch(CMD)
 end)
 
-skynet_util.register_info_func("info:", function()
+skynet_util.register_info_func("info", function()
 	log.info("ws_gate info ", g_client_num)
 end)
