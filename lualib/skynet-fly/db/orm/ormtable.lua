@@ -736,11 +736,12 @@ local function delete_entry(t, key_values)
     assert(t._is_builder, "not builder can`t delete_entry")
     local entry_list = get_entry(t, key_values)
     if not next(entry_list) then return true end --没有数据可删
-
+    local change_flag_map = t._change_flag_map
     local res = t._adapterinterface:delete_entry(key_values)
     if res then
         for i = 1,#entry_list do
             local entry = entry_list[i]
+            change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
             if t._cache_map then
                 t._cache_map:del_cache(entry)
             end
