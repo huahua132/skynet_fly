@@ -1416,6 +1416,43 @@ local function test_every_cache()
     delete_table()
 end
 
+--测试间隔保存前删除了
+local function test_inval_save_del()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    -- 自动保存数据
+    local entry_list = orm_obj:create_entry({
+        {player_id = 10002, role_id = 1, sex = 1},
+    })
+
+    for i,entry in ipairs(entry_list) do
+        entry:set("email", "emailssss")
+    end
+
+    orm_obj:delete_entry(10002, 1, 1)
+    local _ = orm_obj:create_entry({
+        {player_id = 10002, role_id = 1, sex = 1},
+    })
+
+    skynet.sleep(500)
+
+    local entry = orm_obj:get_one_entry(10002, 1, 1)
+    log.info(">>>", entry:get_entry_data())
+    assert(entry:get('email') == "")
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1458,6 +1495,8 @@ function CMD.start()
         test_invaild_entry()
         log.info("test_every_cache>>>>>")
         test_every_cache()
+        log.info("test_inval_save_del>>>>>")
+        test_inval_save_del()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
