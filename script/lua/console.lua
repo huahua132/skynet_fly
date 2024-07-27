@@ -120,7 +120,7 @@ function CMD.check_reload()
 			if now_f_info then
 				local new_change_time = now_f_info.modification
 				if new_change_time > last_change_time then
-				table.insert(change_f_name,load_f_name)
+					table.insert(change_f_name,load_f_name)
 				end
 			end
 		end
@@ -216,6 +216,72 @@ function CMD.fasttime()
 
 	local fastcmd = string.format('%s/fasttime/%s/%s',get_host(),os.time(date),one_add)
 	print(string.format("'%s'",fastcmd))
+end
+
+--检查热更
+function CMD.check_hotfix()
+	local module_info_dir = "hotfix_info." .. load_modsfile
+	local dir_info = lfs.attributes(module_info_dir)
+	assert(dir_info and dir_info.mode == 'directory')
+	local load_mods = loadfile (load_modsfile)()
+
+	local module_info_map = {}
+	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
+		local m_name = string.sub(f_name,1,#f_name - 9)
+		if load_mods[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
+			local f_tb = loadfile(f_path)()
+			module_info_map[m_name] = f_tb
+		end
+	end
+
+	local need_reload_module = {}
+
+  	for module_name,loaded in pairs(module_info_map) do
+    	local change_f_name = {}
+
+		for load_f_name,load_f_info in pairs(loaded) do
+		local load_f_dir = load_f_info.dir
+		local last_change_time = load_f_info.last_change_time
+		local now_f_info = lfs.attributes(load_f_dir)
+			if now_f_info then
+				local new_change_time = now_f_info.modification
+				if new_change_time > last_change_time then
+					table.insert(change_f_name,load_f_name)
+				end
+			end
+		end
+
+		if #change_f_name > 0 then
+			need_reload_module[module_name] = table.concat(change_f_name,'|')
+		end
+  	end
+
+	for module_name,change_file in pairs(need_reload_module) do
+		print(module_name)
+		print(change_file)
+	end
+end
+
+--热更
+function CMD.hotfix()
+	local load_mods = loadfile(load_modsfile)()
+	local server_id = assert(ARGV[ARGV_HEAD + 1])
+	local mod_name_str = ",0"
+	for i = ARGV_HEAD + 2,#ARGV, 2 do
+		local module_name = ARGV[i]
+		local hotmods = ARGV[i + 1]
+		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
+		mod_name_str = mod_name_str .. ',"' .. hotmods .. '"'
+		assert(load_mods[module_name])
+	end
+	local url = string.format('%s/call/%s/"hotfix"%s',get_host(),server_id,mod_name_str)
+	print(string.format("'%s'",url))
+end
+
+--解析热更结果
+function CMD.handle_hotfix_result()
+	local ret = ARGV[ARGV_HEAD + 2]
+	print("ret = ",ret)
 end
 
 assert(CMD[cmd],'not cmd:' .. cmd)
