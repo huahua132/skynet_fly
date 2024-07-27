@@ -1,6 +1,7 @@
 local skynet = require "skynet.manager"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local log = require "skynet-fly.log"
+local json = require "cjson"
 local queue = require "skynet.queue"()
 
 local loadfile = loadfile
@@ -36,19 +37,21 @@ skynet_util.register_info_func("version",function()
 	return g_version_map
 end)
 
-local function call_id_list(id_list,cmd)
+local function call_id_list(id_list, cmd, ...)
+	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		skynet_call(id,'lua',cmd)
+		ret_map[skynet.address(id)] = {skynet_call(id,'lua',cmd, ...)}
 	end
+	return ret_map
 end
 
-local function call_module(module_name,cmd)
+local function call_module(module_name, cmd, ...)
 	local id_list = g_id_list_map[module_name]
 	if not id_list or #id_list <= 0 then
 		return
 	end
 
-	call_id_list(id_list,cmd)
+	return call_id_list(id_list, cmd, ...)
 end
 
 local function launch_new_module(module_name,config)
@@ -295,6 +298,15 @@ local function close_loads(module_names)
 	end
 end
 
+local function hotfix(module_map)
+	local ret_map = {}
+	for module_name,hotfix_mods in pairs(module_map) do
+		ret_map[module_name] = call_module(module_name, 'hotfix', hotfix_mods) or "not exists"
+	end
+	local ret = json.encode(ret_map)
+	return ret
+end
+
 local CMD = {}
 
 --通知模块退出
@@ -346,6 +358,18 @@ end
 function CMD.close_loads(source, ...)
 	local module_names = {...}
 	queue(close_loads, module_names)
+end
+
+--热更
+function CMD.hotfix(source, ...)
+	local module_names = {...}
+	local module_map = {}
+	for i = 1, #module_names, 2 do
+		local module_name = module_names[i]
+		local hotfix_mods = module_names[i + 1] or ""
+		module_map[module_name] = hotfix_mods
+	end
+	return queue(hotfix, module_map)
 end
 
 skynet.start(function()

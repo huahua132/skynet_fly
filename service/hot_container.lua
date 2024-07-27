@@ -25,6 +25,10 @@ local MODULE_NAME = MODULE_NAME
 local module_info = require "skynet-fly.etc.module_info"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
+local hotfix = require "skynet-fly.hotfix.hotfix"
+
+hotfix_require = hotfix.require
+
 module_info.set_base_info {
 	module_name = MODULE_NAME,
 	index = INDEX,
@@ -144,7 +148,10 @@ function CMD.start(cfg)
 	local ret = module_start(cfg)
 	if INDEX == 1 then
 		--start 之后require的文件，监视不到文件修改，触发不了check reload,所以加载文件要在start之前或者在start中全部require
-		skynet.fork(write_mod_required,MODULE_NAME,new_loaded)
+		skynet.fork(write_mod_required,"module_info",MODULE_NAME,new_loaded)
+
+		local hotfix_loaded = hotfix.get_loadedmap()
+		skynet.fork(write_mod_required,"hotfix_info",MODULE_NAME,hotfix_loaded)
 	end
 
 	if ret then
@@ -203,6 +210,17 @@ function CMD.register_visitor(source,module_name,servername)
 		g_source_map[source] = nil
 	end)
 	return "pong"
+end
+
+--热更
+assert(not CMD['hotfix'], "repeat cmd hotfix")
+function CMD.hotfix(hotfixmods)
+	local isok, ret = hotfix.hotfix(hotfixmods)
+	if isok and INDEX == 1 then
+		local hotfix_loaded = hotfix.get_loadedmap()
+		skynet.fork(write_mod_required,"hotfix_info",MODULE_NAME,hotfix_loaded)
+	end
+	return ret
 end
 
 contriner_client:CMD(CMD)

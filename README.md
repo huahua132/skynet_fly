@@ -316,9 +316,11 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
       - `restart.sh` 重启
       - `reload.sh` 热更某个可热更模块。
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
-      - `check_reload.sh` 检查可热更模块是否有文件或者配置修改，有就更新。
+      - `check_reload.sh` 检测可热更模块是否有文件或者配置修改，有就更新。
       - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
+      - `check_hotfix.sh` 检测刷热更脚本。
+      - `hotfix.sh` 刷热更脚本。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 3. 运行
    - `sh script/run.sh load_mods.lua 0`
