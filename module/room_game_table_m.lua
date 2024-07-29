@@ -299,7 +299,7 @@ function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
 end
 
 --离开房间
-function CMD.leave(table_id,player_id)
+function CMD.leave(table_id,player_id,reason)
 	assert(g_table_map[table_id])
 
 	local t_info = g_table_map[table_id]
@@ -307,7 +307,7 @@ function CMD.leave(table_id,player_id)
 
 	assert(player_map[player_id])
 
-	local isok,errcode,errmsg = t_info.game_table.leave(player_id)
+	local isok,errcode,errmsg = t_info.game_table.leave(player_id,reason)
 	if not isok then
 		return isok,errcode,errmsg
 	end
