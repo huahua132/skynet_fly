@@ -92,15 +92,15 @@ local function join_table(agent, player_id, table_name, table_id)
 	return table_id
 end
 --离开桌子
-local function leave(agent)
+local function leave(agent, reason)
 	local isok,errcode,errmsg
 	isok = true
 	local alloc_client = agent.alloc_client           --走匹配的
 	local alloc_server_id = agent.alloc_server_id     --直接进入房间的
 	if alloc_client then
-		isok,errcode,errmsg = alloc_client:mod_call('leave', agent.player_id)
+		isok,errcode,errmsg = alloc_client:mod_call('leave', agent.player_id, reason)
 	elseif alloc_server_id then
-		isok,errcode,errmsg = xx_pcall(skynet.call, alloc_server_id, 'lua', 'leave', agent.player_id)
+		isok,errcode,errmsg = xx_pcall(skynet.call, alloc_server_id, 'lua', 'leave', agent.player_id, reason)
 	end
 
 	if not isok then
@@ -184,9 +184,9 @@ local function connect(agent, is_reconnect)
 end
 
 --登出
-local function goout(agent)
+local function goout(agent, reason)
 	local player_id = agent.player_id
-	local isok,errcode,errmsg = leave(agent)
+	local isok,errcode,errmsg = leave(agent, reason)
 	if not isok then
 		log.error("can`t leave !!! ",player_id, errcode, errmsg)
 		return nil,errcode,errmsg
@@ -298,8 +298,8 @@ function interface:leave_table(player_id)
 	return ret,errcode,errmsg
 end
 --登出
-function interface:goout(player_id)
-	return CMD.goout(player_id)
+function interface:goout(player_id, reason)
+	return CMD.goout(player_id, reason)
 end
 --设置消息处理函数
 function interface:handle(header,func)
@@ -514,20 +514,20 @@ function CMD.leave_table(player_id)
 end
 
 --登出
-function CMD.goout(player_id)
+function CMD.goout(player_id, reason)
 	local agent = g_player_map[player_id]
 	if not agent then
-		log.warn("goout not agent ",player_id)
+		log.warn("goout not agent ",player_id, reason)
 		return
 	end
 
 	if agent.goouting then
-		log.warn("repeat goout ",player_id)
+		log.warn("repeat goout ",player_id, reason)
 		return
 	end
 
 	agent.goouting = true
-	local ret,errcode,errmsg = agent.queue(goout,agent)
+	local ret,errcode,errmsg = agent.queue(goout, agent, reason)
 	agent.goouting = false
 	return ret,errcode,errmsg
 end
@@ -580,7 +580,7 @@ function CMD.start(config)
 
 		for _,agent in pairs(disconn_list) do
 			--尝试登出
-			local isok,errorcode,errormsg = interface:goout(agent.player_id)
+			local isok,errorcode,errormsg = interface:goout(agent.player_id, "disconnect time out")
 			if not isok then
 				log.warn("disconn_time_out goout err ",errorcode,errormsg)
 			end

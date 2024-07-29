@@ -128,11 +128,11 @@ local function create_join(player_id, gate, fd, is_ws, hall_server_id, table_nam
 	return join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_id)
 end
 
-local function leave(player_id)
+local function leave(player_id, reason)
     local t_info = assert(g_player_map[player_id])
     local room_client = t_info.room_client
     local table_id = t_info.table_id
-    local ok,errcode,errmsg = room_client:mod_call_by_name('leave',table_id,player_id)
+    local ok,errcode,errmsg = room_client:mod_call_by_name('leave',table_id,player_id,reason)
     if not ok then
         log.info("leave table fail ",table_id,player_id,errcode,errmsg)
         return nil,errcode,errmsg
@@ -214,8 +214,8 @@ function CMD.join(player_id, gate, fd, is_ws, hall_server_id, table_name, table_
 end
 
 --离开房间
-function CMD.leave(player_id)
-    return queue(leave, player_id)
+function CMD.leave(player_id, reason)
+    return queue(leave, player_id, reason)
 end
 
 local function check_dismisstable()
