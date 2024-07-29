@@ -152,9 +152,11 @@ function M.hotfix(hotfixmods)
                 log.warn_fmt("execute hotfix faild name:%s err:%s", name, err)
                 hot_ret[name] = "execute hotfix faild err:" .. err
             else
+                log.info("hotfix ok ", name)
                 hot_ret[name] = "ok:" .. i
             end
         else
+            log.info("hotfix ok ", name)
             hot_ret[name] = "ok:" .. i
         end        
     end
