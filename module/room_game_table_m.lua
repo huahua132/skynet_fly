@@ -43,7 +43,7 @@ local function get_player_info(table_id,player_id)
 end
 
 --踢出所有玩家
-local function kick_out_all(table_id)
+local function kick_out_all(table_id, reason)
 	if not g_table_map[table_id] then
 		log.warn("kick_out_all not exists table_id = ",table_id)
 		return
@@ -52,7 +52,7 @@ local function kick_out_all(table_id)
 	local player_map = t_info.player_map
 
 	for player_id,player in pairs(player_map) do
-		local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id)
+		local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id, reason)
 		if not isok then
 			log.warn("kick_player err ",player_id,err,errmsg)
 		end
@@ -61,14 +61,14 @@ local function kick_out_all(table_id)
 end
 
 --踢出单个玩家
-local function kick_player(table_id,player_id)
+local function kick_player(table_id, player_id, reason)
 	local player = get_player_info(table_id,player_id)
 	if not player then
 		log.warn("kick_player not exists ",table_id,player_id)
 		return false
 	end
 
-	local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id)
+	local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table', player_id, reason)
 	if not isok then
 		log.warn("kick_player err ",player_id,err,errmsg)
 		return false
@@ -198,12 +198,12 @@ function interface:new(table_id)
     return t
 end
 --踢出该桌子所有玩家
-function interface:kick_out_all()
-    return kick_out_all(self.table_id)
+function interface:kick_out_all(reason)
+    return kick_out_all(self.table_id, reason)
 end
 --踢出单个玩家
-function interface:kick_player(player_id)
-	return kick_player(self.table_id,player_id)
+function interface:kick_player(player_id, reason)
+	return kick_player(self.table_id, player_id, reason)
 end
 --给玩家发消息
 function interface:send_msg(player_id,header,body)

@@ -116,7 +116,7 @@ local function leave(agent, reason)
 	agent.table_name = nil
 	
 	if table_name and table_id and hall_plug.leave_table then
-		hall_plug.leave_table(agent.player_id, table_name, table_id)
+		hall_plug.leave_table(agent.player_id, table_name, table_id, reason)
 	end
 
 	return true
@@ -276,7 +276,7 @@ function interface:join_table(player_id, table_name, table_id)
 	return ret,errcode,errmsg
 end
 --离开房间
-function interface:leave_table(player_id)
+function interface:leave_table(player_id, reason)
 	local agent = g_player_map[player_id]
 	if not agent then
 		log.warn("leave agent not exists ",player_id)
@@ -293,7 +293,7 @@ function interface:leave_table(player_id)
 	end
 
 	agent.table_lock = true
-	local ret,errcode,errmsg = agent.queue(leave, agent)
+	local ret,errcode,errmsg = agent.queue(leave, agent, reason)
 	agent.table_lock = nil
 	return ret,errcode,errmsg
 end
@@ -509,8 +509,8 @@ function CMD.disconnect(gate,fd,player_id)
 	end
 end
 
-function CMD.leave_table(player_id)
-	return interface:leave_table(player_id)
+function CMD.leave_table(player_id, reason)
+	return interface:leave_table(player_id, reason)
 end
 
 --登出
