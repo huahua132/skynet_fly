@@ -60,13 +60,13 @@ $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
 
 $(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) -I3rd/lua-zset $(SHARED)  $^ -o $@
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-zset
 
 $(LUA_CLIB_PATH)/snapshot.so : 3rd/lua-snapshot/snapshot.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED)  $^ -o $@
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@
 
 $(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED)  $^ -o $@ -Iskynet/skynet-src
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
 SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')
