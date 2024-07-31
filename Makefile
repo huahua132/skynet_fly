@@ -54,19 +54,19 @@ $(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
 
 $(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib $^ -L$(LUA_INC) -lz -o $@
+	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib $^ -lz -o $@
 
 $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
 
-$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.h 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
-	$(CC)  $(CFLAGS) -I$(LUA_INC) $(SHARED)  $^ -o $@
+$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) -I3rd/lua-zset $(SHARED)  $^ -o $@
 
 $(LUA_CLIB_PATH)/snapshot.so : 3rd/lua-snapshot/snapshot.c | $(LUA_CLIB_PATH)
-	$(CC)  $(CFLAGS) -I$(LUA_INC) $(SHARED)  $^ -o $@
+	$(CC) $(CFLAGS) $(SHARED)  $^ -o $@
 
 $(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH)
-	$(CC)  $(CFLAGS) -I$(LUA_INC) $(SHARED)  $^ -o $@ -Iskynet/skynet-src
+	$(CC) $(CFLAGS) $(SHARED)  $^ -o $@ -Iskynet/skynet-src
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
 SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')
@@ -75,7 +75,7 @@ INCS := $(sort $(dir $(HDRS)))  # 获取所有子目录路径
 CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
 
 $(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -L$(TLS_LIB) -I$(TLS_INC) -lssl
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -L$(TLS_LIB) -I$(TLS_INC) -lssl
 
 $(SKYNET):
 	git submodule update --init
