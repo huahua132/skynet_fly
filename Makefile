@@ -37,7 +37,7 @@ $(CSERVICE_PATH) :
 #新增的c module服务
 CSERVICE = 
 #新增 lua-c库
-LUA_CLIB = lfs cjson pb zlib chat_filter openssl skiplist snapshot frpcpack
+LUA_CLIB = lfs cjson pb zlib chat_filter openssl skiplist snapshot frpcpack socket
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
@@ -69,13 +69,18 @@ $(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
-SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')
-HDRS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.h')
-INCS := $(sort $(dir $(HDRS)))  # 获取所有子目录路径
-CFLAGS += $(foreach dir,$(INCS),-I$(dir))  # 添加递归搜索路径
+SSL_SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')
+SSL_HDRS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.h')
+SSL_INCS := $(sort $(dir $(SSL_HDRS)))  # 获取所有子目录路径
+SSL_CFLAGS = $(CFLAGS)
+SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))  # 添加递归搜索路径
 
-$(LUA_CLIB_PATH)/openssl.so : $(SRCS) | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -L$(TLS_LIB) -I$(TLS_INC) -lssl
+$(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH)
+	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -L$(TLS_LIB) -I$(TLS_INC) -lssl
+
+$(LUA_CLIB_PATH)/socket.so:
+	cd 3rd/luasocket && $(MAKE) PLAT=$(PLAT) LUAV=5.4 prefix=../../../$(LUA_CLIB_PATH) LUAINC_$(PLAT)=../../../$(LUA_INC) LUALIB_$(PLAT)=../../../$(LUA_INC)
+	mv 3rd/luasocket/src/socket-3.1.0.so $(LUA_CLIB_PATH)/socket.so
 
 $(SKYNET):
 	git submodule update --init
