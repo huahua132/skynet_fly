@@ -88,6 +88,18 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	if cfg.debug_port then
 		config.debug_port = cfg.debug_port
 	end
+	if cfg.breakpoint_debug_host then										--断点调式连接host
+		config.breakpoint_debug_host = cfg.breakpoint_debug_host
+	end
+	if cfg.breakpoint_debug_port then										--断点调式连接port
+		config.breakpoint_debug_port = cfg.breakpoint_debug_port
+	end
+	if cfg.breakpoint_debug_module_name then								--断点调式的可热更模块名
+		config.breakpoint_debug_module_name = cfg.breakpoint_debug_module_name
+	end	
+	if cfg.breakpoint_debug_module_index then								--断点调式的可热更模块启动下标
+		config.breakpoint_debug_module_index = cfg.breakpoint_debug_module_index
+	end
 end
 
 

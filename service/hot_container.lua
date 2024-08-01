@@ -26,8 +26,18 @@ local module_info = require "skynet-fly.etc.module_info"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local hotfix = require "skynet-fly.hotfix.hotfix"
-
 hotfix_require = hotfix.require
+
+local g_breakpoint_debug_module_name = skynet.getenv("breakpoint_debug_module_name")
+local g_breakpoint_debug_module_index = tonumber(skynet.getenv("breakpoint_debug_module_index"))
+
+local g_breakpoint_debug_host = nil
+local g_breakpoint_debug_port = nil
+
+if g_breakpoint_debug_module_name == MODULE_NAME and INDEX == g_breakpoint_debug_module_index then
+	g_breakpoint_debug_host = skynet.getenv("breakpoint_debug_host")
+	g_breakpoint_debug_port = tonumber(skynet.getenv("breakpoint_debug_port"))
+end
 
 module_info.set_base_info {
 	module_name = MODULE_NAME,
@@ -144,6 +154,11 @@ local function check_exit()
 end
 
 function CMD.start(cfg)
+	if g_breakpoint_debug_host and g_breakpoint_debug_port then
+		log.warn_fmt("start breakpoint module_name[%s] index[%s] host[%s] port[%s]", MODULE_NAME, INDEX, g_breakpoint_debug_host, g_breakpoint_debug_port)
+		require("skynet-fly.LuaPanda").start(g_breakpoint_debug_host, g_breakpoint_debug_port);
+	end
+
 	module_info.set_cfg(cfg)
 	local ret = module_start(cfg)
 	if INDEX == 1 then
