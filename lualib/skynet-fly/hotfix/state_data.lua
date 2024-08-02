@@ -8,7 +8,7 @@ local M = {}
 
 function M.alloc_table(tabname)
     local info = debug_getinfo(2,"S")
-    local key = info.short_src .. '.' .. tabname        --关闭调用处的文件路径，匹配多模块tabname冲突问题
+    local key = info.short_src .. '.' .. tabname        --关联调用处的文件路径，避免多模块tabname冲突问题
     if not g_map[key] then
         g_map[key] = {}
     end
