@@ -40,6 +40,7 @@ QQ群号：102993581
 * [lzlib](https://github.com/LuaDist/lzlib)0.4.3
 * [lua-zset](https://github.com/xjdrew/lua-zset)latest
 * [lua-snapshot](https://github.com/cloudwu/lua-snapshot)latest
+* [lua-socket](https://github.com/lunarmodules/luasocket)latest
 
 ### [官方示例domo](https://github.com/huahua132/skynet_fly_demo)
 
