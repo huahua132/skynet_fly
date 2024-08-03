@@ -6,12 +6,16 @@ local log = require "skynet-fly.log"
 local json = require "cjson"
 
 local setmetatable = setmetatable
+local pairs = pairs
 
 local M = {}
 local mt = { __index = M}
 
 function M:new()
 	local t = table_pool:get()
+    for k,v in pairs(t) do
+        t[k] = nil
+    end
 	t.resp_header = t.resp_header or {}
 	t.status = HTTP_STATUS.OK
 	t.body = ""
