@@ -2,7 +2,7 @@
 local M = {}
 
 function M.mid(c)
-    c.next()
+    c:next()
     c.res:set_header('Access-Control-Allow-Origin', '*')
     c.res:set_header('Access-Control-Allow-Methods', '*')
     c.res:set_header('Access-Control-Allow-Credentials', 'true')
