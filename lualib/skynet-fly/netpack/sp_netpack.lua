@@ -21,7 +21,7 @@ function M.load(rootpath)
     local sp_str = ""
 	for file_name,file_path,file_info in file_util.diripairs(rootpath) do
 		if string.find(file_name,".sproto",nil,true) then
-			sp_str = sp_str .. io.open(file_path, 'r') .. '\n'
+			sp_str = sp_str .. io.open(file_path, 'r'):read('a') .. '\n'
 		end
 	end
 
@@ -53,9 +53,9 @@ function M.decode(name,pstr)
 	assert(pstr)
 
     if not g_is_pcode then
-        return pcall(g_sp.decode, g_sp, name)
+        return pcall(g_sp.decode, g_sp, name, pstr)
     else
-        return pcall(g_sp.pdecode, g_sp, name)
+        return pcall(g_sp.pdecode, g_sp, name, pstr)
     end
 end
 --------------------------------------------------------------------------

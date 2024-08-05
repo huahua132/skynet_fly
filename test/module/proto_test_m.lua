@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local sproto = require "sproto"
 local core = require "sproto.core"
 
@@ -56,9 +57,30 @@ local function sproto_test()
 	log.error("sproto_test end!!!")
 end
 
+local function sproto_netpack_test()
+	log.error("sproto_netpack_test start!!!")
+
+	log.info(sp_netpack.load("./sproto"))
+	sp_netpack.set_pcode()  --压缩方式
+	local login_req = {
+		player_id = 100001,
+		nickname = "skynet_fly",
+		password = "123456",
+		account = "skynet",
+	}
+
+	local ok,pb_str = sp_netpack.encode("LoginReq",login_req)
+	log.info("sp.encode:",ok,#pb_str,pb_str)
+
+	log.info("sp.decode:",sp_netpack.decode("LoginReq",pb_str))
+
+	log.error("sproto_netpack_test end!!!")
+end
+
 function CMD.start()
 	protobuff_test()
 	sproto_test()
+	sproto_netpack_test()
 	return true
 end
 
