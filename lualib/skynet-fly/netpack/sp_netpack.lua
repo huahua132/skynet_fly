@@ -1,35 +1,36 @@
 local netpack_base = require "skynet-fly.netpack.netpack_base"
 local file_util = require "skynet-fly.utils.file_util"
-local protoc = require "skynet-fly.3rd.protoc"
-local pb = require "pb"
+local sproto = require "sproto"
 
 local string = string
 local pcall = pcall
 local assert = assert
 local tostring = tostring
+local io = io
 
 local M = {}
 
-local g_loaded = {}
+local g_is_pcode = false
+local g_sp = nil
+
 local g_pack_id_name = {}   --协议号映射包名
 --------------------------------------------------------------------------
 --加载指定路径pb文件
 --------------------------------------------------------------------------
 function M.load(rootpath)
+    local sp_str = ""
 	for file_name,file_path,file_info in file_util.diripairs(rootpath) do
-		if string.find(file_name,".proto",nil,true) then
-			protoc:loadfile(file_path)
+		if string.find(file_name,".sproto",nil,true) then
+			sp_str = sp_str .. io.open(file_path, 'r') .. '\n'
 		end
 	end
 
-	--记录加载过的message名称
-	for name,basename,type in pb.types() do
-		if not string.find(name,".google.protobuf",nil,true) then
-			g_loaded[name] = true
-		end
-	end
+    g_sp = sproto.parse(sp_str)
+end
 
-	return g_loaded
+--设置已压缩方式打包解包
+function M.set_pcode()
+    g_is_pcode = true
 end
 --------------------------------------------------------------------------
 --按包名方式编码
@@ -37,11 +38,12 @@ end
 function M.encode(name,body)
 	assert(name)
 	assert(body)
-	if not g_loaded[name] then
-		return nil,"encode not exists " .. name
-	end
 
-	return pcall(pb.encode,name,body)
+    if not g_is_pcode then
+        return pcall(g_sp.encode, g_sp, name, body)
+    else
+        return pcall(g_sp.pencode, g_sp, name, body)
+    end
 end
 --------------------------------------------------------------------------
 --按包名方式解码
@@ -49,11 +51,12 @@ end
 function M.decode(name,pstr)
 	assert(name)
 	assert(pstr)
-	if not g_loaded[name] then
-		return nil,"decode not exists " .. name
-	end
 
-	return pcall(pb.decode,name,pstr)
+    if not g_is_pcode then
+        return pcall(g_sp.decode, g_sp, name)
+    else
+        return pcall(g_sp.pdecode, g_sp, name)
+    end
 end
 --------------------------------------------------------------------------
 --按包名方式打包
@@ -68,8 +71,7 @@ M.unpack = netpack_base.create_unpack(M.decode)
 --------------------------------------------------------------------------
 --设置协议号包名映射
 --------------------------------------------------------------------------
-function M.set_packname_id(packid, name)
-	assert(g_loaded[name], "not exists name = " .. tostring(name))													   --包名不存在
+function M.set_packname_id(packid, name)												   --包名不存在
 	assert(not g_pack_id_name[packid], "is exists packid=>name = " .. tostring(packid) .. ':' .. tostring(g_pack_id_name[packid])) --已经有映射了
 
 	g_pack_id_name[packid] = name
@@ -84,11 +86,12 @@ function M.encode_by_id(packid, body)
 	if not name then
 		return nil, "not exists packid = " .. packid
 	end
-	if not g_loaded[name] then
-		return nil,"encode not exists " .. name
-	end
 
-	return pcall(pb.encode, name, body)
+    if not g_is_pcode then
+        return pcall(g_sp.encode, g_sp, name, body)
+    else
+        return pcall(g_sp.pencode, g_sp, name, body)
+    end
 end
 --------------------------------------------------------------------------
 --按协议号方式解码
@@ -101,11 +104,11 @@ function M.decode_by_id(packid, pstr)
 		return nil, "not exists packid = " .. packid
 	end
 
-	if not g_loaded[name] then
-		return nil,"decode not exists " .. name
-	end
-
-	return pcall(pb.decode, name, pstr)
+    if not g_is_pcode then
+        return pcall(g_sp.decode, g_sp, name)
+    else
+        return pcall(g_sp.pdecode, g_sp, name)
+    end
 end
 
 --------------------------------------------------------------------------

@@ -47,11 +47,11 @@ end
 --协议号方式打包 
 --------------------------------------------------------------------------
 function M.create_pack_by_id(encode)
-	return function(packid, packbody)
+	return function(packid, body)
 		assert(packid and packid <= math_util.uint16max, "invaild packid = " .. tostring(packid))
-		assert(packbody)
+		assert(body)
 
-		local ok,str = encode(packid, packbody)   --消息体打包
+		local ok,str = encode(packid, body)   --消息体打包
 		if not ok then
 			return nil,str
 		end
@@ -70,12 +70,12 @@ function M.create_unpack_by_id(decode)
 		local packid = (msgbuff:byte(1) << 8) + msgbuff:byte(2) --大端无符号2字节协议号
 		local pack_str = msgbuff:sub(3)			 				--消息体
 	
-		local ok,packbody = decode(packid, pack_str)				 --消息体解包
+		local ok,body = decode(packid, pack_str)				 --消息体解包
 		if not ok then
-			return nil, packbody
+			return nil, body
 		end
 	
-		return packid, packbody
+		return packid, body
 	end
 end
 
