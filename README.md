@@ -13,7 +13,7 @@ QQ群号：102993581
 	使用skynet_fly的好处：
 	* 支持不停服更新。
 	* 一键生成skynet的配置文件和skynet_fly的配置文件以及配套shell脚本。
-	* 对匹配房间类游戏做了gate,ws_gate的基础设施封装以及pb,json协议的支持，开发游戏只需要实现相关业务逻辑。
+	* 对匹配房间类游戏做了gate,ws_gate的基础设施封装以及pb,json,sproto协议的支持，开发游戏只需要实现相关业务逻辑。
 	* 对redis,mysql,timer,log 使用封装。
 	* 支持远程rpc调用、远程sub/pub、远程subsyn/pubsyn。
 	* 支持服务发现。
