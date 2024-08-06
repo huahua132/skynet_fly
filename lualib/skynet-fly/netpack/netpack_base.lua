@@ -36,7 +36,7 @@ function M.create_unpack(decode)
 	
 		local ok,body = decode(name,pack_str)				 --消息体解包
 		if not ok then
-			return nil,body
+			return nil, tostring(body) .. 'name:' .. name
 		end
 	
 		return name,body
@@ -72,7 +72,7 @@ function M.create_unpack_by_id(decode)
 	
 		local ok,body = decode(packid, pack_str)				 --消息体解包
 		if not ok then
-			return nil, body
+			return nil, tostring(body) .. 'packid:' .. packid
 		end
 	
 		return packid, body
