@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local log = require "skynet-fly.log"
 local GAME_STATE_ENUM = require "enum.GAME_STATE"
@@ -10,6 +11,9 @@ local game_msg = require "msg.game_msg"
 
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
+local spnet_util = require "skynet-fly.utils.net.spnet_util"
+local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local string = string
 local assert = assert
@@ -28,19 +32,24 @@ local MINE_MAX = 100
 local M = {}
 
 --发包函数
-M.send = pbnet_util.send
+--M.send = pbnet_util.send
+M.send = spnet_util.send
 --广播函数
-M.broadcast = pbnet_util.broadcast
+--M.broadcast = pbnet_util.broadcast
+M.broadcast = spnet_util.broadcast
 
 --发包函数
-M.ws_send = ws_pbnet_util.send
+--M.ws_send = ws_pbnet_util.send
+M.ws_send = ws_spnet_util.send
 --广播函数
-M.ws_broadcast = ws_pbnet_util.broadcast
+--M.ws_broadcast = ws_pbnet_util.broadcast
+M.ws_broadcast = ws_spnet_util.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 end
 
 function M.table_creator(table_id)
@@ -191,7 +200,8 @@ function M.table_creator(table_id)
 		end,
 
 		handle = {
-			['.game.DoingReq'] = function(player_id,packname,pack_body)
+			--['.game.DoingReq'] pb
+			['DoingReq'] = function(player_id,packname,pack_body)
 				if m_game_state ~= GAME_STATE_ENUM.playing then
 					log.info("游戏还没有开始！！！")
 					return
@@ -239,8 +249,8 @@ function M.table_creator(table_id)
 				next_doing_cast()
 				return true
 			end,
-
-			['.game.GameStatusReq'] = function(player_id,packname,pack_body)
+			--['.game.GameStatusReq']
+			['GameStatusReq'] = function(player_id,packname,pack_body)
 				local seat_id = m_player_seat_map[player_id]
 				if not seat_id then
 					log.error("not in table ",player_id)

@@ -4,6 +4,7 @@ local timer = require "skynet-fly.timer"
 local websocket = require "http.websocket"
 local socket = require "skynet.socket"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local table_util = require "skynet-fly.utils.table_util"
 local contriner_client = require "skynet-fly.client.contriner_client"
 contriner_client:register("share_config_m")
@@ -42,7 +43,8 @@ local function connnect(handle)
 	}
 
 	net_util.recv(fd,handle or dispatch)
-	net_util.send(nil,fd,'.login.LoginReq',login_req)
+	--net_util.send(nil,fd,'.login.LoginReq',login_req)
+	net_util.send(nil,fd,'LoginReq',login_req)
 	return fd
 end
 
@@ -50,7 +52,8 @@ local function loginout(fd)
 	local login_out_req = {
 		player_id = g_config.player_id,
 	}
-	net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
+	--net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
+	net_util.send(nil,fd,'LoginOutReq',login_out_req)
 end
 
 local function close(fd)
@@ -113,14 +116,16 @@ local function reload_switch_test(mod_name)
 	local fd
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch1:",g_config.protocol,packname,res)
-		if packname == '.login.LoginRes' then
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-		elseif packname == '.login.serverInfoRes' then
+		if packname == 'LoginRes' then--'.login.LoginRes' then
+			--net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+		elseif packname == 'serverInfoRes' then--'.login.serverInfoRes' then
 			login_res = res
 			skynet.wakeup(wi)
-		elseif packname == '.login.matchRes' then
-			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
-		elseif packname == '.login.LoginOutRes' then
+		elseif packname == 'matchRes' then--'.login.matchRes' then
+			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+		elseif packname == 'LoginOutRes' then--'.login.LoginOutRes' then
 			skynet.wakeup(out_wi)
 		end
 	end)
@@ -134,13 +139,15 @@ local function reload_switch_test(mod_name)
 	local wi = coroutine.running()
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch2:",packname,res)
-		if packname == '.login.LoginRes' then
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-		elseif packname == '.login.serverInfoRes' then
+		if packname == 'LoginRes' then--'.login.LoginRes' then
+			--net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+		elseif packname == 'serverInfoRes' then --'.login.serverInfoRes' then
 			new_login_res = res
 			skynet.wakeup(wi)
-		elseif packname == '.login.matchRes' then
-			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+		elseif packname == 'matchRes' then --'.login.matchRes' then
+			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
 		end
 	end)
 	skynet.wait(wi)
@@ -196,7 +203,7 @@ local function player_game(login_res)
 	fd = connnect(function(_,packname,res)
 		log.info("player_game:",fd,g_config.protocol,packname,res)
 
-		if packname == '.game.NextDoingCast' then
+		if packname == 'NextDoingCast' then --'.game.NextDoingCast' then
 			if res.doing_player_id ~= g_config.player_id then
 				return
 			end
@@ -207,21 +214,28 @@ local function player_game(login_res)
 			local max_num = res.max_num
 
 			local opt_num = math.random(min_num,max_num)
-			net_util.send(nil,fd,'.game.DoingReq',{
+			-- net_util.send(nil,fd,'.game.DoingReq',{
+			-- 	opt_num = opt_num,
+			-- })
+			net_util.send(nil,fd,'DoingReq',{
 				opt_num = opt_num,
 			})
-		elseif packname == '.login.LoginRes' then
-			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-		elseif packname == '.login.serverInfoRes' then
+		elseif packname == 'LoginRes' then--'.login.LoginRes' then
+			-- net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			-- net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+		elseif packname == 'serverInfoRes' then --'.login.serverInfoRes' then
 			for k,v in pairs(res) do
 				login_res[k] = v
 			end
-		elseif packname == '.login.matchRes' then
+		elseif packname == 'matchRes' then--'.login.matchRes' then
 			log.error("发送状态请求")
-			net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-		elseif packname == '.game.GameStatusRes' then
-			net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			--net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
+		elseif packname == 'GameStatusRes' then--'.game.GameStatusRes' then
+			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
 			local next_doing = res.next_doing
 			if next_doing.doing_player_id ~= g_config.player_id then
 				return
@@ -233,10 +247,13 @@ local function player_game(login_res)
 			local max_num = next_doing.max_num
 			
 			local opt_num = math.random(min_num,max_num)
-			net_util.send(nil,fd,'.game.DoingReq',{
+			-- net_util.send(nil,fd,'.game.DoingReq',{
+			-- 	opt_num = opt_num,
+			-- })
+			net_util.send(nil,fd,'DoingReq',{
 				opt_num = opt_num,
 			})
-		elseif packname == '.game.GameOverCast' then
+		elseif packname == 'GameOverCast' then--'.game.GameOverCast' then
 			loginout(fd)
 		end
 	end)
@@ -287,12 +304,15 @@ end
 
 function CMD.start(config)
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 	g_config = config
 
 	if g_config.protocol == 'websocket' then
-		net_util = require "skynet-fly.utils.net.ws_pbnet_util"
+		--net_util = require "skynet-fly.utils.net.ws_pbnet_util" --pb
+		net_util = require "skynet-fly.utils.net.ws_spnet_util" --sb
 	else
-		net_util = require "skynet-fly.utils.net.pbnet_util"
+		--net_util = require "skynet-fly.utils.net.pbnet_util"
+		net_util = require "skynet-fly.utils.net.spnet_util"
 	end
 	
 	skynet.fork(function()
