@@ -1,12 +1,16 @@
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
-local table_logic = require "table.table_logic"
+local table_logic = hotfix_require "table.table_logic"
 local errors_msg = require "msg.errors_msg"
 local log = require "skynet-fly.log"
 
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
+local spnet_util = require "skynet-fly.utils.net.spnet_util"
+local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local assert = assert
 
@@ -21,14 +25,18 @@ local MINE_MAX = 100
 local M = {}
 
 --发包函数
-M.send = pbnet_util.send
+--M.send = pbnet_util.send
+M.send = spnet_util.send
 --广播函数
-M.broadcast = pbnet_util.broadcast
+--M.broadcast = pbnet_util.broadcast
+M.broadcast = spnet_util.broadcast
 
 --发包函数
-M.ws_send = ws_pbnet_util.send
+--M.ws_send = ws_pbnet_util.send
+M.ws_send = ws_spnet_util.send
 --广播函数
-M.ws_broadcast = ws_pbnet_util.broadcast
+--M.ws_broadcast = ws_pbnet_util.broadcast
+M.ws_broadcast = ws_spnet_util.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
@@ -36,6 +44,7 @@ function M.init(interface_mgr)
     g_table_conf.mine_max = MINE_MAX
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 end
 
 function M.table_creator(table_id, table_name, ...)
@@ -64,12 +73,13 @@ function M.table_creator(table_id, table_name, ...)
 		end,
         
 		handle = {
-			['.game.DoingReq'] = function(player_id,packname,pack_body)
-                m_logic:doing_req(player_id,packname,pack_body)
+			--['.game.DoingReq']
+			['DoingReq'] = function(player_id,packname,pack_body)
+                return m_logic:doing_req(player_id,packname,pack_body)
 			end,
-
-			['.game.GameStatusReq'] = function(player_id,packname,pack_body)
-				m_logic:game_status_req(player_id,packname,pack_body)
+			--['.game.GameStatusReq']
+			['GameStatusReq'] = function(player_id,packname,pack_body)
+				return m_logic:game_status_req(player_id,packname,pack_body)
 			end
 		},
 		handle_end = function(player_id, packname, pack_body, ret, errcode, errmsg)

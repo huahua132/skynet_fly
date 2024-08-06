@@ -5,6 +5,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local queue = require "skynet.queue"
 local timer = require "skynet-fly.timer"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
 local pcall = pcall
@@ -14,23 +15,32 @@ local assert = assert
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
 
+local spnet_util = require "skynet-fly.utils.net.spnet_util"
+local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
+
 local g_interface_mgr = nil
 
 local M = {}
 
 --解包函数
-M.unpack = pbnet_util.unpack
+--M.unpack = pbnet_util.unpack
+M.unpack = spnet_util.unpack
 --发包函数
-M.send = pbnet_util.send
+--M.send = pbnet_util.send
+M.send = spnet_util.send
 --广播函数
-M.broadcast = pbnet_util.broadcast
+--M.broadcast = pbnet_util.broadcast
+M.broadcast = spnet_util.broadcast
 
 --解包函数
-M.ws_unpack = ws_pbnet_util.unpack
+--M.ws_unpack = ws_pbnet_util.unpack
+M.ws_unpack = ws_spnet_util.unpack
 --发包函数
-M.ws_send = ws_pbnet_util.send
+--M.ws_send = ws_pbnet_util.send
+M.ws_send = ws_spnet_util.send
 --广播函数
-M.ws_broadcast = ws_pbnet_util.broadcast
+--M.ws_broadcast = ws_pbnet_util.broadcast
+M.ws_broadcast = ws_spnet_util.broadcast
 
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
@@ -59,16 +69,23 @@ local function server_info_req(player_id,packname,pack_body)
 		table_id = g_interface_mgr:get_table_id(player_id),
 	}
 	login_msg:server_info_res(player_id,server_info)
+	return true
 end
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
 	errors_msg = errors_msg:new(interface_mgr)
 	login_msg = login_msg:new(interface_mgr)
-	g_interface_mgr:handle('.login.LoginOutReq',login_out_req)
-	g_interface_mgr:handle('.login.matchReq',match_req)
-	g_interface_mgr:handle('.login.serverInfoReq',server_info_req)
+	-- g_interface_mgr:handle('.login.LoginOutReq',login_out_req)
+	-- g_interface_mgr:handle('.login.matchReq',match_req)
+	-- g_interface_mgr:handle('.login.serverInfoReq',server_info_req)
+
+	--sp
+	g_interface_mgr:handle('LoginOutReq',login_out_req)
+	g_interface_mgr:handle('matchReq',match_req)
+	g_interface_mgr:handle('serverInfoReq',server_info_req)
 	pb_netpack.load("./proto")
+	sp_netpack.load("./sproto")
 end
 
 function M.connect(player_id)

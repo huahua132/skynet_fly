@@ -12,19 +12,23 @@ function M:new(interface_mgr)
 end
 
 function M:login_res(player_id,login_res)
-	self.interface_mgr:send_msg(player_id,'.login.LoginRes',login_res)
+	--self.interface_mgr:send_msg(player_id,'.login.LoginRes',login_res)
+	self.interface_mgr:send_msg(player_id,'LoginRes',login_res)
 end
 
 function M:login_out_res(player_id,login_out_res)
-	self.interface_mgr:send_msg(player_id,'.login.LoginOutRes',login_out_res)
+	--self.interface_mgr:send_msg(player_id,'.login.LoginOutRes',login_out_res)
+	self.interface_mgr:send_msg(player_id,'LoginOutRes',login_out_res)
 end
 
 function M:match_res(player_id,match_res)
-	self.interface_mgr:send_msg(player_id,'.login.matchRes',match_res)
+	--self.interface_mgr:send_msg(player_id,'.login.matchRes',match_res)
+	self.interface_mgr:send_msg(player_id,'matchRes',match_res)
 end
 
 function M:server_info_res(player_id,server_info_res)
-	self.interface_mgr:send_msg(player_id,'.login.serverInfoRes',server_info_res)
+	--self.interface_mgr:send_msg(player_id,'.login.serverInfoRes',server_info_res)
+	self.interface_mgr:send_msg(player_id,'serverInfoRes',server_info_res)
 end
 
 return M

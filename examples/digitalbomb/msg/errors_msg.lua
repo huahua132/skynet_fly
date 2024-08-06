@@ -24,7 +24,8 @@ function M:errors(player_id,code,msg,packname)
 		packname = packname,
 	}
 
-	self.interface_mgr:send_msg(player_id,'.errors.Error',error)
+	--self.interface_mgr:send_msg(player_id,'.errors.Error',error)  --pb
+	self.interface_mgr:send_msg(player_id,'Error',error)			--sp
 end
 
 return M

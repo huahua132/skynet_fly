@@ -1,6 +1,7 @@
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local timer = require "skynet-fly.timer"
 local errorcode = require "enum.errorcode"
 local errors_msg = require "msg.errors_msg"
@@ -8,6 +9,9 @@ local login_msg = require "msg.login_msg"
 
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+
+local spnet_util = require "skynet-fly.utils.net.spnet_util"
+local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local assert = assert
 
@@ -18,18 +22,24 @@ local M = {}
 --登录检测的超时时间
 M.time_out = timer.second * 5
 --解包函数
-M.unpack = pbnet_util.unpack
+--M.unpack = pbnet_util.unpack
+M.unpack = spnet_util.unpack
 --发包函数
-M.send = pbnet_util.send
+--M.send = pbnet_util.send
+M.send = spnet_util.send
 --广播函数
-M.broadcast = pbnet_util.broadcast
+--M.broadcast = pbnet_util.broadcast
+M.broadcast = spnet_util.broadcast
 
 --解包函数
-M.ws_unpack = ws_pbnet_util.unpack
+--M.ws_unpack = ws_pbnet_util.unpack
+M.ws_unpack = ws_spnet_util.unpack
 --发包函数
-M.ws_send = ws_pbnet_util.send
+--M.ws_send = ws_pbnet_util.send
+M.ws_send = ws_spnet_util.send
 --广播函数
-M.ws_broadcast = ws_pbnet_util.broadcast
+--M.ws_broadcast = ws_pbnet_util.broadcast
+M.ws_broadcast = ws_spnet_util.broadcast
 
 
 function M.init(interface_mgr)
@@ -37,6 +47,7 @@ function M.init(interface_mgr)
 	errors_msg = errors_msg:new(g_interface_mgr)
 	login_msg = login_msg:new(g_interface_mgr)
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 end
 
 --登录检测函数 packname,req是解包函数返回的
@@ -46,7 +57,8 @@ function M.check(packname,pack_body)
 		log.error("unpack err ",packname,pack_body)
 		return false
 	end
-	if packname ~= '.login.LoginReq' then
+	if packname ~= 'LoginReq' then --sp
+	--if packname ~= '.login.LoginReq' then --pb
 		log.error("login_check msg err ",packname)
 		return false,errorcode.NOT_LOGIN,"please login"
 	end

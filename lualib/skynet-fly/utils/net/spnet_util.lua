@@ -3,7 +3,7 @@ local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local util_net_base = require "skynet-fly.utils.net.util_net_base"
 
 --------------------------------------------------------
---这是给skynet gate网关服务处理消息用的 基于protobuf协议
+--这是给skynet gate网关服务处理消息用的 基于sproto协议
 --------------------------------------------------------
 
 local M = {}
