@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local timer = require "skynet-fly.timer"
 local errorcode = require "enum.errorcode"
 local errors_msg = require "msg.errors_msg"
@@ -12,6 +13,9 @@ local pack_helper = require "common.pack_helper"
 local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
 local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
 
+local spnet_byid = require "skynet-fly.utils.net.spnet_byid"
+local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
+
 local assert = assert
 
 local g_interface_mgr = nil
@@ -21,25 +25,33 @@ local M = {}
 --登录检测的超时时间
 M.time_out = timer.second * 5
 --解包函数
-M.unpack = pbnet_byid.unpack
+--M.unpack = pbnet_byid.unpack
+M.unpack = spnet_byid.unpack
 --发包函数
-M.send = pbnet_byid.send
+--M.send = pbnet_byid.send
+M.send = spnet_byid.send
 --广播函数
-M.broadcast = pbnet_byid.broadcast
+--M.broadcast = pbnet_byid.broadcast
+M.broadcast = spnet_byid.broadcast
 
 --解包函数
-M.ws_unpack = ws_pbnet_byid.unpack
+--M.ws_unpack = ws_pbnet_byid.unpack
+M.ws_unpack = ws_spnet_byid.unpack
 --发包函数
-M.ws_send = ws_pbnet_byid.send
+--M.ws_send = ws_pbnet_byid.send
+M.ws_send = ws_spnet_byid.send
 --广播函数
-M.ws_broadcast = ws_pbnet_byid.broadcast
+--M.ws_broadcast = ws_pbnet_byid.broadcast
+M.ws_broadcast = ws_spnet_byid.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
 	errors_msg = errors_msg:new(g_interface_mgr)
 	login_msg = login_msg:new(g_interface_mgr)
-	pb_netpack.load('./proto')
+	pb_netpack.load('./proto') --pb方式 
+	sp_netpack.load('./sproto') --sp方式
 	pack_helper.set_packname_id()
+	pack_helper.set_sp_packname_id()
 end
 
 --登录检测函数 packid,req是解包函数返回的

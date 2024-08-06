@@ -103,11 +103,11 @@ function M.decode_by_id(packid, pstr)
 	if not name then
 		return nil, "not exists packid = " .. packid
 	end
-
+    
     if not g_is_pcode then
-        return pcall(g_sp.decode, g_sp, name)
+        return pcall(g_sp.decode, g_sp, name, pstr)
     else
-        return pcall(g_sp.pdecode, g_sp, name)
+        return pcall(g_sp.pdecode, g_sp, name, pstr)
     end
 end
 
