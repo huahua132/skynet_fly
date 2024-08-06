@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local table_logic = require "table.table_logic"
 local errors_msg = require "msg.errors_msg"
@@ -9,6 +10,9 @@ local pack_helper = require "common.pack_helper"
 
 local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
 local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
+
+local spnet_byid = require "skynet-fly.utils.net.spnet_byid"
+local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
 
 local assert = assert
 
@@ -23,14 +27,18 @@ local MINE_MAX = 100
 local M = {}
 
 --发包函数
-M.send = pbnet_byid.send
+--M.send = pbnet_util.send
+M.send = spnet_byid.send
 --广播函数
-M.broadcast = pbnet_byid.broadcast
+--M.broadcast = pbnet_util.broadcast
+M.broadcast = spnet_byid.broadcast
 
 --发包函数
-M.ws_send = ws_pbnet_byid.send
+--M.ws_send = ws_pbnet_util.send
+M.ws_send = ws_spnet_byid.send
 --广播函数
-M.ws_broadcast = ws_pbnet_byid.broadcast
+--M.ws_broadcast = ws_pbnet_util.broadcast
+M.ws_broadcast = ws_spnet_byid.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
@@ -38,7 +46,9 @@ function M.init(interface_mgr)
     g_table_conf.mine_max = MINE_MAX
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 	pack_helper.set_packname_id()
+	pack_helper.set_sp_packname_id()
 end
 
 function M.table_creator(table_id, table_name, ...)
@@ -69,11 +79,11 @@ function M.table_creator(table_id, table_name, ...)
         
 		handle = {
 			[msg_id.game_DoingReq] = function(player_id,packname,pack_body)
-                m_logic:doing_req(player_id,packname,pack_body)
+                return m_logic:doing_req(player_id,packname,pack_body)
 			end,
 
 			[msg_id.game_GameStatusReq] = function(player_id,packname,pack_body)
-				m_logic:game_status_req(player_id,packname,pack_body)
+				return m_logic:game_status_req(player_id,packname,pack_body)
 			end
 		},
 		handle_end = function(player_id, packname, pack_body, ret, errcode, errmsg)

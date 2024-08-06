@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local log = require "skynet-fly.log"
 local GAME_STATE_ENUM = require "enum.GAME_STATE"
@@ -12,6 +13,9 @@ local pack_helper = require "common.pack_helper"
 
 local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
 local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
+
+local spnet_byid = require "skynet-fly.utils.net.spnet_byid"
+local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
 
 local string = string
 local assert = assert
@@ -30,20 +34,26 @@ local MINE_MAX = 100
 local M = {}
 
 --发包函数
-M.send = pbnet_byid.send
+--M.send = pbnet_byid.send
+M.send = spnet_byid.send
 --广播函数
-M.broadcast = pbnet_byid.broadcast
+--M.broadcast = pbnet_byid.broadcast
+M.broadcast = spnet_byid.broadcast
 
 --发包函数
-M.ws_send = ws_pbnet_byid.send
+--M.ws_send = ws_pbnet_byid.send
+M.ws_send = ws_spnet_byid.send
 --广播函数
-M.ws_broadcast = ws_pbnet_byid.broadcast
+--M.ws_broadcast = ws_pbnet_byid.broadcast
+M.ws_broadcast = ws_spnet_byid.broadcast
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
 	assert(g_table_conf.player_num,"not player_num")
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 	pack_helper.set_packname_id()
+	pack_helper.set_sp_packname_id()
 end
 
 function M.table_creator(table_id)

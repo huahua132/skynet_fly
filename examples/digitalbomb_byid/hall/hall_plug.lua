@@ -5,6 +5,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local queue = require "skynet.queue"
 local timer = require "skynet-fly.timer"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
 local msg_id = require "enum.msg_id"
@@ -16,23 +17,32 @@ local assert = assert
 local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
 local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
 
+local spnet_byid = require "skynet-fly.utils.net.spnet_byid"
+local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
+
 local g_interface_mgr = nil
 
 local M = {}
 
 --解包函数
-M.unpack = pbnet_byid.unpack
+--M.unpack = pbnet_byid.unpack
+M.unpack = spnet_byid.unpack
 --发包函数
-M.send = pbnet_byid.send
+--M.send = pbnet_byid.send
+M.send = spnet_byid.send
 --广播函数
-M.broadcast = pbnet_byid.broadcast
+--M.broadcast = pbnet_byid.broadcast
+M.broadcast = spnet_byid.broadcast
 
 --解包函数
-M.ws_unpack = ws_pbnet_byid.unpack
+--M.ws_unpack = ws_pbnet_byid.unpack
+M.ws_unpack = ws_spnet_byid.unpack
 --发包函数
-M.ws_send = ws_pbnet_byid.send
+--M.ws_send = ws_pbnet_byid.send
+M.ws_send = ws_spnet_byid.send
 --广播函数
-M.ws_broadcast = ws_pbnet_byid.broadcast
+--M.ws_broadcast = ws_pbnet_byid.broadcast
+M.ws_broadcast = ws_spnet_byid.broadcast
 
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
@@ -61,6 +71,7 @@ local function server_info_req(player_id,packname,pack_body)
 		table_id = g_interface_mgr:get_table_id(player_id),
 	}
 	login_msg:server_info_res(player_id,server_info)
+	return true
 end
 
 function M.init(interface_mgr)
@@ -71,7 +82,9 @@ function M.init(interface_mgr)
 	g_interface_mgr:handle(msg_id.login_matchReq,match_req)
 	g_interface_mgr:handle(msg_id.login_serverInfoReq,server_info_req)
 	pb_netpack.load("./proto")
+	sp_netpack.load("./sproto")
 	pack_helper.set_packname_id()
+	pack_helper.set_sp_packname_id()
 end
 
 function M.connect(player_id)

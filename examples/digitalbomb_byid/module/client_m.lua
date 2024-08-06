@@ -4,6 +4,7 @@ local timer = require "skynet-fly.timer"
 local websocket = require "http.websocket"
 local socket = require "skynet.socket"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
+local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local table_util = require "skynet-fly.utils.table_util"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
@@ -290,14 +291,18 @@ end
 
 function CMD.start(config)
 	pb_netpack.load('./proto')
+	sp_netpack.load('./sproto')
 	g_config = config
 
 	if g_config.protocol == 'websocket' then
-		net_util = require "skynet-fly.utils.net.ws_pbnet_byid"
+		--net_util = require "skynet-fly.utils.net.ws_pbnet_byid"  --pb
+		net_util = require "skynet-fly.utils.net.ws_spnet_byid"
 	else
-		net_util = require "skynet-fly.utils.net.pbnet_byid"
+		--net_util = require "skynet-fly.utils.net.pbnet_byid"     --pb
+		net_util = require "skynet-fly.utils.net.spnet_byid"
 	end
 	pack_helper.set_packname_id()
+	pack_helper.set_sp_packname_id()
 	
 	skynet.fork(function()
 		--disconnect_test()
