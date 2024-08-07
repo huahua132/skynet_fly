@@ -27,6 +27,8 @@ local alloc_plug = nil       --匹配插件
 local g_table_map = {}
 local g_player_map = {}
 local g_empty_map = {}       --空桌映射表(key:table_id value:empty_time)空置时间
+
+local NOT_SWITCH_FUNC = function() return false end
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
@@ -60,7 +62,7 @@ local function create_table(table_name, ...)
 		return alloc_plug.tablefull()
 	end
 
-	local room_client = contriner_client:new("room_game_table_m", table_name, function() return false end)
+	local room_client = contriner_client:new("room_game_table_m", table_name, NOT_SWITCH_FUNC)
 	room_client:set_mod_num(num_id)
 	local table_server_id = room_client:get_mod_server_id_by_name()
 	local ok,errocode,errormsg = room_client:mod_call_by_name('create_table', table_id, SELF_ADDRESS, ...)
