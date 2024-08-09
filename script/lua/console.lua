@@ -55,10 +55,10 @@ function CMD.reload()
 	local load_mods = loadfile(load_modsfile)()
 	local server_id = assert(ARGV[ARGV_HEAD + 1])
 	local mod_name_str = ",0"
-	for i = ARGV_HEAD + 2,#ARGV do
+	for i = ARGV_HEAD + 2,#ARGV, 2 do
 		local module_name = ARGV[i]
 		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
-		assert(load_mods[module_name])
+		assert(load_mods[module_name], "module_name not exists " .. module_name)
 	end
 	local reload_url = string.format('%s/call/%s/"load_modules"%s',get_host(),server_id,mod_name_str)
 	file:write(string.format("'%s'",reload_url))
@@ -157,6 +157,7 @@ function CMD.check_reload()
 
 	for module_name,change_file in pairs(need_reload_module) do
 		print(module_name)
+		print(string.format('change_des>>>%s', change_file))
 	end
 end
 
