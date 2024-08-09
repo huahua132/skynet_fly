@@ -883,7 +883,7 @@ function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
 
 		return skynet_util.NOT_RET
 	else
-		return WATCH_SYN_RET.syn, channel_info.luamsg, channel_info.version
+		return WATCH_SYN_RET.syn, channel_info.version, channel_info.luamsg
 	end
 end
 
