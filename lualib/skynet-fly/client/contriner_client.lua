@@ -36,6 +36,17 @@ local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
 local g_mod_svr_ids_map
 
+local g_contriner_mgr = nil
+
+local function get_contriner_mgr_addr()
+    if g_contriner_mgr then
+        return g_contriner_mgr
+    end
+	
+    g_contriner_mgr = skynet.queryservice('contriner_mgr')
+    return g_contriner_mgr
+end
+
 local function add_id_list_week(module_name,id_list)
 	if not g_id_list_map[module_name] then
 		g_id_list_map[module_name] = setmetatable({}, g_week_meta)
@@ -89,7 +100,7 @@ end
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
-		local id_list,name_id_list,version = skynet.call('.contriner_mgr', 'lua', 'watch', SELF_ADDRESS, key, old_version)
+		local id_list,name_id_list,version = skynet.call(get_contriner_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
 		if not is_close_swtich then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
@@ -112,7 +123,7 @@ local function call_back_queryed(queryed)
 end
 
 g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
-	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call('.contriner_mgr', 'lua', 'query', SELF_ADDRESS, key)
+	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call(get_contriner_mgr_addr(), 'lua', 'query', SELF_ADDRESS, key)
 	assert(t[key],"query err " .. key)
 	if not g_is_watch_map[key] then
 		g_is_watch_map[key] = true
@@ -134,7 +145,7 @@ local function monitor_all()
 	skynet.fork(function()
 		local mod_version_map = nil
 		while not IS_CLOSE do
-			mod_version_map = skynet.call('.contriner_mgr','lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
+			mod_version_map = skynet.call(get_contriner_mgr_addr(),'lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
 			for mod_name,_ in pairs(mod_version_map) do
 				g_register_map[mod_name] = true
 				local _ = g_mod_svr_ids_map[mod_name]
@@ -146,10 +157,10 @@ end
 skynet.exit = function()
 	IS_CLOSE = true
 	for mod_name in pairs(g_mod_svr_ids_map) do
-		skynet.send('.contriner_mgr','lua','unwatch',SELF_ADDRESS, mod_name)
+		skynet.send(get_contriner_mgr_addr(),'lua','unwatch',SELF_ADDRESS, mod_name)
 	end
 	if is_monitor_all then
-		skynet.call('.contriner_mgr','lua', 'unmonitor_new', SELF_ADDRESS)
+		skynet.call(get_contriner_mgr_addr(),'lua', 'unmonitor_new', SELF_ADDRESS)
 	end
 	return skynet_exit()
 end
