@@ -8,6 +8,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local string_util = require "skynet-fly.utils.string_util"
 local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
+local table_util = require "skynet-fly.utils.table_util"
 
 contriner_client:register("room_game_alloc_m", "share_config_m")
 
@@ -611,7 +612,7 @@ function CMD.check_exit()
 		log.info("g_player_map.is_empty can exit")
 		return true
 	else
-		log.info("not g_player_map.is_empty can`t exit",g_player_map)
+		log.info("not g_player_map.is_empty can`t exit player_count = ", table_util.count(g_player_map))
 		return false
 	end
 end
