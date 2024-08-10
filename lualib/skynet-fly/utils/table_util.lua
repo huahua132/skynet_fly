@@ -468,4 +468,11 @@ function M.count(tab)
 	return c
 end
 
+--合并table
+function M.merge(target, source)
+	for k,v in pairs(source) do
+		target[k] = v
+	end
+end
+
 return M
