@@ -167,23 +167,21 @@ function M.check_def_table(new_t,old_t)
 		else
 			if n_type == 'table' then
 				for k,v in pairs(nt) do
-					if not ot[k] then
+					if ot[k] == nil then
 						des_map[k] = {_flag = "add",_new = v,_old = nil}
 					end
 				end
 	
 				for k,v in pairs(ot) do
-					if not nt[k] then
+					if nt[k] == nil then
 						des_map[k] = {_flag = "reduce",_new = nil,_old = v}
 					end
 				end
 	
 				for k,v in pairs(nt) do
-					if ot[k] then
-						local temp_des_map = check_func(nt[k],ot[k])
-						if next(temp_des_map) then
-							des_map[k] = temp_des_map
-						end
+					local temp_des_map = check_func(nt[k],ot[k])
+					if next(temp_des_map) then
+						des_map[k] = temp_des_map
 					end
 				end
 			else
@@ -221,18 +219,18 @@ function M.def_tostring(def)
 			end
 		else
 			local s1,s2 = dt._new,dt._old
-			if not s1 then
+			if s1 == nil then
 				s1 = "nil"
 			elseif type(s1) == 'table' then
 				s1 = json.encode(s1)
 			end
 
-			if not s2 then
+			if s2 == nil then
 				s2 = "nil"
 			elseif type(s2) == 'table' then
 				s2 = json.encode(s2)
 			end
-			ret = ret .. string.format("%s %s[%s:%s] ",dk,flag,s1,s2)
+			ret = ret .. string.format("%s_%s[%s:%s]",dk,flag,s1,s2)
 		end
 		return ret
 	end
