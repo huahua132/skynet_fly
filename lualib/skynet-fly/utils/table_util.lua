@@ -449,7 +449,7 @@ function M.depth_to_list(tab, depth)
 	return list1
 end
 
---在列表中
+--是否在列表中
 function M.inlist(list, v)
 	for i = 1,#list do
 		local vv = list[i]
@@ -459,6 +459,15 @@ function M.inlist(list, v)
 	end
 
 	return false
+end
+
+--统计长度
+function M.count(tab)
+	local c = 0
+	for _,_ in pairs(tab) do
+		c = c + 1
+	end
+	return c
 end
 
 return M
