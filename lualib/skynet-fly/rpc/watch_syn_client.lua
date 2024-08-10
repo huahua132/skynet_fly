@@ -79,6 +79,11 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
             elseif ret == WATCH_SYN_RET.disconnect or ret == WATCH_SYN_RET.unsyn then
                 break                                               --退出 有watch_up重新拉起
             elseif ret == WATCH_SYN_RET.move then
+                local state = contriner_interface.get_server_state()
+                if skynet_util.is_hot_container_server() 
+                and (state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited) then  --说明是旧服务，就不用同步了
+                    break
+                end
                 skynet.sleep(10)
                 log.warn("watch_channel_name move ", cluster_name, channel_name)
             else
