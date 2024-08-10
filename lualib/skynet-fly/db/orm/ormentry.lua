@@ -30,17 +30,17 @@ function M:new_invaild(entry_data)
 end
 
 -- 获取条目数据的值
-function M:get(filed_name)
-    return self._entry_data[filed_name]
+function M:get(field_name)
+    return self._entry_data[field_name]
 end
 
 -- 修改条目数据的值
-function M:set(filed_name, filed_value)
-    if filed_value == self._entry_data[filed_name] then return end
+function M:set(field_name, field_value)
+    if field_value == self._entry_data[field_name] then return end
     local ormtab = self._ormtab
-    ormtab:check_one_filed(filed_name, filed_value)
-    self._entry_data[filed_name] = filed_value
-    self._change_map[filed_name] = true      --标记变更
+    ormtab:check_one_field(field_name, field_value)
+    self._entry_data[field_name] = field_value
+    self._change_map[field_name] = true      --标记变更
     ormtab:set_change_entry(self)
 end
 
@@ -57,8 +57,8 @@ end
 -- 清除变更标记
 function M:clear_change()
     local change_map = self._change_map
-    for filed_name in pairs(change_map) do
-        change_map[filed_name] = nil
+    for field_name in pairs(change_map) do
+        change_map[field_name] = nil
     end
 end
 

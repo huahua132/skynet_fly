@@ -19,7 +19,7 @@ local sformat = string.format
 local next = next
 local tostring = tostring
 
-local FILED_TYPE = {
+local FIELD_TYPE = {
     int8         = 1,
     int16        = 2,
     int32        = 3,
@@ -46,27 +46,27 @@ local FILED_TYPE = {
 local INVAILD_POINT = {count = 0, total_count = 0}  --无效叶点
 local VAILD_POINT = {count = 1, total_count = 1}    --有效叶点
 
-local FILED_LUA_DEFAULT = {
-    [FILED_TYPE.int8] = 0,
-    [FILED_TYPE.int16] = 0,
-    [FILED_TYPE.int32] = 0,
-    [FILED_TYPE.int64] = 0,
-    [FILED_TYPE.uint8] = 0,
-    [FILED_TYPE.uint16] = 0,
-    [FILED_TYPE.uint32] = 0,
+local FIELD_LUA_DEFAULT = {
+    [FIELD_TYPE.int8] = 0,
+    [FIELD_TYPE.int16] = 0,
+    [FIELD_TYPE.int32] = 0,
+    [FIELD_TYPE.int64] = 0,
+    [FIELD_TYPE.uint8] = 0,
+    [FIELD_TYPE.uint16] = 0,
+    [FIELD_TYPE.uint32] = 0,
 
-    [FILED_TYPE.string32] = "",
-    [FILED_TYPE.string64] = "",
-    [FILED_TYPE.string128] = "",
-    [FILED_TYPE.string256] = "",
-    [FILED_TYPE.string512] = "",
-    [FILED_TYPE.string1024] = "",
-    [FILED_TYPE.string2048] = "",
-    [FILED_TYPE.string4096] = "",
-    [FILED_TYPE.string8192] = "",
+    [FIELD_TYPE.string32] = "",
+    [FIELD_TYPE.string64] = "",
+    [FIELD_TYPE.string128] = "",
+    [FIELD_TYPE.string256] = "",
+    [FIELD_TYPE.string512] = "",
+    [FIELD_TYPE.string1024] = "",
+    [FIELD_TYPE.string2048] = "",
+    [FIELD_TYPE.string4096] = "",
+    [FIELD_TYPE.string8192] = "",
 
-    [FILED_TYPE.text] = "",
-    [FILED_TYPE.blob] = "",
+    [FIELD_TYPE.text] = "",
+    [FIELD_TYPE.blob] = "",
 }
 
 local function create_check_str(len)
@@ -76,55 +76,55 @@ local function create_check_str(len)
     end
 end
 
-local FILED_TYPE_CHECK_FUNC = {
-    [FILED_TYPE.int8] = math_util.is_vaild_int8,
-    [FILED_TYPE.int16] = math_util.is_vaild_int16,
-    [FILED_TYPE.int32] = math_util.is_vaild_int32,
-    [FILED_TYPE.int64] = math_util.is_vaild_int64,
-    [FILED_TYPE.uint8] = math_util.is_vaild_uint8,
-    [FILED_TYPE.uint16] = math_util.is_vaild_uint16,
-    [FILED_TYPE.uint32] = math_util.is_vaild_uint32,
+local FIELD_TYPE_CHECK_FUNC = {
+    [FIELD_TYPE.int8] = math_util.is_vaild_int8,
+    [FIELD_TYPE.int16] = math_util.is_vaild_int16,
+    [FIELD_TYPE.int32] = math_util.is_vaild_int32,
+    [FIELD_TYPE.int64] = math_util.is_vaild_int64,
+    [FIELD_TYPE.uint8] = math_util.is_vaild_uint8,
+    [FIELD_TYPE.uint16] = math_util.is_vaild_uint16,
+    [FIELD_TYPE.uint32] = math_util.is_vaild_uint32,
 
-    [FILED_TYPE.string32] = create_check_str(32),
-    [FILED_TYPE.string64] = create_check_str(64),
-    [FILED_TYPE.string128] = create_check_str(128),
-    [FILED_TYPE.string256] = create_check_str(256),
-    [FILED_TYPE.string512] = create_check_str(512),
-    [FILED_TYPE.string1024] = create_check_str(1024),
-    [FILED_TYPE.string2048] = create_check_str(2048),
-    [FILED_TYPE.string4096] = create_check_str(4096),
-    [FILED_TYPE.string8192] = create_check_str(8192),
+    [FIELD_TYPE.string32] = create_check_str(32),
+    [FIELD_TYPE.string64] = create_check_str(64),
+    [FIELD_TYPE.string128] = create_check_str(128),
+    [FIELD_TYPE.string256] = create_check_str(256),
+    [FIELD_TYPE.string512] = create_check_str(512),
+    [FIELD_TYPE.string1024] = create_check_str(1024),
+    [FIELD_TYPE.string2048] = create_check_str(2048),
+    [FIELD_TYPE.string4096] = create_check_str(4096),
+    [FIELD_TYPE.string8192] = create_check_str(8192),
 
-    [FILED_TYPE.text] = function(str) return type(str) == 'string' end,
-    [FILED_TYPE.blob] = function(str) return type(str) == 'string' end,
+    [FIELD_TYPE.text] = function(str) return type(str) == 'string' end,
+    [FIELD_TYPE.blob] = function(str) return type(str) == 'string' end,
 }
 
-local function add_filed_name_type(t,filed_name,filed_type)
-    assert(filed_name, "not filed_name")
-    assert(not t._filed_map[filed_name], "filed_name is exists :" .. filed_name)
+local function add_field_name_type(t,field_name,field_type)
+    assert(field_name, "not field_name")
+    assert(not t._field_map[field_name], "field_name is exists :" .. field_name)
 
-    t._filed_map[filed_name] = filed_type
-    tinsert(t._filed_list, filed_name)
+    t._field_map[field_name] = field_type
+    tinsert(t._field_list, field_name)
     return t
 end
 
 -- 检查一条数据的合法性
-local function check_one_filed(t, filed_name, filed_value)
-    local filed_type = assert(t._filed_map[filed_name], "not exists filed_name = " .. filed_name)
-    local check_func = assert(FILED_TYPE_CHECK_FUNC[filed_type], "not check func : ".. filed_type)
-    local ktype = type(filed_name)
-    assert(ktype == "string", sformat("tab_name[%s] set invaild filed_name type filed_name[%s] value[%s] filed_type[%s]", t._tab_name, filed_name, filed_value, filed_type))                       --字段名必须是string
-    assert(check_func(filed_value),sformat("tab_name[%s] set invaild value filed_name[%s] value[%s] filed_type[%s]", t._tab_name, filed_name, filed_value, filed_type))
+local function check_one_field(t, field_name, field_value)
+    local field_type = assert(t._field_map[field_name], "not exists field_name = " .. field_name)
+    local check_func = assert(FIELD_TYPE_CHECK_FUNC[field_type], "not check func : ".. field_type)
+    local ktype = type(field_name)
+    assert(ktype == "string", sformat("tab_name[%s] set invaild field_name type field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))                       --字段名必须是string
+    assert(check_func(field_value),sformat("tab_name[%s] set invaild value field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))
 end
 
 -- 检查数据表的合法性
-local function check_fileds(t,entry_data)
-    for _,filed_name in ipairs(t._keylist) do
-        assert(entry_data[filed_name], "not set key value:" .. filed_name)                  --key字段值必须有值
+local function check_fields(t,entry_data)
+    for _,field_name in ipairs(t._keylist) do
+        assert(entry_data[field_name], "not set key value:" .. field_name)                  --key字段值必须有值
     end
 
-    for filed_name,filed_value in pairs(entry_data) do
-        check_one_filed(t, filed_name, filed_value)
+    for field_name,field_value in pairs(entry_data) do
+        check_one_field(t, field_name, field_value)
     end
 end
 
@@ -143,31 +143,31 @@ local function add_key_select(t, entry, is_add)
     local select_list = {}
     local len = #key_list
     for i = 1,len do
-        local filed_name = key_list[i]
-        local filed_value = entry:get(filed_name)
-        assert(filed_value, "not filed_value")
+        local field_name = key_list[i]
+        local field_value = entry:get(field_name)
+        assert(field_value, "not field_value")
         
         if i ~= len then
-            if not key_select_map[filed_value] then
-                key_select_map[filed_value] = {}
-                key_cache_num_map[filed_value] = {count = 0, sub_map = {}}
+            if not key_select_map[field_value] then
+                key_select_map[field_value] = {}
+                key_cache_num_map[field_value] = {count = 0, sub_map = {}}
             end
-            local one_select = {k = filed_value, pv = key_select_map, pc = key_cache_num_map}
+            local one_select = {k = field_value, pv = key_select_map, pc = key_cache_num_map}
             tinsert(select_list, one_select)
-            key_cache_num_map = key_cache_num_map[filed_value].sub_map
-            key_select_map = key_select_map[filed_value]
+            key_cache_num_map = key_cache_num_map[field_value].sub_map
+            key_select_map = key_select_map[field_value]
         else
-            if not key_select_map[filed_value] then
+            if not key_select_map[field_value] then
                 if t._cache_map then
                     t._cache_map:set_cache(entry,t)
                 end
                 if invaild then
-                    key_cache_num_map[filed_value] = INVAILD_POINT
+                    key_cache_num_map[field_value] = INVAILD_POINT
                 else
-                    key_cache_num_map[filed_value] = VAILD_POINT
+                    key_cache_num_map[field_value] = VAILD_POINT
                 end
                 
-                key_select_map[filed_value] = entry
+                key_select_map[field_value] = entry
                 for i = #select_list, 1, -1 do
                     local one_select = select_list[i]
                     if not invaild then
@@ -191,7 +191,7 @@ local function add_key_select(t, entry, is_add)
                     end
                 end
             else
-                res_entry = key_select_map[filed_value]
+                res_entry = key_select_map[field_value]
                 if is_add and not invaild and res_entry:is_invaild() then   --是添加并且是无效条目，替换掉
                     del_key_select(t, res_entry, true)
                     add_key_select(t, entry, true)
@@ -215,11 +215,11 @@ local function set_total_count(t, key_values, total_count)
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local len = #key_values
     for i = 1, len do
-        local filed_value = key_values[i]
+        local field_value = key_values[i]
         if i ~= len then
-            key_cache_num_map = key_cache_num_map[filed_value].sub_map
+            key_cache_num_map = key_cache_num_map[field_value].sub_map
         else
-            local cache = key_cache_num_map[filed_value]
+            local cache = key_cache_num_map[field_value]
             cache.total_count = total_count
             return
         end
@@ -235,25 +235,25 @@ local function get_key_select(t, key_values)
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local len = #key_values
     for i = 1, len do
-        local filed_value = key_values[i]
+        local field_value = key_values[i]
         if i ~= len then
-            if not key_select_map[filed_value] then
+            if not key_select_map[field_value] then
                 return
             end
-            key_select_map = key_select_map[filed_value]
-            key_cache_num_map = key_cache_num_map[filed_value].sub_map
+            key_select_map = key_select_map[field_value]
+            key_cache_num_map = key_cache_num_map[field_value].sub_map
         else
-            local cache = key_cache_num_map[filed_value]
+            local cache = key_cache_num_map[field_value]
             if not cache then return end
             if t._cache_time == 0 then      --永久缓存不需要对比total_count，数据全在
-                if key_select_map[filed_value] then
-                    return key_select_map[filed_value], true
+                if key_select_map[field_value] then
+                    return key_select_map[field_value], true
                 else
                     return
                 end
             end
             if not cache.total_count then return end
-            return key_select_map[filed_value], cache.count == cache.total_count
+            return key_select_map[field_value], cache.count == cache.total_count
         end
     end
     
@@ -270,23 +270,23 @@ del_key_select = function(t, entry, is_del)
     local invaild = entry:is_invaild()
     local len = #key_list
     for i = 1,len do
-        local filed_name = key_list[i]
-        local filed_value = entry:get(filed_name)
-        assert(filed_value, "not filed_value")
+        local field_name = key_list[i]
+        local field_value = entry:get(field_name)
+        assert(field_value, "not field_value")
 
         if i ~= len then
-            if not key_select_map[filed_value] then
+            if not key_select_map[field_value] then
                 break
             end
-            local one_select = {k = filed_value, pv = key_select_map, pc = key_cache_num_map}
-            key_select_map = key_select_map[filed_value]
-            key_cache_num_map = key_cache_num_map[filed_value].sub_map
+            local one_select = {k = field_value, pv = key_select_map, pc = key_cache_num_map}
+            key_select_map = key_select_map[field_value]
+            key_cache_num_map = key_cache_num_map[field_value].sub_map
             one_select.sv = key_select_map
             tinsert(select_list, one_select)
         else
-            if entry ~= key_select_map[filed_value] then break end
-            key_select_map[filed_value] = nil
-            key_cache_num_map[filed_value] = nil
+            if entry ~= key_select_map[field_value] then break end
+            key_select_map[field_value] = nil
+            key_cache_num_map[field_value] = nil
             if not invaild then
                 t._key_cache_count = t._key_cache_count - 1
             end
@@ -332,23 +332,23 @@ end
 
 local function init_entry_data(t,entry_data)
     local new_entry_data = {}
-    local filed_list = t._filed_list
-    local filed_map = t._filed_map
-    for i = 1,#filed_list do
-        local fn = filed_list[i]
-        local ft = filed_map[fn]
+    local field_list = t._field_list
+    local field_map = t._field_map
+    for i = 1,#field_list do
+        local fn = field_list[i]
+        local ft = field_map[fn]
         if entry_data[fn] then
             new_entry_data[fn] = entry_data[fn]
         else
-            new_entry_data[fn] = FILED_LUA_DEFAULT[ft]
+            new_entry_data[fn] = FIELD_LUA_DEFAULT[ft]
         end
     end
     return new_entry_data
 end
 
 local M = {
-    FILED_TYPE = FILED_TYPE,
-    FILED_LUA_DEFAULT = FILED_LUA_DEFAULT,
+    FIELD_TYPE = FIELD_TYPE,
+    FIELD_LUA_DEFAULT = FIELD_LUA_DEFAULT,
 }
 local mata = {__index = M, __gc = function(t)
     if t._time_obj then
@@ -361,8 +361,8 @@ function M:new(tab_name)
     local t = {
         _queue = queue(),                           --操作队列
         _tab_name = tab_name,                       --表名
-        _filed_list = {},
-        _filed_map = {},                            --所有字段
+        _field_list = {},
+        _field_map = {},                            --所有字段
         _key_map = {},
         _keylist = {},                              --key列表
         _is_builder = false,
@@ -384,9 +384,9 @@ function M:new(tab_name)
 end
 
 do
-    for type_name,type_enum in pairs(FILED_TYPE) do
-        M[type_name] = function(self, filed_name)
-            add_filed_name_type(self, filed_name, type_enum)
+    for type_name,type_enum in pairs(FIELD_TYPE) do
+        M[type_name] = function(self, field_name)
+            add_field_name_type(self, field_name, type_enum)
             return self
         end
     end
@@ -397,11 +397,11 @@ function M:set_keys(...)
     assert(not self._is_builder, "builded can`t set_keys")
     local list = {...}
     for i = 1,#list do
-        local filed_name = list[i]
-        assert(self._filed_map[filed_name], "not exists: ".. filed_name)
-        assert(not self._key_map[filed_name], "is exists: ".. filed_name)
-        tinsert(self._keylist, filed_name)
-        self._key_map[filed_name] = true
+        local field_name = list[i]
+        assert(self._field_map[field_name], "not exists: ".. field_name)
+        assert(not self._key_map[field_name], "is exists: ".. field_name)
+        tinsert(self._keylist, field_name)
+        self._key_map[field_name] = true
     end
     return self
 end
@@ -480,9 +480,9 @@ end
 local function check_key_values(t, key_values)
     local keylist = t._keylist
     for i = 1,#key_values do
-        local filed_name = keylist[i]
+        local field_name = keylist[i]
         local value = key_values[i]
-        check_one_filed(t, filed_name, value)
+        check_one_field(t, field_name, value)
     end
 end
 
@@ -490,13 +490,13 @@ end
 local function create_invaild_entry(t, key_values)
     --无效数据，只需要添加key的数据就行
     local keylist = t._keylist
-    local filed_map = t._filed_map
+    local field_map = t._field_map
     local data = {}
     for i = 1, #keylist do
-        local filed_name = keylist[i]
-        local ft = filed_map[filed_name]
-        local filed_value = key_values[i] or FILED_LUA_DEFAULT[ft]
-        data[filed_name] = filed_value
+        local field_name = keylist[i]
+        local ft = field_map[field_name]
+        local field_value = key_values[i] or FIELD_LUA_DEFAULT[ft]
+        data[field_name] = field_value
     end
 
     return ormentry:new_invaild(data)
@@ -531,12 +531,12 @@ local function builder(t, adapterinterface)
     t._adapterinterface = adapterinterface       --数据适配接口
 
     local tab_name = t._tab_name --表名
-    local filed_map = t._filed_map
-    local filed_list = t._filed_list
+    local field_map = t._field_map
+    local field_list = t._field_list
     local key_list = t._keylist
     
     t._is_builder = true
-    adapterinterface:builder(tab_name, filed_list, filed_map, key_list)
+    adapterinterface:builder(tab_name, field_list, field_map, key_list)
     return t
 end
 
@@ -560,7 +560,7 @@ local function create_entry(t, list)
     assert(t._is_builder, "not builder can`t create_entry")
     local entry_data_list = {}
     for _,entry_data in ipairs(list) do
-        check_fileds(t, entry_data)
+        check_fields(t, entry_data)
         tinsert(entry_data_list, init_entry_data(t, entry_data))
     end
     local ret_list = t._adapterinterface:create_entry(entry_data_list)
@@ -581,7 +581,7 @@ end
 
 local function create_one_entry(t, entry_data)
     assert(t._is_builder, "not builder can`t create_one_entry")
-    check_fileds(t, entry_data)
+    check_fields(t, entry_data)
     entry_data = init_entry_data(t, entry_data)
 
     local ret = t._adapterinterface:create_one_entry(entry_data)
@@ -592,12 +592,12 @@ local function create_one_entry(t, entry_data)
 end
 
 -- 检查数据合法性
-function M:check_one_filed(filed_name, filed_value)
+function M:check_one_field(field_name, field_value)
     --主键 索引值不能改变
     local key_map = self._key_map
-    assert(not key_map[filed_name], "can`t change key value")
+    assert(not key_map[field_name], "can`t change key value")
 
-    check_one_filed(self, filed_name, filed_value)
+    check_one_field(self, field_name, field_value)
 end
 
 -- 设置变更标记
@@ -823,8 +823,8 @@ function M:get_entry_by_data(entry_data)
     local key_list = self._keylist
     local key_values = {}
     for i = 1,#key_list do
-        local filed_name = key_list[i]
-        local v = assert(entry_data[filed_name], "not exists value filed_name:" .. filed_name)
+        local field_name = key_list[i]
+        local v = assert(entry_data[field_name], "not exists value field_name:" .. field_name)
         tinsert(key_values, v)
     end
     check_key_values(self, key_values)

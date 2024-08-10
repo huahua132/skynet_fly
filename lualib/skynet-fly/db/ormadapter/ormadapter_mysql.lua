@@ -4,8 +4,8 @@ local string_util = require "skynet-fly.utils.string_util"
 local mysqlf = require "skynet-fly.db.mysqlf"
 local log = require "skynet-fly.log"
 
-local FILED_TYPE = require "skynet-fly.db.orm.ormtable".FILED_TYPE
-local FILED_LUA_DEFAULT = require "skynet-fly.db.orm.ormtable".FILED_LUA_DEFAULT
+local FIELD_TYPE = require "skynet-fly.db.orm.ormtable".FIELD_TYPE
+local FIELD_LUA_DEFAULT = require "skynet-fly.db.orm.ormtable".FIELD_LUA_DEFAULT
 
 local setmetatable = setmetatable
 local sfild = string.find
@@ -20,44 +20,44 @@ local type = type
 local tonumber = tonumber
 local tinsert = table.insert
 
-local FILED_TYPE_SQL_TYPE = {
-    [FILED_TYPE.int8] = "tinyint",
-    [FILED_TYPE.int16] = "smallint",
-    [FILED_TYPE.int32] = "int",
-    [FILED_TYPE.int64] = "bigint",
-    [FILED_TYPE.uint8] = "tinyint unsigned",
-    [FILED_TYPE.uint16] = "smallint unsigned",
-    [FILED_TYPE.uint32] = "int unsigned",
+local FIELD_TYPE_SQL_TYPE = {
+    [FIELD_TYPE.int8] = "tinyint",
+    [FIELD_TYPE.int16] = "smallint",
+    [FIELD_TYPE.int32] = "int",
+    [FIELD_TYPE.int64] = "bigint",
+    [FIELD_TYPE.uint8] = "tinyint unsigned",
+    [FIELD_TYPE.uint16] = "smallint unsigned",
+    [FIELD_TYPE.uint32] = "int unsigned",
 
-    [FILED_TYPE.string32] = "varchar(32)",
-    [FILED_TYPE.string64] = "varchar(64)",
-    [FILED_TYPE.string128] = "varchar(128)",
-    [FILED_TYPE.string256] = "varchar(256)",
-    [FILED_TYPE.string512] = "varchar(512)",
-    [FILED_TYPE.string1024] = "varchar(1024)",
-    [FILED_TYPE.string2048] = "varchar(2048)",
-    [FILED_TYPE.string4096] = "varchar(4096)",
-    [FILED_TYPE.string8192] = "varchar(8192)",
+    [FIELD_TYPE.string32] = "varchar(32)",
+    [FIELD_TYPE.string64] = "varchar(64)",
+    [FIELD_TYPE.string128] = "varchar(128)",
+    [FIELD_TYPE.string256] = "varchar(256)",
+    [FIELD_TYPE.string512] = "varchar(512)",
+    [FIELD_TYPE.string1024] = "varchar(1024)",
+    [FIELD_TYPE.string2048] = "varchar(2048)",
+    [FIELD_TYPE.string4096] = "varchar(4096)",
+    [FIELD_TYPE.string8192] = "varchar(8192)",
 
-    [FILED_TYPE.text] = "text",
-    [FILED_TYPE.blob] = "blob",
+    [FIELD_TYPE.text] = "text",
+    [FIELD_TYPE.blob] = "blob",
 }
 
 local IS_NUMBER_TYPE = {
-    [FILED_TYPE.int8] = true,
-    [FILED_TYPE.int16] = true,
-    [FILED_TYPE.int32] = true,
-    [FILED_TYPE.int64] = true,
-    [FILED_TYPE.uint8] = true,
-    [FILED_TYPE.uint16] = true,
-    [FILED_TYPE.uint32] = true,
+    [FIELD_TYPE.int8] = true,
+    [FIELD_TYPE.int16] = true,
+    [FIELD_TYPE.int32] = true,
+    [FIELD_TYPE.int64] = true,
+    [FIELD_TYPE.uint8] = true,
+    [FIELD_TYPE.uint16] = true,
+    [FIELD_TYPE.uint32] = true,
 }
 
-local FILED_TYPE_LUA_TYPE = {}
+local FIELD_TYPE_LUA_TYPE = {}
 
 do 
-    for type,name in pairs(FILED_TYPE_SQL_TYPE) do
-        FILED_TYPE_LUA_TYPE[name] = type
+    for type,name in pairs(FIELD_TYPE_SQL_TYPE) do
+        FIELD_TYPE_LUA_TYPE[name] = type
     end
 end
 
@@ -69,8 +69,8 @@ function M:new(db_name)
     local t = {
         _db = mysqlf:new(db_name),
         _tab_name = nil,
-        _filed_list = nil,
-        _filed_map = nil,
+        _field_list = nil,
+        _field_map = nil,
         _key_list = nil,
     }
 
@@ -80,18 +80,18 @@ function M:new(db_name)
 end
 
 local function create_table(t)
-    local filed_list = t._filed_list
-    local filed_map = t._filed_map
+    local field_list = t._field_list
+    local field_map = t._field_map
     local key_list = t._key_list
     local sql_str = sformat("create table %s (\n", t._tab_name)
-    for i = 1,#filed_list do
-        local filed_name = filed_list[i]
-        local filed_type = filed_map[filed_name]
-        local convert_type = assert(FILED_TYPE_SQL_TYPE[filed_type],"unknown type : " .. filed_type)
-        if filed_type == FILED_TYPE.text or filed_type == FILED_TYPE.blob then          --text 和 blob类型不支持指定默认值
-            sql_str = sql_str .. sformat("\t`%s` %s,\n", filed_name, convert_type)
+    for i = 1,#field_list do
+        local field_name = field_list[i]
+        local field_type = field_map[field_name]
+        local convert_type = assert(FIELD_TYPE_SQL_TYPE[field_type],"unknown type : " .. field_type)
+        if field_type == FIELD_TYPE.text or field_type == FIELD_TYPE.blob then          --text 和 blob类型不支持指定默认值
+            sql_str = sql_str .. sformat("\t`%s` %s,\n", field_name, convert_type)
         else
-            sql_str = sql_str .. sformat("\t`%s` %s NOT NULL DEFAULT '%s',\n", filed_name, convert_type, FILED_LUA_DEFAULT[filed_type])
+            sql_str = sql_str .. sformat("\t`%s` %s NOT NULL DEFAULT '%s',\n", field_name, convert_type, FIELD_LUA_DEFAULT[field_type])
         end
     end
 
@@ -108,8 +108,8 @@ local function create_table(t)
 end
 
 local function alter_table(t, describe, index_info)
-    local filed_list = t._filed_list
-    local filed_map = t._filed_map
+    local field_list = t._field_list
+    local field_map = t._field_map
     local key_list = t._key_list
     local key_map = {}
     
@@ -119,8 +119,8 @@ local function alter_table(t, describe, index_info)
     end
 
     local key_sort_map = {}
-    for i = 1,#filed_list do
-        key_sort_map[filed_list[i]] = i
+    for i = 1,#field_list do
+        key_sort_map[field_list[i]] = i
     end
 
     local pre_key_map = {}
@@ -138,42 +138,42 @@ local function alter_table(t, describe, index_info)
     assert(not next(def),"can`t change keys " .. table_util.def_tostring(def))     --不能修改主键
 
     -- 不能修改字段类型
-    local pre_filed_map = {}
+    local pre_field_map = {}
     for i = 1,#describe do
         local one_des = describe[i]
         local tp = one_des.Type:gsub("(%a*)int%(%d+%)", "%1int")
         local field_name = one_des.Field
-        local lua_type = assert(FILED_TYPE_LUA_TYPE[tp],"not exists type " .. tp)
-        pre_filed_map[field_name] = lua_type
+        local lua_type = assert(FIELD_TYPE_LUA_TYPE[tp],"not exists type " .. tp)
+        pre_field_map[field_name] = lua_type
     end
 
-    local def = table_util.check_def_table(filed_map, pre_filed_map)
+    local def = table_util.check_def_table(field_map, pre_field_map)
     local new_field_list = {} 
-    for filed_name,def_info in pairs(def) do
+    for field_name,def_info in pairs(def) do
         if def_info._flag == "add" then
-            tinsert(new_field_list,filed_name)
+            tinsert(new_field_list,field_name)
         elseif def_info._flag == "valuedef" then
-            error("can`t change type " .. filed_name .. ' new:' .. def_info._new .. ' old:' .. def_info._old) --不能修改类型
+            error("can`t change type " .. field_name .. ' new:' .. def_info._new .. ' old:' .. def_info._old) --不能修改类型
         end
     end
 
     --新增字段
     if next(new_field_list) then
         local sql_str = sformat("alter table %s\n", t._tab_name)
-        for _,filed_name,is_end in table_util.sort_ipairs(new_field_list, function(a, b) return key_sort_map[a] < key_sort_map[b] end) do
-            local filed_type = filed_map[filed_name]
-            local convert_type = assert(FILED_TYPE_SQL_TYPE[filed_type],"unknown type : " .. filed_type)
+        for _,field_name,is_end in table_util.sort_ipairs(new_field_list, function(a, b) return key_sort_map[a] < key_sort_map[b] end) do
+            local field_type = field_map[field_name]
+            local convert_type = assert(FIELD_TYPE_SQL_TYPE[field_type],"unknown type : " .. field_type)
             if not is_end then
-                if filed_type == FILED_TYPE.text or filed_type == FILED_TYPE.blob then
-                    sql_str = sql_str .. sformat("add `%s` %s,\n", filed_name, convert_type)
+                if field_type == FIELD_TYPE.text or field_type == FIELD_TYPE.blob then
+                    sql_str = sql_str .. sformat("add `%s` %s,\n", field_name, convert_type)
                 else
-                    sql_str = sql_str .. sformat("add `%s` %s NOT NULL DEFAULT '%s',\n", filed_name, convert_type, FILED_LUA_DEFAULT[filed_type])
+                    sql_str = sql_str .. sformat("add `%s` %s NOT NULL DEFAULT '%s',\n", field_name, convert_type, FIELD_LUA_DEFAULT[field_type])
                 end
             else
-                if filed_type == FILED_TYPE.text or filed_type == FILED_TYPE.blob then
-                    sql_str = sql_str .. sformat("add `%s` %s;\n", filed_name, convert_type)
+                if field_type == FIELD_TYPE.text or field_type == FIELD_TYPE.blob then
+                    sql_str = sql_str .. sformat("add `%s` %s;\n", field_name, convert_type)
                 else
-                    sql_str = sql_str .. sformat("add `%s` %s NOT NULL DEFAULT '%s';\n", filed_name, convert_type, FILED_LUA_DEFAULT[filed_type])
+                    sql_str = sql_str .. sformat("add `%s` %s NOT NULL DEFAULT '%s';\n", field_name, convert_type, FIELD_LUA_DEFAULT[field_type])
                 end
             end
         end
@@ -189,11 +189,11 @@ local function alter_table(t, describe, index_info)
     end
 end
 -- 构建表
-function M:builder(tab_name, filed_list, filed_map, key_list)
+function M:builder(tab_name, field_list, field_map, key_list)
     self._tab_name = tab_name
-    self._filed_map = filed_map
+    self._field_map = field_map
     self._key_list = key_list
-    self._filed_list = filed_list
+    self._field_list = field_list
 
     -- 查询表的字段信息
     local describe = self._db:query("DESCRIBE " .. tab_name)
@@ -218,7 +218,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
         max_packet_size = local_max_packet_size
     end
 
-    local filed_index_map = {}
+    local field_index_map = {}
 
     local insert_format_head = sformat("insert into %s (",tab_name)
     local insert_format_end = "("
@@ -232,56 +232,56 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     local delete_format_head = sformat("delete from %s",tab_name)
     local delete_format_center = " where "
 
-    local len = #filed_list
+    local len = #field_list
     for i = 1,len do
-        local filed_name = filed_list[i]
-        local filed_type = filed_map[filed_name]
-        if IS_NUMBER_TYPE[filed_type] then
+        local field_name = field_list[i]
+        local field_type = field_map[field_name]
+        if IS_NUMBER_TYPE[field_type] then
             if i == len then
                 insert_format_end = insert_format_end .. "%d" 
             else
                 insert_format_end = insert_format_end .. "%d,"
             end
-            update_format_head_list[i] = '`' .. filed_name .. "` = %d"
+            update_format_head_list[i] = '`' .. field_name .. "` = %d"
         else
             if i == len then
                 insert_format_end = insert_format_end .. "'%s'" 
             else
                 insert_format_end = insert_format_end .. "'%s',"
             end
-            update_format_head_list[i] = '`' .. filed_name .. "` = '%s'"
+            update_format_head_list[i] = '`' .. field_name .. "` = '%s'"
         end
         if i == len then
-            insert_format_head = insert_format_head .. '`' .. filed_name .. '`'
-            select_format_head = select_format_head .. '`' .. filed_name .. '`'
+            insert_format_head = insert_format_head .. '`' .. field_name .. '`'
+            select_format_head = select_format_head .. '`' .. field_name .. '`'
             
         else
-            insert_format_head = insert_format_head .. '`' .. filed_name .. '`,'
-            select_format_head = select_format_head .. '`' .. filed_name .. '`,'
+            insert_format_head = insert_format_head .. '`' .. field_name .. '`,'
+            select_format_head = select_format_head .. '`' .. field_name .. '`,'
         end
         
-        filed_index_map[filed_name] = i
+        field_index_map[field_name] = i
     end
 
     len = #key_list
     for i = 1,len do
-        local filed_name = key_list[i]
-        local filed_type = filed_map[filed_name]
-        if IS_NUMBER_TYPE[filed_type] then
+        local field_name = key_list[i]
+        local field_type = field_map[field_name]
+        if IS_NUMBER_TYPE[field_type] then
             if i == len then
-                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "%d"
-                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "%d"
+                select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "%d"
+                update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "%d"
             else
-                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "%d"
-                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "%d and "
+                select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "%d"
+                update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "%d and "
             end
         else
             if i == len then
-                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
-                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
+                select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "'%s'"
+                update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "'%s'"
             else
-                select_format_end = select_format_end .. '`' .. filed_name .. '`=' .. "'%s'"
-                update_format_end = update_format_end .. '`' .. filed_name .. '`=' .. "'%s' and "
+                select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "'%s'"
+                update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "'%s' and "
             end
         end
        
@@ -295,8 +295,8 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
 
     local insert_list = {}                               
     local function entry_data_to_list(entry_data)
-        for i = 1,#filed_list do
-            local fn = filed_list[i]
+        for i = 1,#field_list do
+            local fn = field_list[i]
             local fv = entry_data[fn]
 
             if type(fv) == 'string' then
@@ -426,7 +426,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
                 local change_map = change_map_list[index]
                 local center_str = ""
                 for field_name in pairs(change_map) do
-                    local index = filed_index_map[field_name]
+                    local index = field_index_map[field_name]
                     local field_value = entry_data[field_name]
                     if type(field_value) == 'string' then
                         field_value = string_util.quote_sql_str(field_value)
@@ -472,7 +472,7 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     self._update_one = function(entry_data, change_map)
         local center_str = ""
         for field_name in pairs(change_map) do
-            local index = filed_index_map[field_name]
+            local index = field_index_map[field_name]
             local field_value = entry_data[field_name]
             if type(field_value) == 'string' then
                 field_value = string_util.quote_sql_str(field_value)

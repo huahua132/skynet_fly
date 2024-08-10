@@ -17,8 +17,8 @@ function M:new(db_name)
     local t = {
         _db = mongof.new_client(db_name),
         _tab_name = nil,
-        _filed_list = nil,
-        _filed_map = nil,
+        _field_list = nil,
+        _field_map = nil,
         _key_list = nil,
         batch_insert_num = 10,
         batch_update_num = 10,
@@ -44,18 +44,18 @@ function M:set_batch_update_num(num)
 end
 
 -- 构建表
-function M:builder(tab_name, filed_list, filed_map, key_list)
+function M:builder(tab_name, field_list, field_map, key_list)
     self._tab_name = tab_name
-    self._filed_map = filed_map
+    self._field_map = field_map
     self._key_list = key_list
-    self._filed_list = filed_list
+    self._field_list = field_list
 
     local args = {}
     local index_name = "index"
     for i = 1,#key_list do
-        local filed_name = key_list[i]
-        tinsert(args, {[filed_name] = 1})
-        index_name = index_name .. "_" .. filed_name
+        local field_name = key_list[i]
+        tinsert(args, {[field_name] = 1})
+        index_name = index_name .. "_" .. field_name
     end
     args.unique = true
     args.name = index_name
@@ -248,8 +248,8 @@ function M:builder(tab_name, filed_list, filed_map, key_list)
     self._delete = function(key_values)
         local delete_query = {}
         for i = 1,#key_values do
-            local filed_name = key_list[i]
-            delete_query[filed_name] = key_values[i]
+            local field_name = key_list[i]
+            delete_query[field_name] = key_values[i]
         end
 
         local isok,err = collect_db:safe_delete(delete_query)
