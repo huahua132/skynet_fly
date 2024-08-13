@@ -13,6 +13,8 @@ contriner_client:register("share_config_m")
 
 local net_util = nil
 
+local test_proto = 'sp'
+
 local CMD = {}
 
 local g_config
@@ -295,11 +297,17 @@ function CMD.start(config)
 	g_config = config
 
 	if g_config.protocol == 'websocket' then
-		--net_util = require "skynet-fly.utils.net.ws_pbnet_byid"  --pb
-		net_util = require "skynet-fly.utils.net.ws_spnet_byid"
+		if test_proto == 'pb' then
+			net_util = require "skynet-fly.utils.net.ws_pbnet_byid"  --pb
+		else
+			net_util = require "skynet-fly.utils.net.ws_spnet_byid"
+		end
 	else
-		--net_util = require "skynet-fly.utils.net.pbnet_byid"     --pb
-		net_util = require "skynet-fly.utils.net.spnet_byid"
+		if test_proto == 'pb' then
+			net_util = require "skynet-fly.utils.net.pbnet_byid"     --pb
+		else
+			net_util = require "skynet-fly.utils.net.spnet_byid"
+		end
 	end
 	pack_helper.set_packname_id()
 	pack_helper.set_sp_packname_id()

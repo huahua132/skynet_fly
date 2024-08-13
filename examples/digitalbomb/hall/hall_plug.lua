@@ -20,27 +20,30 @@ local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local g_interface_mgr = nil
 
+local test_proto = 'sp'
+
 local M = {}
 
---解包函数
---M.unpack = pbnet_util.unpack
-M.unpack = spnet_util.unpack
 --发包函数
---M.send = pbnet_util.send
-M.send = spnet_util.send
---广播函数
---M.broadcast = pbnet_util.broadcast
-M.broadcast = spnet_util.broadcast
-
---解包函数
---M.ws_unpack = ws_pbnet_util.unpack
-M.ws_unpack = ws_spnet_util.unpack
---发包函数
---M.ws_send = ws_pbnet_util.send
-M.ws_send = ws_spnet_util.send
---广播函数
---M.ws_broadcast = ws_pbnet_util.broadcast
-M.ws_broadcast = ws_spnet_util.broadcast
+if test_proto == 'pb' then
+	M.unpack = pbnet_util.unpack
+	M.send = pbnet_util.send
+	M.broadcast = pbnet_util.broadcast
+	M.ws_unpack = ws_pbnet_util.unpack
+	M.ws_send = ws_pbnet_util.send
+	M.ws_broadcast = ws_pbnet_util.broadcast
+else
+	--解包函数
+	M.unpack = spnet_util.unpack
+	M.send = spnet_util.send
+	--广播函数
+	M.broadcast = spnet_util.broadcast
+	--发包函数
+	M.ws_unpack = ws_spnet_util.unpack
+	M.ws_send = ws_spnet_util.send
+	--广播函数
+	M.ws_broadcast = ws_spnet_util.broadcast
+end
 
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 
@@ -76,9 +79,10 @@ function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
 	errors_msg = errors_msg:new(interface_mgr)
 	login_msg = login_msg:new(interface_mgr)
-	-- g_interface_mgr:handle('.login.LoginOutReq',login_out_req)
-	-- g_interface_mgr:handle('.login.matchReq',match_req)
-	-- g_interface_mgr:handle('.login.serverInfoReq',server_info_req)
+	--pb
+	g_interface_mgr:handle('.login.LoginOutReq',login_out_req)
+	g_interface_mgr:handle('.login.matchReq',match_req)
+	g_interface_mgr:handle('.login.serverInfoReq',server_info_req)
 
 	--sp
 	g_interface_mgr:handle('LoginOutReq',login_out_req)

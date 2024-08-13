@@ -15,31 +15,34 @@ local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local assert = assert
 
+local test_proto = 'sp'
+
 local g_interface_mgr = nil
 
 local M = {}
 
 --登录检测的超时时间
 M.time_out = timer.second * 5
---解包函数
---M.unpack = pbnet_util.unpack
-M.unpack = spnet_util.unpack
 --发包函数
---M.send = pbnet_util.send
-M.send = spnet_util.send
---广播函数
---M.broadcast = pbnet_util.broadcast
-M.broadcast = spnet_util.broadcast
-
---解包函数
---M.ws_unpack = ws_pbnet_util.unpack
-M.ws_unpack = ws_spnet_util.unpack
---发包函数
---M.ws_send = ws_pbnet_util.send
-M.ws_send = ws_spnet_util.send
---广播函数
---M.ws_broadcast = ws_pbnet_util.broadcast
-M.ws_broadcast = ws_spnet_util.broadcast
+if test_proto == 'pb' then
+	M.unpack = pbnet_util.unpack
+	M.send = pbnet_util.send
+	M.broadcast = pbnet_util.broadcast
+	M.ws_unpack = ws_pbnet_util.unpack
+	M.ws_send = ws_pbnet_util.send
+	M.ws_broadcast = ws_pbnet_util.broadcast
+else
+	--解包函数
+	M.unpack = spnet_util.unpack
+	M.send = spnet_util.send
+	--广播函数
+	M.broadcast = spnet_util.broadcast
+	--发包函数
+	M.ws_unpack = ws_spnet_util.unpack
+	M.ws_send = ws_spnet_util.send
+	--广播函数
+	M.ws_broadcast = ws_spnet_util.broadcast
+end
 
 
 function M.init(interface_mgr)
@@ -57,8 +60,7 @@ function M.check(packname,pack_body)
 		log.error("unpack err ",packname,pack_body)
 		return false
 	end
-	if packname ~= 'LoginReq' then --sp
-	--if packname ~= '.login.LoginReq' then --pb
+	if packname ~= '.login.LoginReq' and packname ~= 'LoginReq' then
 		log.error("login_check msg err ",packname)
 		return false,errorcode.NOT_LOGIN,"please login"
 	end
