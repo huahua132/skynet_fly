@@ -22,27 +22,30 @@ local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
 
 local g_interface_mgr = nil
 
+local test_proto = 'sp'
+
 local M = {}
 
---解包函数
---M.unpack = pbnet_byid.unpack
-M.unpack = spnet_byid.unpack
 --发包函数
---M.send = pbnet_byid.send
-M.send = spnet_byid.send
---广播函数
---M.broadcast = pbnet_byid.broadcast
-M.broadcast = spnet_byid.broadcast
-
---解包函数
---M.ws_unpack = ws_pbnet_byid.unpack
-M.ws_unpack = ws_spnet_byid.unpack
---发包函数
---M.ws_send = ws_pbnet_byid.send
-M.ws_send = ws_spnet_byid.send
---广播函数
---M.ws_broadcast = ws_pbnet_byid.broadcast
-M.ws_broadcast = ws_spnet_byid.broadcast
+if test_proto == 'pb' then
+	M.unpack = pbnet_byid.unpack
+	M.send = pbnet_byid.send
+	M.broadcast = pbnet_byid.broadcast
+	M.ws_unpack = ws_pbnet_byid.unpack
+	M.ws_send = ws_pbnet_byid.send
+	M.ws_broadcast = ws_pbnet_byid.broadcast
+else
+	--解包函数
+	M.unpack = spnet_byid.unpack
+	M.send = spnet_byid.send
+	--广播函数
+	M.broadcast = spnet_byid.broadcast
+	--发包函数
+	M.ws_unpack = ws_spnet_byid.unpack
+	M.ws_send = ws_spnet_byid.send
+	--广播函数
+	M.ws_broadcast = ws_spnet_byid.broadcast
+end
 
 M.disconn_time_out = timer.minute                   --掉线一分钟就清理
 

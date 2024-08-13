@@ -9,6 +9,8 @@ local table_util = require "skynet-fly.utils.table_util"
 local contriner_client = require "skynet-fly.client.contriner_client"
 contriner_client:register("share_config_m")
 
+local test_proto = 'sp'
+
 local CMD = {}
 
 local g_config
@@ -43,8 +45,12 @@ local function connnect(handle)
 	}
 
 	net_util.recv(fd,handle or dispatch)
-	--net_util.send(nil,fd,'.login.LoginReq',login_req)
-	net_util.send(nil,fd,'LoginReq',login_req)
+	if test_proto == 'pb' then
+		net_util.send(nil,fd,'.login.LoginReq',login_req)
+	else
+		net_util.send(nil,fd,'LoginReq',login_req)
+	end
+
 	return fd
 end
 
@@ -52,8 +58,11 @@ local function loginout(fd)
 	local login_out_req = {
 		player_id = g_config.player_id,
 	}
-	--net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
-	net_util.send(nil,fd,'LoginOutReq',login_out_req)
+	if test_proto == 'pb' then
+		net_util.send(nil,fd,'.login.LoginOutReq',login_out_req)
+	else
+		net_util.send(nil,fd,'LoginOutReq',login_out_req)
+	end
 end
 
 local function close(fd)
@@ -116,16 +125,22 @@ local function reload_switch_test(mod_name)
 	local fd
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch1:",g_config.protocol,packname,res)
-		if packname == 'LoginRes' then--'.login.LoginRes' then
-			--net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
-		elseif packname == 'serverInfoRes' then--'.login.serverInfoRes' then
+		if packname == 'LoginRes' or packname  == '.login.LoginRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			else
+				net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+			end
+		elseif packname == 'serverInfoRes' or packname == '.login.serverInfoRes' then
 			login_res = res
 			skynet.wakeup(wi)
-		elseif packname == 'matchRes' then--'.login.matchRes' then
-			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
-		elseif packname == 'LoginOutRes' then--'.login.LoginOutRes' then
+		elseif packname == 'matchRes' or packname == '.login.matchRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			else
+				net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+			end
+		elseif packname == 'LoginOutRes' or packname == '.login.LoginOutRes' then
 			skynet.wakeup(out_wi)
 		end
 	end)
@@ -139,15 +154,21 @@ local function reload_switch_test(mod_name)
 	local wi = coroutine.running()
 	fd = connnect(function(_,packname,res)
 		log.info("reload_switch_test dispatch2:",packname,res)
-		if packname == 'LoginRes' then--'.login.LoginRes' then
-			--net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
-		elseif packname == 'serverInfoRes' then --'.login.serverInfoRes' then
+		if packname == 'LoginRes' or packname == '.login.LoginRes' then
+			if test_proto == 'pb' then 
+				net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			else
+				net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+			end
+		elseif packname == 'serverInfoRes' or packname == '.login.serverInfoRes' then
 			new_login_res = res
 			skynet.wakeup(wi)
-		elseif packname == 'matchRes' then --'.login.matchRes' then
-			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+		elseif packname == 'matchRes' or packname == '.login.matchRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			else
+				net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+			end
 		end
 	end)
 	skynet.wait(wi)
@@ -203,7 +224,7 @@ local function player_game(login_res)
 	fd = connnect(function(_,packname,res)
 		log.info("player_game:",fd,g_config.protocol,packname,res)
 
-		if packname == 'NextDoingCast' then --'.game.NextDoingCast' then
+		if packname == 'NextDoingCast' or packname == '.game.NextDoingCast' then
 			if res.doing_player_id ~= g_config.player_id then
 				return
 			end
@@ -214,28 +235,42 @@ local function player_game(login_res)
 			local max_num = res.max_num
 
 			local opt_num = math.random(min_num,max_num)
-			-- net_util.send(nil,fd,'.game.DoingReq',{
-			-- 	opt_num = opt_num,
-			-- })
-			net_util.send(nil,fd,'DoingReq',{
-				opt_num = opt_num,
-			})
-		elseif packname == 'LoginRes' then--'.login.LoginRes' then
-			-- net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-			-- net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
-			net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
-		elseif packname == 'serverInfoRes' then --'.login.serverInfoRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.game.DoingReq',{
+					opt_num = opt_num,
+				})
+			else
+				net_util.send(nil,fd,'DoingReq',{
+					opt_num = opt_num,
+				})
+			end
+		
+		elseif packname == 'LoginRes' or packname == '.login.LoginRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+				net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
+			else
+				net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
+				net_util.send(nil,fd,'matchReq',{table_name = "room_3"})
+			end
+		elseif packname == 'serverInfoRes' or packname == '.login.serverInfoRes' then
 			for k,v in pairs(res) do
 				login_res[k] = v
 			end
-		elseif packname == 'matchRes' then--'.login.matchRes' then
+		elseif packname == 'matchRes' or packname == '.login.matchRes' then
 			log.error("发送状态请求")
-			--net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
-		elseif packname == 'GameStatusRes' then--'.game.GameStatusRes' then
-			--net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
-			net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.game.GameStatusReq',{player_id = g_config.player_id})
+			else
+				net_util.send(nil,fd,'GameStatusReq',{player_id = g_config.player_id})
+			end
+		elseif packname == 'GameStatusRes' or packname == '.game.GameStatusRes' then
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.login.serverInfoReq',{player_id = g_config.player_id})
+			else
+				net_util.send(nil,fd,'serverInfoReq',{player_id = g_config.player_id})
+			end
+			
 			local next_doing = res.next_doing
 			if next_doing.doing_player_id ~= g_config.player_id then
 				return
@@ -245,15 +280,19 @@ local function player_game(login_res)
 			log.error("GameStatusRes sleep 2 ",coroutine.running())
 			local min_num = next_doing.min_num
 			local max_num = next_doing.max_num
-			
+			--pb
 			local opt_num = math.random(min_num,max_num)
-			-- net_util.send(nil,fd,'.game.DoingReq',{
-			-- 	opt_num = opt_num,
-			-- })
-			net_util.send(nil,fd,'DoingReq',{
-				opt_num = opt_num,
-			})
-		elseif packname == 'GameOverCast' then--'.game.GameOverCast' then
+
+			if test_proto == 'pb' then
+				net_util.send(nil,fd,'.game.DoingReq',{
+					opt_num = opt_num,
+				})
+			else
+				net_util.send(nil,fd,'DoingReq',{
+					opt_num = opt_num,
+				})
+			end	
+		elseif packname == 'GameOverCast' or packname == '.game.GameOverCast' then
 			loginout(fd)
 		end
 	end)
@@ -308,11 +347,17 @@ function CMD.start(config)
 	g_config = config
 
 	if g_config.protocol == 'websocket' then
-		--net_util = require "skynet-fly.utils.net.ws_pbnet_util" --pb
-		net_util = require "skynet-fly.utils.net.ws_spnet_util" --sb
+		if test_proto == 'pb' then
+			net_util = require "skynet-fly.utils.net.ws_pbnet_util" --pb
+		else
+			net_util = require "skynet-fly.utils.net.ws_spnet_util" --sb
+		end
 	else
-		--net_util = require "skynet-fly.utils.net.pbnet_util"
-		net_util = require "skynet-fly.utils.net.spnet_util"
+		if test_proto == 'pb' then
+			net_util = require "skynet-fly.utils.net.pbnet_util"
+		else
+			net_util = require "skynet-fly.utils.net.spnet_util"
+		end
 	end
 	
 	skynet.fork(function()

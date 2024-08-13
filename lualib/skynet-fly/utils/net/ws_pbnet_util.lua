@@ -4,16 +4,29 @@ local util_net_base = require "skynet-fly.utils.net.util_net_base"
 
 local M = {}
 
---给fd发送socket binary消息
-M.send = util_net_base.create_ws_gate_send_binary(pb_netpack.pack)
+function M.new(name, pack_obj)
+    local ret_M = {}
 
---给fd_list发送socket消息
-M.broadcast = util_net_base.create_ws_gate_broadcast_binary(pb_netpack.pack)
+    local pack_obj = pack_obj or pb_netpack.new(name)
 
---解包
-M.unpack = util_net_base.create_ws_gate_unpack(pb_netpack.unpack)
+    --给fd发送socket消息
+    ret_M.send = util_net_base.create_ws_gate_send_binary(pack_obj.pack)
 
---读取
-M.recv = util_net_base.create_recv(websocket.read,pb_netpack.unpack)
+    --给fd_list发送socket消息
+    ret_M.broadcast = util_net_base.create_ws_gate_broadcast_binary(pack_obj.pack)
+
+    --解包
+    ret_M.unpack = util_net_base.create_ws_gate_unpack(pack_obj.unpack)
+
+    --客户端读取消息包
+    ret_M.recv = util_net_base.create_recv(websocket.read,pack_obj.unpack)
+
+    return ret_M
+end
+
+local g_default = M.new('default', pb_netpack)
+
+local mata = {__index = g_default}
+setmetatable(M, mata)
 
 return M
