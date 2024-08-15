@@ -107,6 +107,7 @@ end
 ]]
 function M:cancel()
 	self.is_cancel = true
+	return self
 end
 
 --[[
@@ -116,6 +117,7 @@ end
 ]]
 function M:after_next()
 	self.is_after_next = true
+	return self
 end
 --[[
 	函数作用域：M:new 对象的成员函数
