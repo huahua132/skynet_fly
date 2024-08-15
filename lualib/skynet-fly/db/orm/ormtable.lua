@@ -1,7 +1,7 @@
 local ormentry = require "skynet-fly.db.orm.ormentry"
 local table_util = require "skynet-fly.utils.table_util"
 local math_util = require "skynet-fly.utils.math_util"
-local queue = require "skynet.queue"
+local mult_queue = require "skynet-fly.mult_queue"
 local tti = require "skynet-fly.cache.tti"
 local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
@@ -125,6 +125,14 @@ local function check_fields(t,entry_data)
 
     for field_name,field_value in pairs(entry_data) do
         check_one_field(t, field_name, field_value)
+    end
+end
+
+local function queue_doing(t, key1value, func, ...)
+    if key1value then
+        return t._queue:multi(key1value, func, ...)
+    else
+        return t._queue:unique(func, ...)
     end
 end
 
@@ -359,7 +367,7 @@ end}
 -- 新建表
 function M:new(tab_name)
     local t = {
-        _queue = queue(),                           --操作队列
+        _queue = mult_queue:new(),                           --操作队列
         _tab_name = tab_name,                       --表名
         _field_list = {},
         _field_map = {},                            --所有字段
@@ -471,9 +479,19 @@ local function excute_time_out(t, entry)
     end
 end
 
+local function get_key1value(t, entry_data)
+    local field_name = t._keylist[1]
+    local key1value = nil
+    if field_name then
+        key1value = entry_data[field_name]
+    end
+    return key1value
+end
+
 --缓存到期
 local function cache_time_out(entry, t)
-    t._queue(excute_time_out, t, entry)
+    local key1value = get_key1value(t, entry:get_entry_data())
+    queue_doing(t, key1value, excute_time_out, t, entry)
 end
 
 --检查key values 是否合法
@@ -536,6 +554,7 @@ local function builder(t, adapterinterface)
     local key_list = t._keylist
     
     t._is_builder = true
+
     adapterinterface:builder(tab_name, field_list, field_map, key_list)
     return t
 end
@@ -544,10 +563,10 @@ end
 function M:builder(adapterinterface)
     assert(#self._keylist > 0, "not set keys")
     if self._cache_time ~= 0 then
-        return self._queue(builder, self, adapterinterface)
+        return queue_doing(self, nil, builder, self, adapterinterface)
     else
-        local ret = self._queue(builder, self, adapterinterface)
-        local entry_list = self._queue(get_entry, self, {}, true)  --永久缓存，构建查询出所有数据
+        local ret = queue_doing(self, nil, builder, self, adapterinterface)
+        local entry_list = queue_doing(self, nil, get_entry, self, {}, true)  --永久缓存，构建查询出所有数据
         if not entry_list then
             return nil
         else
@@ -581,7 +600,6 @@ end
 
 local function create_one_entry(t, entry_data)
     assert(t._is_builder, "not builder can`t create_one_entry")
-    check_fields(t, entry_data)
     entry_data = init_entry_data(t, entry_data)
 
     local ret = t._adapterinterface:create_one_entry(entry_data)
@@ -754,12 +772,14 @@ end
 
 -- 批量创建新数据
 function M:create_entry(entry_data_list)
-    return self._queue(create_entry, self, entry_data_list)
+    return queue_doing(self, nil, create_entry, self, entry_data_list)
 end
 
 -- 创建一条数据
 function M:create_one_entry(entry_data)
-    return self._queue(create_one_entry, self, entry_data)
+    check_fields(self, entry_data)
+    local key1value = get_key1value(self, entry_data)
+    return queue_doing(self, key1value, create_one_entry, self, entry_data)
 end
 
 -- 查询多条数据
@@ -767,7 +787,8 @@ function M:get_entry(...)
     local key_values = {...}
     assert(#key_values > 0, "err key_values")
     check_key_values(self, key_values)
-    return self._queue(get_entry, self, key_values)
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, get_entry, self, key_values)
 end
 
 -- 查询一条数据
@@ -776,19 +797,22 @@ function M:get_one_entry(...)
     local key_list = self._keylist
     assert(#key_values == #key_list, "args len err") --查询单条数据，必须提供所有主键
     check_key_values(self, key_values)
-    return self._queue(get_one_entry, self, key_values)
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, get_one_entry, self, key_values)
 end
 
 -- 立即保存数据
 function M:save_entry(entry_list)
     if not next(entry_list) then return entry_list end
-    return self._queue(save_entry, self, entry_list)
+
+    return queue_doing(self, nil, save_entry, self, entry_list)
 end
 
 -- 立即保存一条数据
 function M:save_one_entry(entry)
     assert(entry,"not entry")
-    return self._queue(save_one_entry, self, entry)
+    local key1value = get_key1value(self, entry:get_entry_data())
+    return queue_doing(self, key1value, save_one_entry, self, entry)
 end
 
 -- 删除数据
@@ -796,17 +820,18 @@ function M:delete_entry(...)
     local key_values = {...}
     assert(#key_values > 0, "not key_values")
     check_key_values(self, key_values)
-    return self._queue(delete_entry, self, key_values)
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, delete_entry, self, key_values)
 end
 
 -- 查询所有数据
 function M:get_all_entry()
-    return self._queue(get_entry, self, {})
+    return queue_doing(self, nil, get_entry, self, {})
 end
 
 -- 删除所有数据
 function M:delete_all_entry()
-    return self._queue(delete_entry, self, {})
+    return queue_doing(self, nil, delete_entry, self, {})
 end
 
 -- 立即保存所有修改
@@ -828,7 +853,9 @@ function M:get_entry_by_data(entry_data)
         tinsert(key_values, v)
     end
     check_key_values(self, key_values)
-    return self._queue(get_one_entry, self, key_values)
+    local key1value = key_values[1]
+
+    return queue_doing(self, key1value, get_one_entry, self, key_list)
 end
 
 -- 是否启动了间隔保存

@@ -179,9 +179,11 @@ function M.check_def_table(new_t,old_t)
 				end
 	
 				for k,v in pairs(nt) do
-					local temp_des_map = check_func(nt[k],ot[k])
-					if next(temp_des_map) then
-						des_map[k] = temp_des_map
+					if not des_map[k] then
+						local temp_des_map = check_func(nt[k],ot[k])
+						if next(temp_des_map) then
+							des_map[k] = temp_des_map
+						end
 					end
 				end
 			else

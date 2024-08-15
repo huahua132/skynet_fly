@@ -91,6 +91,7 @@ local function test_alter_table()
     for _, info in pairs(sqlret) do
         info.Type = info.Type:gsub("(%a*)int%(%d+%)", "%1int")
     end
+    
     assert(not sqlret.err,sqlret.err)
     assert(sqlret[1].Field == 'player_id' and sqlret[1].Type == 'bigint' and sqlret[1].Key == 'PRI')
     assert(sqlret[2].Field == 'role_id' and sqlret[2].Type == 'bigint' and sqlret[2].Key == 'PRI')
@@ -113,7 +114,7 @@ local function test_alter_table()
     assert(sqlret[19].Field == 'sex14' and sqlret[19].Type == 'text')
     assert(sqlret[20].Field == 'sex15' and sqlret[20].Type == 'blob')
     assert(sqlret[21].Field == 'nickname1' and sqlret[21].Type == 'tinyint')
-
+    
     delete_table()
 end
 
@@ -749,7 +750,7 @@ local function test_inval_save()
     local entry_list = orm_obj:get_entry(10002)
     for i,entry in ipairs(entry_list) do
         local email = entry:get("email")
-        assert(email == "emailssss")
+        assert(email == "emailssss", email)
     end
 
     delete_table()
@@ -1511,6 +1512,35 @@ local function test_inval_save_del()
     delete_table()
 end
 
+--压测
+--stress testing
+--用skynet.queue qps = 823
+local function stress_testing()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local pre_time = skynet.time()
+    local count = 10000
+    for i = 1, count do
+        orm_obj:create_one_entry({player_id = i, role_id = 1, sex = 1})
+    end
+    
+    local use_time = skynet.time() - pre_time
+    log.info("qps:", count / use_time)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1555,6 +1585,8 @@ function CMD.start()
         test_every_cache()
         log.info("test_inval_save_del>>>>>")
         test_inval_save_del()
+        log.info("stress_testing")
+        stress_testing()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
