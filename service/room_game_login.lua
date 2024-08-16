@@ -25,6 +25,8 @@ local g_login_lock_map = {}
 local interface = {}
 local EMPTY = {}
 local NOT_SWITCH_FUNC = function() return false end
+
+local continue = {}
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
@@ -79,6 +81,10 @@ end
 
 local function check_func(gate, fd, is_ws, ...)
 	local player_id,errcode,errmsg = login_plug.check(...)
+	if player_id == continue then
+		return continue
+	end
+
 	if not player_id then
 		login_plug.login_failed(player_id, errcode, errmsg)
 		return
@@ -199,6 +205,10 @@ function interface:broad_cast_msg(header, body, filter_map)
 	if #ws_gate_list > 0 then
 		login_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
 	end
+end
+
+function interface:continue()
+	return continue
 end
 ----------------------------------------------------------------------------------
 --CMD
@@ -342,10 +352,18 @@ skynet.start(function()
 			else
 				unpack = login_plug.unpack
 			end
+
+			local header, body = unpack(msg, sz)
+			if not header then
+				log.error("unpack err ", fd, agent.addr, agent.is_ws, sz)
+				return
+			end
 			
-			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, unpack(msg, sz))
+			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, header, body)
 			if not player_id then
 				close_fd(fd)
+			elseif player_id == continue then
+				--继续处理后续登录消息
 			else
 				agent.login_time_out:cancel()
 				agent.player_id = player_id

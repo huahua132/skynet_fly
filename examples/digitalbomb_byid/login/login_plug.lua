@@ -60,10 +60,6 @@ end
 --登录检测函数 packid,req是解包函数返回的
 --登入成功后返回玩家id
 function M.check(packid,pack_body)
-	if not packid then
-		log.error("unpack err ",packid,pack_body)
-		return false
-	end
 	if packid ~= msg_id.login_LoginReq then
 		log.error("login_check msg err ",packid)
 		return false,errorcode.NOT_LOGIN,"please login"
