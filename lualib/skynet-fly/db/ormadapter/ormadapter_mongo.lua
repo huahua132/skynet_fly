@@ -7,6 +7,7 @@ local assert = assert
 local pairs = pairs
 local error = error
 local tinsert = table.insert
+local tremove = table.remove
 local pcall = pcall
 
 local M = {}
@@ -162,6 +163,68 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
     end
 
+    -- _select_in IN查询
+    self._select_in = function(in_values, key_values)
+        local args = {}
+        local len = #key_values
+        for i = 1, len do
+            args[key_list[i]] = key_values[i]
+        end
+
+        local end_field_name = key_list[len + 1]
+        args[end_field_name] = {["$in"] = in_values}
+
+        local res_list = {}
+        local ret = collect_db:find(args)
+        while ret:has_next() do
+            local entry_data = ret:next()
+            entry_data._id = nil
+            tinsert(res_list, entry_data)
+        end
+
+        return res_list
+    end
+
+    -- 分页查询
+    local only_keys_map = {}
+    for _,key_name in ipairs(key_list) do
+        only_keys_map[key_name] = 1
+    end
+    self._select_limit = function(cursor, limit, sort, key_values, is_only_key)
+        local args = {}
+        local len = #key_values
+        for i = 1, len do
+            args[key_list[i]] = key_values[i]
+        end
+        local end_field_name = key_list[len + 1]
+
+        local only_keys = nil
+        if is_only_key then
+            only_keys = only_keys_map
+        end
+
+        local count = nil
+        if not cursor then
+            count = collect_db:find(args):count()
+        end
+
+        local res_list = {}
+        local ret = collect_db:find(args, only_keys):sort({[end_field_name] = sort}):skip(cursor or 0):limit(limit)
+        while ret:has_next() do
+            local entry_data = ret:next()
+            entry_data._id = nil
+            tinsert(res_list, entry_data)
+        end
+
+        if #res_list > 0 then
+            cursor = (cursor or 0) + limit
+        else
+            cursor = nil
+        end
+        
+        return cursor, res_list, count
+    end
+
     --update 更新
     local query = {}
     for i = 1,key_len do
@@ -277,8 +340,8 @@ end
 function M:get_entry(key_values)
     local ok, ret = pcall(self._select, key_values)
     if not ok then
-        log.error("_select err ", self._tab_name, key_values)
-        error("_select err")
+        log.error("_select err ", ret, self._tab_name, key_values)
+        error("_select err", ret)
     else
         return ret
     end
@@ -288,8 +351,8 @@ end
 function M:get_one_entry(key_values)
     local ok, ret = pcall(self._select_one, key_values)
     if not ok then
-        log.error("_select_one err ", self._tab_name, key_values)
-        error("_select_one err")
+        log.error("_select_one err ", ret, self._tab_name, key_values)
+        error("_select_one err", ret)
     else
         return ret
     end
@@ -309,5 +372,28 @@ end
 function M:delete_entry(key_values)
     return self._delete(key_values)
 end
+
+-- IN 查询
+function M:get_entry_by_in(in_values, key_values)
+    local ok, ret = pcall(self._select_in, in_values, key_values)
+    if not ok then
+        log.error("_select_in err ", ret, self._tab_name, in_values, key_values)
+        error("_select_in err", ret)
+    else
+        return ret
+    end
+end
+
+-- 分页查询
+function M:get_entry_by_limit(cursor, limit, sort, key_values, is_only_key)
+    local ok, cursor, res_list, count = pcall(self._select_limit, cursor, limit, sort, key_values, is_only_key)
+    if not ok then
+        log.error("_select_limit err ", cursor, self._tab_name, cursor, limit, sort, key_values, is_only_key)
+        error("_select_limit err", cursor)
+    else
+        return cursor, res_list, count
+    end
+end
+
 
 return M

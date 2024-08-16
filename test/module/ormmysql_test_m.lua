@@ -1668,11 +1668,7 @@ local function test_get_entry_limit()
     local count = nil
     for i = 1, 10 do
         curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
-        if i ~= 10 then
-            assert(curson == i * 10)
-        else
-            assert(not curson)
-        end
+        assert(curson == i * 10)
 
         if i == 1 then
             assert(count == 100)
@@ -1691,11 +1687,7 @@ local function test_get_entry_limit()
     local count = nil
     for i = 1, 10 do
         curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
-        if i ~= 10 then
-            assert(curson == (10 - i) * 10 + 1)
-        else
-            assert(not curson)
-        end
+        assert(curson == (10 - i) * 10 + 1)
 
         if i == 1 then
             assert(count == 100)
@@ -1732,11 +1724,7 @@ local function test_get_entry_limit()
     local count = nil
     for i = 1, 10 do
         curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
-        if i ~= 10 then
-            assert(curson == i * 10)
-        else
-            assert(not curson)
-        end
+        assert(curson == i * 10)
 
         if i == 1 then
             assert(count == 100)
@@ -1755,11 +1743,7 @@ local function test_get_entry_limit()
     local count = nil
     for i = 1, 10 do
         curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
-        if i ~= 10 then
-            assert(curson == (10 - i) * 10 + 1)
-        else
-            assert(not curson)
-        end
+        assert(curson == (10 - i) * 10 + 1)
 
         if i == 1 then
             assert(count == 100)
