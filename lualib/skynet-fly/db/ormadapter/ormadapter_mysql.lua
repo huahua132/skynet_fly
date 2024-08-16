@@ -458,12 +458,22 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
 
         if not cursor then --开头把总数查出来
-            sql_str = "select count(*) from " .. tab_name .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values)) .. ';'
-            sql_str = sql_str .. head .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
-            .. end_str .. ' limit ' .. limit
+            local keys_str = ""
+            if len > 0 then
+                keys_str = sformat(select_format_end_list[len], tunpack(key_values))
+                sql_str = "select count(*) from " .. tab_name .. select_format_center .. keys_str .. ';'
+                sql_str = sql_str .. head .. select_format_center .. keys_str .. end_str .. ' limit ' .. limit
+            else
+                sql_str = "select count(*) from " .. tab_name .. ';'
+                sql_str = sql_str .. head .. end_str .. ' limit ' .. limit
+            end
         else
-            sql_str = head .. select_format_center .. sformat(select_format_end_list[len] .. ' ', tunpack(key_values))
-            .. ' and ' .. end_field_name .. flag .. cursor .. end_str .. ' limit ' .. limit
+            if len > 0 then
+                sql_str = head .. select_format_center .. sformat(select_format_end_list[len] .. ' ', tunpack(key_values))
+                .. ' and ' .. end_field_name .. flag .. cursor .. end_str .. ' limit ' .. limit
+            else
+                sql_str = head .. select_format_center .. end_field_name .. flag .. cursor .. end_str .. ' limit ' .. limit
+            end
         end
 
         local sql_ret = self._db:query(sql_str)

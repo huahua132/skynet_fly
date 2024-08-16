@@ -145,6 +145,28 @@ function g_handle.save_change_now()
     g_orm_obj:save_change_now()
 end
 
+-- 分页查询
+function g_handle.get_entry_by_limit(cursor, limit, sort, ...)
+    local cursor, entry_list, count = g_orm_obj:get_entry_by_limit(cursor, limit, sort, ...)
+    local data_list = {}
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        tinsert(data_list, entry:get_entry_data())
+    end
+    return cursor, data_list, count
+end
+
+-- IN 查询
+function g_handle.get_entry_by_in(in_values, ...)
+    local entry_list = g_orm_obj:get_entry_by_in(in_values, ...)
+    local data_list = {}
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        tinsert(data_list, entry:get_entry_data())
+    end
+    return data_list
+end
+
 local CMD = {}
 
 function CMD.start(config)

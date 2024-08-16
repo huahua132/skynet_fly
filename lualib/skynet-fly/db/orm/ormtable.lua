@@ -980,7 +980,7 @@ function M:get_entry_by_data(entry_data)
     check_key_values(self, key_values)
     local key1value = key_values[1]
 
-    return queue_doing(self, key1value, get_one_entry, self, key_list)
+    return queue_doing(self, key1value, get_one_entry, self, key_values)
 end
 
 -- 是否启动了间隔保存
