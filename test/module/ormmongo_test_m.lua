@@ -1453,6 +1453,252 @@ local function test_inval_save_del()
     delete_table()
 end
 
+--压测
+--stress testing
+--用skynet.queue qps = 823
+local function stress_testing()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local pre_time = skynet.time()
+    local count = 10000
+    for i = 1, count do
+        orm_obj:create_one_entry({player_id = i, role_id = 1, sex = 1})
+    end
+    
+    local use_time = skynet.time() - pre_time
+    log.info("qps:", count / use_time)
+
+    delete_table()
+end
+
+local function test_get_entry_in()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_data_list = {
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 1, sex = 2},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 2},
+    }
+    orm_obj:create_entry(entry_data_list)
+
+    --查询 key1
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001, 10002})
+    assert(#entry_list == 8)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001, 10002})
+    assert(#entry_list == 8)
+    assert(is_cache)            --第二次中缓存
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001})
+    assert(#entry_list == 4)
+    assert(is_cache)            --中缓存
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003, 10004})
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003, 10004})
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003})
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    skynet.sleep(600)
+
+    --查询key2
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001)
+    assert(#entry_list == 4)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001)
+    assert(#entry_list == 4)
+    assert(is_cache)
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({2}, 10001)
+    assert(#entry_list == 2)
+    assert(is_cache)
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001)
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001)
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    skynet.sleep(600)
+    --查询key3
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001, 1)
+    assert(#entry_list == 2)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001, 1)
+    assert(#entry_list == 2)
+    assert(is_cache)        --中缓存
+
+    
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1}, 10001, 1)
+    assert(#entry_list == 1)
+    assert(is_cache)        --中缓存
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001, 1)
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001, 1)
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    delete_table()
+end
+
+local function test_get_entry_limit()
+    delete_table()
+    --测试有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = 10001, role_id = 10000, sex = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+
+    delete_table()
+
+    --测试没有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = 10001, role_id = 10000, sex = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1497,6 +1743,12 @@ function CMD.start()
         test_every_cache()
         log.info("test_inval_save_del>>>>>")
         test_inval_save_del()
+        log.info("stress_testing")
+        stress_testing()
+        log.info("test_get_entry_in")
+        test_get_entry_in()
+        log.info("test_get_entry_limit")
+        test_get_entry_limit()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

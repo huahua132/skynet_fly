@@ -446,7 +446,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
         else
             head = select_format_head
         end
-        limit = limit + 1
+
         local flag = nil
         local end_str = nil
         if sort == 1 then               --升序
@@ -481,10 +481,9 @@ function M:builder(tab_name, field_list, field_map, key_list)
         else
             ret_list = sql_ret
         end
-        if #ret_list == limit then
-            local end_ret = ret_list[#ret_list - 1]
+        if #ret_list > 0 then
+            local end_ret = ret_list[#ret_list]
             cursor = end_ret[end_field_name]
-            tremove(ret_list, #ret_list)
         end
        
         return cursor, ret_list, count
