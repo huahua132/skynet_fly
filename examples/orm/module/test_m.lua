@@ -5,6 +5,7 @@ local orm_table_client = require "skynet-fly.client.orm_table_client"
 local CMD = {}
 
 local function test()
+    orm_table_client:instance("player"):delete_all_entry()
     orm_table_client:instance("player"):not_exist_create({player_id = 10001})
 
     local client = orm_table_client:new("player")
@@ -80,6 +81,19 @@ local function test()
     --查询所有数据
     local res_list = client:get_all_entry()
     log.info("get_all_entry >>>> :", res_list)
+
+    -- IN 查询
+    local res_list = client:get_entry_by_in({10001, 10002, 10005})
+    log.info("get_entry_by_in >>> :", res_list)
+
+    -- 分页查询
+    local limit = 2
+    local sort = 1   --1升序 -1降序
+    local cursor, res_list, count = client:get_entry_by_limit(nil, limit, sort)
+    log.info("get_entry_by_limit1 >>> :", cursor, res_list, count)
+
+    cursor, res_list, count = client:get_entry_by_limit(cursor, limit, sort)
+    log.info("get_entry_by_limit2 >>> :", cursor, res_list, count)
 end
 
 function CMD.start()
