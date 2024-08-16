@@ -19,6 +19,7 @@ local tunpack = table.unpack
 local type = type
 local tonumber = tonumber
 local tinsert = table.insert
+local tremove = table.remove
 
 local FIELD_TYPE_SQL_TYPE = {
     [FIELD_TYPE.int8] = "tinyint",
@@ -222,7 +223,8 @@ function M:builder(tab_name, field_list, field_map, key_list)
 
     local insert_format_head = sformat("insert into %s (",tab_name)
     local insert_format_end = "("
-    local select_format_head = sformat("select ")
+    local select_format_head = sformat("select * from %s" ,tab_name)
+    local select_format_key_head = sformat("select ")
     local select_format_center = " where "
     local select_format_end = ""
     local select_format_end_list = {}
@@ -253,11 +255,8 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
         if i == len then
             insert_format_head = insert_format_head .. '`' .. field_name .. '`'
-            select_format_head = select_format_head .. '`' .. field_name .. '`'
-            
         else
             insert_format_head = insert_format_head .. '`' .. field_name .. '`,'
-            select_format_head = select_format_head .. '`' .. field_name .. '`,'
         end
         
         field_index_map[field_name] = i
@@ -271,17 +270,21 @@ function M:builder(tab_name, field_list, field_map, key_list)
             if i == len then
                 select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "%d"
                 update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "%d"
+                select_format_key_head = select_format_key_head .. '`' .. field_name .. '`'
             else
                 select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "%d"
                 update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "%d and "
+                select_format_key_head = select_format_key_head .. '`' .. field_name .. '`,'
             end
         else
             if i == len then
                 select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "'%s'"
                 update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "'%s'"
+                select_format_key_head = select_format_key_head .. '`' .. field_name .. '`'
             else
                 select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "'%s'"
                 update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "'%s' and "
+                select_format_key_head = select_format_key_head .. '`' .. field_name .. '`,'
             end
         end
        
@@ -291,7 +294,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
 
     insert_format_head = insert_format_head .. ') value'
     insert_format_end = insert_format_end .. ')'
-    select_format_head = select_format_head .. ' from ' .. tab_name
+    select_format_key_head = select_format_key_head .. ' from ' .. tab_name
 
     local insert_list = {}                               
     local function entry_data_to_list(entry_data)
@@ -405,6 +408,86 @@ function M:builder(tab_name, field_list, field_map, key_list)
             error("_select_one err " .. sql_str)
         end
         return sql_ret[1]
+    end
+
+    --IN 查询
+    self._select_in = function(in_values, key_values)
+        local len = #key_values
+        if type(in_values[1]) == 'string' then
+            for i = 1,#in_values do
+                in_values[i] = "'" .. in_values[i] .. "'"
+            end
+        end
+        local end_field_name = key_list[len + 1]
+        local endstr = ""
+        if len > 0 then
+            endstr = sformat(select_format_end_list[len], tunpack(key_values))
+            endstr = endstr .. sformat(" and `%s` in(%s)", end_field_name, tconcat(in_values, ','))
+        else
+            endstr = endstr .. sformat(" `%s` in(%s)", end_field_name, tconcat(in_values, ','))
+        end
+        local sql_str = select_format_head .. select_format_center .. endstr
+        local sql_ret = self._db:query(sql_str)
+        if not sql_ret or sql_ret.err then
+            log.error("_select_in err ",sql_str,sql_ret)
+            error("_select_in err " .. sql_str)
+        end
+        return sql_ret
+    end
+
+    --分页 查询
+    self._select_limit = function(cursor, limit, sort, key_values, is_only_key)
+        local len = #key_values
+        local sql_str = ""
+        local end_field_name = key_list[len + 1]
+        local head = nil
+        if is_only_key then         --是否仅查询主键
+            head = select_format_key_head
+        else
+            head = select_format_head
+        end
+        limit = limit + 1
+        local flag = nil
+        local end_str = nil
+        if sort == 1 then               --升序
+            flag = '>'
+            end_str = ' order by ' .. end_field_name
+        else                            --降序 
+            flag = '<'
+            end_str = ' order by ' .. end_field_name .. ' desc'
+        end
+
+        if not cursor then --开头把总数查出来
+            sql_str = "select count(*) from " .. tab_name .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values)) .. ';'
+            sql_str = sql_str .. head .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
+            .. end_str .. ' limit ' .. limit
+        else
+            sql_str = head .. select_format_center .. sformat(select_format_end_list[len] .. ' ', tunpack(key_values))
+            .. ' and ' .. end_field_name .. flag .. cursor .. end_str .. ' limit ' .. limit
+        end
+
+        local sql_ret = self._db:query(sql_str)
+        if not sql_ret or sql_ret.err then
+            log.error("_select_limit err ",sql_str, sql_ret)
+            error("_select_limit err " .. sql_str)
+        end
+
+        local cursor = nil
+        local count = nil
+        local ret_list = nil
+        if sql_ret.multiresultset then
+            count = sql_ret[1][1]["count(*)"]
+            ret_list = sql_ret[2]
+        else
+            ret_list = sql_ret
+        end
+        if #ret_list == limit then
+            local end_ret = ret_list[#ret_list - 1]
+            cursor = end_ret[end_field_name]
+            tremove(ret_list, #ret_list)
+        end
+       
+        return cursor, ret_list, count
     end
 
     --update 更新
@@ -548,6 +631,16 @@ end
 -- 删除表数据
 function M:delete_entry(key_values)
     return self._delete(key_values)
+end
+
+-- IN 查询
+function M:get_entry_by_in(in_values, key_values)
+    return self._select_in(in_values, key_values)
+end
+
+-- 分页查询
+function M:get_entry_by_limit(cursor, limit, sort, key_values, is_only_key)
+    return self._select_limit(cursor, limit, sort, key_values, is_only_key)
 end
 
 return M

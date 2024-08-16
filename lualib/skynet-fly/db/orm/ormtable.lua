@@ -12,6 +12,7 @@ local assert = assert
 local tinsert = table.insert
 local tremote = table.remove
 local tunpack = table.unpack
+local tsort = table.sort
 local pairs = pairs
 local type = type
 local ipairs = ipairs
@@ -338,8 +339,14 @@ del_key_select = function(t, entry, is_del)
     --log.info("del_key_select:", invaild, is_del, t._key_cache_num_map)
 end
 
-local function init_entry_data(t,entry_data)
-    local new_entry_data = {}
+local function init_entry_data(t, entry_data, is_old)
+    local new_entry_data = nil
+    if is_old then
+        new_entry_data = entry_data
+    else
+        new_entry_data = {}
+    end
+    
     local field_list = t._field_list
     local field_map = t._field_map
     for i = 1,#field_list do
@@ -576,7 +583,6 @@ function M:builder(adapterinterface)
 end
 
 local function create_entry(t, list)
-    assert(t._is_builder, "not builder can`t create_entry")
     local entry_data_list = {}
     for _,entry_data in ipairs(list) do
         check_fields(t, entry_data)
@@ -599,7 +605,6 @@ local function create_entry(t, list)
 end
 
 local function create_one_entry(t, entry_data)
-    assert(t._is_builder, "not builder can`t create_one_entry")
     entry_data = init_entry_data(t, entry_data)
 
     local ret = t._adapterinterface:create_one_entry(entry_data)
@@ -625,7 +630,6 @@ function M:set_change_entry(entry)
 end
 
 get_entry = function(t, key_values, is_init_get_all)
-    assert(t._is_builder, "not builder can`t get_entry")
     local key_list = t._keylist
     local entry_list = {}
     local depth = #key_list - #key_values
@@ -644,7 +648,7 @@ get_entry = function(t, key_values, is_init_get_all)
                 return entry_list, false
             else
                 for i = 1,#entry_data_list do
-                    local entry_data = init_entry_data(t, entry_data_list[i])
+                    local entry_data = init_entry_data(t, entry_data_list[i], true)
                     local entry = ormentry:new(t, entry_data)
                     tinsert(entry_list, add_key_select(t, entry))
                 end
@@ -677,7 +681,6 @@ get_entry = function(t, key_values, is_init_get_all)
 end
 
 local function get_one_entry(t, key_values)
-    assert(t._is_builder, "not builder can`t get_one_entry")
     local entry, is_cache = get_key_select(t, key_values)
     if not is_cache then
         --永久 缓存没有就是没有
@@ -691,7 +694,7 @@ local function get_one_entry(t, key_values)
                 add_key_select(t, invaild_entry)
                 return nil, false
             else
-                entry = ormentry:new(t, init_entry_data(t, entry_data))
+                entry = ormentry:new(t, init_entry_data(t, entry_data), true)
                 return add_key_select(t, entry)
             end
         end
@@ -707,8 +710,121 @@ local function get_one_entry(t, key_values)
     return entry, true
 end
 
+local function get_entry_by_in(t, in_values, key_values)
+    local key_list = t._keylist
+    local res_entry_list = {}
+    local kv_len = #key_values
+    local in_field_name = key_list[kv_len + 1]
+    local depth = #key_list - kv_len - 1
+    for i = #in_values, 1, -1 do
+        local v = in_values[i]
+        key_values[kv_len + 1] = v
+        local entry_list_map,is_cache_all = get_key_select(t, key_values)
+        if is_cache_all then
+            local entry_list = {}
+            if depth > 0 then
+                entry_list = table_util.depth_to_list(entry_list_map, depth)
+            else
+                entry_list = {entry_list_map}
+            end
+    
+            if t._cache_map then
+                for _,entry in ipairs(entry_list) do
+                    t._cache_map:update_cache(entry, t)
+                end
+            end
+    
+            --剔除无效条目
+            for i = #entry_list, 1, -1 do
+                local entry = entry_list[i]
+                if not entry:is_invaild() then
+                   tinsert(res_entry_list, entry) 
+                end
+            end
+            tremote(in_values, i)
+        end
+    end
+
+    if #in_values > 0 then
+        --永久 缓存没有就是没有
+        if t._cache_time == 0 then
+            return res_entry_list, true
+        else
+            key_values[kv_len + 1] = nil
+            local entry_data_list = t._adapterinterface:get_entry_by_in(in_values, key_values)
+            if not entry_data_list or not next(entry_data_list) then
+                --添加无效条目站位，防止缓存穿透
+                for i = #in_values, 1, -1 do
+                    local v = in_values[i]
+                    key_values[kv_len + 1] = v
+                    local invaild_entry = create_invaild_entry(t, key_values)
+                    add_key_select(t, invaild_entry)
+                    set_total_count(t, key_values, 0)
+                end
+                return res_entry_list, false
+            else
+                local in_v_count_map = {}
+                for i = 1,#entry_data_list do
+                    local entry_data = init_entry_data(t, entry_data_list[i], true)
+                    local entry = ormentry:new(t, entry_data)
+                    tinsert(res_entry_list, add_key_select(t, entry))
+                    local inv = entry_data[in_field_name]
+                    if not in_v_count_map[inv] then
+                        in_v_count_map[inv] = 0
+                    end
+                    in_v_count_map[inv] = in_v_count_map[inv] + 1
+                end
+
+                for inv, count in pairs(in_v_count_map) do
+                    key_values[kv_len + 1] = inv
+                    set_total_count(t, key_values, count)
+                end
+                return res_entry_list, false
+            end
+        end
+    end
+
+    return res_entry_list, true
+end
+
+local function get_entry_by_limit(t, cursor, limit, sort, key_values)
+    if t._cache_time then
+        local cursor, entry_keys_value_list, count = t._adapterinterface:get_entry_by_limit(cursor, limit, sort, key_values, true)
+        local in_values = {}
+        local len = #key_values + 1
+        local in_field_name = t._keylist[len]
+        for i = 1, #entry_keys_value_list do
+            tinsert(in_values, entry_keys_value_list[i][in_field_name])
+        end
+        
+        local entry_list = get_entry_by_in(t, in_values, key_values)
+        if sort == 1 then   --升序 从小到大
+            tsort(entry_list, function(a,b) 
+                local a_v = a:get(in_field_name)
+                local b_v = b:get(in_field_name)
+                return a_v < b_v
+            end)
+        else                --降序 从大到小
+            tsort(entry_list, function(a,b) 
+                local a_v = a:get(in_field_name)
+                local b_v = b:get(in_field_name)
+                return a_v > b_v
+            end)
+        end
+        return cursor, entry_list, count
+    else
+        local cursor, entry_data_list, count = t._adapterinterface:get_entry_by_limit(cursor, limit, sort, key_values)
+        for i = 1, #entry_data_list do
+            local entry_data = entry_data_list[i]
+            local entry = ormentry:new(t, init_entry_data(t, entry_data), true)
+            entry_data_list[i] = entry
+        end
+
+        return cursor, entry_data_list, count
+    end
+end
+
 local function save_entry(t, entry_list)
-    assert(t._is_builder, "not builder can`t save_entry")
     local entry_data_list = {}
     local change_map_list = {}
     local result_list = {}
@@ -740,7 +856,6 @@ local function save_entry(t, entry_list)
 end
 
 local function save_one_entry(t, entry)
-    assert(t._is_builder, "not builder can`t save_one_entry")
     local change_map = entry:get_change_map()
     --没有变化
     if not next(change_map) then
@@ -751,7 +866,6 @@ local function save_one_entry(t, entry)
 end
 
 local function delete_entry(t, key_values)
-    assert(t._is_builder, "not builder can`t delete_entry")
     local entry_list = get_entry(t, key_values)
     if not next(entry_list) then return true end --没有数据可删
     local change_flag_map = t._change_flag_map
@@ -772,11 +886,13 @@ end
 
 -- 批量创建新数据
 function M:create_entry(entry_data_list)
+    assert(self._is_builder, "not builder can`t create_entry")
     return queue_doing(self, nil, create_entry, self, entry_data_list)
 end
 
 -- 创建一条数据
 function M:create_one_entry(entry_data)
+    assert(self._is_builder, "not builder can`t create_one_entry")
     check_fields(self, entry_data)
     local key1value = get_key1value(self, entry_data)
     return queue_doing(self, key1value, create_one_entry, self, entry_data)
@@ -784,6 +900,7 @@ end
 
 -- 查询多条数据
 function M:get_entry(...)
+    assert(self._is_builder, "not builder can`t get_entry")
     local key_values = {...}
     assert(#key_values > 0, "err key_values")
     check_key_values(self, key_values)
@@ -793,6 +910,7 @@ end
 
 -- 查询一条数据
 function M:get_one_entry(...)
+    assert(self._is_builder, "not builder can`t get_one_entry")
     local key_values = {...}
     local key_list = self._keylist
     assert(#key_values == #key_list, "args len err") --查询单条数据，必须提供所有主键
@@ -803,6 +921,7 @@ end
 
 -- 立即保存数据
 function M:save_entry(entry_list)
+    assert(self._is_builder, "not builder can`t save_entry")
     if not next(entry_list) then return entry_list end
 
     return queue_doing(self, nil, save_entry, self, entry_list)
@@ -810,6 +929,7 @@ end
 
 -- 立即保存一条数据
 function M:save_one_entry(entry)
+    assert(self._is_builder, "not builder can`t save_one_entry")
     assert(entry,"not entry")
     local key1value = get_key1value(self, entry:get_entry_data())
     return queue_doing(self, key1value, save_one_entry, self, entry)
@@ -817,6 +937,7 @@ end
 
 -- 删除数据
 function M:delete_entry(...)
+    assert(self._is_builder, "not builder can`t delete_entry")
     local key_values = {...}
     assert(#key_values > 0, "not key_values")
     check_key_values(self, key_values)
@@ -826,16 +947,19 @@ end
 
 -- 查询所有数据
 function M:get_all_entry()
+    assert(self._is_builder, "not builder can`t get_all_entry")
     return queue_doing(self, nil, get_entry, self, {})
 end
 
 -- 删除所有数据
 function M:delete_all_entry()
+    assert(self._is_builder, "not builder can`t delete_all_entry")
     return queue_doing(self, nil, delete_entry, self, {})
 end
 
 -- 立即保存所有修改
 function M:save_change_now()
+    assert(self._is_builder, "not builder can`t save_change_now")
     if not self._week_t then
         return
     end
@@ -845,6 +969,7 @@ end
 
 -- 通过数据获得entry
 function M:get_entry_by_data(entry_data)
+    assert(self._is_builder, "not builder can`t get_entry_by_data")
     local key_list = self._keylist
     local key_values = {}
     for i = 1,#key_list do
@@ -861,6 +986,38 @@ end
 -- 是否启动了间隔保存
 function M:is_inval_save()
     return self._time_obj ~= nil
+end
+
+-- 分页查询
+function M:get_entry_by_limit(cursor, limit, sort, ...)
+    assert(self._is_builder, "not builder can`t get_entry_by_limit")
+    local key_list = self._keylist
+    local key_values = {...}
+    local len = #key_values
+
+    assert(#key_list > 0, "not keys can`t use")            --没有索引不能使用
+    assert(len == #key_list - 1, "key_values len err")     --最后一个key作为游标查询，确保使用索引分页查询
+
+    check_key_values(self, key_values)
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, get_entry_by_limit, self, cursor, limit, sort, key_values)
+end
+
+-- IN 查询
+function M:get_entry_by_in(in_values, ...)
+    assert(self._is_builder, "not builder can`t get_entry_by_in")
+    local key_list = self._keylist
+    local key_values = {...}
+    local key_len = #key_list
+    local kv_len = #key_values
+    local inv_len = #in_values
+    assert(key_len > 0, "not keys can`t use")            --没有索引不能使用
+    assert(inv_len > 0, "in_values err")                 --in_values得有值
+    assert(kv_len < key_len, "kv len err")               --如果是 3个key kv最多是填2个，in_value 是第3个的值
+    --in_values 是 len + 1 位置的key的值
+    check_key_values(self, key_values)
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, get_entry_by_in, self, in_values, key_values)
 end
 
 return M
