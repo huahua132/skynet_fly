@@ -57,6 +57,7 @@ end
 -- 清除变更标记
 function M:clear_change()
     local change_map = self._change_map
+    if not change_map then return end
     for field_name in pairs(change_map) do
         change_map[field_name] = nil
     end

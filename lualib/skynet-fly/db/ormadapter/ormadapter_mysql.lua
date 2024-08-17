@@ -604,6 +604,47 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return sql_ret.affected_rows
     end
 
+    self._delete_by_range = function(left, right, key_values)
+        local len = #key_values
+        local end_field_name = key_list[len + 1]
+        local sql_str = nil
+        local end_str = nil
+        local field_type = field_map[end_field_name]
+        
+        if left and right then
+            if IS_NUMBER_TYPE[field_type] then
+                end_str = sformat("`%s` >= %d and `%s` <= %d", end_field_name, left, end_field_name, right)
+            else
+                end_str = sformat("`%s` >= '%s' and `%s` <= '%s'", end_field_name, left, end_field_name, right)
+            end
+        elseif left then
+            if IS_NUMBER_TYPE[field_type] then
+                end_str = sformat("`%s` >= %d", end_field_name, left)
+            else
+                end_str = sformat("`%s` >= '%s'", end_field_name, left)
+            end
+        else
+            if IS_NUMBER_TYPE[field_type] then
+                end_str = sformat("`%s` <= %d", end_field_name, right)
+            else
+                end_str = sformat("`%s` <= '%s'", end_field_name, right)
+            end
+        end
+        if len > 0 then
+            sql_str = delete_format_head .. delete_format_center .. sformat(select_format_end_list[len], tunpack(key_values)) .. ' and ' .. end_str
+        else
+            sql_str = delete_format_head .. delete_format_center .. end_str
+        end
+
+        local sql_ret = self._db:query(sql_str)
+        if not sql_ret or sql_ret.err then
+            log.error("_delete_by_range err ",sql_str,sql_ret)
+            error("_delete_by_range err " .. sql_str)
+        end
+
+        return sql_ret.affected_rows
+    end
+
     return self
 end
 
@@ -650,6 +691,11 @@ end
 -- 分页查询
 function M:get_entry_by_limit(cursor, limit, sort, key_values, is_only_key)
     return self._select_limit(cursor, limit, sort, key_values, is_only_key)
+end
+
+-- 范围删除
+function M:delete_entry_by_range(left, right, key_values)
+    return self._delete_by_range(left, right, key_values)
 end
 
 return M

@@ -871,7 +871,7 @@ local function delete_entry(t, key_values)
 
     local change_flag_map = t._change_flag_map
     local key_list = t._keylist
-    local entry_list = {}
+    local entry_list = nil
     local depth = #key_list - #key_values
     local entry_list_map = get_key_select(t, key_values)
     if depth > 0 then
@@ -886,7 +886,71 @@ local function delete_entry(t, key_values)
         if t._cache_map then
             t._cache_map:del_cache(entry)
         end
+        entry:clear_change()
         del_key_select(t, entry, true)
+    end
+
+    return res
+end
+
+local function compare_range(left, right, v)
+    if v >= left and v <= right then
+        return true
+    end
+    return false
+end
+
+local function compare_left(left, right, v)
+    if v >= left then
+        return true
+    end
+    return false
+end
+
+local function compare_right(left, right, v)
+    if v <= right then
+        return true
+    end
+    return false
+end
+
+local function delete_entry_by_range(t, left, right, key_values)
+    local res = t._adapterinterface:delete_entry_by_range(left, right, key_values)
+    if not res then return end
+
+    local change_flag_map = t._change_flag_map
+    local key_list = t._keylist
+    local entry_list = nil
+    local k_len = #key_values
+    local depth = #key_list - k_len
+    local end_field_name = t._keylist[k_len + 1]
+    local entry_list_map = get_key_select(t, key_values)
+    if depth > 0 then
+        entry_list = table_util.depth_to_list(entry_list_map, depth)
+    else
+        entry_list = {entry_list_map}
+    end
+
+    local compare_func = nil
+    if left and right then
+        compare_func = compare_range
+    elseif left then
+        compare_func = compare_left
+    else
+        compare_func = compare_right
+    end
+
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        local v = entry:get(end_field_name)
+        if compare_func(left, right, v) then
+            change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
+            if t._cache_map then
+                t._cache_map:del_cache(entry)
+            end
+            entry:clear_change()
+            del_key_select(t, entry, true)
+        end
     end
 
     return res
@@ -1007,6 +1071,7 @@ function M:get_entry_by_limit(cursor, limit, sort, ...)
     assert(len == #key_list - 1, "key_values len err")     --最后一个key作为游标查询，确保使用索引分页查询
 
     check_key_values(self, key_values)
+
     local key1value = key_values[1]
     return queue_doing(self, key1value, get_entry_by_limit, self, cursor, limit, sort, key_values)
 end
@@ -1024,8 +1089,44 @@ function M:get_entry_by_in(in_values, ...)
     assert(kv_len < key_len, "kv len err")               --如果是 3个key kv最多是填2个，in_value 是第3个的值
     --in_values 是 len + 1 位置的key的值
     check_key_values(self, key_values)
+
+    local end_field_name = self._keylist[kv_len + 1]
+    for i = 1,#in_values do
+        check_one_field(self, end_field_name, in_values[i])
+    end
+   
     local key1value = key_values[1]
     return queue_doing(self, key1value, get_entry_by_in, self, in_values, key_values)
+end
+
+-- 范围删除 包含left right
+-- 可以有三种操作方式
+-- [left, right] 范围删除  >= left <= right
+-- [left, nil] 删除 >= left
+-- [nil, right] 删除 <= right
+function M:delete_entry_by_range(left, right, ...)
+    assert(self._is_builder, "not builder can`t delete_entry_by_range")
+    assert(left or right, "not left or right")
+    if left and right then
+        assert(left <= right, "left right err")
+    end
+    local key_values = {...}
+    local kv_len = #key_values
+    local key_list = self._keylist
+    assert(kv_len < #key_list, "kv len err")  --如果是 3个key kv最多是填2个  [left,right]的值是 #key_values + 1位置的key
+    check_key_values(self, key_values)
+
+    local end_field_name = self._keylist[kv_len + 1]
+    if left then
+        check_one_field(self, end_field_name, left)
+    end
+
+    if right then
+        check_one_field(self, end_field_name, right)
+    end
+
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, delete_entry_by_range, self, left, right, key_values)
 end
 
 return M
