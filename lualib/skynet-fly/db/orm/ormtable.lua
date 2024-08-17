@@ -866,19 +866,27 @@ local function save_one_entry(t, entry)
 end
 
 local function delete_entry(t, key_values)
-    local entry_list = get_entry(t, key_values)
-    if not next(entry_list) then return true end --没有数据可删
-    local change_flag_map = t._change_flag_map
     local res = t._adapterinterface:delete_entry(key_values)
-    if res then
-        for i = 1,#entry_list do
-            local entry = entry_list[i]
-            change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
-            if t._cache_map then
-                t._cache_map:del_cache(entry)
-            end
-            del_key_select(t, entry, true)
+    if not res then return end
+
+    local change_flag_map = t._change_flag_map
+    local key_list = t._keylist
+    local entry_list = {}
+    local depth = #key_list - #key_values
+    local entry_list_map = get_key_select(t, key_values)
+    if depth > 0 then
+        entry_list = table_util.depth_to_list(entry_list_map, depth)
+    else
+        entry_list = {entry_list_map}
+    end
+
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
+        if t._cache_map then
+            t._cache_map:del_cache(entry)
         end
+        del_key_select(t, entry, true)
     end
 
     return res
