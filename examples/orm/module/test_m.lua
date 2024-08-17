@@ -94,6 +94,14 @@ local function test()
 
     cursor, res_list, count = client:get_entry_by_limit(cursor, limit, sort)
     log.info("get_entry_by_limit2 >>> :", cursor, res_list, count)
+
+    --范围删除
+    local all_data = client:get_all_entry()
+    log.info("all_data >>> ", all_data)
+
+    local ret = client:delete_entry_by_range(10002)
+    local all_data = client:get_all_entry()
+    log.info("all_data >>> ", ret, all_data)
 end
 
 function CMD.start()

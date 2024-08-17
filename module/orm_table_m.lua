@@ -167,6 +167,15 @@ function g_handle.get_entry_by_in(in_values, ...)
     return data_list
 end
 
+-- 范围删除 包含left right
+-- 可以有三种操作方式
+-- [left, right] 范围删除  >= left <= right
+-- [left, nil] 删除 >= left
+-- [nil, right] 删除 <= right
+function g_handle.delete_entry_by_range(left, right, ...)
+    return g_orm_obj:delete_entry_by_range(left, right, ...)
+end
+
 local CMD = {}
 
 function CMD.start(config)
