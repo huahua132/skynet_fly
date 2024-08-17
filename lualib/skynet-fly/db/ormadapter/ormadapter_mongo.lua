@@ -323,6 +323,25 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return true
     end
 
+    self._delete_by_range = function(left, right, key_values)
+        local delete_query = {}
+
+        local len = #key_values
+        for i = 1,len do
+            local field_name = key_list[i]
+            delete_query[field_name] = key_values[i]
+        end
+        
+        local end_field_name = key_list[len + 1]
+        delete_query[end_field_name] = {['$gte'] = left, ['$lte'] = right}
+        local isok,err = collect_db:safe_delete(delete_query)
+        if not isok then
+            log.error("_delete_by_range doc err ", self._tab_name, err)
+            error("_delete_by_range doc err")
+        end
+        return true
+    end
+
     return self
 end
 
@@ -395,5 +414,9 @@ function M:get_entry_by_limit(cursor, limit, sort, key_values, is_only_key)
     end
 end
 
+-- 范围删除
+function M:delete_entry_by_range(left, right, key_values)
+    return self._delete_by_range(left, right, key_values)
+end
 
 return M

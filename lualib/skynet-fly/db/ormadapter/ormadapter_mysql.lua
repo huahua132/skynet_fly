@@ -601,7 +601,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
             log.error("_delete err ",sql_str,sql_ret)
             error("_delete err " .. sql_str)
         end
-        return sql_ret.affected_rows
+        return true
     end
 
     self._delete_by_range = function(left, right, key_values)
@@ -642,7 +642,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
             error("_delete_by_range err " .. sql_str)
         end
 
-        return sql_ret.affected_rows
+        return true
     end
 
     return self
