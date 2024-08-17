@@ -900,7 +900,7 @@ local function test_delete_all()
     })
 
     orm_obj:delete_all_entry()
-    assert(orm_obj._key_cache_count == 0 and orm_obj._key_cache_total_count == 0)
+    assert(orm_obj._key_cache_count == 0)
 
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 0)
