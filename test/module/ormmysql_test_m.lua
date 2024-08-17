@@ -1759,6 +1759,80 @@ local function test_get_entry_limit()
     delete_table()
 end
 
+local function test_delete_by_range()
+    delete_table()
+
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_data_list = {
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 1, sex = 2},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 2},
+        {player_id = 10001, role_id = 3, sex = 1},
+        {player_id = 10001, role_id = 3, sex = 2},
+        {player_id = 10001, role_id = 4, sex = 1},
+        {player_id = 10001, role_id = 4, sex = 2},
+
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10002, role_id = 4, sex = 1},
+        {player_id = 10002, role_id = 4, sex = 2},
+        
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 4, sex = 1},
+        {player_id = 10003, role_id = 4, sex = 2},
+        
+        {player_id = 10004, role_id = 1, sex = 1},
+        {player_id = 10004, role_id = 1, sex = 2},
+        {player_id = 10004, role_id = 2, sex = 1},
+        {player_id = 10004, role_id = 2, sex = 2},
+        {player_id = 10004, role_id = 3, sex = 1},
+        {player_id = 10004, role_id = 3, sex = 2},
+        {player_id = 10004, role_id = 4, sex = 1},
+        {player_id = 10004, role_id = 4, sex = 2},
+    }
+    orm_obj:create_entry(entry_data_list)
+
+    local ret = orm_obj:delete_entry_by_range(1, 2, 10001, 1)
+    assert(ret == 2)
+
+    local entry_list = orm_obj:get_entry(10001, 1)
+    assert(#entry_list == 0)
+
+    local ret = orm_obj:delete_entry_by_range(3, nil, 10001)
+    assert(ret == 4)
+    local entry_list = orm_obj:get_entry(10001)
+    assert(#entry_list == 2)
+
+    local ret = orm_obj:delete_entry_by_range(nil, 10003)
+    assert(ret == 18)
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == 8)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1809,6 +1883,8 @@ function CMD.start()
         test_get_entry_in()
         log.info("test_get_entry_limit")
         test_get_entry_limit()
+        log.info("test_delete_by_range")
+        test_delete_by_range()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
