@@ -312,7 +312,7 @@ end, true)
 HANDLE[FRPC_PACK_ID.broadcast_call] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
 	if type(msg) == 'userdata' then
-		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所以这里先转成lua str再发送
 		skynet.trash(msg, sz)
 	end
 	local cli = g_client_map[module_name]
@@ -335,7 +335,7 @@ end, true, true)
 HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local msgstr = msg
 	if type(msg) == 'userdata' then
-		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所有这里先转成lua str再发送
+		msgstr = skynet.tostring(msg, sz)	--由于需要发给多个服务，每个服务再消费完消息后会释放c的数据指针，所以这里先转成lua str再发送
 		skynet.trash(msg, sz)
 	end
 	local cli = g_client_map[module_name]
