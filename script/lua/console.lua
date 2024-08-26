@@ -19,8 +19,9 @@ local table_util = require "skynet-fly.utils.table_util"
 local time_util = require "skynet-fly.utils.time_util"
 local json = require "cjson"
 debug_port = nil
-local skynet_cfg_path = string.format("%s_config.lua.%s.run",svr_name, load_modsfile)  --读取skynet启动配置
+local skynet_cfg_path = string.format("make/%s_config.lua.%s.run",svr_name, load_modsfile)  --读取skynet启动配置
 local file = loadfile(skynet_cfg_path)
+
 if file then
 	file()
 end
@@ -136,7 +137,7 @@ function CMD.check_reload()
 		end
 	end
 
-	local old_mod_confg = loadfile(string.format("%s.old", load_modsfile))
+	local old_mod_confg = loadfile(string.format("make/%s.old", load_modsfile))
 	if old_mod_confg then
 		old_mod_confg = old_mod_confg()
 	end
@@ -163,7 +164,7 @@ end
 
 function CMD.check_kill_mod()
 	local load_mods = loadfile(load_modsfile)()
-	local old_mod_confg = loadfile(string.format("%s.old", load_modsfile))
+	local old_mod_confg = loadfile(string.format("make/%s.old", load_modsfile))
 	if not old_mod_confg then
 		return	
 	end
@@ -194,13 +195,13 @@ function CMD.call()
 end
 
 function CMD.create_load_mods_old()
-	local cmd = string.format("cp %s %s.old", load_modsfile, load_modsfile)
+	local cmd = string.format("cp %s make/%s.old", load_modsfile, load_modsfile)
 	os.execute(cmd)
 end
 
 --拷贝一个运行时配置供console.lua读取
 function CMD.create_running_config()
-	local cmd = string.format("cp %s_config.lua %s_config.lua.%s.run",svr_name, svr_name, load_modsfile)
+	local cmd = string.format("cp make/%s_config.lua make/%s_config.lua.%s.run",svr_name, svr_name, load_modsfile)
 	os.execute(cmd)
 end
 
@@ -221,7 +222,7 @@ end
 
 --检查热更
 function CMD.check_hotfix()
-	local module_info_dir = "hotfix_info." .. load_modsfile
+	local module_info_dir = "make/hotfix_info." .. load_modsfile
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
 	local load_mods = loadfile (load_modsfile)()

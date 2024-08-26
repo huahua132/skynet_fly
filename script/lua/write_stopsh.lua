@@ -26,7 +26,7 @@ shell_str = shell_str .. "rm -rf ./module_info.$1\n"
 shell_str = shell_str .. "rm -rf ./hotfix_info.$1\n"
 shell_str = shell_str .. string.format("echo kill %s $1\n",svr_name)
 
-local shell_path = server_path .. 'script/'
+local shell_path = server_path .. 'make/script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")

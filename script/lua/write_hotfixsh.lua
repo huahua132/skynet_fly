@@ -16,7 +16,7 @@ local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
 if [ "$#" -lt 3 ]; then
-    echo "please format script/hotfix.sh load_mods.lua ***_m modname1|modname2|modname3 ***_m modname1|modname2|modname3"
+    echo "please format make/script/hotfix.sh load_mods.lua ***_m modname1|modname2|modname3 ***_m modname1|modname2|modname3"
     exit 1
 fi
 load_mods_name=$1
@@ -29,7 +29,7 @@ shell_str = shell_str .. string.format("xargs -I {} %s %s/console.lua %s %s ${lo
 shell_str = shell_str .. string.format("xargs curl -s | \n")
 shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} handle_hotfix_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
 
-local shell_path = server_path .. 'script/'
+local shell_path = server_path .. 'make/script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")
