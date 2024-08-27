@@ -20,7 +20,7 @@ if [ "$#" -ne 1 ]; then
 	exit 1
 fi
 
-if [ ! -f "./$1.tmp_reload_cmd.txt" ]; then
+if [ ! -f "./make/$1.tmp_reload_cmd.txt" ]; then
 	echo "not try_reload file"
 	exit 1 \n 
 fi
