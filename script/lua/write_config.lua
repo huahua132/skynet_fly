@@ -102,8 +102,13 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	end
 end
 
+local file_path = server_path .. 'make/'
 
-local config_path = server_path .. svr_name .. '_config.lua'
+if not os.execute("mkdir -p " .. file_path) then
+	error("create file_path err")
+end
+
+local config_path = file_path .. svr_name .. '_config.lua'
 
 local file = io.open(config_path, 'w+')
 assert(file)

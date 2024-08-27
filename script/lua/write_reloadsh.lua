@@ -29,7 +29,7 @@ shell_str = shell_str .. string.format("xargs -I {} %s %s/console.lua %s %s ${lo
 shell_str = shell_str .. string.format("xargs curl -s | \n")
 shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} handle_reload_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
 
-local shell_path = server_path .. 'script/'
+local shell_path = server_path .. 'make/script/'
 
 if not os.execute("mkdir -p " .. shell_path) then
 	error("create shell_path err")
