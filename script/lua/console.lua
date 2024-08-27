@@ -51,7 +51,7 @@ function CMD.find_server_id()
 end
 
 function CMD.reload()
-	local file = io.open(string.format("./%s.tmp_reload_cmd.txt", load_modsfile),'w+')
+	local file = io.open(string.format("./make/%s.tmp_reload_cmd.txt", load_modsfile),'w+')
 	assert(file)
 	local load_mods = loadfile(load_modsfile)()
 	local server_id = assert(ARGV[ARGV_HEAD + 1])
@@ -83,19 +83,19 @@ function CMD.handle_reload_result()
 	else
 		--执行成功
 		print("reload succ")
-		os.remove(string.format("./%s.tmp_reload_cmd.txt", load_modsfile))
+		os.remove(string.format("./make/%s.tmp_reload_cmd.txt", load_modsfile))
 	end
 end
 
 function CMD.try_again_reload()
-	local is_ok,str = pcall(file_util.readallfile,string.format("./%s.tmp_reload_cmd.txt", load_modsfile))
+	local is_ok,str = pcall(file_util.readallfile,string.format("./make/%s.tmp_reload_cmd.txt", load_modsfile))
 	if is_ok then
 		print(str)
 	end
 end
 
 function CMD.check_reload()
-	local module_info_dir = "module_info." .. load_modsfile
+	local module_info_dir = "make/module_info." .. load_modsfile
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
 	local load_mods = loadfile (load_modsfile)()

@@ -18,12 +18,12 @@ if [ "$#" -lt 1 ]; then
 	exit 1
 fi
 ]]
-shell_str = shell_str .. string.format("pkill -f skynet.%s_config.lua.$1\n",svr_name)
-shell_str = shell_str .. "rm -f ./skynet.$1.pid\n"
-shell_str = shell_str .. string.format("rm -f ./%s_config.lua.$1.run\n",svr_name)
-shell_str = shell_str .. "rm -f ./$1.old\n"
-shell_str = shell_str .. "rm -rf ./module_info.$1\n"
-shell_str = shell_str .. "rm -rf ./hotfix_info.$1\n"
+shell_str = shell_str .. string.format("pkill -f skynet.make/%s_config.lua.$1\n",svr_name)
+shell_str = shell_str .. "rm -f ./make/skynet.$1.pid\n"
+shell_str = shell_str .. string.format("rm -f ./make/%s_config.lua.$1.run\n",svr_name)
+shell_str = shell_str .. "rm -f ./make/$1.old\n"
+shell_str = shell_str .. "rm -rf ./make/module_info.$1\n"
+shell_str = shell_str .. "rm -rf ./make/hotfix_info.$1\n"
 shell_str = shell_str .. string.format("echo kill %s $1\n",svr_name)
 
 local shell_path = server_path .. 'make/script/'
