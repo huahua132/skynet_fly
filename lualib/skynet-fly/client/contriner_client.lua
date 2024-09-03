@@ -246,12 +246,14 @@ end
 --注册
 function M:register(...)
 	local module_base = module_info.get_base_info()
-	if module_base.module_name then                     --是热更模块才有这个限制
-		assert(not is_ready, "ready after can`t register")
-	end
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
-		g_register_map[mod_name] = true
+		if not g_register_map[mod_name] then
+			if module_base.module_name then                     --是热更模块才有这个限制
+				assert(not is_ready, "ready after can`t register:" .. mod_name)
+			end
+			g_register_map[mod_name] = true
+		end
 	end
 end
 
