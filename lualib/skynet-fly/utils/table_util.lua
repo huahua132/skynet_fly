@@ -462,8 +462,13 @@ function M.inlist(list, v)
 end
 
 --查找在表中的位置
-function M.find_index(list, v)
-	for i = 1,#list do
+function M.find_index(list, v, index)
+	if index == nil then
+		index = 1
+	end
+	assert(type(index) == 'number', "index is not number")
+	assert( index > 0 and index <= #list, "index < 0 or index > #list")
+	for i = index,#list do
 		local vv = list[i]
 		if vv == v then
 			return i
