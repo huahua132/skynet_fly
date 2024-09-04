@@ -461,6 +461,18 @@ function M.inlist(list, v)
 	return false
 end
 
+--查找在表中的位置
+function M.find_index(list, v)
+	for i = 1,#list do
+		local vv = list[i]
+		if vv == v then
+			return i
+		end
+	end
+
+	return nil
+end
+
 --统计长度
 function M.count(tab)
 	local c = 0
