@@ -81,8 +81,8 @@ function M.reconnect(player_id)
 	}
 end
 
-function M.goout(player_id, is_jump_join)
-	log.info("hall_plug goout ",player_id, is_jump_join, skynet.address(skynet.self()))
+function M.goout(player_id, is_jump_exit)
+	log.info("hall_plug goout ",player_id, is_jump_exit, skynet.address(skynet.self()))
 end
 
 -- 客户端消息处理结束
