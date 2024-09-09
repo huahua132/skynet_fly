@@ -21,6 +21,7 @@ local g_gate = nil
 local g_fd_agent_map = {}
 local g_player_map = {}
 local g_login_lock_map = {}
+local IS_JUMPING = false
 
 local interface = {}
 local EMPTY = {}
@@ -30,6 +31,55 @@ local continue = {}
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
+
+contriner_client:add_updated_cb("room_game_hall_m", function()
+	if not login_plug.is_jump_new then return end
+	if IS_JUMPING then return end
+
+	IS_JUMPING = true
+	skynet.fork(function()
+		while true do
+			local cnt = 0
+			for player_id, player in pairs(g_player_map) do
+				if player and not player.is_goout and player.hall_client and player.hall_client:is_visitor_old() then
+					cnt = cnt + 1
+					local hall_client = player.hall_client
+					local server_id = hall_client:get_mod_server_id()
+					local ret, errno, errmsg = hall_client:mod_call("jump_exit", player_id)					--从旧服务中跳出
+					log.warn_fmt("jump_exits server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), player.gate, player.fd, player.is_ws, player_id, ret, errno, errmsg)
+					if ret then																				--成功
+						local new_hall_client = contriner_client:new("room_game_hall_m", nil, NOT_SWITCH_FUNC)
+						new_hall_client:set_mod_num(player_id)
+						local server_id = new_hall_client:get_mod_server_id()
+						ret,errno,errmsg = new_hall_client:mod_call("jump_join", player.gate, player.fd, player.is_ws, player_id, SELF_ADDRESS)	--跳入新服务
+						log.warn_fmt("jump_join server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), player.gate, player.fd, player.is_ws, player_id, ret, errno, errmsg)
+						if ret then
+							player.hall_client = new_hall_client
+						end
+					end
+
+					if cnt >= login_plug.jump_once_cnt then
+						break
+					end
+				end
+			end
+			
+			local isok = true
+			for player_id, player in pairs(g_player_map) do
+				if player and not player.is_goout and player.hall_client and player.hall_client:is_visitor_old() then
+					isok = false
+					break
+				end
+			end
+
+			if isok then break end
+
+			skynet.sleep(login_plug.jump_inval_time * 100)		--等一段时间再试
+		end
+
+		IS_JUMPING = false
+	end)
+end)
 
 local function close_fd(fd)
 	if fd <= 0 then return end
@@ -217,7 +267,7 @@ local CMD = {}
 
 function CMD.goout(player_id)
 	local agent = assert(g_player_map[player_id])
-
+	agent.is_goout = true
 	g_player_map[player_id] = nil
 	login_plug.login_out(player_id)
 	close_fd(agent.fd)
@@ -318,6 +368,10 @@ skynet.start(function()
 	
 	assert(login_plug.logining,"login_plug not logining")          --正在登录中
 	assert(login_plug.repeat_login,"login_plug not repeat_login")  --重复登录
+
+	login_plug.is_jump_new = login_plug.is_jump_new or false 	   --是否跳转到新服务
+	login_plug.jump_inval_time = login_plug.jump_inval_time or 60  --跳转尝试间隔时间
+	login_plug.jump_once_cnt = login_plug.jump_once_cnt or 10	   --单次尝试跳转人数
 	
 	if login_plug.register_cmd then
 		for name,func in pairs(login_plug.register_cmd) do
