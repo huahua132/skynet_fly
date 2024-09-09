@@ -42,6 +42,9 @@ contriner_client:add_updated_cb("room_game_hall_m", function()
 			local cnt = 0
 			for player_id, player in pairs(g_player_map) do
 				if player and not player.is_goout and player.hall_client and player.hall_client:is_visitor_old() then
+					if player.fd > 0 then
+						skynet.call(player.gate, 'lua', 'pause', player.fd)
+					end
 					cnt = cnt + 1
 					local hall_client = player.hall_client
 					local server_id = hall_client:get_mod_server_id()
@@ -56,6 +59,10 @@ contriner_client:add_updated_cb("room_game_hall_m", function()
 						if ret then
 							player.hall_client = new_hall_client
 						end
+					end
+
+					if player.fd > 0 then
+						skynet.call(player.gate, 'lua', 'play', player.fd)
 					end
 
 					if cnt >= login_plug.jump_once_cnt then

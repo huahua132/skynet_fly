@@ -6,6 +6,7 @@ local log = require "skynet-fly.log"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local assert = assert
 local string = string
+local tinsert = table.insert
 
 local CLOSE_CODE = {
 	normal = 1000,
@@ -73,7 +74,14 @@ function HANDLER.message(fd, msg, msg_type)
 	local agent = c.agent
 
 	if agent then
-		skynet.redirect(agent, 0, 'client', fd, msg)
+		if c.is_pause then
+			if not c.msg_que then
+				c.msg_que = {}
+			end
+			tinsert(c.msg_que, msg)
+		else
+			skynet.redirect(agent, 0, 'client', fd, msg)
+		end
 	else
 		skynet.send(g_watchdog,'lua','socket','data', fd, msg)
 	end
@@ -170,6 +178,40 @@ end
 
 function CMD.kick(_,fd)
 	websocket.close(fd,CLOSE_CODE.normal,CLOSE_REASON[CLOSE_CODE.normal])
+end
+
+function CMD.pause(source, fd)
+	if not g_conn_map[fd] then
+		return false
+	end
+	local c = g_conn_map[fd]
+	c.is_pause = true
+
+	return true
+end
+
+function CMD.play(source, fd)
+	if not g_conn_map[fd] then
+		return false
+	end
+	local c = g_conn_map[fd]
+	c.is_pause = nil
+
+	local msg_que = c.msg_que
+	if msg_que then
+		local agent = c.agent
+		for i = 1, #msg_que do
+			if agent then
+				skynet.redirect(agent, c.client, "client", fd, msg_que[i])
+			else
+				skynet.send(g_watchdog, "lua", "socket", "data", fd, msg_que[i])
+			end
+		end
+
+		c.msg_que = nil
+	end
+
+	return true
 end
 
 skynet.start(function()

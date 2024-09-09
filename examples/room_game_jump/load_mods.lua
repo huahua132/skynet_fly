@@ -6,6 +6,12 @@ return {
 		default_arg = {
 			--room_game_login用的配置
 			room_game_login = {
+				--gate连接配置
+				gateconf = {
+					address = '0.0.0.0',
+					port = 8001,
+					maxclient = 2048,
+				},
 				--wsgate连接配置
 				wsgateconf = {
 					address = '0.0.0.0',
@@ -61,8 +67,8 @@ return {
 		launch_num = 2,
 		delay_run = true,       --延迟运行
 		mod_args = {
-			{account = "skynet",password = '123456',player_id = 10000},
-			{account = "skynet_fly",password = '123456',player_id = 10001},
+			{account = "skynet", password = '123456', player_id = 10000, protocol = "socket"},
+			{account = "skynet_fly", password = '123456', player_id = 10001, protocol = "websocket"},
 		}
 	}
 }
