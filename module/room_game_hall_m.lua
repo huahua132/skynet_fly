@@ -165,13 +165,13 @@ local function dispatch(fd, source, msg, sz)
 	agent.queue(handle_msg, agent, header, body)
 end
 --连接大厅
-local function connect(agent, is_reconnect)
+local function connect(agent, is_reconnect, is_jump_join)
 	local gate = agent.gate
 	local fd = agent.fd
 	local player_id = agent.player_id
 	local login_res = nil
 	if not is_reconnect then
-		login_res = hall_plug.connect(player_id)
+		login_res = hall_plug.connect(player_id, is_jump_join)
 	else
 		login_res = hall_plug.reconnect(player_id)
 		local table_server_id = agent.table_server_id
@@ -185,15 +185,19 @@ local function connect(agent, is_reconnect)
 end
 
 --登出
-local function goout(agent, reason)
+local function goout(agent, reason, is_jump_exit)
 	local player_id = agent.player_id
 	local isok,errcode,errmsg = leave(agent, reason)
 	if not isok then
 		log.error("can`t leave !!! ",player_id, errcode, errmsg)
 		return nil,errcode,errmsg
 	end
-	hall_plug.goout(player_id)
-	skynet.send(agent.watchdog, 'lua', 'goout', player_id)
+	hall_plug.goout(player_id, is_jump_exit)
+
+	if not is_jump_exit then
+		skynet.send(agent.watchdog, 'lua', 'goout', player_id)
+	end
+
 	g_fd_map[agent.fd] = nil
 	g_player_map[player_id] = nil
 	return true
@@ -448,16 +452,15 @@ end
 ----------------------------------------------------------------------------------
 --CMD
 ----------------------------------------------------------------------------------
-
-function CMD.connect(gate, fd, is_ws, player_id, watchdog)
+local function connect_new(gate, fd, is_ws, player_id, watchdog, is_jump_join)
 	--先设置转发，成功后再建立连接管理映射，不然存在建立连接，客户端立马断开的情况，掉线无法通知到此服务
-	if not skynet.call(gate,'lua','forward',fd) then
-		return
+	if fd > 0 and not skynet.call(gate, 'lua', 'forward', fd) then
+		return nil, -1, "forward err"
 	end
 	local agent = g_player_map[player_id]
 	local is_reconnect = false
 	if not agent then
-	 	agent = {
+		agent = {
 			player_id = player_id,
 			fd = fd,
 			gate = gate,
@@ -471,7 +474,7 @@ function CMD.connect(gate, fd, is_ws, player_id, watchdog)
 	else
 		if agent.is_goout then
 			log.error("exiting ....",player_id)
-			return
+			return nil, -1, "exiting"
 		end
 		g_fd_map[agent.fd] = nil
 		agent.fd = fd
@@ -482,7 +485,11 @@ function CMD.connect(gate, fd, is_ws, player_id, watchdog)
 	end
 
 	g_fd_map[fd] = agent
-	return agent.queue(connect,agent,is_reconnect)
+	return agent.queue(connect, agent, is_reconnect, is_jump_join)
+end
+
+function CMD.connect(gate, fd, is_ws, player_id, watchdog)
+	return connect_new(gate, fd, is_ws, player_id, watchdog)
 end
 --掉线
 function CMD.disconnect(gate,fd,player_id)
@@ -531,6 +538,28 @@ function CMD.goout(player_id, reason)
 	local ret,errcode,errmsg = agent.queue(goout, agent, reason)
 	agent.goouting = false
 	return ret,errcode,errmsg
+end
+
+--从旧服务跳出
+function CMD.jump_exit(player_id)
+	local agent = g_player_map[player_id]
+	if not agent then
+		return nil, -1, "agent not exists"
+	end
+
+	if agent.goouting then
+		return nil, -1, "repeat goout"
+	end
+
+	agent.goouting = true
+	local ret, errcode, errmsg = agent.queue(goout, agent, "jump_exit", true)
+	agent.goouting = false
+	return ret, errcode, errmsg
+end
+
+--跳入新服务
+function CMD.jump_join(gate, fd, is_ws, player_id, watchdog)
+	return connect_new(gate, fd, is_ws, player_id, watchdog, true)
 end
 
 function CMD.start(config)

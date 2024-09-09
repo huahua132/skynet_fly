@@ -331,6 +331,15 @@ function M:CMD(cmd)
 		return self:is_not_need_visitor(module_name, source)
 	end
 end
+
+--是否是访问旧的服务
+function M:is_visitor_old()
+	if self.cur_id_list ~= g_mod_svr_ids_map[self.module_name] then
+		return true
+	end
+
+	return false
+end
 --[[
 	函数作用域：M 的成员函数
 	函数名称: new
