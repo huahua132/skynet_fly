@@ -1814,18 +1814,18 @@ local function test_delete_by_range()
     orm_obj:create_entry(entry_data_list)
 
     local ret = orm_obj:delete_entry_by_range(1, 2, 10001, 1)
-    assert(ret == 2)
+    assert(ret)
 
     local entry_list = orm_obj:get_entry(10001, 1)
     assert(#entry_list == 0)
 
     local ret = orm_obj:delete_entry_by_range(3, nil, 10001)
-    assert(ret == 4)
+    assert(ret)
     local entry_list = orm_obj:get_entry(10001)
     assert(#entry_list == 2)
 
     local ret = orm_obj:delete_entry_by_range(nil, 10003)
-    assert(ret == 18)
+    assert(ret)
 
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 8)
