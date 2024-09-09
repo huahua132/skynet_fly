@@ -2,6 +2,7 @@ local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
 local websocket = require "http.websocket"
+local socket = require "skynet.socket"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 local table_util = require "skynet-fly.utils.table_util"
 local contriner_client = require "skynet-fly.client.contriner_client"
@@ -22,7 +23,18 @@ local function connnect(handle)
 	local room_game_login = confclient:mod_call('query','room_game_login')
 	local port = room_game_login.wsgateconf.port
 	assert(port, "not wsgateconf port")
-	local fd = websocket.connect("ws://127.0.0.1:" .. port)
+	local confclient = contriner_client:new("share_config_m")
+	local room_game_login = confclient:mod_call('query','room_game_login')
+	local fd
+	if g_config.protocol == 'websocket' then
+		local port = room_game_login.wsgateconf.port
+		assert(port, "not wsgateconf port")
+		fd = websocket.connect("ws://127.0.0.1:" .. port)
+	else
+		local port = room_game_login.gateconf.port
+		assert(port, "not gateconf port")
+		fd = socket.open('127.0.0.1', port)
+	end
 	if not fd then
 		log.error("connect faild ")
 		return
@@ -50,7 +62,11 @@ local function loginout(fd)
 end
 
 local function close(fd)
-	websocket.close(fd)
+	if g_config.protocol == 'websocket' then
+		websocket.close(fd)
+	else
+		socket.close(fd)
+	end
 end
 
 --在线跳转测试
@@ -59,8 +75,16 @@ local function online_jump_test()
 
 	skynet.sleep(100)
 	--热更
-	log.info("热更:")
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+	if module_info.get_base_info().index == 1 then
+		log.info("热更:")
+		skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+	end
+	for i = 1, 3 do
+		net_util.send(nil, fd, '.login.serverInfoReq', {player_id = g_config.player_id})
+	end
+
+	skynet.sleep(100)
+
 	for i = 1, 3 do
 		net_util.send(nil, fd, '.login.serverInfoReq', {player_id = g_config.player_id})
 	end
@@ -116,13 +140,17 @@ function CMD.start(config)
 	pb_netpack.load('./proto')
 	g_config = config
 
-	net_util = require "skynet-fly.utils.net.ws_pbnet_util" --pb
+	if g_config.protocol == 'socket' then
+		net_util = require "skynet-fly.utils.net.pbnet_util"
+	else
+		net_util = require "skynet-fly.utils.net.ws_pbnet_util"
+	end
 	
 	skynet.fork(function()
-		--online_jump_test()
+		online_jump_test()
 		--offline_jump_test()
 		--loginout_jump_test()
-		table_jump_test()
+		--table_jump_test()
 	end)
 	
 	return true

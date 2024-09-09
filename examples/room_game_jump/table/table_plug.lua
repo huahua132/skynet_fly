@@ -1,4 +1,5 @@
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 
@@ -8,6 +9,8 @@ function M.init(interface_mgr)
 
 end
 
+M.send = pbnet_util.send
+M.broadcast = pbnet_util.broadcast
 M.ws_send = ws_pbnet_util.send
 M.ws_broadcast = ws_pbnet_util.broadcast
 

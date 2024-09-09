@@ -7,6 +7,7 @@ local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
 
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
+local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 
 local assert = assert
 
@@ -17,13 +18,16 @@ local M = {}
 --登录检测的超时时间
 M.time_out = timer.second * 5
 --发包函数
+M.unpack = pbnet_util.unpack
+M.send = pbnet_util.send
+M.broadcast = pbnet_util.broadcast
 M.ws_unpack = ws_pbnet_util.unpack
 M.ws_send = ws_pbnet_util.send
 M.ws_broadcast = ws_pbnet_util.broadcast
 
 --是否跳转到新的game_hall 服务
 M.is_jump_new = true
-M.jump_once_cnt = 1
+M.jump_once_cnt = 10
 
 function M.init(interface_mgr)
 	g_interface_mgr = interface_mgr
