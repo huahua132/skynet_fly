@@ -223,7 +223,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
 
     local insert_format_head = sformat("insert into %s (",tab_name)
     local insert_format_end = "("
-    local select_format_head = sformat("select * from %s" ,tab_name)
+    local select_format_head = sformat("select ")
     local select_format_key_head = sformat("select ")
     local select_format_center = " where "
     local select_format_end = ""
@@ -255,8 +255,10 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
         if i == len then
             insert_format_head = insert_format_head .. '`' .. field_name .. '`'
+            select_format_head = select_format_head .. '`' .. field_name .. '`'
         else
             insert_format_head = insert_format_head .. '`' .. field_name .. '`,'
+            select_format_head = select_format_head .. '`' .. field_name .. '`,'
         end
         
         field_index_map[field_name] = i
@@ -295,6 +297,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
     insert_format_head = insert_format_head .. ') value'
     insert_format_end = insert_format_end .. ')'
     select_format_key_head = select_format_key_head .. ' from ' .. tab_name
+    select_format_head = select_format_head .. ' from ' .. tab_name
 
     local insert_list = {}                               
     local function entry_data_to_list(entry_data)
