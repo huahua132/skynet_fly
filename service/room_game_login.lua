@@ -21,7 +21,7 @@ local g_gate = nil
 local g_fd_agent_map = {}
 local g_player_map = {}
 local g_login_lock_map = {}
-local IS_JUMPING = false
+local g_isjumping = false
 
 local interface = {}
 local EMPTY = {}
@@ -34,9 +34,9 @@ local continue = {}
 
 contriner_client:add_updated_cb("room_game_hall_m", function()
 	if not login_plug.is_jump_new then return end
-	if IS_JUMPING then return end
+	if g_isjumping then return end
 
-	IS_JUMPING = true
+	g_isjumping = true
 	skynet.fork(function()
 		while true do
 			local cnt = 0
@@ -84,7 +84,7 @@ contriner_client:add_updated_cb("room_game_hall_m", function()
 			skynet.sleep(login_plug.jump_inval_time * 100)		--等一段时间再试
 		end
 
-		IS_JUMPING = false
+		g_isjumping = false
 	end)
 end)
 
