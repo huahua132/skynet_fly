@@ -76,6 +76,16 @@ local function test_base_msg()
 	log.info("all_broadcast_call_by_name:", cli:all_broadcast_call_by_name("ping"))
 	cli:byid_broadcast_by_name("hello","byid_broadcast_by_name")
 	log.info("byid_broadcast_call_by_name:", cli:byid_broadcast_call_by_name("ping"))
+
+	--测试通过别名发送
+	local cli = frpc_client:new("frpc_server",".testserver_1")
+	cli:one_send_by_name("hello", "one_send_by_name")
+	log.info("one_call_by_name:", cli:one_call_by_name("ping"))
+	cli:set_svr_id(2)
+	cli:byid_send_by_name("hello", "byid_send_by_name")
+	log.info("byid_call_by_name:", cli:byid_call_by_name("ping"))
+	cli:all_send_by_name("hello", "all_send_by_name")
+	log.info("all_send_by_name:", cli:all_call_by_name("ping"))
 end
 
 --测试大包消息
@@ -229,7 +239,7 @@ end
 
 function CMD.start()
 	skynet.fork(function()
-		--test_base_msg()
+		test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()
@@ -322,9 +332,9 @@ end
 -- 	log.info("watch syn test_syn handle_name1 >>> ", ...)
 -- end)
 
-watch_syn_client.watch("frpc_server", "test_syn", "handle_name3", function(...)
-	log.info("watch syn test_syn handle_name3 >>> ", ...)
-end)
+-- watch_syn_client.watch("frpc_server", "test_syn", "handle_name3", function(...)
+-- 	log.info("watch syn test_syn handle_name3 >>> ", ...)
+-- end)
 
 -- watch_client.watch_byid("frpc_server", 1, "test_syn", "handle_name1", function(...)
 -- 	log.info("watch_byid msg handle_name1 >>>> ", ...)

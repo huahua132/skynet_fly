@@ -1,5 +1,5 @@
 local log = require "skynet-fly.log"
-local skynet = require "skynet"
+local skynet = require "skynet.manager"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local watch_server = require "skynet-fly.rpc.watch_server"
 local module_info = require "skynet-fly.etc.module_info"
@@ -64,6 +64,8 @@ function CMD.start(config)
 			end
 		end)
 	end
+	--注册别名
+	skynet.register(".testserver_" .. base_info.index)
 	return true
 end
 

@@ -257,6 +257,27 @@ function M:one_broadcast_call(...)
 		result = unpack_broadcast(rsp, secret)
 	}
 end
+
+--用简单轮询负载均衡给单个结点的别名服务send消息
+function M:one_send_by_name(...)
+	g_frpc_client:balance_send(
+		"balance_send", self.svr_name, self.module_name, "", FRPC_PACK_ID.send_by_name, nil, spack(...)
+	)
+end
+
+--用简单轮询负载均衡给单个结点的别名服务call消息
+function M:one_call_by_name(...)
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
+		"balance_call", self.svr_name, self.module_name, "", FRPC_PACK_ID.call_by_name, nil, spack(...)
+	)
+
+	if not cluster_name then return end
+	
+	return {
+		cluster_name = cluster_name,
+		result = {unpack_rsp(rsp, secret)}
+	}
+end
 --------------------------------------------------------------------------------
 --one
 --------------------------------------------------------------------------------
@@ -329,6 +350,29 @@ function M:byid_broadcast_call(...)
 	return {
 		cluster_name = cluster_name,
 		result = unpack_broadcast(rsp, secret),
+	}
+end
+
+--用svr_id映射的方式给单个结点的指定别名服务用balance_send的方式发送消息
+function M:byid_send_by_name(...)
+	assert(self.svr_id, "not svr_id")
+	g_frpc_client:balance_send(
+		"send_by_id", self.svr_name, self.svr_id, self.module_name, "", FRPC_PACK_ID.send_by_name, nil, spack(...)
+	)
+end
+
+--用svr_id映射的方式给单个结点的指定别名服务用balance_call的方式发送消息
+function M:byid_call_by_name(...)
+	assert(self.svr_id, "not svr_id")
+	local cluster_name, rsp, secret = g_frpc_client:balance_call(
+		"call_by_id", self.svr_name, self.svr_id, self.module_name, "", FRPC_PACK_ID.call_by_name, nil, spack(...)
+	)
+
+	if not cluster_name then return end
+
+	return {
+		cluster_name = cluster_name,
+		result = {unpack_rsp(rsp, secret)}
 	}
 end
 --------------------------------------------------------------------------------
@@ -408,6 +452,32 @@ function M:all_broadcast_call(...)
 		tinsert(ret_list, {
 			cluster_name = cluster_name,
 			result = unpack_broadcast(rsp, secret)
+		})
+	end
+	return ret_list
+end
+
+--给所有结点的指定别名服务用balance_send的方式发送消息
+function M:all_send_by_name(...)
+	g_frpc_client:balance_send(
+		"send_all", self.svr_name, self.module_name, "", FRPC_PACK_ID.send_by_name, nil, spack(...)
+	)
+end
+
+--给所有结点的指定别名服务用balance_call的方式发送消息
+function M:all_call_by_name(...)
+	local cluster_rsp_map, secret_map = g_frpc_client:balance_call(
+		"call_all", self.svr_name, self.module_name, "", FRPC_PACK_ID.call_by_name, nil, spack(...)
+	)
+
+	if not cluster_rsp_map then return end
+
+	local ret_list = {}
+	for cluster_name, rsp in pairs(cluster_rsp_map) do
+		local secret = secret_map[cluster_name]
+		tinsert(ret_list, {
+			cluster_name = cluster_name,
+			result = {unpack_rsp(rsp, secret)}
 		})
 	end
 	return ret_list

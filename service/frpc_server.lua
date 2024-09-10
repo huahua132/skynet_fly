@@ -343,6 +343,15 @@ HANDLE[FRPC_PACK_ID.broadcast_call_by_name] = create_handle(function(agent, modu
 	return skynet.packstring(cli:broadcast_call_by_name(msgstr))
 end, true, true)
 
+--用skynet别名的方式
+HANDLE[FRPC_PACK_ID.send_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	skynet.rawsend(module_name, 'lua', msg, sz)
+end)
+
+HANDLE[FRPC_PACK_ID.call_by_name] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	return skynet.rawcall(module_name, 'lua', msg, sz)
+end)
+
 --订阅
 HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	local channel_name, address, unique_name = skynet.unpack(msg, sz)	--订阅渠道名
