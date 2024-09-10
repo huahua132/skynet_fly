@@ -107,4 +107,13 @@ function M.leave_table(player_id, table_name, table_id)
 	log.info("leave_table >>> ", player_id, table_name, table_id)
 end
 
+local CMD = {}
+
+function CMD.hello(player_id)
+	log.info("hello >>> ", g_interface_mgr:is_online(player_id))
+	return g_interface_mgr:is_online(player_id)
+end
+
+M.register_cmd = CMD
+
 return M

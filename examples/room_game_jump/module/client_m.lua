@@ -79,6 +79,10 @@ local function online_jump_test()
 		log.info("热更:")
 		skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
 	end
+
+	skynet.send('.room_game_login', 'lua', "send_player_hall", g_config.player_id, 'hello', g_config.player_id)
+	log.info("call_player_hall ret:", skynet.call('.room_game_login', 'lua', "call_player_hall", g_config.player_id, 'hello', g_config.player_id))
+	
 	for i = 1, 3 do
 		net_util.send(nil, fd, '.login.serverInfoReq', {player_id = g_config.player_id})
 	end
