@@ -1,5 +1,4 @@
-local skynet = require "skynet"
-require "skynet.manager"
+local skynet = require "skynet.manager"
 local timer = require "skynet-fly.timer"
 local log = require "skynet-fly.log"
 local queue = require "skynet.queue"
@@ -31,6 +30,30 @@ local continue = {}
 ----------------------------------------------------------------------------------
 --private
 ----------------------------------------------------------------------------------
+local function jump_one_player(agent)
+	local player_id = agent.player_id
+	if agent.fd > 0 then
+		skynet.call(agent.gate, 'lua', 'pause', agent.fd)
+	end
+	local hall_client = agent.hall_client
+	local server_id = hall_client:get_mod_server_id()
+	local ret, errno, errmsg = hall_client:mod_call("jump_exit", player_id)					--从旧服务中跳出
+	log.warn_fmt("jump_exits server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), agent.gate, agent.fd, agent.is_ws, player_id, ret, errno, errmsg)
+	if ret then																				--成功
+		local new_hall_client = contriner_client:new("room_game_hall_m", nil, NOT_SWITCH_FUNC)
+		new_hall_client:set_mod_num(player_id)
+		local server_id = new_hall_client:get_mod_server_id()
+		ret,errno,errmsg = new_hall_client:mod_call("jump_join", agent.gate, agent.fd, agent.is_ws, player_id, SELF_ADDRESS)	--跳入新服务
+		log.warn_fmt("jump_join server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), agent.gate, agent.fd, agent.is_ws, player_id, ret, errno, errmsg)
+		if ret then
+			agent.hall_client = new_hall_client
+		end
+	end
+
+	if agent.fd > 0 then
+		skynet.call(agent.gate, 'lua', 'play', agent.fd)
+	end
+end
 
 contriner_client:add_updated_cb("room_game_hall_m", function()
 	if not login_plug.is_jump_new then return end
@@ -40,31 +63,10 @@ contriner_client:add_updated_cb("room_game_hall_m", function()
 	skynet.fork(function()
 		while true do
 			local cnt = 0
-			for player_id, player in pairs(g_player_map) do
-				if player and not player.is_goout and player.hall_client and player.hall_client:is_visitor_old() then
-					if player.fd > 0 then
-						skynet.call(player.gate, 'lua', 'pause', player.fd)
-					end
+			for player_id, agent in pairs(g_player_map) do
+				if agent and not agent.is_goout and agent.hall_client and agent.hall_client:is_visitor_old() then
 					cnt = cnt + 1
-					local hall_client = player.hall_client
-					local server_id = hall_client:get_mod_server_id()
-					local ret, errno, errmsg = hall_client:mod_call("jump_exit", player_id)					--从旧服务中跳出
-					log.warn_fmt("jump_exits server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), player.gate, player.fd, player.is_ws, player_id, ret, errno, errmsg)
-					if ret then																				--成功
-						local new_hall_client = contriner_client:new("room_game_hall_m", nil, NOT_SWITCH_FUNC)
-						new_hall_client:set_mod_num(player_id)
-						local server_id = new_hall_client:get_mod_server_id()
-						ret,errno,errmsg = new_hall_client:mod_call("jump_join", player.gate, player.fd, player.is_ws, player_id, SELF_ADDRESS)	--跳入新服务
-						log.warn_fmt("jump_join server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), player.gate, player.fd, player.is_ws, player_id, ret, errno, errmsg)
-						if ret then
-							player.hall_client = new_hall_client
-						end
-					end
-
-					if player.fd > 0 then
-						skynet.call(player.gate, 'lua', 'play', player.fd)
-					end
-
+					agent.queue(jump_one_player, agent)
 					if cnt >= login_plug.jump_once_cnt then
 						break
 					end
@@ -72,8 +74,8 @@ contriner_client:add_updated_cb("room_game_hall_m", function()
 			end
 			
 			local isok = true
-			for player_id, player in pairs(g_player_map) do
-				if player and not player.is_goout and player.hall_client and player.hall_client:is_visitor_old() then
+			for player_id, agent in pairs(g_player_map) do
+				if agent and not agent.is_goout and agent.hall_client and agent.hall_client:is_visitor_old() then
 					isok = false
 					break
 				end
@@ -129,6 +131,7 @@ local function connect_hall(gate, fd, is_ws, player_id)
 			gate = gate,
 			fd = fd,
 			is_ws = is_ws,
+			queue = queue(),
 		}
 	end
 
@@ -342,6 +345,36 @@ function CMD.socket(cmd,...)
 	f(...)
 end
 
+local function send_player_hall(agent, ...)
+	local hall_client = agent.hall_client
+	hall_client:mod_send(...)
+end
+
+--发送到玩家所在大厅服
+function CMD.send_player_hall(player_id, ...)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.warn("send_player_hall agent not exists ", player_id, ...)
+		return
+	end
+	agent.queue(send_player_hall, agent, ...)
+end
+
+local function call_player_hall(agent, ...)
+	local hall_client = agent.hall_client
+	return hall_client:mod_call(...)
+end
+
+--发送到玩家所在大厅服
+function CMD.call_player_hall(player_id, ...)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.warn("call_player_hall agent not exists ", player_id, ...)
+		return
+	end
+	return agent.queue(call_player_hall, agent, ...)
+end
+
 skynet.start(function()
 	SELF_ADDRESS = skynet.self()
 	skynet_util.lua_dispatch(CMD)
@@ -443,6 +476,8 @@ skynet.start(function()
 		local ws_gate = skynet.newservice("ws_gate")
 		skynet.call(ws_gate,'lua','open',room_game_login.wsgateconf)
 	end
+
+	skynet.register(".room_game_login")
 end)
 
 contriner_client:CMD(CMD)
