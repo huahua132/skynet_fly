@@ -42,6 +42,7 @@ QQ群号：102993581
 * [lua-snapshot](https://github.com/cloudwu/lua-snapshot)latest
 * [lua-socket](https://github.com/lunarmodules/luasocket)latest
 * [LuaPanda](https://github.com/Tencent/LuaPanda)latest
+* [wlua](https://github.com/hanxi/wlua)latest
 
 ### [官方示例domo](https://github.com/huahua132/skynet_fly_demo)
 
