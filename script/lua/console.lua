@@ -115,9 +115,9 @@ function CMD.check_reload()
     	local change_f_name = {}
 
 		for load_f_name,load_f_info in pairs(loaded) do
-		local load_f_dir = load_f_info.dir
-		local last_change_time = load_f_info.last_change_time
-		local now_f_info = lfs.attributes(load_f_dir)
+			local load_f_dir = load_f_info.dir
+			local last_change_time = load_f_info.last_change_time
+			local now_f_info = lfs.attributes(load_f_dir)
 			if now_f_info then
 				local new_change_time = now_f_info.modification
 				if new_change_time > last_change_time then
@@ -284,6 +284,19 @@ end
 function CMD.handle_hotfix_result()
 	local ret = ARGV[ARGV_HEAD + 2]
 	print("ret = ",ret)
+end
+
+--更新共享数据
+function CMD.upsharedata()
+	local server_id = assert(ARGV[ARGV_HEAD + 1])
+	local url = string.format('%s/call/%s/"check_reload"', get_host(), server_id)
+	print(string.format("'%s'", url))
+end
+
+--解析更新结果
+function CMD.handle_upsharedata_result()
+	local ret = ARGV[ARGV_HEAD + 2]
+	print("ret = ", ret)
 end
 
 assert(CMD[cmd],'not cmd:' .. cmd)

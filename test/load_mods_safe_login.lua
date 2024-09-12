@@ -5,7 +5,7 @@
 
 return {
     safe_login_client_m = {
-        launch_seq = 1,
+        launch_seq = 2,
 		launch_num = 1,
     },
     safe_login_server_m = {

@@ -33,7 +33,7 @@ local server_mt = {__index = server}
 ------------------------------------------------------------------------------------------
 
 function M.new_server(CMD)
-    assert(contriner_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
+    assert(not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
     assert(not CMD[watch_cmd], "exists _watch cmd")
     assert(not CMD[unwatch_cmd], "exists _unwatch cmd")
     local watch_map = {}         --监听者记录
@@ -214,8 +214,7 @@ function client:watch(name)
             version_map[name] = version
             if event_type == EVENT_TYPE.move then
                 local state = contriner_interface.get_server_state()
-                if skynet_util.is_hot_container_server() 
-                and (state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited) then  --说明是旧服务，就不用同步了
+                if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
                     break
                 end
                 skynet.sleep(10)                    --避免move中发给旧服务的请求过多
