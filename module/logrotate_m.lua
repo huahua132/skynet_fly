@@ -96,12 +96,16 @@ local function create_rotate(cfg)
         end
 
         local back_list = {}
-        for file_name,file_path,file_info in file_util.diripairs(m_file_path) do
+        for file_name,file_path,file_info, errmsg, errno in file_util.diripairs(m_file_path) do
             if file_name ~= m_filename and string.find(file_name,m_filename,nil,true) then
-                tinsert(back_list, {
-                    file_path = file_path,
-                    time = file_info.modification               --最近一次修改时间
-                })
+                if file_info then
+                    tinsert(back_list, {
+                        file_path = file_path,
+                        time = file_info.modification               --最近一次修改时间
+                    })
+                else
+                    log.warn("backup file can`t get file_info ", file_path, errmsg, errno)
+                end
             end
         end
 
