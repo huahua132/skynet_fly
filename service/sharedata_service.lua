@@ -68,9 +68,9 @@ end
 function CMD.check_reload()
     local reload_list = {}
     for file_path, info in pairs(g_file_changetime_map) do
-        local file_info = lfs.attributes(file_path)
+        local file_info, errinfo, errno = lfs.attributes(file_path)
         if not file_info then
-            log.warn("check_reload file can`t get info:", file_path)
+            log.warn("check_reload file can`t get info:", file_path, errinfo, errno)
         else
             if file_info.modification ~= info.last_change_time then
                 local m = g_modes[info.mode]

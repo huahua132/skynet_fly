@@ -29,7 +29,7 @@ return function(headname, mod_name, loaded)
 	for f_name in pairs(loaded) do
 		local f_dir = package.searchpath(f_name, package.path)
 		if f_dir then
-			local f_info = lfs.attributes(f_dir)
+			local f_info, errinfo, errno = lfs.attributes(f_dir)
 			if f_info then
 				local f_last_change_time = f_info.modification
 				info_file:write(string.format("\t['%s'] = {\n",f_name))
@@ -38,7 +38,7 @@ return function(headname, mod_name, loaded)
 				info_file:write(string.format("\t},\n"))
 				skynet.yield()
 			else
-				log.error_fmt("write_mod_required can`t get fileinfo %s", f_name)
+				log.error_fmt("write_mod_required can`t get fileinfo filename[%s] errinfo[%s] errno[%s]", f_name, errinfo, errno)
 			end
 		end
 	end

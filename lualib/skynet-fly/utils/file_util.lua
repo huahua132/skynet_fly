@@ -36,11 +36,11 @@ function M.diripairs(path_url)
 			if file_name == '..' or file_name == '.' then
 			elseif file_name then
 				local file_path = M.path_join(cur.path, '/' .. file_name)
-				local file_info = lfs.attributes(file_path)
-				if file_info.mode == 'directory' then
+				local file_info, errmsg, errno = lfs.attributes(file_path)
+				if file_info and file_info.mode == 'directory' then
 					push_stack(file_path)
 				end
-				return file_name,file_path,file_info
+				return file_name, file_path, file_info, errmsg, errno
 			else
 				tremove(stack,#stack)
 			end
