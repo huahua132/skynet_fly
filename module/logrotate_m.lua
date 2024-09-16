@@ -52,9 +52,9 @@ local function create_rotate(cfg)
     --切割
     local function rotate()
         local file_url = m_file_path .. m_filename
-        local file_info = lfs.attributes(file_url)
+        local file_info, errinfo, errno = lfs.attributes(file_url)
         if not file_info then
-            log.error("rotate file is not exists ",file_url)
+            log.error("rotate file is not exists ",file_url, errinfo, errno)
             return
         end
 
@@ -84,9 +84,9 @@ local function create_rotate(cfg)
 
     --保留文件整理
     local function backup()
-        local pathinfo = lfs.attributes(m_file_path)
+        local pathinfo, errinfo, errno = lfs.attributes(m_file_path)
         if not pathinfo then
-            log.error("backup path is not exists ",m_file_path)
+            log.error("backup path is not exists ",m_file_path, errinfo, errno)
             return
         end
 
