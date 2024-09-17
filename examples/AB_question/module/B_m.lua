@@ -1,8 +1,8 @@
-local log = require "log"
-local contriner_client = require "contriner_client"
+local log = require "skynet-fly.log"
+local contriner_client = require "skynet-fly.client.contriner_client"
 local skynet = require "skynet"
 
-contriner_client:register("A_m")
+contriner_client:register("A_m")                            --向A注册访问
 
 local CMD = {}
 

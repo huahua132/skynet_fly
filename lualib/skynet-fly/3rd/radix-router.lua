@@ -1,0 +1,1 @@
+return require "radix-router.router"

@@ -1,5 +1,5 @@
-local jwt = require "luajwtjitsi"
-local log = require "log"
+local jwt = require "skynet-fly.3rd.luajwtjitsi"
+local log = require "skynet-fly.log"
 
 local CMD = {}
 

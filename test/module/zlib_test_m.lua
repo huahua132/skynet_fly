@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local zlib = require "zlib"
-local log = require "log"
+local log = require "skynet-fly.log"
 
 local assert = assert
 

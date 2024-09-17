@@ -1,0 +1,10 @@
+.LoginReq {
+    player_id 0 : integer
+    nickname 1 : string
+    password 2 : string
+    account 3 : string
+}
+
+.LoginRes {
+    result 0 : integer
+}

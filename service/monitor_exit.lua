@@ -1,11 +1,10 @@
 local skynet = require "skynet"
-local skynet_util = require "skynet_util"
-require "manager"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+require "skynet.manager"
 
 local tinsert = table.insert
 local pairs = pairs
 
-local NOTRET = {}
 local CMD = {}
 
 local service_map = {}
@@ -31,7 +30,7 @@ function CMD.watch(source, server_id)
     end
     
     service_map[server_id][source] = skynet.response()
-    return NOTRET
+    return skynet_util.NOT_RET
 end
 
 function CMD.unwatch(source, server_id)
@@ -42,10 +41,10 @@ function CMD.unwatch(source, server_id)
     local rsp = service_map[server_id][source]
     service_map[server_id][source] = nil
     rsp(true,false)
-    return NOTRET
+    return skynet_util.NOT_RET
 end
 
 skynet.start(function()
     skynet.register('.monitor_exit')
-    skynet_util.lua_dispatch(CMD,NOTRET,true)
+    skynet_util.lua_dispatch(CMD)
 end)

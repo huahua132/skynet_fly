@@ -1,0 +1,46 @@
+.EnterCast {
+	player_id 0 : integer
+	seat_id 1 : integer
+	nickname 2 : integer
+}
+
+.GameStartCast {
+	seat_id_list 0 : *integer
+}
+
+.NextDoingCast {
+	doing_player_id 0 : integer
+	doing_seat_id 1 : integer
+	min_num 2 : integer
+	max_num 3 : integer
+}
+
+.GameOverCast {
+	lose_player_id 0 : integer
+	mine 1 : integer
+}
+
+.LeaveCast {
+	player_id 0 : integer
+	seat_id 1 : integer
+	nickname 2 : string
+}
+
+.DoingReq {
+	opt_num 0 : integer
+}
+
+.DoingCast {
+	player_id 0 : integer
+	seat_id 1 : integer
+	opt_num 2 : integer
+}
+
+.GameStatusReq {
+	player_id 0 : integer
+}
+
+.GameStatusRes {
+	game_state 0 : integer
+	next_doing 1 : NextDoingCast
+}

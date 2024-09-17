@@ -1,0 +1,192 @@
+# pthread
+{
+   pthread_create unknown leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+}
+
+# LuaJIT-2.1
+{
+   LuaJIT-2.1 lua_pushlstring noices
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_pushlstring
+}
+
+{
+   LuaJIT-2.1 lua_pushstring noices
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_pushstring
+}
+
+{
+   LuaJIT-2 lua_getfield
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_getfield
+}
+
+{
+   LuaJIT-2 lua_setfield
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_setfield
+}
+
+# OpenSSL-1.1.1
+{
+   Maybe bug in TS_REQ_to_TS_VERIFY_CTX
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:TS_REQ_to_TS_VERIFY_CTX
+   obj:*
+}
+
+{
+   Maybe bug in OCSP_request_sign
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+   fun:ASN1_item_new
+   fun:OCSP_request_sign
+   obj:*
+}
+
+{
+   Maybe bug in CMS_decrypt_set1_password
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+   fun:CMS_RecipientInfo_decrypt
+   fun:CMS_decrypt_set1_password
+   obj:*
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:EVP_PKEY_new
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   fun:EVP_PKEY_new
+}
+
+{
+   Lua 5.1  OpenSSL 1.1.1f
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:EVP_MD_meth_new
+}
+
+{
+   Lua 5.1  OpenSSL 1.1.1f
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:EVP_CIPHER_meth_new
+}
+
+{
+   Lua 5.1  OpenSSL 1.1.1f
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_dl_close_worker.part.0
+   fun:_dl_close_worker
+   fun:_dl_close
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+   fun:dlclose
+}
+
+{
+   Lua 5.1  OpenSSL 1.1.1f
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:BN_new
+}
+
+{
+   Lua 5.1  OpenSSL 1.1.1f
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:strdup
+   fun:_dl_load_cache_lookup
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:ENGINE_new
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:RSA_new_method
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_dl_check_map_versions
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+}

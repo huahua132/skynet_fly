@@ -1,0 +1,5 @@
+.Error {
+	code 0 : integer
+	msg 1 : string
+	packname 2 : string
+}
