@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local log = require "log"
+local log = require "skynet-fly.log"
 
 --这里不会调用hook函数
 log.error("test service load")

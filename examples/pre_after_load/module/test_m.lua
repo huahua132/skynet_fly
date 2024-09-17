@@ -1,4 +1,4 @@
-local log = require "log"
+local log = require "skynet-fly.log"
 
 local CMD = {}
 

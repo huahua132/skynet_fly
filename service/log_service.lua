@@ -1,7 +1,7 @@
 local skynet = require "skynet"
-local skynet_util = require "skynet_util"
-local file_util = require "file_util"
-local time_util = require "time_util"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local file_util = require "skynet-fly.utils.file_util"
+local time_util = require "skynet-fly.utils.time_util"
 require "skynet.manager"
 
 local os = os
@@ -15,6 +15,7 @@ local table = table
 local math_floor = math.floor
 local sformat = string.format
 local osdate = os.date
+local contriner_client = nil
 
 local SELF_ADDRESS = skynet.self()
 
@@ -38,6 +39,8 @@ local function open_file()
     end
     local file_p = file_util.path_join(file_path,file_name)
     file = io.open(file_p, 'a+')
+    file:write('open log file' .. file_p .. '\n')
+    file:flush()
     assert(file, "can`t open file " .. file_p)
 end
 
@@ -80,6 +83,11 @@ skynet.register_protocol {
 local CMD = {}
 
 function CMD.add_hook(file_name)
+    if not contriner_client then
+        contriner_client = require "skynet-fly.client.contriner_client"
+        contriner_client:CMD(CMD)
+    end
+    
     local func = require(file_name)
     assert(type(func) == 'function', "err file " .. file_name)
     table.insert(hook_hander_list, func)
@@ -88,5 +96,6 @@ end
 
 skynet.start(function()
     open_file()
-    skynet_util.lua_dispatch(CMD,{})
+    skynet_util.lua_dispatch(CMD)
 end)
+

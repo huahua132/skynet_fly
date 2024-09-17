@@ -1,4 +1,6 @@
-local errorcode = require "errorcode"
+local errorcode = require "enum.errorcode"
+
+local test_proto = 'sp'
 
 local setmetatable = setmetatable 
 
@@ -24,7 +26,11 @@ function M:errors(player_id,code,msg,packname)
 		packname = packname,
 	}
 
-	self.interface_mgr:send_msg(player_id,'.errors.Error',error)
+	if test_proto == 'pb' then
+		self.interface_mgr:send_msg(player_id,'.errors.Error',error)    --pb
+	else
+		self.interface_mgr:send_msg(player_id,'Error',error)			--sp
+	end
 end
 
 return M

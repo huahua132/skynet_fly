@@ -2,59 +2,73 @@ local assert = assert
 local ARGV = { ... }
 local skynet_fly_path = ARGV[1]
 local load_mods_name = ARGV[2]
+local is_daemon = ARGV[3]
 assert(skynet_fly_path, '缺少 skynet_fly_path')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
-package.path = './?.lua;' .. skynet_fly_path .. "/lualib/utils/?.lua;"
+package.path = './?.lua;' .. skynet_fly_path .. "/lualib/?.lua;"
 
 local lfs = require "lfs"
 local json = require "cjson"
-local table_util = require "table_util"
-local file_util = require "file_util"
+local table_util = require "skynet-fly.utils.table_util"
+local file_util = require "skynet-fly.utils.file_util"
 
-local skynet_path = skynet_fly_path .. '/skynet/'
+load_mods_name = load_mods_name or 'load_mods.lua'
+
+is_daemon = tonumber(is_daemon)
+if not is_daemon or is_daemon == 1 then
+	is_daemon = true
+else
+	is_daemon = false
+end
+
+local skynet_path = file_util.path_join(skynet_fly_path, '/skynet/')
 local server_path = "./"
-local common_path = "../../common/"
+local common_path = "../../commonlualib/"
 
 local svr_name = file_util.get_cur_dir_name()
 local config = {
-	thread          = 4,
+	thread          = 8,
 	start           = "main",
 	harbor          = 0,
 	profile         = true,
-	lualoader       = skynet_fly_path .. "/lualib/loader.lua",
+	lualoader       = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/loader.lua'),
 	bootstrap       = "snlua bootstrap", --the service for bootstrap
 	logger          = "log_service",
 	loglevel        = "info",
 	logpath         = server_path .. 'logs/',
 	logfilename     = 'server.log',
 	logservice      = 'snlua',
-	daemon          = "./skynet.pid",
+	daemon          = is_daemon and string.format("./make/skynet.%s.pid", load_mods_name) or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
 	debug_port      = 8888,
 	skynet_fly_path = skynet_fly_path,
-	preload         = skynet_fly_path .. '/lualib/preload.lua;',
-	cpath           = skynet_fly_path .. "/cservice/?.so;" .. skynet_path .. "cservice/?.so;",
+	preload         = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/preload.lua;'),
+	cpath           = file_util.path_join(skynet_fly_path, '/cservice/?.so;') .. skynet_path .. "cservice/?.so;",
 
-	lua_cpath       = skynet_fly_path .. "/luaclib/?.so;" .. skynet_path .. "luaclib/?.so;",
+	lua_cpath       = file_util.path_join(skynet_fly_path, '/luaclib/?.so;') .. skynet_path .. "luaclib/?.so;",
 
 	--luaservice 约束服务只能放在 server根目录 || server->service || common->service || skynet_fly->service || skynet->service
 	luaservice      = server_path .. "?.lua;" ..
-		server_path .. "service/?.lua;" ..
-		skynet_fly_path .. "/service/?.lua;" ..
-		common_path .. "service/?.lua;" ..
-		skynet_path .. "service/?.lua;",
+					  server_path .. "service/?.lua;" ..
+					  file_util.path_join(skynet_fly_path, '/service/?.lua;') ..
+					  common_path .. "service/?.lua;" ..
+					  skynet_path .. "service/?.lua;",
 
 	lua_path        = "",
 	enablessl       = true,
-	loadmodsfile    = load_mods_name or "load_mods", --可热更服务启动配置
+	loadmodsfile    = load_mods_name, --可热更服务启动配置
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
 
-local load_mods_f = require(config.loadmodsfile)
-if load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and load_mods_f.share_config_m.default_arg.server_cfg then
+local load_mods_f = loadfile(load_mods_name)
+if load_mods_f then
+	load_mods_f = load_mods_f()
+end
+
+if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and load_mods_f.share_config_m.default_arg.server_cfg then
 	local cfg = load_mods_f.share_config_m.default_arg.server_cfg
 	if cfg.svr_id then
 		config.svr_id = cfg.svr_id
@@ -74,10 +88,27 @@ if load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and loa
 	if cfg.debug_port then
 		config.debug_port = cfg.debug_port
 	end
+	if cfg.breakpoint_debug_host then										--断点调式连接host
+		config.breakpoint_debug_host = cfg.breakpoint_debug_host
+	end
+	if cfg.breakpoint_debug_port then										--断点调式连接port
+		config.breakpoint_debug_port = cfg.breakpoint_debug_port
+	end
+	if cfg.breakpoint_debug_module_name then								--断点调式的可热更模块名
+		config.breakpoint_debug_module_name = cfg.breakpoint_debug_module_name
+	end	
+	if cfg.breakpoint_debug_module_index then								--断点调式的可热更模块启动下标
+		config.breakpoint_debug_module_index = cfg.breakpoint_debug_module_index
+	end
 end
 
+local file_path = server_path .. 'make/'
 
-local config_path = server_path .. svr_name .. '_config.lua'
+if not os.execute("mkdir -p " .. file_path) then
+	error("create file_path err")
+end
+
+local config_path = file_path .. svr_name .. '_config.lua'
 
 local file = io.open(config_path, 'w+')
 assert(file)

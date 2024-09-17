@@ -1,7 +1,7 @@
-local ormtable = require "ormtable"
-local ormadapter_mysql = require "ormadapter_mysql"
+local ormtable = require "skynet-fly.db.orm.ormtable"
+local ormadapter_mysql = require "skynet-fly.db.ormadapter.ormadapter_mysql"
 local skynet = require "skynet"
-local log = require "log"
+local log = require "skynet-fly.log"
 local assert = assert
 local g_orm_obj = nil
 local M = {}
@@ -20,21 +20,15 @@ function M.init()
     return g_orm_obj
 end
 
-function M.call(func_name, ...)
-    log.info("call:",func_name, skynet.self())
-    return handle[func_name](...)
-end
-
 -- 不存在就创建
 function handle.not_exist_create(entry_data)
     local player_id = assert(entry_data.player_id)
-    local entry_list = g_orm_obj:get_entry(player_id)
-    if #entry_list > 0 then
+    local entry = g_orm_obj:get_one_entry(player_id)
+    if entry then
         return
     end
 
-    entry_list = g_orm_obj:create_entry(entry_data)
-    local entry = entry_list[1]
+    entry = g_orm_obj:create_one_entry(entry_data)
     if not entry then return end
 
     return entry:get_entry_data()
@@ -60,8 +54,10 @@ function handle.change_status(player_id, status)
     end
 
     entry:set("status", status)
-    local res_list = g_orm_obj:save_entry(entry)
+    local res_list = g_orm_obj:save_one_entry(entry)
     return res_list[1]
 end
+
+M.handle = handle
 
 return M

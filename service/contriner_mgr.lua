@@ -1,6 +1,7 @@
 local skynet = require "skynet.manager"
-local skynet_util = require "skynet_util"
-local log = require "log"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local log = require "skynet-fly.log"
+local json = require "cjson"
 local queue = require "skynet.queue"()
 
 local loadfile = loadfile
@@ -12,21 +13,17 @@ local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
 local tsort = table.sort
-local skynet_send = skynet.send
 local skynet_call = skynet.call
-local skynet_pack = skynet.pack
-local skynet_ret = skynet.ret
 local pcall = pcall
 
-local loadmodsfile = skynet.getenv("loadmodsfile") .. '.lua'
-
-local NORET = {}
+local loadmodsfile = skynet.getenv("loadmodsfile")
 
 local g_name_id_list_map = {}
 local g_id_list_map = {}
 local g_watch_map = {}
 local g_version_map = {}
 local g_monitor_new_map = {}
+local g_close_load_map = {}
 
 skynet_util.register_info_func("id_list",function()
 	return g_id_list_map
@@ -40,19 +37,21 @@ skynet_util.register_info_func("version",function()
 	return g_version_map
 end)
 
-local function call_id_list(id_list,cmd)
+local function call_id_list(id_list, cmd, ...)
+	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		skynet_call(id,'lua',cmd)
+		ret_map[skynet.address(id)] = {skynet_call(id,'lua',cmd, ...)}
 	end
+	return ret_map
 end
 
-local function call_module(module_name,cmd)
+local function call_module(module_name, cmd, ...)
 	local id_list = g_id_list_map[module_name]
 	if not id_list or #id_list <= 0 then
 		return
 	end
 
-	call_id_list(id_list,cmd)
+	return call_id_list(id_list, cmd, ...)
 end
 
 local function launch_new_module(module_name,config)
@@ -108,10 +107,20 @@ local function kill_modules(...)
 		g_watch_map[module_name] = nil
 		g_version_map[module_name] = nil
 	end
+	return module_name_list
 end
 
 local function load_modules(...)
 	local module_name_list = {...}
+	for i = #module_name_list, 1, -1 do
+		local mod_name = module_name_list[i]
+		if g_close_load_map[mod_name] then
+			tremove(module_name_list, i)
+			log.warn("loading close load module_name = ", mod_name)
+		end
+	end
+
+	if #module_name_list <= 0 then return end
 	local load_mods = loadfile(loadmodsfile)()
 	assert(load_mods,"not load_mods")
 
@@ -207,7 +216,7 @@ local function load_modules(...)
 end
 
 local function query(source,module_name)
-	assert(module_name,'not module_name')
+	assert(module_name,'not module_name:' .. module_name)
 	assert(g_id_list_map[module_name],"not exists " .. module_name)
 	assert(g_name_id_list_map[module_name],"not exists " .. module_name)
 	assert(g_version_map[module_name],"not exists " .. module_name)
@@ -236,7 +245,7 @@ local function watch(source,module_name,oldversion)
 	end
 
 	watch_map[source] = skynet.response()
-	return NORET
+	return skynet_util.NOT_RET
 end
 
 local function unwatch(source,module_name)
@@ -249,9 +258,9 @@ local function unwatch(source,module_name)
 	local version = g_version_map[module_name]
 	local watch_map = g_watch_map[module_name]
 	local response = watch_map[source]
-	assert(response)
-
-	response(true,id_list,name_id_list,version)
+	if response then
+		response(true,id_list,name_id_list,version)
+	end
 	watch_map[source] = nil
 	return true
 end
@@ -271,21 +280,38 @@ local function monitor_new(source,mod_version_map)
 	end
 
 	g_monitor_new_map[source] = skynet.response()
-	return NORET
+	return skynet_util.NOT_RET
 end
 
 local function unmonitor_new(source)
 	local response = g_monitor_new_map[source]
-	assert(response)
-	response(true, g_version_map)
+	if response then
+		response(true, g_version_map)
+	end
 	g_monitor_new_map[source] = nil
 	return true
+end
+
+local function close_loads(module_names)
+	for _,module_name in ipairs(module_names) do
+		g_close_load_map[module_name] = true
+	end
+end
+
+local function hotfix(module_map)
+	local ret_map = {}
+	for module_name,hotfix_mods in pairs(module_map) do
+		ret_map[module_name] = call_module(module_name, 'hotfix', hotfix_mods) or "not exists"
+	end
+	local ret = json.encode(ret_map)
+	return ret
 end
 
 local CMD = {}
 
 --通知模块退出
 function CMD.kill_modules(source,...)
+	log.info("kill_modules:", ...)
 	return queue(kill_modules,...)
 end
 
@@ -328,7 +354,25 @@ function CMD.unmonitor_new(source)
 	queue(unmonitor_new,source)
 end
 
+--关闭指定模块加载
+function CMD.close_loads(source, ...)
+	local module_names = {...}
+	queue(close_loads, module_names)
+end
+
+--热更
+function CMD.hotfix(source, ...)
+	local module_names = {...}
+	local module_map = {}
+	for i = 1, #module_names, 2 do
+		local module_name = module_names[i]
+		local hotfix_mods = module_names[i + 1] or ""
+		module_map[module_name] = hotfix_mods
+	end
+	return queue(hotfix, module_map)
+end
+
 skynet.start(function()
 	skynet.register('.contriner_mgr')
-	skynet_util.lua_dispatch(CMD,NORET,true)
+	skynet_util.lua_dispatch(CMD)
 end)

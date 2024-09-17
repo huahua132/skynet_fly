@@ -1,0 +1,68 @@
+name: compat53-tests
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+jobs:
+  compat53-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - luaVersion: "lua=5.1"
+            compiler: gcc
+            external: false
+          - luaVersion: "lua=5.1"
+            compiler: gcc
+            external: true
+          - luaVersion: "lua=5.1"
+            compiler: g++
+            external: true
+          - luaVersion: "lua=5.1"
+            compiler: clang
+            external: false
+          - luaVersion: "luajit=@v2.1 --compat=none"
+            compiler: gcc
+            external: false
+          - luaVersion: "luajit=@v2.1 --compat=none"
+            compiler: gcc
+            external: true
+          - luaVersion: "luajit=@v2.1 --compat=all"
+            compiler: gcc
+            external: false
+          - luaVersion: "luajit=@v2.1 --compat=all"
+            compiler: gcc
+            external: true
+          - luaVersion: "lua=5.2"
+            compiler: gcc
+            external: false
+          - luaVersion: "lua=5.2"
+            compiler: gcc
+            external: true
+          - luaVersion: "lua=5.2"
+            compiler: g++
+            external: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: install Lua
+        run: |
+          pip3 install --user hererocks
+          ~/.local/bin/hererocks old --${{ matrix.luaVersion }}
+          test -e old/bin/lua || (cd old/bin && ln -s luajit* lua)
+          ~/.local/bin/hererocks new --lua=5.3
+      - name: compile C modules
+        run: |
+          export CC=${{ matrix.compiler }} CFLAGS="-Wall -Wextra -Ic-api -O2 -fPIC"
+          export DEF="" SRC=""
+          if [ "${{ matrix.external }}" = true ]; then DEF="-DCOMPAT53_PREFIX=compat53" SRC="c-api/compat-5.3.c"; fi
+          ${CC} ${CFLAGS} -Iold/include ${DEF} -shared -o old/testmod.so tests/testmod.c ${SRC}
+          ${CC} ${CFLAGS} -Inew/include ${DEF} -shared -o new/testmod.so tests/testmod.c ${SRC}
+          ${CC} ${CFLAGS} -Iold/include ${DEF} -shared -o old/compat53.so ltablib.c lutf8lib.c lstrlib.c liolib.c ${SRC}
+      - name: run test scripts
+        run: |
+          (cd old && bin/lua ../tests/test.lua) > old.txt
+          (cd new && bin/lua ../tests/test.lua) > new.txt
+      - name: compare script output
+        run: diff old.txt new.txt || true
+

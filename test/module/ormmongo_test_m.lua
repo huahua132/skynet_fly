@@ -1,11 +1,11 @@
 local skynet = require "skynet"
-local ormtable = require "ormtable"
-local ormadapter_mongo = require "ormadapter_mongo"
-local math_util = require "math_util"
-local string_util = require "string_util"
-local table_util = require "table_util"
-local mongof = require "mongof"
-local log = require "log"
+local ormtable = require "skynet-fly.db.orm.ormtable"
+local ormadapter_mongo = require "skynet-fly.db.ormadapter.ormadapter_mongo"
+local math_util = require "skynet-fly.utils.math_util"
+local string_util = require "skynet-fly.utils.string_util"
+local table_util = require "skynet-fly.utils.table_util"
+local mongof = require "skynet-fly.db.mongof"
+local log = require "skynet-fly.log"
 
 local assert = assert
 
@@ -49,7 +49,7 @@ end
 local function test_alter_table()
     test_create_table()
     local adapter = ormadapter_mongo:new("admin")
-    local orm_obj = ormtable:new("t_player")
+    local _ = ormtable:new("t_player")
     :int64("player_id")
     :int64("role_id")
     :int8("sex")
@@ -66,8 +66,8 @@ local function test_create_entry()
 
     --新建单条数据
     local new_data = {player_id = 10001,role_id = 1, sex = 1}
-    local res = orm_obj:create_entry(new_data)
-    local entry = assert(res[1]) 
+    local entry = orm_obj:create_one_entry(new_data)
+    assert(entry)
     assert(entry:get('player_id') == 10001)
     assert(entry:get('role_id') == 1)
     assert(entry:get('sex') == 1)
@@ -76,12 +76,12 @@ local function test_create_entry()
 
     --主键冲突
     local new_data = {player_id = 10001,role_id = 1, sex = 1}
-    local res = orm_obj:create_entry(new_data)
-    assert(res[1] == false)     
+    local isok = pcall(orm_obj.create_one_entry, orm_obj, new_data)
+    assert(not isok)
 
     --缺少主键数据
     local new_data = {player_id = 10001,role_id = 2}
-    local isok,res = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok) --会崩溃报错
 
     --新建多条数据
@@ -91,7 +91,7 @@ local function test_create_entry()
         {player_id = 10002,role_id = 3, sex = 1}
     }
 
-    local res = orm_obj:create_entry(table.unpack(new_data_list))
+    local res = orm_obj:create_entry(new_data_list)
     assert(#res == 3)
     for i,v in pairs(res) do
         assert(v)
@@ -100,123 +100,123 @@ local function test_create_entry()
     -- 新增数据值范围要合理
 
     local new_data = {player_id = 100055,role_id = 1, sex = -128}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 10005,role_id = 1, sex = -129}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 10006,role_id = 1, sex = 128}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100066,role_id = 1, sex = 127}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
     
     local new_data = {player_id = 10007,role_id = 1, sex = 1, sex1 = 256}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100077,role_id = 1, sex = 1, sex1 = 255}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 10008,role_id = 1, sex = 1, sex1 = -1}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 100088,role_id = 1, sex = 1, sex1 = 0}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 11007,role_id = 1, sex = 1, sex2 = 32768}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 110077,role_id = 1, sex = 1, sex2 = 32767}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 11008,role_id = 1, sex = 1, sex2 = -32769}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 110088,role_id = 1, sex = 1, sex2 = -32768}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 12007,role_id = 1, sex = 1, sex3 = 65536}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 120077,role_id = 1, sex = 1, sex3 = 65535}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 12008,role_id = 1, sex = 1, sex3 = -1}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 120088,role_id = 1, sex = 1, sex3 = 0}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 13007,role_id = 1, sex = 1, sex4 = 2147483648}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 130077,role_id = 1, sex = 1, sex4 = 2147483647}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 13008,role_id = 1, sex = 1, sex4 = -2147483649}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 130088,role_id = 1, sex = 1, sex4 = -2147483648}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 14007,role_id = 1, sex = 1, sex5 = 4294967296}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 140077,role_id = 1, sex = 1, sex5 = 4294967295}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 14008,role_id = 1, sex = 1, sex5 = -1}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 140088,role_id = 1, sex = 1, sex5 = 0}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 15007,role_id = 1, sex = 1, sex6 = 9223372036854775808}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local new_data = {player_id = 150077,role_id = 1, sex = 1, sex6 = 9223372036854775807}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local new_data = {player_id = 15008,role_id = 1, sex = 1, sex6 = -9223372036854775809}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
-    assert(isok and err[1] ~= false)  --插入成功 数据会被修正为-9223372036854775808  
+    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    assert(isok and type(err) == 'table')  --插入成功 数据会被修正为-9223372036854775808  
 
     local new_data = {player_id = 150088,role_id = 1, sex = 1, sex6 = -9223372036854775808}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
-    assert(isok and err[1] ~= false) --插入成功 
+    local isok,err = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    assert(isok and type(err) == 'table') --插入成功 
 
     local test_str = ""
     for i = 1,33 do
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10009,role_id = 1, sex = 1, nickname = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -224,7 +224,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100099,role_id = 1, sex = 1, nickname = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -232,7 +232,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10010,role_id = 1, sex = 1, email = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -240,7 +240,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100100,role_id = 1, sex = 1, email = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -248,7 +248,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10011,role_id = 1, sex = 1, sex7 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -256,7 +256,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100111,role_id = 1, sex = 1, sex7 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -264,7 +264,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10012,role_id = 1, sex = 1, sex8 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -272,7 +272,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100122,role_id = 1, sex = 1, sex8 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -280,7 +280,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10013,role_id = 1, sex = 1, sex9 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -288,7 +288,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100133,role_id = 1, sex = 1, sex9 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -296,7 +296,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10014,role_id = 1, sex = 1, sex10 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -304,7 +304,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100144,role_id = 1, sex = 1, sex10 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -312,7 +312,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10015,role_id = 1, sex = 1, sex11 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     
@@ -321,7 +321,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100155,role_id = 1, sex = 1, sex11 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -329,7 +329,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10016,role_id = 1, sex = 1, sex12 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -337,7 +337,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100166,role_id = 1, sex = 1, sex12 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     local test_str = ""
@@ -345,7 +345,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 10017,role_id = 1, sex = 1, sex13 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(not isok)
 
     local test_str = ""
@@ -353,7 +353,7 @@ local function test_create_entry()
         test_str = test_str .. 'i'
     end
     local new_data = {player_id = 100177,role_id = 1, sex = 1, sex13 = test_str}
-    local isok,err = pcall(orm_obj.create_entry,orm_obj,new_data)
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
     assert(isok)
 
     delete_table()
@@ -374,7 +374,7 @@ local function test_select_entry()
         {player_id = 10003,role_id = 3, sex = 2},
     }
 
-    local res = orm_obj:create_entry(table.unpack(new_data_list))
+    local res = orm_obj:create_entry(new_data_list)
     assert(#res == 8)
     for i,v in pairs(res) do
         assert(v)
@@ -416,8 +416,8 @@ local function test_select_entry()
     :set_keys("player_id","role_id","sex")
     :builder(adapter)
 
-    local res = orm_obj:create_entry({player_id = 10004,role_id = 1, sex = 1})
-    assert(#res == 1 and res[1])
+    local res = orm_obj:create_one_entry({player_id = 10004,role_id = 1, sex = 1})
+    assert(res)
 
     --版本三又用回来
     orm_obj = test_create_table()
@@ -434,8 +434,8 @@ end
 local function test_save_entry()
     delete_table()
     local orm_obj = test_create_table()
-    local res = orm_obj:create_entry({player_id = 10004,role_id = 1, sex = 1, nickname = "ddasda", sex1 = 222})
-    local entry = assert(res[1])
+    local entry = orm_obj:create_one_entry({player_id = 10004,role_id = 1, sex = 1, nickname = "ddasda", sex1 = 222})
+    assert(entry)
     
     --主键值不能修改
     local isok = pcall(entry.set,entry,'player_id',1000)
@@ -459,8 +459,8 @@ local function test_save_entry()
     entry:set('nickname',"abcde")
     entry:set('sex1',111)
 
-    local res = orm_obj:save_entry(entry)
-    assert(res[1] == true)
+    local res = orm_obj:save_one_entry(entry)
+    assert(res)
 
     local entry_list = orm_obj:get_entry(10004)
     local entry = assert(entry_list[1])
@@ -468,10 +468,10 @@ local function test_save_entry()
     assert(entry:get('sex1') == 111)
 
     --修改多条数据
-    local res = orm_obj:create_entry(
+    local res = orm_obj:create_entry({
         {player_id = 11001,role_id = 1, sex = 1, nickname = "abcd", sex1 = 1},
         {player_id = 11002,role_id = 1, sex = 1, nickname = "efgh", sex1 = 2}
-    )
+    })
     local entry1 = assert(res[1])
     entry1:set('nickname',"abcde")
     entry1:set('sex1',111)
@@ -479,7 +479,7 @@ local function test_save_entry()
     entry2:set('nickname',"efghg")
     entry2:set('sex1',222)
 
-    local res = orm_obj:save_entry(entry1, entry2)
+    local res = orm_obj:save_entry({entry1, entry2})
     assert(res[1])
     assert(res[2])
 
@@ -501,7 +501,7 @@ end
 --测试删除数据
 local function test_delete_entry()
     local orm_obj = test_create_table()
-    local res = orm_obj:create_entry(
+    local _ = orm_obj:create_entry({
         {player_id = 10004,role_id = 1, sex = 1, nickname = "ddasda", sex1 = 222},
         {player_id = 10004,role_id = 1, sex = 2, nickname = "ddasda", sex1 = 223},
         {player_id = 10004,role_id = 1, sex = 3, nickname = "ddasda", sex1 = 224},
@@ -510,7 +510,7 @@ local function test_delete_entry()
         {player_id = 10004,role_id = 2, sex = 3, nickname = "ddasda", sex1 = 224},
         {player_id = 10004,role_id = 3, sex = 3, nickname = "ddasda", sex1 = 224},
         {player_id = 10005,role_id = 2, sex = 1, nickname = "ddasda", sex1 = 224}
-    )
+    })
 
     --删除一条数据 （使用三个关联唯一key）
     local res = orm_obj:delete_entry(10004, 1, 1)
@@ -561,11 +561,11 @@ local function test_cache_entry()
     :builder(adapter)
 
     --创建entry 建立缓存 
-    local entry_list = orm_obj:create_entry({player_id = 10001, role_id = 1, sex = 1})
-    local entry = assert(entry_list[1])
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 1})
+    assert(entry)
 
     local get_entry_list = orm_obj:get_entry(10001)
-    local get_entry = assert(entry_list[1])
+    local get_entry = assert(get_entry_list[1])
 
     assert(entry == get_entry) --是同一个表
     skynet.sleep(600)
@@ -586,7 +586,7 @@ local function test_cache_entry()
 
     skynet.sleep(300)
     --查询延迟缓存时间 重置为5秒
-    local rr_list = orm_obj:get_entry(10001)
+    local _ = orm_obj:get_entry(10001)
     skynet.sleep(300)
     local rrr_list,is_cache = orm_obj:get_entry(10001)
     local rrr_entry = assert(rrr_list[1])
@@ -594,7 +594,7 @@ local function test_cache_entry()
     assert(is_cache)
 
     -- 多条数据命中缓存
-    local entry_list = orm_obj:create_entry(
+    local entry_list = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -607,7 +607,7 @@ local function test_cache_entry()
         {player_id = 10003, role_id = 1, sex = 2},
         {player_id = 10003, role_id = 2, sex = 2},
         {player_id = 10003, role_id = 3, sex = 2}
-    )
+    })
 
     --两个关联key
     local get_entry_list = orm_obj:get_entry(10002, 1)
@@ -646,9 +646,9 @@ local function test_cache_entry()
     assert(not is_cache)
 
     --删除数据后拿取关联多条，应命中缓存
-    local entry_list = orm_obj:get_entry(10003)
+    local _ = orm_obj:get_entry(10003)
     orm_obj:delete_entry(10003, 3, 2)
-    local gg_entry_list,is_cache = orm_obj:get_entry(10003)
+    local _,is_cache = orm_obj:get_entry(10003)
     assert(is_cache)
     
     delete_table()
@@ -670,7 +670,7 @@ local function test_inval_save()
     :builder(adapter)
 
     -- 自动保存数据
-    local entry_list = orm_obj:create_entry(
+    local entry_list = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -683,7 +683,7 @@ local function test_inval_save()
         {player_id = 10003, role_id = 1, sex = 2},
         {player_id = 10003, role_id = 2, sex = 2},
         {player_id = 10003, role_id = 3, sex = 2}
-    )
+    })
 
     for i,entry in ipairs(entry_list) do
         entry:set("email", "emailssss")
@@ -716,7 +716,7 @@ local function test_sql_over()
     :builder(adapter)
 
     -- 自动保存数据
-    local entry_list = orm_obj:create_entry(
+    local entry_list = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -729,7 +729,7 @@ local function test_sql_over()
         {player_id = 10003, role_id = 1, sex = 2},
         {player_id = 10003, role_id = 2, sex = 2},
         {player_id = 10003, role_id = 3, sex = 2}
-    )
+    })
 
     for i,entry in ipairs(entry_list) do
         entry:set("email", "emailssss")
@@ -798,12 +798,11 @@ local function test_permanent()
     :set_cache(0,500)   --5秒保存一次
     :builder(adapter)
 
-    local entry_list = orm_obj:create_entry({
+    local entry = orm_obj:create_one_entry({
         player_id = 10001,
         role_id = 1,
         sex = 1
     })
-    local entry = entry_list[1]
 
     skynet.sleep(1)
 
@@ -830,7 +829,7 @@ local function test_get_all()
     :set_cache(500,500)   --5秒保存一次
     :builder(adapter)
 
-    local entry_list = orm_obj:create_entry(
+    local entry_list = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -843,7 +842,7 @@ local function test_get_all()
         {player_id = 10003, role_id = 1, sex = 2},
         {player_id = 10003, role_id = 2, sex = 2},
         {player_id = 10003, role_id = 3, sex = 2}
-    )
+    })
 
     local get_entry_list,is_cache = orm_obj:get_all_entry()
     assert(not is_cache and #get_entry_list == #entry_list)--首次查询，不确定缓存数量与实际数量是否一致
@@ -853,19 +852,19 @@ local function test_get_all()
 
     skynet.sleep(300)
 
-    local get_entry_list,is_cache = orm_obj:get_entry(10002) --保活
+    local _,is_cache = orm_obj:get_entry(10002) --保活
     assert(not is_cache)
     skynet.sleep(300)
     
     assert(orm_obj._key_cache_count == 6 and orm_obj._key_cache_total_count == nil)
-    local get_entry_list,is_cache = orm_obj:get_all_entry()
+    local _,is_cache = orm_obj:get_all_entry()
     assert(not is_cache)
     assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
 
     orm_obj:delete_entry(10002, 1, 1)
     assert(orm_obj._key_cache_count == 11 and orm_obj._key_cache_total_count == 11)
 
-    orm_obj:create_entry({player_id = 10004, role_id = 3, sex = 2})
+    orm_obj:create_one_entry({player_id = 10004, role_id = 3, sex = 2})
     assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
     delete_table()
 end
@@ -885,7 +884,7 @@ local function test_delete_all()
     :set_cache(500,500)   --5秒保存一次
     :builder(adapter)
 
-    local entry_list = orm_obj:create_entry(
+    local _ = orm_obj:create_entry({
         {player_id = 10002, role_id = 1, sex = 1},
         {player_id = 10002, role_id = 2, sex = 1},
         {player_id = 10002, role_id = 3, sex = 1},
@@ -898,15 +897,15 @@ local function test_delete_all()
         {player_id = 10003, role_id = 1, sex = 2},
         {player_id = 10003, role_id = 2, sex = 2},
         {player_id = 10003, role_id = 3, sex = 2}
-    )
+    })
 
     orm_obj:delete_all_entry()
-    assert(orm_obj._key_cache_count == 0 and orm_obj._key_cache_total_count == 0)
+    assert(orm_obj._key_cache_count == 0)
 
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 0)
 
-    local entry_list = orm_obj:create_entry({player_id = 10002, role_id = 1, sex = 1})
+    local _ = orm_obj:create_one_entry({player_id = 10002, role_id = 1, sex = 1})
     assert(orm_obj._key_cache_count == 1 and orm_obj._key_cache_total_count == 1)
 
     local entry_list = orm_obj:get_all_entry()
@@ -915,8 +914,868 @@ local function test_delete_all()
     delete_table()
 end
 
+-- 测试创建单条数据
+local function test_craete_one()
+    delete_table()
+    local orm_obj = test_create_table()
+
+    --新建单条数据
+    local new_data = {player_id = 10001,role_id = 1, sex = 1}
+    local entry = orm_obj:create_one_entry(new_data)
+    assert(entry)
+    assert(entry:get('player_id') == 10001)
+    assert(entry:get('role_id') == 1)
+    assert(entry:get('sex') == 1)
+    assert(entry:get('nickname') == "") --没有设置的string 会默认给个空 string
+    assert(entry:get('sex1') == 0)      --没有设置的number 会默认给个 0
+
+    --主键冲突
+    local new_data = {player_id = 10001,role_id = 1, sex = 1}
+    local isok = pcall(orm_obj.create_one_entry, orm_obj, new_data)
+    assert(not isok)     
+
+    --缺少主键数据
+    local new_data = {player_id = 10001,role_id = 2}
+    local isok = pcall(orm_obj.create_one_entry,orm_obj,new_data)
+    assert(not isok) --会崩溃报错
+
+    delete_table()
+end
+
+-- 测试查询单条数据
+local function test_select_one()
+    delete_table()
+    local orm_obj = test_create_table()
+    --新建多条数据
+    local new_data_list = {
+        {player_id = 10002,role_id = 1, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 2},
+        {player_id = 10002,role_id = 3, sex = 2},
+        {player_id = 10003,role_id = 1, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 2},
+        {player_id = 10003,role_id = 3, sex = 2},
+    }
+
+    local res = orm_obj:create_entry(new_data_list)
+    assert(#res == 8)
+    for i,v in pairs(res) do
+        assert(v)
+    end
+
+    --通过player_id查询
+    local entry = orm_obj:get_one_entry(10002, 1, 1)
+    assert(entry:get('player_id') == new_data_list[1].player_id)
+    assert(entry:get('role_id') == new_data_list[1].role_id)
+    assert(entry:get('sex') == new_data_list[1].sex)
+
+    --缺少2个参数
+    local isok = pcall(orm_obj.get_one_entry, orm_obj, 10002)
+    assert(not isok)
+    --缺少1个参数
+    local isok = pcall(orm_obj.get_one_entry, orm_obj, 10002, 1)
+    assert(not isok)
+
+    --查询不存在数据
+    local entry = orm_obj:get_one_entry(10004, 1, 1)
+    assert(not entry)
+
+    delete_table()
+end
+
+--测试连接断开后的API效果
+local function test_disconnect()
+    delete_table()
+    --批量创建
+    --因为批量创建可能存在分批请求mysql，所有过程中不能断言，结果应该是全部创建失败
+    local orm_obj = test_create_table()
+
+    local entry_list = orm_obj:create_entry({
+        {player_id = 110002,role_id = 1, sex = 1},
+        {player_id = 110002,role_id = 2, sex = 1},
+        {player_id = 110002,role_id = 2, sex = 2},
+        {player_id = 110002,role_id = 3, sex = 2},
+        {player_id = 110003,role_id = 1, sex = 1},
+        {player_id = 110003,role_id = 2, sex = 1},
+        {player_id = 110003,role_id = 2, sex = 2},
+        {player_id = 110003,role_id = 3, sex = 2},
+    })
+
+    os.execute("pkill mongod")
+    log.info("杀掉数据库》》》》》》》》》》》》》")
+    skynet.sleep(500)
+    --新建多条数据
+    local new_data_list = {
+        {player_id = 10002,role_id = 1, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 1},
+        {player_id = 10002,role_id = 2, sex = 2},
+        {player_id = 10002,role_id = 3, sex = 2},
+        {player_id = 10003,role_id = 1, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 1},
+        {player_id = 10003,role_id = 2, sex = 2},
+        {player_id = 10003,role_id = 3, sex = 2},
+    }
+
+    local res = orm_obj:create_entry(new_data_list)
+    for i = 1, #res do
+        assert(res[i] == false)
+    end
+
+    --新建单条数据
+    --创建失败，应该出现断言错误
+
+    local isok, err = pcall(orm_obj.create_one_entry, orm_obj, {
+        player_id = 10005, role_id = 3, sex = 2
+    })
+    log.error("create_one_entry:", isok, err)
+    assert(not isok)
+
+    --批量查询
+    --数据库断开了，查询失败，应该断言
+    local isok, err = pcall(orm_obj.get_entry, orm_obj, 10002, 1)
+
+    log.error("get_entry:", isok, err)
+    assert(not isok)
+
+    --查询单条数据
+    local isok,err = pcall(orm_obj.get_one_entry, orm_obj, 10003, 3, 2)
+    log.error("get_one_entry:", isok, err)
+    assert(not isok)
+
+    --批量保存数据
+    --因为保存也是批量分配执行的，并且设置间隔保存的时候会自动重试，所以不能断言。
+    for _,entry in ipairs(entry_list) do
+        entry:set("nickname", "skynet_fly")
+    end
+    local ret_list = orm_obj:save_entry(entry_list)
+    log.error("save_entry:", ret_list)
+    for _,v in ipairs(ret_list) do
+        assert(v == false)
+    end
+
+    --保存一条数据，失败应该断言
+    local isok, err = pcall(orm_obj.save_one_entry, orm_obj, entry_list[1])
+    log.error("save_one_entry:", isok, err)
+    assert(not isok)
+
+    --删除数据，失败应该断言
+    local isok, err = pcall(orm_obj.delete_entry, orm_obj, 10003, 3, 2)
+    log.error("delete_entry:", isok, err)
+    assert(not isok)
+
+    --查询所有数据，失败应该断言
+    local isok, err = pcall(orm_obj.get_all_entry, orm_obj)
+    log.error("get_all_entry:", isok, err)
+    assert(not isok)
+
+    --删除所有数据，失败应该断言
+    local isok, err = pcall(orm_obj.delete_all_entry, orm_obj)
+    log.error("delete_all_entry:", isok, err)
+    assert(not isok)
+
+    --通过数据查询出entry，失败应该断言
+    local isok, err = pcall(orm_obj.get_entry_by_data, orm_obj, {player_id = 10003, role_id = 3, sex = 1})
+    log.error("get_entry_by_data:", isok, err)
+    assert(not isok)
+
+    log.info("启动数据库》》》》》》》》》》》》》")
+    os.execute("systemctl start mongod")
+    skynet.sleep(300)
+    delete_table()
+end
+--测试缓存超上限，剔除最快过期
+local function test_tti()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(6000,2000, 10)   --缓存60秒,20秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry_list = {}
+    for i = 1, 15 do
+        local entry = orm_obj:create_one_entry({
+            player_id = tonumber(1000 .. i),
+            role_id = 101,
+            sex = 1,
+        })
+        table.insert(entry_list, entry)
+        if i == 3 then
+            entry:set("nickname", "ddd")
+        end
+        skynet.sleep(100)
+    end
+
+    local entry = orm_obj:get_one_entry(10001, 101, 1)
+    assert(entry ~= entry_list[1])
+    local entry7 = orm_obj:get_one_entry(10007, 101, 1)
+    assert(entry7 == entry_list[7])
+end
+
+--测试占位缓存
+local function test_invaild_entry()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500, 100, 10)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1, 1)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry_list,is_cache = orm_obj:get_entry(10001, 1, 1)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(#entry_list <= 0)
+    skynet.yield()
+    --首次查询不存在的数据
+    local entry,is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    --首次查询不会命中缓存
+    assert(not is_cache)
+    --没有数据
+    assert(not entry)
+    skynet.yield()
+    --二次查询不存在的数据
+    entry,is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    --二次查询应命中缓存
+    assert(is_cache)
+    --二次查询还是没数据
+    assert(not entry)
+
+    skynet.yield()
+    --创建数据应覆盖缓存
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 2})
+    assert(entry)
+
+    skynet.yield()
+    local get_entry, is_cache = orm_obj:get_one_entry(10001, 1, 2)
+    assert(is_cache)
+    assert(get_entry == entry)
+
+    skynet.yield()
+    --查询10001命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001 1 命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 1)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001 2 没有
+    local entry_list,is_cache = orm_obj:get_entry(10001, 2)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建 10001 2 2
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 2, sex = 2})
+    assert(entry)
+    --查询10001 2 命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 2)
+    assert(is_cache)
+    assert(#entry_list == 1)
+
+    skynet.yield()
+    --查询10001命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(is_cache)
+    assert(#entry_list == 2)
+
+    skynet.sleep(600)
+    --查询10001 3 没有
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建10001 3
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 1})
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 应不命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    assert(not is_cache)
+    assert(#entry_list == 3)
+
+    skynet.yield()
+    --创建10001 3 0
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 0})
+    assert(entry)
+    skynet.yield()
+    --查询10001 3 应命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(is_cache)
+    assert(#entry_list == 2)
+
+    skynet.sleep(600)
+    --查询10001 3 2 不存在
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3, 2)
+    assert(not is_cache)
+    assert(#entry_list == 0)
+
+    skynet.yield()
+    --创建10001 3 2
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 2})
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 3应不命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(not is_cache)
+    assert(#entry_list == 3)
+
+    skynet.yield()
+    --查询10001 3 3 不存在
+    local entry = orm_obj:get_one_entry(10001, 3, 3)
+    assert(not is_cache)
+    assert(not entry)
+    skynet.yield()
+    --创建 10001 3 3
+    local entry = orm_obj:create_one_entry({player_id = 10001, role_id = 3, sex = 3})
+    assert(entry)
+
+    skynet.yield()
+    local entry, is_cache = orm_obj:get_one_entry(10001, 3, 3)
+    assert(is_cache)
+    assert(entry)
+
+    skynet.yield()
+    local entry, is_cache = orm_obj:get_entry(10001, 3, 3)
+    assert(is_cache)
+    assert(entry)
+
+    skynet.yield()
+    --查询10001 3应命中缓存
+    local entry_list,is_cache = orm_obj:get_entry(10001, 3)
+    assert(is_cache)
+    assert(#entry_list == 4)
+
+    --等待缓存过期
+    --查询应不命中缓存
+    skynet.sleep(600)
+    local entry, is_cache = orm_obj:get_one_entry(10001, 3, 3)
+    assert(not is_cache)
+    assert(entry)
+
+    delete_table()
+
+    --测试全表
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500, 100, 10)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(not is_cache)
+    assert(#entry_list == 0)
+    skynet.yield()
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(is_cache)
+    assert(#entry_list == 0)
+    skynet.yield()
+
+    --创建数据
+    local entry = orm_obj:create_one_entry({player_id = 10001,role_id = 1, sex = 2})
+    assert(entry)
+    skynet.yield()
+   
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(is_cache)
+    assert(#entry_list == 1)
+    skynet.yield()
+
+    skynet.sleep(600)
+
+    --创建数据
+    local entry = orm_obj:create_one_entry({player_id = 10001,role_id = 1, sex = 3})
+    assert(entry)
+    skynet.yield()
+
+    local entry_list, is_cache = orm_obj:get_all_entry()
+    assert(not is_cache)
+    assert(#entry_list == 2)
+    skynet.yield()
+    
+    delete_table()
+end
+
+--测试永久缓存
+local function test_every_cache()
+    delete_table()
+
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(0, 100)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    --永久缓存，缓存没有就是没有数据，不需要查询数据库
+    --首次查询不存在的数据
+    local entry_list,is_cache = orm_obj:get_entry(10001)
+    --首次查询会命中缓存
+    assert(is_cache)
+    assert(#entry_list == 0)
+    
+    local entry, is_cache = orm_obj:get_one_entry(10001, 1, 1)
+    assert(not entry)
+    assert(is_cache)
+
+    local entry_list = orm_obj:create_entry({
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 3, sex = 1},
+    })
+
+    orm_obj:save_entry(entry_list)
+    
+    orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(0, 100)   --缓存5秒,1秒保存一次，最大缓存10条
+    :builder(adapter)
+
+    local entry, is_cache = orm_obj:get_one_entry(10001, 4, 1)
+    assert(not entry)
+    assert(is_cache)
+
+    local entry, is_cache = orm_obj:get_one_entry(10001, 1, 1)
+    assert(entry)
+    assert(is_cache)
+
+    delete_table()
+end
+
+--测试间隔保存前删除了
+local function test_inval_save_del()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    -- 自动保存数据
+    local entry_list = orm_obj:create_entry({
+        {player_id = 10002, role_id = 1, sex = 1},
+    })
+
+    for i,entry in ipairs(entry_list) do
+        entry:set("email", "emailssss")
+    end
+
+    orm_obj:delete_entry(10002, 1, 1)
+    local _ = orm_obj:create_entry({
+        {player_id = 10002, role_id = 1, sex = 1},
+    })
+
+    skynet.sleep(500)
+
+    local entry = orm_obj:get_one_entry(10002, 1, 1)
+    log.info(">>>", entry:get_entry_data())
+    assert(entry:get('email') == "")
+    delete_table()
+end
+
+--压测
+--stress testing
+--用skynet.queue qps = 823
+local function stress_testing()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local pre_time = skynet.time()
+    local count = 10000
+    for i = 1, count do
+        orm_obj:create_one_entry({player_id = i, role_id = 1, sex = 1})
+    end
+    
+    local use_time = skynet.time() - pre_time
+    log.info("qps:", count / use_time)
+
+    delete_table()
+end
+
+local function test_get_entry_in()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_data_list = {
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 1, sex = 2},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 2},
+    }
+    orm_obj:create_entry(entry_data_list)
+
+    --查询 key1
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001, 10002})
+    assert(#entry_list == 8)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001, 10002})
+    assert(#entry_list == 8)
+    assert(is_cache)            --第二次中缓存
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10001})
+    assert(#entry_list == 4)
+    assert(is_cache)            --中缓存
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003, 10004})
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003, 10004})
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({10003})
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    skynet.sleep(600)
+
+    --查询key2
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001)
+    assert(#entry_list == 4)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001)
+    assert(#entry_list == 4)
+    assert(is_cache)
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({2}, 10001)
+    assert(#entry_list == 2)
+    assert(is_cache)
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001)
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001)
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    skynet.sleep(600)
+    --查询key3
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001, 1)
+    assert(#entry_list == 2)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1, 2}, 10001, 1)
+    assert(#entry_list == 2)
+    assert(is_cache)        --中缓存
+
+    
+    local entry_list, is_cache = orm_obj:get_entry_by_in({1}, 10001, 1)
+    assert(#entry_list == 1)
+    assert(is_cache)        --中缓存
+
+    --查询不存在
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001, 1)
+    assert(#entry_list == 0)
+    assert(not is_cache)        --第一次没有缓存
+
+    local entry_list, is_cache = orm_obj:get_entry_by_in({4, 3}, 10001, 1)
+    assert(#entry_list == 0)
+    assert(is_cache)            --中缓存
+
+    delete_table()
+end
+
+local function test_get_entry_limit()
+    delete_table()
+    --测试有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = 10001, role_id = 10000, sex = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+
+    delete_table()
+
+    --测试没有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = 10001, role_id = 10000, sex = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1, 10001, 10000)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('sex') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+    delete_table()
+end
+
+local function test_delete_by_range()
+    delete_table()
+
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry_data_list = {
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 1, sex = 2},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 2},
+        {player_id = 10001, role_id = 3, sex = 1},
+        {player_id = 10001, role_id = 3, sex = 2},
+        {player_id = 10001, role_id = 4, sex = 1},
+        {player_id = 10001, role_id = 4, sex = 2},
+
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10002, role_id = 4, sex = 1},
+        {player_id = 10002, role_id = 4, sex = 2},
+        
+        {player_id = 10003, role_id = 1, sex = 1},
+        {player_id = 10003, role_id = 1, sex = 2},
+        {player_id = 10003, role_id = 2, sex = 1},
+        {player_id = 10003, role_id = 2, sex = 2},
+        {player_id = 10003, role_id = 3, sex = 1},
+        {player_id = 10003, role_id = 3, sex = 2},
+        {player_id = 10003, role_id = 4, sex = 1},
+        {player_id = 10003, role_id = 4, sex = 2},
+        
+        {player_id = 10004, role_id = 1, sex = 1},
+        {player_id = 10004, role_id = 1, sex = 2},
+        {player_id = 10004, role_id = 2, sex = 1},
+        {player_id = 10004, role_id = 2, sex = 2},
+        {player_id = 10004, role_id = 3, sex = 1},
+        {player_id = 10004, role_id = 3, sex = 2},
+        {player_id = 10004, role_id = 4, sex = 1},
+        {player_id = 10004, role_id = 4, sex = 2},
+    }
+    orm_obj:create_entry(entry_data_list)
+
+    local ret = orm_obj:delete_entry_by_range(1, 2, 10001, 1)
+    assert(ret)
+
+    local entry_list = orm_obj:get_entry(10001, 1)
+    assert(#entry_list == 0)
+
+    local ret = orm_obj:delete_entry_by_range(3, nil, 10001)
+    assert(ret)
+    local entry_list = orm_obj:get_entry(10001)
+    assert(#entry_list == 2)
+
+    local ret = orm_obj:delete_entry_by_range(nil, 10003)
+    assert(ret)
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == 8)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
+        delete_table()
         log.info("test start >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         log.info("test_create_table>>>>>")
         test_create_table(true)
@@ -944,6 +1803,30 @@ function CMD.start()
         test_get_all()
         log.info("test_delete_all>>>>>")
         test_delete_all()
+        log.info("test_craete_one>>>>>")
+        test_craete_one()
+        log.info("test_select_one>>>>>")
+        test_select_one()
+        log.info("test_disconnect>>>>>")
+        test_disconnect()
+        log.info("test_tti>>>>>")
+        test_tti()
+        log.info("test_invaild_entry>>>>>")
+        test_invaild_entry()
+        log.info("test_every_cache>>>>>")
+        test_every_cache()
+        log.info("test_inval_save_del>>>>>")
+        test_inval_save_del()
+        log.info("stress_testing")
+        stress_testing()
+        log.info("test_get_entry_in")
+        test_get_entry_in()
+        log.info("test_get_entry_limit")
+        test_get_entry_limit()
+        log.info("test_delete_by_range")
+        test_delete_by_range()
+
+        delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
     return true

@@ -1,11 +1,12 @@
 local skynet = require "skynet"
-local socket = require "socket"
-local websocket = require "websocket"
+local socket = require "skynet.socket"
+local websocket = require "http.websocket"
 local socketdriver = require "skynet.socketdriver"
-local log = require "log"
-local skynet_util = require "skynet_util"
+local log = require "skynet-fly.log"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 local assert = assert
 local string = string
+local tinsert = table.insert
 
 local CLOSE_CODE = {
 	normal = 1000,
@@ -36,7 +37,6 @@ local CLOSE_REASON = {
 local g_nodelay = nil
 local g_protocol = nil
 local g_watchdog = nil
-local g_gate = nil
 local g_conn_map = {}
 
 local SELF_ADDRESS = nil
@@ -44,7 +44,6 @@ local SELF_ADDRESS = nil
 local function closed(fd)
 	if not g_conn_map[fd] then return end
 	g_conn_map[fd] = nil
-	skynet.send(g_gate,'lua','closed',fd)
 	skynet.send(g_watchdog,'lua','socket','close', fd)
 end
 
@@ -62,7 +61,7 @@ function HANDLER.connect(fd)
 		addr = addr,
 	}
 
-	skynet.send(g_watchdog,'lua','socket','open',fd,addr,SELF_ADDRESS)
+	skynet.send(g_watchdog,'lua', 'socket', 'open', fd, addr, SELF_ADDRESS, true)
 end
 
 function HANDLER.handshake(fd,header,url)
@@ -75,9 +74,16 @@ function HANDLER.message(fd, msg, msg_type)
 	local agent = c.agent
 
 	if agent then
-		skynet.redirect(agent, 0, 'client', fd, msg)
+		if c.is_pause then
+			if not c.msg_que then
+				c.msg_que = {}
+			end
+			tinsert(c.msg_que, msg)
+		else
+			skynet.redirect(agent, 0, 'client', fd, msg)
+		end
 	else
-		skynet.send(g_watchdog,'lua','socket','data', fd, msg, msg_type)
+		skynet.send(g_watchdog,'lua','socket','data', fd, msg)
 	end
 end
 
@@ -109,7 +115,6 @@ function CMD.open(source,conf)
 	g_protocol = conf.protocol
 	g_watchdog = conf.watchdog
 
-	g_gate = source
 	SELF_ADDRESS = skynet.self()
 end
 
@@ -121,8 +126,14 @@ function CMD.accept(source,fd,addr)
 end
 
 function CMD.forward(source, fd)
-	local c = assert(g_conn_map[fd])
+	if not g_conn_map[fd] then
+		log.warn("forward not exists fd = ", fd)
+		return false
+	end
+	local c = g_conn_map[fd]
 	c.agent = source
+
+	return true
 end
 
 function CMD.send_text(_, fd, msg)
@@ -141,8 +152,66 @@ function CMD.send_binary(_,fd, msg)
 	end
 end
 
+function CMD.broadcast_text(_, fd_list, msg)
+	local len = #fd_list
+	for i = 1, len do
+		local fd = fd_list[i]
+		if websocket.is_close(fd) then
+			log.warn("broadcast_text not exists fd ",fd)
+		else
+			websocket.write(fd, msg, "text")
+		end
+	end
+end
+
+function CMD.broadcast_binary(_, fd_list, msg)
+	local len = #fd_list
+	for i = 1, len do
+		local fd = fd_list[i]
+		if websocket.is_close(fd) then
+			log.warn("broadcast_binary not exists fd ",fd)
+		else
+			websocket.write(fd, msg, "binary")
+		end
+	end
+end
+
 function CMD.kick(_,fd)
 	websocket.close(fd,CLOSE_CODE.normal,CLOSE_REASON[CLOSE_CODE.normal])
+end
+
+function CMD.pause(source, fd)
+	if not g_conn_map[fd] then
+		return false
+	end
+	local c = g_conn_map[fd]
+	c.is_pause = true
+
+	return true
+end
+
+function CMD.play(source, fd)
+	if not g_conn_map[fd] then
+		return false
+	end
+	local c = g_conn_map[fd]
+	c.is_pause = nil
+
+	local msg_que = c.msg_que
+	if msg_que then
+		local agent = c.agent
+		for i = 1, #msg_que do
+			if agent then
+				skynet.redirect(agent, c.client, "client", fd, msg_que[i])
+			else
+				skynet.send(g_watchdog, "lua", "socket", "data", fd, msg_que[i])
+			end
+		end
+
+		c.msg_que = nil
+	end
+
+	return true
 end
 
 skynet.start(function()
@@ -151,5 +220,13 @@ skynet.start(function()
 		id = skynet.PTYPE_CLIENT,
 	}
 
-	skynet_util.lua_dispatch(CMD,{},true)
+	skynet_util.lua_src_dispatch(CMD)
+end)
+
+skynet_util.register_info_func("info", function()
+	local count = 0
+	for k,v in pairs(g_conn_map) do
+		count = count + 1
+	end
+	log.info("ws_slave info ", g_conn_map, count)
 end)

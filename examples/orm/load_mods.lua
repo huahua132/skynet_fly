@@ -23,7 +23,7 @@ return {
         mod_args = {
             {
                 instance_name = "player",
-                orm_plug = "entry_player",
+                orm_plug = "orm_plug.entry_player",
             },
         }
     },
