@@ -3,6 +3,8 @@ return {
         launch_seq = 1,
         launch_num = 1,
         default_arg = {
+            rename_format = "%Y%m%d-%H%M%S",
+            point_type = 1,
             file_path = './logs/',     --文件路径
             filename = 'server.log',   --文件名
             limit_size = 0,            --最小分割大小

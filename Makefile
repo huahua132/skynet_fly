@@ -86,13 +86,13 @@ $(SKYNET):
 	git submodule update --init
 	chmod -R 744 skynet
 
-$(SKYNET_BULDER):
+$(SKYNET_BULDER): $(SKYNET)
 	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
 
 upskynet: $(SKYNET)
 	git submodule update --remote
 
-linux macosx freebsd: $(SKYNET) $(SKYNET_BULDER) \
+linux macosx freebsd: $(SKYNET_BULDER) \
  	$(LUA_CLIB_PATH) \
 	$(foreach v,$(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so)
 	$(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
