@@ -25,6 +25,23 @@ local file_name = skynet.getenv('logfilename')
 local daemon = skynet.getenv('daemon')
 local hook_hander_list = {}
 
+local function rename_old_file()
+    if not daemon then
+        return
+    end
+
+    local file_p = file_util.path_join(file_path,file_name)
+    local oldfile = io.open(file_p, 'r')
+    if not oldfile then
+        return
+    end
+
+    oldfile:close()
+    local cur_time = time_util.time()
+    local fname = file_util.path_join(file_path, os.date("%Y%m%d-%H%M%S", cur_time) .. '_' .. file_name)
+    os.rename(file_p, fname)
+end
+
 local function open_file()
     if not daemon then
         return
@@ -95,6 +112,7 @@ function CMD.add_hook(file_name)
 end
 
 skynet.start(function()
+    rename_old_file()
     open_file()
     skynet_util.lua_dispatch(CMD)
 end)
