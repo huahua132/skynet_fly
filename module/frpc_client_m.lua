@@ -657,7 +657,7 @@ end
 function CMD.balance_send(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, _, secret = get_balance_channel(svr_name)
 	if not channel then
-		log.error("frpc balance_send get channel err ", svr_name, module_name, skynet.unpack(msg, sz))
+		log.error("frpc balance_send not connect ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -672,7 +672,7 @@ end
 function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_balance_channel(svr_name)
 	if not channel then
-		log.error("frpc balance_call get channel err ",svr_name, module_name, skynet.unpack(msg, sz))
+		log.error("frpc balance_call not connect ",svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -694,7 +694,7 @@ end
 function CMD.send_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, _, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc send_by_id  err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
+		log.error("frpc send_by_id not connect ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -709,7 +709,7 @@ end
 function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc call_by_id err ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
+		log.error("frpc call_by_id not connect ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -731,7 +731,7 @@ end
 function CMD.send_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
-		log.error("frpc send_all err ", svr_name, module_name, skynet.unpack(msg, sz))
+		log.error("frpc send_all not connect ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -765,7 +765,7 @@ end
 function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
-		log.error("frpc call_all err ", svr_name, module_name, skynet.unpack(msg, sz))
+		log.error("frpc call_all not connect ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -802,7 +802,7 @@ end
 function CMD.sub(svr_name, svr_id, source, channel_name, unique_name)
 	local channel, _, secret = get_watch_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc watch err ", svr_name, source, channel_name)
+		log.error("frpc watch not connect ", svr_name, source, channel_name)
 		return nil, "not watch channel"
 	end
 
@@ -823,7 +823,7 @@ end
 function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
 	local channel, _, secret = get_watch_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc watch err ", svr_name, source, channel_name)
+		log.error("frpc watch not connect ", svr_name, source, channel_name)
 		return nil, "not watch channel"
 	end
 	local msg_buff = skynet.packstring(channel_name, source, unique_name)
@@ -846,7 +846,7 @@ function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
 	end
 	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc watch err ", svr_name, source, channel_name)
+		log.error("frpc watch not connect ", svr_name, source, channel_name)
 		return nil, "not watch channel"
 	end
 
@@ -891,7 +891,7 @@ end
 function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 	local channel, _, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc watch err ", svr_name, source, channel_name)
+		log.error("frpc watch not connect ", svr_name, source, channel_name)
 		return nil, "not watch channel"
 	end
 	local channel_info = watch_syn_info[channel_name]
