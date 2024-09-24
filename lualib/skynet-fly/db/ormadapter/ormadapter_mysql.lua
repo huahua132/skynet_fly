@@ -313,6 +313,16 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return insert_list
     end
 
+    --防止sql注入
+    local function quete_key_values(key_values)
+        for i = 1, #key_values do
+            local v = key_values[i]
+            if type(v) == 'string' then
+                key_values[i] = string_util.quote_sql_str(v)
+            end
+        end
+    end
+
     local function handle_sql_ret(ret_list,s_start,s_end,sql_ret,sql_str)
         if not sql_ret or sql_ret.err then
             log.error("sql ret err ",sql_ret,sql_str)
@@ -391,6 +401,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
         if len == 0 then
             sql_str = select_format_head
         else
+            quete_key_values(key_values)
             sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
         end
         local sql_ret = self._db:query(sql_str)
@@ -404,6 +415,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
     --查询一条数据
     local keys_max_len = #key_list
     self._select_one = function(key_values)
+        quete_key_values(key_values)
         local sql_str = select_format_head .. select_format_center .. sformat(select_format_end_list[keys_max_len], tunpack(key_values))
         local sql_ret = self._db:query(sql_str)
         if not sql_ret or sql_ret.err then
@@ -423,7 +435,9 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
         local end_field_name = key_list[len + 1]
         local endstr = ""
+        quete_key_values(in_values)
         if len > 0 then
+            quete_key_values(key_values)
             endstr = sformat(select_format_end_list[len], tunpack(key_values))
             endstr = endstr .. sformat(" and `%s` in(%s)", end_field_name, tconcat(in_values, ','))
         else
@@ -440,6 +454,12 @@ function M:builder(tab_name, field_list, field_map, key_list)
 
     --分页 查询
     self._select_limit = function(cursor, limit, sort, key_values, is_only_key)
+        assert(type(limit) == 'number')
+        assert(type(sort) == 'number')
+        if type(cursor) == 'string' then
+            cursor = string_util.quote_sql_str(cursor)
+        end
+        quete_key_values(key_values)
         local len = #key_values
         local sql_str = ""
         local end_field_name = key_list[len + 1]
@@ -596,6 +616,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
         if len == 0 then
             sql_str = delete_format_head
         else
+            quete_key_values(key_values)
             sql_str = delete_format_head .. delete_format_center .. sformat(select_format_end_list[len], tunpack(key_values))
         end
         
@@ -613,7 +634,12 @@ function M:builder(tab_name, field_list, field_map, key_list)
         local sql_str = nil
         local end_str = nil
         local field_type = field_map[end_field_name]
-        
+        if type(left) == 'string' then
+            left = string_util.quote_sql_str(left)
+        end
+        if type(right) == 'string' then
+            right = string_util.quote_sql_str(right)
+        end
         if left and right then
             if IS_NUMBER_TYPE[field_type] then
                 end_str = sformat("`%s` >= %d and `%s` <= %d", end_field_name, left, end_field_name, right)
@@ -634,6 +660,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
             end
         end
         if len > 0 then
+            quete_key_values(key_values)
             sql_str = delete_format_head .. delete_format_center .. sformat(select_format_end_list[len], tunpack(key_values)) .. ' and ' .. end_str
         else
             sql_str = delete_format_head .. delete_format_center .. end_str

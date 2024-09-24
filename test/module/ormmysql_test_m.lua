@@ -1833,6 +1833,26 @@ local function test_delete_by_range()
     delete_table()
 end
 
+--测试防止sql注入
+local function test_quete_key_values()
+    mysqlf:instance("admin"):query("drop table if exists t_user")
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_user")
+    :string64("acoount")
+    :int64("role_id")
+    :int8("sex")
+    :set_keys("acoount", "role_id")
+    :builder(adapter)
+
+    local entry = orm_obj:create_one_entry({acoount = "test", role_id = 1, sex = 1})
+    assert(entry)
+
+    local entry = orm_obj:get_one_entry("test' or '1'='1", 1)
+    assert(not entry)
+
+    mysqlf:instance("admin"):query("drop table if exists t_user")
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1885,6 +1905,8 @@ function CMD.start()
         test_get_entry_limit()
         log.info("test_delete_by_range")
         test_delete_by_range()
+        log.info("test_quete_key_values")
+        test_quete_key_values()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
