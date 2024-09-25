@@ -1,0 +1,22 @@
+# Filename:	config.in
+#
+# This file is used to control which zlib/zlib-ng library will be used by
+# Compress::Raw::Zlib
+#
+# Refer to the section names listed below in the README file for details of how
+# to use this file.
+#
+#    Controlling the version of zlib/zlib-ng used by Compress::Raw::Zlib
+#
+#    Setting the Gzip OS Code
+#
+
+BUILD_ZLIB      = True
+ZLIB_INCLUDE    = ./zlib-src
+ZLIB_LIB        = ./zlib-src
+OLD_ZLIB        = False
+GZIP_OS_CODE    = AUTO_DETECT
+USE_ZLIB_NG     = False
+
+
+# end of file config.in
