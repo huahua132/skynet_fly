@@ -2,7 +2,6 @@
 
 # 安装编译skynet依赖的一些库
 install_dependencies() {
-	#yum install -y git gcc zlib-devel openssl openssl-devel autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc*
 	yum install -y git gcc autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc* perl* cpan
 	# centos8以上 dnf -y group install "Development Tools"
 }
