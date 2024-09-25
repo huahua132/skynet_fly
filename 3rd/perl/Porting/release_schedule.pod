@@ -1,0 +1,103 @@
+=encoding utf8
+
+=head1 NAME
+
+release_schedule - Perl 5 release schedule
+
+=head1 STABLE RELEASE SCHEDULE
+
+This schedule lists the projected or historical development and
+release schedules for the next, current and previous stable versions
+of Perl.  Dates with two or more question marks will only be releases if
+deemed necessary by the Steering Council.
+
+=head2 Perl 5.40
+
+  2024-05-20  5.40.0          ?
+  2024-??-??  5.40.1
+
+=head2 Perl 5.38
+
+  2023-07-01  5.38.0  ✓       Ricardo Signes
+  2023-11-29  5.38.2  ✓       Paul Evans
+  2024-??-??  5.38.3
+
+=head2 Perl 5.36
+
+  2022-05-27  5.36.0  ✓       Ricardo Signes
+  2023-04-23  5.36.1  ✓       Steve Hay
+  2023-11-29  5.36.3  ✓       Paul Evans
+  2024-??-??  5.36.4
+
+=head1 DEVELOPMENT RELEASE SCHEDULE
+
+This schedule lists the release engineers for at least the next
+four months of releases of bleadperl. If there are fewer than
+four months listed as you make a release, it's important
+that you extend the schedule AND B<identify the next release engineer>.
+
+Before adding a release engineer, you B<must> contact them and they
+B<must> consent to ship the release.
+
+When shipping a release, you should include the schedule for (at least)
+the next four releases. If a stable version of Perl is released,
+you should reset the version numbers to the next blead series.
+
+=head2 Perl 5.39
+
+  2023-07-02  5.39.0  ✓       Ricardo Signes
+                              (tag only)
+  2023-07-20  5.39.1  ✓       Steve Hay
+  2023-08-20  5.39.2  ✓       Paul Evans
+  2023-09-20  5.39.3  ✓       Matthew Horsfall
+  2023-10-25  5.39.4  ✓       Graham Knop
+  2023-11-20  5.39.5  ✓       Karen Etheridge
+  2023-12-20  5.39.6  ✓       Philippe Bruhat
+  2024-01-20  5.39.7  ✓       Max Maischein
+  2024-02-23  5.39.8  ✓       Renée Bäcker      Contentious changes freeze
+  2024-03-20  5.39.9  ✓       Paul Evans        User-visible changes to
+                                                correctly functioning
+                                                programs freeze
+  2024-04-20  5.39.10         ?                 Full program freeze
+  2024-05-20  5.40.0          ?                 New perl!
+
+=head1 VICTIMS
+
+The following porters have all consented to do at least
+one release of bleadperl.  If you can't do a release
+and can't find a substitute amongst this list, mail p5p.
+
+(Please do not add any names to this list without prior
+consent of the Steering Council.)
+
+  Abigail <abigail@abigail.be>
+  Aristotle Pagaltzis <pagaltzis@gmx.de>
+  Ask Bjørn Hansen <ask@perl.org>
+  Chris Williams <bingos@cpan.org>
+  Dave Cross <dave@perlhacks.com>
+  Dave Rolsky <autarch@urth.org>
+  David Golden <dagolden@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
+  Jesse Luehrs <doy@cpan.org>
+  Jesse Vincent <jesse@cpan.org>
+  Leon Brocard <acme@astray.com>
+  Matt Trout <mst@shadowcat.co.uk>
+  Matthew Horsfall <wolfsage@gmail.com>
+  Max Maischein <corion@cpan.org>
+  Paul Evans <leonerd@leonerd.org.uk>
+  Peter Martini <petercmartini@gmail.com>
+  Philippe Bruhat <book@cpan.org>
+  Ricardo Signes <rjbs@cpan.org>
+  Stevan Little <stevan@cpan.org>
+  Steve Hay <steve.m.hay@googlemail.com>
+  Tatsuhiko Miyagawa <miyagawa@bulknews.net>
+  Tony Cook <tony@develop-help.com>
+  Yves Orton <demerphq@gmail.com>
+  Zefram <zefram@fysh.org>
+  Ævar Arnfjörð Bjarmason <avar@cpan.org>
+
+=head1 AUTHOR
+
+Jesse Vincent <jesse@cpan.org>
+
+=cut
