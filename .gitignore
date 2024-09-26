@@ -11,4 +11,3 @@ examples/*/module_info*
 test/script
 test/*_config.lua*
 test/module_info*
-configure*
