@@ -23,13 +23,12 @@ SHARED := -fPIC --shared
 SKYNET := skynet/Makefile
 SKYNET_BULDER := skynet/skynet/skynet
 
-#TLS_LIB=/usr/bin/openssl
-#TLS_INC=/usr/include/openssl
+TLS_LIB := 3rd/openssl
+TLS_INC := 3rd/openssl/include
+SSL_STATICCLIB := $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
+SKYNET_SSL_STATICCLIB := ../$(TLS_LIB)/libssl.a
 
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-cur_makefile_path := $(dir $(mkfile_path))
-TLS_LIB := $(cur_makefile_path)3rd/openssl
-TLS_INC := $(cur_makefile_path)3rd/openssl/include
+ZLIB_STATICLIB := 3rd/zlib/libz.a
 
 macosx : SHARED := -fPIC -dynamiclib -Wl,-undefined,dynamic_lookup
 
@@ -59,7 +58,7 @@ $(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
 
 $(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib $^ -L./3rd/zlib -lz -o $@
+	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib $^ -o $@ $(ZLIB_STATICLIB)
 
 $(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
@@ -80,11 +79,8 @@ SSL_INCS := $(sort $(dir $(SSL_HDRS)))  # 获取所有子目录路径
 SSL_CFLAGS = $(CFLAGS)
 SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))  # 添加递归搜索路径
 
-$(info 11111111 SSL_CFLAGS = $(SSL_CFLAGS))
-
 $(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH)
-#	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -L$(TLS_LIB) -I$(TLS_INC) -lssl
-	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(LUA_INC) -L$(LUA_INC) -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
+	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(SSL_STATICCLIB)
 
 $(LUA_CLIB_PATH)/socket.so:
 	cd 3rd/luasocket && $(MAKE) PLAT=$(PLAT) LUAV=5.4 prefix=../../../$(LUA_CLIB_PATH) LUAINC_$(PLAT)=../../../$(LUA_INC) LUALIB_$(PLAT)=../../../$(LUA_INC)
@@ -95,8 +91,7 @@ $(SKYNET):
 	chmod -R 744 skynet
 
 $(SKYNET_BULDER): $(SKYNET)
-	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_LIB=$(cur_makefile_path)openssl.a TLS_INC=$(cur_makefile_path)openssl/include
-#	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_LIB=$(TLS_LIB) TLS_INC=$(TLS_INC)
+	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_INC=../$(TLS_INC) TLS_LIB=../$(TLS_LIB)
 
 upskynet: $(SKYNET)
 	git submodule update --remote

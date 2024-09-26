@@ -1,0 +1,15 @@
+/config.h
+/xconfig.h
+/config.w32
+/perl.base
+bin/*.bat
+html/
+mini/
+full/
+Extensions_static
+.coreheaders
+dlutils.c
+perllibst.h
+perlmain.c
+perlmainst.c
+!perlexe.ico

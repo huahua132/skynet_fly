@@ -46,8 +46,8 @@ function CMD.start()
 	log.error(key)
 
 
-	-- local code, body = httpc.get("https://www.baidu.com", '/')
-	-- log.error("https ",code, body)
+	local code, body = httpc.get("https://www.baidu.com", '/')
+	log.error("https ",code, body)
 	return true
 end
 
