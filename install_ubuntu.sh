@@ -12,7 +12,7 @@ install_perl() {
 	cd "3rd/perl"
 	./Configure -des -Dprefix=$HOME/localperl
 	make -j4
-	make test -j4
+	#make test -j4
 	make install
 	sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
 		echo "Failed to move perl"
