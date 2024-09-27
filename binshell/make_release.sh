@@ -10,6 +10,7 @@ mkdir -p ${targetpath}/skynet/3rd
 # 复制 skynet_fly 相关文件和目录
 
 # 复制 lua 相关的文件和目录
+[ -d "binshell" ] && cp -r binshell ${targetpath}/binshell
 [ -d "lualib" ] && cp -r lualib ${targetpath}/lualib
 [ -d "module" ] && cp -r module ${targetpath}/module
 [ -d "service" ] && cp -r service ${targetpath}/service
