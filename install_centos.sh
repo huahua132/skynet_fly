@@ -2,7 +2,7 @@
 
 # 安装编译skynet依赖的一些库
 install_dependencies() {
-	yum install -y git gcc autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc*
+	yum install -y git gcc autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc* perl* cpan
 	# centos8以上 dnf -y group install "Development Tools"
 }
 
@@ -18,10 +18,13 @@ install_perl() {
 		make install
 	)
 
-	sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
-		echo "Failed to move perl"
-		exit 1
-	}
+	if [ -f /usr/bin/perl ]; then
+    sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
+        echo "Failed to move perl"
+        exit 1
+    }
+	fi
+
 	sudo cp -f $HOME/localperl/bin/perl /usr/local/bin/perl && echo "Copied perl successfully" || {
 		echo "Failed to copy perl"
 		exit 1
