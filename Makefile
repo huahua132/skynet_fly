@@ -88,7 +88,7 @@ SSL_CFLAGS = $(CFLAGS)
 SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))
 
 $(LUA_CLIB_PATH)/openssl.so : $(SKYNET_BUILDER) $(SSL_SRCS) | $(LUA_CLIB_PATH)
-    $(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
+	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
 
 # LuaSocket 生成，依赖 Skynet
 $(LUA_CLIB_PATH)/socket.so : $(SKYNET_BUILDER)
