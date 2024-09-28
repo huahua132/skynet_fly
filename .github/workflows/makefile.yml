@@ -18,7 +18,7 @@ jobs:
       run: 
         sh install_ubuntu.sh
         sh binshell/make_release.sh
-        tar -czvf mymodule-v${{ github.ref_name }}.tar.gz skynet-fly-release
+        tar -czvf skynet_fly-master.tar.gz skynet-fly-release
         
   release:
     runs-on: ubuntu-latest
@@ -27,6 +27,6 @@ jobs:
        - name: Create GitHub Release
          uses: softprops/action-gh-release@master
          with:
-           files: mymodule-v${{ github.ref_name }}.tar.gz
+           files: skynet_fly-master.tar.gz
          env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
