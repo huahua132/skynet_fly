@@ -3,7 +3,7 @@
 # 安装编译skynet依赖的一些库
 install_dependencies() {
     apt-get update
-	apt-get install -y git gcc autoconf automake make libtool curl
+	apt-get install -y git gcc autoconf automake make libtool curl libgdbm-dev libdb-dev
 }
 
 # 安装Perl
@@ -13,10 +13,12 @@ install_perl() {
 	./Configure -des -Dprefix=$HOME/localperl
 	make -j4
 	make install
-	sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
-		echo "Failed to move perl"
-		exit 1
-	}
+	if [ -f /usr/bin/perl ]; then
+    sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
+        echo "Failed to move perl"
+        exit 1
+    }
+	fi
 	sudo cp -f $HOME/localperl/bin/perl /usr/local/bin/perl && echo "Copied perl successfully" || {
 		echo "Failed to copy perl"
 		exit 1
