@@ -91,7 +91,7 @@ $(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
 
 # LuaSocket 生成，依赖 Skynet
-$(LUA_CLIB_PATH)/socket.so | $(SKYNET_BUILDER)
+$(LUA_CLIB_PATH)/socket.so: | $(SKYNET_BUILDER)
 	cd 3rd/luasocket && $(MAKE) PLAT=$(PLAT) LUAV=5.4 prefix=../../../$(LUA_CLIB_PATH) LUAINC_$(PLAT)=../../../$(LUA_INC) LUALIB_$(PLAT)=../../../$(LUA_INC)
 	mv 3rd/luasocket/src/socket-3.1.0.so $(LUA_CLIB_PATH)/socket.so
 
