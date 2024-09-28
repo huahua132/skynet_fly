@@ -1,3 +1,0 @@
-*.inc
-!/Makefile.PL
-!/bsd_glob.c

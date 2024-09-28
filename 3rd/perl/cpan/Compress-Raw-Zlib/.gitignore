@@ -1,4 +1,0 @@
-!/zlib-src/*.c
-!/Makefile.PL
-/constants.h
-/constants.xs
