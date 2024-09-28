@@ -17,8 +17,17 @@ jobs:
     - name: install
       run: 
         sh install_ubuntu.sh
+    
+    - name: chmod
+      run:
         chmod -R 777 binshell
+
+    - name: make release
+      run:
         sh binshell/make_release.sh
+
+    - name: tar
+      run:
         tar -czvf skynet_fly-master.tar.gz skynet-fly-release
 
     - name: Debug List current working directory
