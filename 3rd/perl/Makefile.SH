@@ -1756,7 +1756,7 @@ ctags:
 !GROK!THIS!
 
 $eunicefix Makefile
-#$rm -f $firstmakefile
+$rm -f $firstmakefile
 
 # Now do any special processing required before building.
 
