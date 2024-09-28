@@ -55,28 +55,28 @@ $(SKYNET_BUILDER): $(SKYNET)
 	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_INC=../$(TLS_INC) TLS_LIB=../$(TLS_LIB)
 
 # 创建 Lua 模块并依赖 Skynet 完成编译
-$(LUA_CLIB_PATH)/lfs.so : $(SKYNET_BUILDER) 3rd/luafilesystem-1_8_0/src/lfs.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem-1_8_0/src/lfs.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/luafilesystem-1_8_0/src $^ -o $@
 
-$(LUA_CLIB_PATH)/cjson.so : $(SKYNET_BUILDER) 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-cjson $^ -o $@
 
-$(LUA_CLIB_PATH)/pb.so : $(SKYNET_BUILDER) 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
 
-$(LUA_CLIB_PATH)/zlib.so : $(SKYNET_BUILDER) 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib -I3rd/zlib $^ -o $@ 3rd/zlib/libz.a
 
-$(LUA_CLIB_PATH)/chat_filter.so : $(SKYNET_BUILDER) 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
 
-$(LUA_CLIB_PATH)/skiplist.so : $(SKYNET_BUILDER) 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-zset
 
-$(LUA_CLIB_PATH)/snapshot.so : $(SKYNET_BUILDER) 3rd/lua-snapshot/snapshot.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/snapshot.so : 3rd/lua-snapshot/snapshot.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@
 
-$(LUA_CLIB_PATH)/frpcpack.so : $(SKYNET_BUILDER) lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src
 
 # OpenSSL 动态库生成
@@ -87,11 +87,11 @@ SSL_INCS := $(sort $(dir $(SSL_HDRS)))
 SSL_CFLAGS = $(CFLAGS)
 SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))
 
-$(LUA_CLIB_PATH)/openssl.so : $(SKYNET_BUILDER) $(SSL_SRCS) | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
 
 # LuaSocket 生成，依赖 Skynet
-$(LUA_CLIB_PATH)/socket.so : $(SKYNET_BUILDER)
+$(LUA_CLIB_PATH)/socket.so | $(SKYNET_BUILDER)
 	cd 3rd/luasocket && $(MAKE) PLAT=$(PLAT) LUAV=5.4 prefix=../../../$(LUA_CLIB_PATH) LUAINC_$(PLAT)=../../../$(LUA_INC) LUALIB_$(PLAT)=../../../$(LUA_INC)
 	mv 3rd/luasocket/src/socket-3.1.0.so $(LUA_CLIB_PATH)/socket.so
 
