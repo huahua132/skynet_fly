@@ -40,32 +40,32 @@ CSERVICE =
 LUA_CLIB = lfs cjson pb zlib chat_filter openssl skiplist snapshot frpcpack socket
 
 define CSERVICE_TEMP
-  $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
+  $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c $(SKYNET_BULDER) | $$(CSERVICE_PATH)
 	$$(CC) $$(CFLAGS) $$(SHARED) $$< -o $$@ -Iskynet_fly-src
 endef
 
-$(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem-1_8_0/src/lfs.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem-1_8_0/src/lfs.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/luafilesystem-1_8_0/src $^ -o $@
 
-$(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-cjson $^ -o $@
 
-$(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
 
-$(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib -I3rd/zlib $^ -o $@ 3rd/zlib/libz.a
 
-$(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/chat_filter.so : 3rd/lua-chat_filter/lua-chat_filter.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-chat_filter
 
-$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/skiplist.so : 3rd/lua-zset/skiplist.c 3rd/lua-zset/lua-skiplist.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -I3rd/lua-zset
 
-$(LUA_CLIB_PATH)/snapshot.so : 3rd/lua-snapshot/snapshot.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/snapshot.so : 3rd/lua-snapshot/snapshot.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@
 
-$(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src
 
 # 递归查找 3rd/lua-openssl 目录及其子目录下的所有 .c 文件和 .h 文件
@@ -75,7 +75,7 @@ SSL_INCS := $(sort $(dir $(SSL_HDRS)))  # 获取所有子目录路径
 SSL_CFLAGS = $(CFLAGS)
 SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))  # 添加递归搜索路径
 
-$(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH)
+$(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
 	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a
 
 $(LUA_CLIB_PATH)/socket.so : $(SKYNET_BULDER) | $(LUA_CLIB_PATH)
