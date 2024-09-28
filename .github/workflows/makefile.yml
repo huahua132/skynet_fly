@@ -17,6 +17,7 @@ jobs:
     - name: install
       run: 
         sh install_ubuntu.sh
+        chmod -R 777 binshell
         sh binshell/make_release.sh
         tar -czvf skynet_fly-master.tar.gz skynet-fly-release
 
