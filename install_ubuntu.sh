@@ -3,7 +3,7 @@
 # 安装编译skynet依赖的一些库
 install_dependencies() {
     apt-get update
-	apt-get install -y git gcc autoconf automake make libtool curl libgdbm-dev libdb-dev
+	apt-get install -y git gcc autoconf automake make libtool curl libgdbm-dev libdb-dev libgdbm-compat-dev
 }
 
 # 安装Perl
