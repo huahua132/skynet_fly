@@ -75,9 +75,9 @@ install_zlib() {
 
 # 编译
 compile() {
+	chmod -R 744 skynet
 	(
 		make cleanall
-		chmod -R 744 skynet
 		make linux -j4
 	)
 }
