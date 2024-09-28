@@ -85,6 +85,7 @@ install_zlib() {
 
 # 编译
 compile() {
+	git submodule update --init
 	chmod -R 744 skynet
 	(
 		make cleanall
