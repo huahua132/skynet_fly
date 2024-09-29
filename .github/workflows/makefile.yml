@@ -34,7 +34,7 @@ jobs:
       run: ls -alh
 
     - name: Debug List the release directory
-      run: ls -alh skynet-fly-release
+      run: ls -alh skynet_fly-master.tar.gz
 
     - name: pwd
       run: pwd
@@ -48,6 +48,9 @@ jobs:
            ls -alh
        - name: pwd
          run: pwd
+        
+       - name: Debug List the release directory
+         run: ls -alh skynet_fly-master.tar.gz
         
        - name: Create GitHub Release
          uses: softprops/action-gh-release@master
