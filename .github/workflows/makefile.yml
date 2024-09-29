@@ -38,11 +38,22 @@ jobs:
 
     - name: pwd
       run: pwd
+
+    - name: Upload tar as artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: release-artifact
+        path: skynet_fly-master.tar.gz  # 上传压缩文件为artifact
         
   release:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
+       - name: Download artifact
+         uses: actions/download-artifact@master
+         with:
+          name: release-artifact  # 下载构建时上传的 artifact
+
        - name: Debug List files in directory after build
          run: ls -alh
            
