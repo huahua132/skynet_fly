@@ -48,7 +48,7 @@ QQ群号：102993581
 
 ### [API 文档](https://huahua132.github.io/2023/12/17/skynet_fly_api/module/)
 
-## 编译
+## 编译(请勿在共享的window文件夹下执行install，编译perl通常会失败)
 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
 	- `git clone https://github.com/huahua132/skynet_fly`
 	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
