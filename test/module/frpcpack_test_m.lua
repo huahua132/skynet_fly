@@ -90,7 +90,7 @@ end
 --测试打包解包 回应超过
 local function test4()
     local msg, sz = skynet.pack("hello", "frpc")
-    local session = 589897854329
+    local session = 589897897
     local msgbuff = frpcpack.packresponse(session, true, msg, sz)
     local _ = (msgbuff:byte(1) << 8) + msgbuff:byte(2)
     msgbuff = msgbuff:sub(3)
@@ -125,7 +125,7 @@ function CMD.start()
     --test1()
     --test2()
     --test3()
-    --test4()
+    test4()
     test5()
     return true
 end
