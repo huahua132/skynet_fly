@@ -35,6 +35,9 @@ jobs:
 
     - name: Debug List the release directory
       run: ls -alh skynet-fly-release
+
+    - name: pwd
+      run: pwd
         
   release:
     runs-on: ubuntu-latest
@@ -43,11 +46,13 @@ jobs:
        - name: Debug List files in directory after build
          run: |
            ls -alh
+       - name: pwd
+         run: pwd
         
        - name: Create GitHub Release
          uses: softprops/action-gh-release@master
          with:
-           files: skynet_fly-master.tar.gz
+           files: /home/runner/work/skynet_fly/skynet_fly/skynet_fly-master.tar.gz
            tag_name: master
          env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
