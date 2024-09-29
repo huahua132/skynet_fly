@@ -44,8 +44,8 @@ jobs:
     needs: [build]
     steps:
        - name: Debug List files in directory after build
-         run: |
-           ls -alh
+         run: ls -alh
+           
        - name: pwd
          run: pwd
         
