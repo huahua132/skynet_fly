@@ -162,7 +162,13 @@ lpackrequest(lua_State *L) {
 		}
 	}
 
-	uint32_t session_id = (uint32_t)luaL_checkinteger(L, 4);
+	int64_t session_id = (int64_t)luaL_checkinteger(L, 4);
+	if (session_id <= 0 || session_id > UINT32_MAX) {
+		if (need_free == 1) {
+			skynet_free(msg);
+		}
+		return luaL_error(L, "Invalid request session %lld", session_id);
+	}
 
 	int64_t mod_num = (int64_t)luaL_checkinteger(L, 5);
 	if (mod_num < 0) {
@@ -461,7 +467,10 @@ lpackpubmessage(lua_State *L) {
 	}
 
 	uint8_t pack_id = (uint8_t)luaL_checkinteger(L, 4);
-	uint32_t session = (uint32_t)luaL_checkinteger(L, 5);
+	int64_t session = (int64_t)luaL_checkinteger(L, 5);
+	if (session <= 0 || session > UINT32_MAX) {
+		return luaL_error(L, "Invalid request session %lld", session);
+	}
 
 	if (sz > FRPCPACK_MULTI_PART) {
 		int part = (sz - 1) / FRPCPACK_MULTI_PART + 1;
