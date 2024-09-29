@@ -55,7 +55,10 @@ jobs:
        - name: Create GitHub Release
          uses: softprops/action-gh-release@master
          with:
-           files: /home/runner/work/skynet_fly/skynet_fly/skynet_fly-master.tar.gz
+           files: skynet_fly-master.tar.gz
            tag_name: master
          env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write  # 保证GITHUB_TOKEN有足够的权限
