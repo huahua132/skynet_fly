@@ -449,6 +449,16 @@ function interface:get_table_id(player_id)
 
 	return agent.table_id or "0:0"
 end
+
+--执行队列
+function interface:queue(player_id, func, ...)
+	local agent = g_player_map[player_id]
+	if not agent then
+		log.warn("queue agent not exists ", player_id)
+		return nil
+	end
+	return agent.queue(func, ...)
+end
 ----------------------------------------------------------------------------------
 --CMD
 ----------------------------------------------------------------------------------
