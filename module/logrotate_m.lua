@@ -51,7 +51,7 @@ local function create_rotate(cfg)
     log.info("log name :",os.date(m_rename_format,time_util.time()))
     --切割
     local function rotate()
-        local file_url = m_file_path .. m_filename
+        local file_url = file_util.path_join(m_file_path, m_filename)
         local file_info, errinfo, errno = lfs.attributes(file_url)
         if not file_info then
             log.error("rotate file is not exists ",file_url, errinfo, errno)
@@ -69,9 +69,11 @@ local function create_rotate(cfg)
         end
 
         --重命名文件
-        local target_file_url = string.format("%s%s",m_file_path,os.date(m_rename_format,time_util.time()))
-        local rename_cmd = string.format("mv %s %s",file_url,target_file_url)
-        os_execute(rename_cmd)
+        local target_file_url = file_util.path_join(m_file_path, os.date(m_rename_format,time_util.time()))
+        local isok, errmsg, errcode = os.rename(file_url, target_file_url)
+        if not isok then
+            log.error("rename err ", file_url, target_file_url, errmsg, errcode)
+        end
 
         --执行命令
         if m_sys_cmd then
