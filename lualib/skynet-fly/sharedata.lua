@@ -14,6 +14,7 @@ local setmetatable = setmetatable
 local pairs = pairs
 local table = table
 local ipairs = ipairs
+local type = type
 
 local g_mode_map = {}
 local g_data_map = {}
@@ -197,58 +198,69 @@ function M:builder()
     local data_table = self.data_table
 
     for index, oneCfg in pairs(data_table) do
-        for k,v in pairs(oneCfg) do
-            local kfunc = check_func_map[k]
-            if kfunc then
-                local isok,err = kfunc(v)
+        if type(oneCfg) == 'table' then
+            for k,v in pairs(oneCfg) do
+                local kfunc = check_func_map[k]
+                if kfunc then
+                    local isok,err = kfunc(v)
+                    if not isok then
+                        log.warn_fmt("check field err filepath[%s] idx[%s] fieldname[%s] errinfo[%s]", file_path, index, k, err)
+                    end
+                end
+            end
+            if check_line_func then
+                local isok,err = check_line_func(oneCfg)
                 if not isok then
-                    log.warn_fmt("check field err filepath[%s] idx[%s] fieldname[%s] errinfo[%s]", file_path, index, k, err)
+                    log.warn_fmt("check line err filepath[%s] idx[%s] errinfo[%s]", file_path, index, err)
                 end
             end
-        end
-        if check_line_func then
-            local isok,err = check_line_func(oneCfg)
-            if not isok then
-                log.warn_fmt("check line err filepath[%s] idx[%s] errinfo[%s]", file_path, index, err)
-            end
-        end
 
-        for name,field_list in pairs(map_list_map_fields) do
-            local map = map_list_map[name]
-            for _,fieldname in ipairs(field_list) do
-                local v = oneCfg[fieldname]
-                if not v then
-                    log.warn_fmt("set maplist err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
-                    break
-                end
-                if not map[v] then
-                    map[v] = {}
-                end
-                map = map[v]
-            end
-            table.insert(map, oneCfg)
-        end
-
-        for name,field_list in pairs(map_map_fields) do
-            local map = map_map[name]
-            local len = #field_list
-            for i = 1, len do
-                local fieldname = field_list[i]
-                local v = oneCfg[fieldname]
-                if not v then
-                    log.warn_fmt("set map err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
-                    break
-                end
-                if i < len then
+            for name,field_list in pairs(map_list_map_fields) do
+                local map = map_list_map[name]
+                for _,fieldname in ipairs(field_list) do
+                    local v = oneCfg[fieldname]
+                    if not v then
+                        log.warn_fmt("set maplist err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
+                        break
+                    end
                     if not map[v] then
                         map[v] = {}
                     end
                     map = map[v]
-                else
-                    if map[v] then
-                        log.warn_fmt("set map repeat err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
+                end
+                table.insert(map, oneCfg)
+            end
+
+            for name,field_list in pairs(map_map_fields) do
+                local map = map_map[name]
+                local len = #field_list
+                for i = 1, len do
+                    local fieldname = field_list[i]
+                    local v = oneCfg[fieldname]
+                    if not v then
+                        log.warn_fmt("set map err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
+                        break
                     end
-                    map[v] = oneCfg
+                    if i < len then
+                        if not map[v] then
+                            map[v] = {}
+                        end
+                        map = map[v]
+                    else
+                        if map[v] then
+                            log.warn_fmt("set map repeat err field not exists name[%s] filepath[%s] idx[%s] fieldname[%s]", name, file_path, index, fieldname)
+                        end
+                        map[v] = oneCfg
+                    end
+                end
+            end
+        else
+            --one 参数表
+            local kfunc = check_func_map[index]
+            if kfunc then
+                local isok,err = kfunc(oneCfg)
+                if not isok then
+                    log.warn_fmt("check field err filepath[%s] idx[%s] fieldname[%s] errinfo[%s]", file_path, index, oneCfg, err)
                 end
             end
         end
