@@ -1,0 +1,103 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на совместимость smime и cms -encrypt" 
+proc make_fn {alg} {
+	return [string map {":" "_"} $alg]
+}
+
+proc map {str list} {
+	set result {}
+	foreach a $list {
+		lappend result [subst $str]
+	}
+	return $result
+}	
+
+if {![info exist env(NO_RSA)]} {
+
+test -createsfiles io_decrypt.rsa "RSA User 2 (with cert) can decrypt message for RSA user 2" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -in enc_rsa.msg -recip U_enc_rsa_2/cert.pem -inkey U_enc_rsa_2/seckey.pem -out io_decrypt.rsa"
+	set result [getFile io_decrypt.rsa]
+	string eq $expected $result
+} 0 1
+
+test -createsfiles io_decrypt_nocert.rsa "RSA User 2 (without cert) can decrypt message for RSA user 2" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -in enc_rsa.msg -inkey U_enc_rsa_2/seckey.pem -out io_decrypt_nocert.rsa"
+	set result [getFile io_decrypt_nocert.rsa]
+	string eq $expected $result
+} 0 1
+}
+
+if {[info exist env(ENC_LIST)]} {
+	set enc_list $env(ENC_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 gost2001:XA: gost2012_256:XA:1.2.643.2.2.31.1 gost2012_256:XB:1.2.643.7.1.2.5.1.1 gost2012_256:XA: gost2012_512:A:1.2.643.2.2.31.3 gost2012_512:B:1.2.643.7.1.2.5.1.1 gost2012_512:A:}}
+		"open" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 gost2012_256:XA:1.2.643.2.2.31.1 gost2012_256:XB:1.2.643.7.1.2.5.1.1 gost2012_512:A:1.2.643.2.2.31.3 gost2012_512:B:1.2.643.7.1.2.5.1.1}}
+	}
+}
+
+foreach enc_tuple $enc_list {
+	if {![regexp {^([^:]*:[^:]*):(.*)$} $enc_tuple -> alg crypt_param]} {
+		set alg $enc_tuple
+		set crypt_param {}
+	}
+	set alg_fn [make_fn $enc_tuple]
+	set username U_enc_$alg_fn
+	switch -glob $alg {
+		gost2012* {set ::test::ca ${testname}CA-2012}
+		* {set ::test::ca ${testname}CA}
+	}
+
+test -createsfiles io_decrypt.$alg_fn "Decrypting file encrypted for $username" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -in enc_$alg_fn.msg -recip U_enc_$alg_fn/cert.pem -inkey U_enc_$alg_fn/seckey.pem -out io_decrypt.$alg_fn"
+	set result [getFile io_decrypt.$alg_fn]
+	string eq $expected $result
+} 0 1
+
+test -createsfiles io_decrypt_t.$alg_fn "Decrypting file text-encrypted for $username" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -text -in enc_t_$alg_fn.msg -recip U_enc_$alg_fn/cert.pem -inkey U_enc_$alg_fn/seckey.pem -out io_decrypt_t.$alg_fn"
+	set result [getFile io_decrypt_t.$alg_fn]
+	string eq $expected $result
+} 0 1
+
+test -createsfiles io_decrypt_t_nocert.$alg_fn "Decrypting file text-encrypted for $username without cert" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -text -in enc_t_$alg_fn.msg -inkey U_enc_$alg_fn/seckey.pem -out io_decrypt_t_nocert.$alg_fn"
+	set result [getFile io_decrypt_t_nocert.$alg_fn]
+	string eq $expected $result
+} 0 1
+}
+
+foreach enc_tuple $enc_list {
+	if {![regexp {^([^:]*:[^:]*):(.*)$} $enc_tuple -> alg crypt_param]} {
+		set alg $enc_tuple
+		set crypt_param {}
+	}
+	set alg_fn [make_fn $enc_tuple]
+	set username U_enc_$alg_fn
+	
+test -skip {![file exists enc_4all.msg]} -createsfiles io_decrypt_4all.$alg_fn "Decrypting gost-encrypted file, recipient $alg_fn" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -in enc_4all.msg -recip $username/cert.pem -inkey $username/seckey.pem -out io_decrypt_4all.$alg_fn"
+	set result [getFile io_decrypt_4all.$alg_fn]
+	string eq $expected $result
+} 0 1
+
+test -skip {![file exists enc_4all.msg]} -createsfiles io_decrypt_4all_nocert.$alg_fn "Decrypting gost-encrypted file without cert, recipient $alg_fn" {
+	set expected [getFile encrypt.dat]
+	openssl "cms -decrypt -in enc_4all.msg -inkey $username/seckey.pem -out io_decrypt_4all_nocert.$alg_fn"
+	set result [getFile io_decrypt_4all_nocert.$alg_fn]
+	string eq $expected $result
+} 0 1
+}
+
+end_tests

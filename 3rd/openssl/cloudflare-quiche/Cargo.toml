@@ -1,0 +1,9 @@
+[workspace]
+members = [ "apps", "octets", "qlog", "quiche" ]
+exclude = [ "fuzz", "tools/http3_test" ]
+
+[profile.bench]
+debug = true
+
+[profile.release]
+debug = true

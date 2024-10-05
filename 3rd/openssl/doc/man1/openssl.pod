@@ -700,7 +700,7 @@ For information about the use of environment variables in configuration,
 see L<config(5)/ENVIRONMENT>.
 
 For information about querying or specifying CPU architecture flags, see
-L<OPENSSL_ia32cap(3)>, and L<OPENSSL_s390xcap(3)>.
+L<OPENSSL_ia32cap(3)>, L<OPENSSL_s390xcap(3)> and L<OPENSSL_riscvcap(3)>.
 
 For information about all environment variables used by the OpenSSL libraries,
 see L<openssl-env(7)>.
@@ -875,7 +875,7 @@ that program with no arguments is now equivalent to C<openssl help>.
 
 =head1 COPYRIGHT
 
-Copyright 2000-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2000-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

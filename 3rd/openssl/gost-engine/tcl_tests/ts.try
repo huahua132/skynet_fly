@@ -1,0 +1,304 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set env(LC_TIME) C
+if [file exists tsa.serial] {
+	file delete tsa.serial
+}
+set testname [file rootname [file tail $::argv0]]
+
+#
+# Formats 64 hex digits into format 
+#
+proc format_hash {hash} {
+	# Split hash into list of two-digit hexadecimal numbers
+	set list [regexp -all -inline {[[:xdigit:]]{2}} $hash]
+	for {set i 0} {$i<[llength $list]} {incr i 16} {
+		append out [format "    %04x - " $i] 
+		set hex [join [lrange $list $i [expr $i+15]] " "]
+		if {[string length $hex]>24} {
+			set hex [string replace  $hex 23 23 "-"] 
+		}	
+		append out $hex [string repeat " " [expr 50-[string length $hex]]]
+		foreach char [lrange $list $i [expr $i+15]] {
+		    set n [scan $char "%x"]
+			if {$n>=32 && $n <=126 } {
+				append out [format %c $n]
+			} else {
+				append out "."
+			}
+		}	
+		append out "\n"
+	}	
+	# Chop newline from last line
+	return [string trim $out "\n"]
+}
+#
+# Replace Nonce with equvalent number of X-es because we cannot 
+# predict nonce for comparing output, and chop out STDERR
+# If output contains timestamp, extract it, replace with word
+# "extracted" and return two-element list where element 0 is modified
+# output and element 1 is timestamp in unix time
+#
+proc cleanup_print {output} {
+	set data  [regsub {STDERR CONTENTS:.*$} [regsub {Nonce: 0x[[:xdigit:]]+} $output  {Nonce: 0xXXXXXXXXXXXXXXXX}] {}]
+	if {[regexp "\nTime stamp: (\[^\n\]+)\n" $data -> time]} {
+		return [list [regsub "\nTime stamp: (\[^\n\]+)\n" $data "\nTime stamp: extracted\n"] [clock scan $time]]
+	} else {
+		return $data
+	}	
+}
+
+start_tests "Тесты на timestamping protocol" 
+
+test "Creating CA 2001" {
+	makeCA ${testname}CA gost2001:A
+} 0 1
+
+test "Creating CA 2012" {
+	makeCA
+} 0 1
+
+set serial_num 0
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2012_256:A gost2012_512:A}}
+		"open" {set alg_list {gost2001:A gost2012_256:A gost2012_512:A}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_tsa_$alg_fn
+	set hash_alg [alg_hash $alg]
+	switch -glob $alg {
+		gost2012* {set ::test::ca ${testname}CA-2012}
+		* {set ::test::ca ${testname}CA}
+	}
+
+test "Creating Timestamping authority certificate" {
+	makeRegisteredUser $username $alg CN "Timestamping authority $alg" \
+	extensions "keyUsage=digitalSignature,nonRepudiation\nextendedKeyUsage=critical,timeStamping"
+	openssl "verify -CAfile $::test::ca/cacert.pem -purpose timestampsign $username/cert.pem"
+} 0 "$username/cert.pem: OK\n"
+
+test "creating TSA configuration file" {
+	makeFile tsa.cnf "\[ tsa \]
+default_tsa = tsa_section
+\[ tsa_section \]
+serial = [pwd]/tsa.serial
+digests=[hash_short_name $hash_alg]
+default_policy = 1.2.3.4
+other_policies = 1.2.3.4.5,1.2.3.4.6
+signer_digest = md_gost94
+"
+} 0 ""
+test "Creating request with [hash_short_name $hash_alg], no cert request, no policy" {
+	makeFile testdata [string repeat "Test data for timestamp\n" 100]
+	set hash1 [regsub {^[^=]+= } [openssl "dgst -[hash_short_name $hash_alg] testdata"] {}]
+	set sha1hash1 [regsub {^[^=]+= } [openssl "dgst -sha1 testdata"] {}]
+	openssl "ts -query -[hash_short_name $hash_alg] -data testdata -out req1.tsq"
+	file exists req1.tsq
+} 0 1
+test "Printing request 1" {
+	cleanup_print [openssl "ts -query  -text -in req1.tsq"]
+} 0 "Version: 1
+Hash Algorithm: [hash_long_name $hash_alg]
+Message data:
+[format_hash $hash1]
+Policy OID: unspecified
+Nonce: 0xXXXXXXXXXXXXXXXX
+Certificate required: no
+Extensions:
+"
+
+test "Creating reply for request1" {
+	incr serial_num
+	openssl "ts -reply -config tsa.cnf -queryfile req1.tsq -signer $username/cert.pem -inkey $username/seckey.pem -out resp1.tsr -[hash_short_name $hash_alg]"
+	file exists resp1.tsr
+} 0 1
+	set creation_time1 $::test::timestamp 
+test -time 1  "printing reply 1" {
+	cleanup_print [openssl "ts -reply -text -in resp1.tsr"]
+} 0 [list  "Status info:
+Status: Granted.
+Status description: unspecified
+Failure info: unspecified
+
+TST info:
+Version: 1
+Policy OID: 1.2.3.4
+Hash Algorithm: [hash_long_name $hash_alg]
+Message data:
+[format_hash $hash1]
+Serial number: 0x[format "%02X" $serial_num]
+Time stamp: extracted
+Accuracy: unspecified
+Ordering: no
+Nonce: 0xXXXXXXXXXXXXXXXX
+TSA: unspecified
+Extensions:
+" $creation_time1]
+
+test "Verifying reply against query file" {
+	grep "Verification" [openssl "ts -verify -in resp1.tsr -queryfile req1.tsq -untrusted $username/cert.pem -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+test "Verifying reply against data file" {
+	grep "Verification" [openssl "ts -verify -in resp1.tsr -data testdata -untrusted $username/cert.pem -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+
+test "Verifying reply against other data file" {
+	makeFile testdata2 [string repeat "Test data for timestamp 2\n" 100]
+	set hash2 [regsub {^[^=]+= } [openssl "dgst -[hash_short_name $hash_alg] testdata2"] {}]
+	openssl "ts -verify -in resp1.tsr -data testdata2 -untrusted $username/cert.pem -CAfile $::test::ca/cacert.pem"
+} 1 "message imprint mismatch"
+
+test "Verifying reply against explicit hash value" {
+	grep "Verification" [openssl "ts -verify -in resp1.tsr -digest $hash1 -untrusted $username/cert.pem -CAfile $::test::ca/cacert.pem"]
+
+} 0 "Verification: OK\n"
+
+test "Creating request 2 with [hash_short_name $hash_alg], cert requested, no policy" {
+	openssl "ts -query -[hash_short_name $hash_alg] -data testdata -cert -out req2.tsq"
+	file exists req2.tsq
+} 0 1
+
+test "Printing request 2" {
+	cleanup_print [openssl "ts -query  -text -in req2.tsq"]
+} 0 "Version: 1
+Hash Algorithm: [hash_long_name $hash_alg]
+Message data:
+[format_hash $hash1]
+Policy OID: unspecified
+Nonce: 0xXXXXXXXXXXXXXXXX
+Certificate required: yes
+Extensions:
+"
+
+test "Replying to request 2" {
+	incr serial_num
+	openssl "ts -reply -config tsa.cnf -queryfile req2.tsq -signer $username/cert.pem -inkey $username/seckey.pem -out resp2.tsr -[hash_short_name $hash_alg]"
+	file exists resp2.tsr
+} 0 1
+set creation_time2 $::test::timestamp
+
+test -time 1 "Printing reply 2" {
+	cleanup_print [openssl "ts -reply -text -in resp2.tsr"]
+} 0 [list "Status info:
+Status: Granted.
+Status description: unspecified
+Failure info: unspecified
+
+TST info:
+Version: 1
+Policy OID: 1.2.3.4
+Hash Algorithm: [hash_long_name $hash_alg]
+Message data:
+[format_hash $hash1]
+Serial number: 0x[format "%02X" $serial_num]
+Time stamp: extracted
+Accuracy: unspecified
+Ordering: no
+Nonce: 0xXXXXXXXXXXXXXXXX
+TSA: unspecified
+Extensions:
+" $creation_time2]
+
+test "Verifying reply2 against request file" {
+	grep "Verification" [openssl "ts -verify -in resp2.tsr -queryfile req2.tsq -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+test "Verifying reply2 against data file" {
+	grep "Verification" [openssl "ts -verify -in resp2.tsr -data testdata -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+test "Verifying reply2 against explicit digest" {
+	grep "Verification" [openssl "ts -verify -in resp2.tsr -digest $hash1 -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+test "Verifying reply2 against request 1" {
+	grep "Verification" [openssl "ts -verify -in resp2.tsr -queryfile req1.tsq -CAfile $::test::ca/cacert.pem"]
+} 1 "nonce mismatch"
+
+test "Creating request 3 with sha1 digest" {
+	openssl "ts -query -sha1 -data testdata -cert -out req3.tsq"
+	file exists req3.tsq
+} 0 1
+
+
+test "Printing request 3" {
+	cleanup_print [openssl "ts -query  -text -in req3.tsq"]
+} 0 "Version: 1
+Hash Algorithm: sha1
+Message data:
+[format_hash $sha1hash1]
+Policy OID: unspecified
+Nonce: 0xXXXXXXXXXXXXXXXX
+Certificate required: yes
+Extensions:
+"
+
+test "Replying to request 3 (with badAlg status)" {
+	set creation_time3 [clock format [clock seconds] -gmt y -format "%B %d %H:%M:%S %Y GMT"]
+	openssl "ts -reply -config tsa.cnf -queryfile req3.tsq -signer $username/cert.pem -inkey $username/seckey.pem -out resp3.tsr -[hash_short_name $hash_alg]"
+	file exists resp3.tsr
+} 0 1
+
+test  "Printing reply 3" {
+	cleanup_print [openssl "ts -reply -text -in resp3.tsr"]
+} 0 "Status info:
+Status: Rejected.
+Status description: Message digest algorithm is not supported.
+Failure info: unrecognized or unsupported algorithm identifier
+
+TST info:
+Not included.
+"
+
+test "Verifying response 3 against request file" {
+	openssl "ts -verify -in resp3.tsr -queryfile req3.tsq -CAfile $::test::ca/cacert.pem"
+} 1 "status code: rejection, status text: Message digest algorithm is not supported., failure codes: badAlg"
+
+
+
+test "Creating request 4 with specific (valid) policy" {
+	openssl "ts -query -[hash_short_name $hash_alg] -data testdata -tspolicy 1.2.3.4.5 -cert -out req4.tsq"
+	file exists req4.tsq
+} 0 1
+
+test "Replying to request 4" {
+	incr serial_num
+	openssl "ts -reply -config tsa.cnf -queryfile req4.tsq -signer $username/cert.pem -inkey $username/seckey.pem -out resp4.tsr -[hash_short_name $hash_alg]"
+	file exists resp4.tsr
+} 0 1
+
+test "Verifying reply 4 against request file" {
+	grep "Verification" [openssl "ts -verify -in resp4.tsr -queryfile req4.tsq -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification: OK\n"
+
+
+test "Creating request 5 with specific (invalid) policy" {
+	openssl "ts -query -[hash_short_name $hash_alg] -data testdata -tspolicy 1.2.3.4.9 -cert -out req5.tsq"
+	file exists req5.tsq
+} 0 1
+
+test "Replying to request 5" {
+	openssl "ts -reply -config tsa.cnf -queryfile req5.tsq -signer $username/cert.pem -inkey $username/seckey.pem -out resp5.tsr -[hash_short_name $hash_alg]"
+	file exists resp5.tsr
+} 0 1
+
+
+test "Verifying reply 5" {
+	openssl "ts -verify -in resp5.tsr -queryfile req5.tsq -CAfile $::test::ca/cacert.pem"
+} 1 "status code: rejection, status text: Requested policy is not supported., failure codes: unacceptedPolicy"
+
+
+}
+
+end_tests

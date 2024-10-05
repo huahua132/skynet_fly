@@ -1,0 +1,3 @@
+[submodule "libprov"]
+	path = libprov
+	url = https://github.com/provider-corner/libprov.git

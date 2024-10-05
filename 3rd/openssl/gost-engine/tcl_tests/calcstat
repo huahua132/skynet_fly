@@ -1,0 +1,60 @@
+#!/usr/bin/tclsh
+if {$tcl_platform(platform) == "unix"} {
+	fconfigure stdout -translation lf
+}
+lappend auto_path [file dirname [info script]] 
+proc rus {string} {
+	return $string
+}
+proc compare_order {el1 el2} {
+	global order
+	return [expr {$order($el1)-$order($el2)}]
+}
+set statsfile stats
+if {$argc} {set statsfile [lindex $argv 0]}
+set f [open $statsfile]
+fconfigure $f -encoding utf-8
+set ordno 0
+while {[gets $f line] >=0} {
+	set script [lindex $line 0]
+	set a($script) [lrange $line 1 end]
+	if {![info exists order($script)]} {
+		set order($script) [incr ordno]
+	}	
+}
+close $f
+
+proc output {line} {
+	global out
+	puts $line
+	if {[info exists out]} {
+		puts $out $line
+	}
+}	
+
+if {$argc > 1} {
+	set out [open [lindex $argv 1] w]
+	fconfigure $out -encoding utf-8
+}	
+
+output [format "%-12s %-41s%5s %4s %4s %4s %4s"  File "Test name" Total ok fail skip ign]  
+output [string repeat "-" 79]
+array set gross {total 0 ok 0 fail 0 p_skip 0 c_skip 0}
+
+
+foreach script [lsort -command compare_order [array names a] ] {
+	foreach {name total ok fail p_skip c_skip} $a($script) break
+	output [format "%-12s %-41s%5d %4d %4d %4d %4d" [string range [file tail [file rootname $script]] 0 11] [string range $name 0 40] $total $ok $fail $p_skip $c_skip]
+	incr gross(total) $total
+	incr gross(ok) $ok
+	incr gross(fail) $fail
+	incr gross(p_skip) $p_skip
+	incr gross(c_skip) $c_skip
+}
+
+output [string repeat "-" 79]
+output [format "%-54s%5d %4d %4d %4d %4d" Total $gross(total) $gross(ok) $gross(fail) $gross(p_skip) $gross(c_skip)]
+
+if {$gross(fail)} {
+	exit 1
+}	

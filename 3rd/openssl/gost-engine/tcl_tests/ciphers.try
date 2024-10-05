@@ -1,0 +1,38 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir 
+start_tests "Тесты на команду ciphers"
+
+proc find_ciphers {openssl_args globpattern} {
+	set found [lsort [lsearch -all -inline [split [string trim [grep $globpattern [openssl $openssl_args] ] "\n" ] : ] "$globpattern*"] ]
+	return $found
+}
+
+test "Проверяем поддержку российских алгоритмов в tls" {
+	find_ciphers "ciphers" "GOST"
+} 0 {GOST2001-GOST89-GOST89 GOST2012-GOST8912-GOST8912}
+
+test "Проверяем поддержку российских алгоритмов без шифрования в tls" {
+	find_ciphers "ciphers NULL" "GOST"
+} 0 {GOST2001-NULL-GOST94 GOST2012-NULL-GOST12}
+
+#test "Проверяем отсутствие российских алгоритмов в ssl2" {
+#	find_ciphers "ciphers -ssl2" "GOST"
+#} 0 ""
+
+#test "Проверяем работоспособность команды ciphers" {
+#	find_ciphers "ciphers AES" "AES"
+#} 0 {"ADH-AES256-SHA"
+#"DHE-RSA-AES256-SHA"
+#"DHE-DSS-AES256-SHA"
+#"AES256-SHA"
+#"ADH-AES128-SHA"
+#"DHE-RSA-AES128-SHA"
+#"DHE-DSS-AES128-SHA"
+#"AES128-SHA"
+#}
+
+
+end_tests
+

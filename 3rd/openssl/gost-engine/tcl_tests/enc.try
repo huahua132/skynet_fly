@@ -1,0 +1,227 @@
+#!/usr/bin/tclsh/
+lappend auto_path [file dirname [info script]] 
+package require ossltest
+set plain0 [getFile plain.enc]
+file copy -force $::test::src/cfb0.enc $::test::dir
+file copy -force $::test::src/cnt0.enc $::test::dir
+file copy -force $::test::src/cbc0.enc $::test::dir
+file copy -force $::test::src/aes0.enc $::test::dir
+file copy -force $::test::src/plain.enc $::test::dir
+file copy -force $::test::src/magma_plain.enc $::test::dir
+file copy -force $::test::src/magma_acpkm_plain.enc $::test::dir
+set cfb1 [getFile cfb1.enc]
+set cbc1 [getFile cbc1.enc]
+set cnt1 [getFile cnt1.enc]
+set aes1 [getFile aes1.enc]
+set magma1 [getFile magma1.enc]
+set macpkm1 [getFile macpkm1.enc]
+cd $::test::dir 
+file delete cfb1.enc cbc1.enc cnt1.enc aes1.enc magma1.enc magma1.enc macpkm1.enc
+start_tests "Тесты на команду enc" 
+
+save_env2 {CRYPT_PARAMS}
+if [info exists env(CRYPT_PARAMS)] {unset env(CRYPT_PARAMS)}
+
+# Default CRYPT_PARAMS for the following tests.
+set env(CRYPT_PARAMS) "id-tc26-gost-28147-param-Z"
+
+test -createsfiles cfb0.dec "Decrypting etalon file with GOST89-(CFB)" {
+	openssl "enc -gost89 -d -md md5 -in cfb0.enc -out cfb0.dec -k 1234567890 -p"
+	getFile cfb0.dec 
+} 0 $plain0
+
+test -createsfiles cnt0.dec "Decrypting etalon file with GOST89-CNT" {
+	openssl "enc -gost89-cnt -d -md md5 -in cnt0.enc -out cnt0.dec -k 1234567890 -p"
+	getFile cnt0.dec 
+} 0 $plain0
+
+test -createsfiles cbc0.dec "Decrypting etalon file with GOST89-CBC" {
+	openssl "enc -gost89-cbc -d -md md5 -in cbc0.enc -out cbc0.dec -k 1234567890 -p"
+	getFile cbc0.dec 
+} 0 $plain0
+
+test -createsfiles aes0.dec "Decrypting etalon file encrypted with AES128-CBC" {
+	openssl "enc -aes-128-cbc -d -md md5 -in aes0.enc -out aes0.dec -k 1234567890"
+	getFile aes0.dec 
+} 0 $plain0
+
+
+test -createsfiles cfb1.enc "Encrypting etalon file with GOST89-(CFB)" {
+	openssl "enc -gost89 -in plain.enc -out cfb1.enc -K 0D6F24152DB4B18CC4B0EE62F55FAD0BEADC26E7992C5EDF039114EC3F44EB08 -iv 8EE68900818CD1F9 -p"
+	getFile cfb1.enc 
+} 0 $cfb1
+
+test -createsfiles cnt1.enc "Encrypting etalon file with GOST89-CNT mode" {
+	openssl "enc -gost89-cnt -in plain.enc -out cnt1.enc -K EF164FDF5B1128DE44AFCC00A0323DC1090EC99DE9C6B085B0D2550AB9F1AF47 -iv 9AF32B4E2FB1DF3D -p"
+	getFile cnt1.enc 
+} 0 $cnt1
+
+test -createsfiles cbc1.enc "Encrypting etalon file with GOST89-CBC mode" {
+	openssl "enc -gost89-cbc -in plain.enc -out cbc1.enc -K F6AF8D0EDF555D164E3DDFA20615D7DF602B99A5ED4BD4103C4CA622D4544636 -iv 8264BBB5A072CDB5 -p"
+	getFile cbc1.enc 
+} 0 $cbc1
+
+test -createsfiles aes1.enc "Encrypting etalon file with AES128-CBC" {
+	openssl "enc -aes-128-cbc -in plain.enc -out aes1.enc -K D45358C3C6E711392E9F2AFF46C444B1 -iv 78E88EFC8F44B9C27C45C5FCC61DCD94 -p"
+	getFile aes1.enc 
+} 0 $aes1
+
+
+set plain "Test data to encrypt "
+makeFile enc.dat $plain binary
+set plain2 [string repeat "Test data for encrypt of big string\n" 64]
+makeFile enc2.dat $plain2 binary
+
+test -createsfiles {cfb.enc} "Encrypting file with GOST89-(CFB)" {
+	openssl "enc -gost89 -out cfb.enc -in enc.dat -k 1234567890 -p"
+	file isfile cfb.enc
+} 0 1
+
+test -createsfiles {cnt.enc} "Encrypting file with GOST89-CNT" {
+	openssl "enc -gost89-cnt -out cnt.enc -in enc.dat -k 1234567890 -p"
+	file isfile cnt.enc
+} 0 1
+
+test -createsfiles {cbc.enc} "Encrypting file with GOST89-CBC" {
+	openssl "enc -gost89-cbc -out cbc.enc -in enc.dat -k 1234567890 -p"
+	file isfile cbc.enc
+} 0 1
+
+test -createsfiles aes.enc "Encrypting file using AES128-CBC" {
+	openssl "enc -aes-128-cbc -out aes.enc -in enc.dat -k 1234567890"
+	file isfile aes.enc	
+} 0 1
+
+test "Ciphered text with GOST89-CFB differs from plain text" {
+	set ciphered [getFile cfb.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test "Ciphered text with GOST89-CNT differs from plain text" {
+	set ciphered [getFile cnt.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test "Ciphered text with GOST89-CBC differs from plain text" {
+	set ciphered [getFile cbc.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test "Ciphered with AES text differs from plain text" {
+	set ciphered [getFile aes.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test -createsfiles cfb.dec "Decrypting file, encrypted with GOST89-CFB" {
+	openssl "enc -gost89 -d -in cfb.enc -out enc.dec -k 1234567890 -p"
+	getFile enc.dec 
+} 0 $plain
+
+test -createsfiles cnt.dec "Decrypting file, encrypted with GOST89-CNT" {
+	openssl "enc -gost89-cnt -d -in cnt.enc -out cnt.dec -k 1234567890 -p"
+	getFile cnt.dec 
+} 0 $plain
+
+test -createsfiles cbc.dec "Decrypting file, encrypted with GOST89-CBC" {
+	openssl "enc -gost89-cbc -d -in cbc.enc -out cbc.dec -k 1234567890 -p"
+	getFile cbc.dec 
+} 0 $plain
+
+test -createsfiles aes.dec "Decrypting file encrypted with AES" {
+	openssl "enc -aes-128-cbc -d -in aes.enc -out aes.dec -k 1234567890"
+	getFile aes.dec 
+} 0 $plain
+
+
+test -createsfiles {cfb2.enc} "Encrypting GOST89 more than 1KB" {
+	if [info exists env(CRYPT_PARAMS)] {unset env(CRYPT_PARAMS)}
+	openssl "enc -gost89 -out cfb2.enc -in enc2.dat -k 1234567890 -p"
+	file isfile cfb2.enc
+} 0 1
+
+test -createsfiles {cfb2.dec} "Decrypting GOST89 more than 1Kb" {
+	openssl "enc -d -gost89 -out cfb2.dec -in cfb2.enc -k 1234567890 -p"
+	getFile cfb2.dec
+} 0 $plain2	
+
+test -createsfiles {cnt2.enc} "Encrypting more than 1KB with GOST89-CNT" {
+	if [info exists env(CRYPT_PARAMS)] {unset env(CRYPT_PARAMS)}
+	openssl "enc -gost89-cnt -out cnt2.enc -in enc2.dat -k 1234567890 -p"
+	file isfile cnt2.enc
+} 0 1
+
+test -createsfiles {cnt2.dec} "Decrypting more than 1Kb with GOST89-CNT" {
+	openssl "enc -d -gost89-cnt -out cnt2.dec -in cnt2.enc -k 1234567890 -p"
+	getFile cnt2.dec
+} 0 $plain2	
+
+test -createsfiles {cnc2.enc} "Encrypting more than 1KB with GOST89-CBC" {
+	if [info exists env(CRYPT_PARAMS)] {unset env(CRYPT_PARAMS)}
+	openssl "enc -gost89-cbc -out cbc2.enc -in enc2.dat -k 1234567890 -p"
+	file isfile cbc2.enc
+} 0 1
+
+test -createsfiles {cbc2.dec} "Decrypting more than 1Kb with GOST89-CBC" {
+	openssl "enc -d -gost89-cbc -out cbc2.dec -in cbc2.enc -k 1234567890 -p"
+	getFile cbc2.dec
+} 0 $plain2	
+
+test -skip {![file exists enc2.dat]} -createsfiles {cfb3.enc} "Encrypting GOST89 with paramset TC26 (symbolic)" {
+	set env(CRYPT_PARAMS) "id-tc26-gost-28147-param-Z"
+	openssl "enc -gost89 -out cfb3.enc -in enc2.dat -k 1234567890 -p"
+	file isfile cfb3.enc
+} 0 1
+
+test -skip {![file exists cfb3.enc]} -createsfiles {cfb3.dec1} "Decrypting GOST89 with paramset TC26 (OID)" {
+	set env(CRYPT_PARAMS) "1.2.643.7.1.2.5.1.1"
+	openssl "enc -gost89 -d -in cfb3.enc -out cfb3.dec1 -k 1234567890 -p"
+	getFile cfb3.dec1	
+} 0 $plain2
+
+if {0} {
+test -skip {![file exists enc2.dat]} -createsfiles {cbc3.enc} "Encrypting GOST89-CBC with paramset RIC 1 (symbolic)" {
+	set env(CRYPT_PARAMS) "id-Gost28147-89-CryptoPro-RIC-1-ParamSet"
+	openssl "enc -gost89-cbc -out cbc3.enc -in enc2.dat -k 1234567890 -p"
+	file isfile cbc3.enc
+} 0 1
+
+test -skip {![file exists cbc3.enc]} -createsfiles {cbc3.dec1} "Decrypting GOST89-CBC with paramset RIC 1 (OID)" {
+	set env(CRYPT_PARAMS) "1.2.643.2.2.31.7"
+	openssl "enc -gost89-cbc -d -in cbc3.enc -out cbc3.dec1 -k 1234567890 -p"
+	getFile cbc3.dec1	
+} 0 $plain2
+}
+restore_env2 {CRYPT_PARAMS}
+
+save_env2 {CRYPT_PARAMS OPENSSL_CONF}
+test -skip {![file exists cfb3.enc]} -createsfiles {cfb3.dec2} "Decrypting GOST89 with default params" {
+	if [info exists env(CRYPT_PARAMS)] {unset env(CRYPT_PARAMS)}
+	makeFile enc1.cnf [regsub -all "\n\\s*CRYPT_PARAMS\\s*=\[\^\n]*" [getConfig] ""]
+	set ::env(OPENSSL_CONF) [file join [pwd] enc1.cnf]
+	openssl "enc -gost89 -d -in cfb3.enc -out cfb3.dec2 -k 1234567890 -p"
+	getFile cfb3.dec2	
+} 0 $plain2
+restore_env2 {CRYPT_PARAMS OPENSSL_CONF}
+
+save_env2 {CRYPT_PARAMS}
+test -skip {![file exists cfb3.enc]} -createsfiles {cfb3.dec3} "Decrypting GOST89 with wrong explicitely set" {
+	set env(CRYPT_PARAMS) "id-Gost28147-89-CryptoPro-B-ParamSet"
+	openssl "enc -gost89 -d -in cfb3.enc -out cfb3.dec3 -k 1234567890 -p"
+	string equal [getFile cfb3.dec3] $plain2	
+} 0 0
+
+restore_env2 {CRYPT_PARAMS}
+
+test -createsfiles magma1.enc "Encrypting etalon file (Magma-CTR)" {
+	openssl "enc -magma-ctr -K ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff -iv 1234567800000000 -in magma_plain.enc -out magma1.enc"
+	getFile magma1.enc 
+} 0 $magma1
+
+if {0} {
+test -createsfiles macpkm1.enc "Encrypting etalon file (Magma-ACPKM)" {
+	openssl "enc -id-tc26-cipher-gostr3412-2015-magma-ctracpkm -K F797256845F36CF075603445CD322BACC3834032BC425E4D3C8495236F7B6CAF -iv 00000FFF00000000 -in magma_acpkm_plain.enc -out macpkm1.enc"
+	getFile macpkm1.enc 
+} 0 $macpkm1
+}
+
+end_tests

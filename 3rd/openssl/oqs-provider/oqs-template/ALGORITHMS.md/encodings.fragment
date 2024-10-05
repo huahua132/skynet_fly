@@ -1,0 +1,13 @@
+
+|Environment Variable | Permissible Values |
+| --- | --- |
+{% for sig in config['sigs'] -%}
+   {%- for variant in sig['variants'] -%}
+   {%- if 'supported_encodings' in variant -%}
+|`OQS_ENCODING_{{variant['name']|upper}}`|
+{%- for item in variant['supported_encodings'] -%}
+`{{item}}`{% if not loop.last %}, {%- endif -%}
+{% endfor %}|
+{% endif %}
+{%- endfor %}
+{%- endfor %}

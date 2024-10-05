@@ -1,0 +1,152 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir 
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на OCSP-запросы и ответы"
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2012_256:A gost2012_512:B}}
+		"open" {set alg_list {gost2001:A gost2012_256:A gost2012_512:B}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_smime_$alg_fn
+
+test "Creating CA" { 
+	makeCA ${testname}CA-$alg_fn $alg
+} 0 1
+
+after 1000
+
+set server_args "-index $::test::ca/index.txt -rsigner $::test::ca/cacert.pem -rkey $::test::ca/private/cakey.pem -CA $::test::ca/cacert.pem -noverify"
+set client_args "-issuer $::test::ca/cacert.pem -CAfile $::test::ca/cacert.pem"
+
+test "Создаем юзера" {
+	makeRegisteredUser U_ocsp_$alg_fn $alg
+	makeRegisteredUser U_ocsp2_$alg_fn $alg
+	file exists U_ocsp_$alg_fn/cert.pem
+} 0 1
+
+after 1000
+
+test -createsfiles {request1.der} "Создаеем неподписанный запрос SHA1 хэш  по сертификату" {
+	openssl "ocsp $client_args -cert U_ocsp_$alg_fn/cert.pem -reqout request1.der"
+	file exists request1.der
+} 0 1
+
+test -skip {![file exists request1.der]} "Анализируем OID-ы в запросе" {
+	extract_oids request1.der DER
+} 0 " OBJECT            :sha1
+"
+
+test -skip {![file exists request1.der]} -createsfiles {response1.der} "Формируем ГОСТ-подписанный ответ" {
+	openssl "ocsp $server_args -reqin request1.der -respout response1.der"
+} 0 ""
+
+test -skip {![file exists request1.der]} "Анализируем OID-ы в ответе" {
+	extract_oids response1.der DER 30
+} 0  " OBJECT            :sha1\n[mkObjList [hash_with_sign_long_name $alg] [hash_with_sign_long_name $alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [hash_with_sign_long_name $alg]]"
+
+
+test -skip {![file exists response1.der]} "Проверяем ГОСТ-подписанный ответ" {
+	openssl "ocsp $client_args -respin response1.der"	
+
+} 0 "STDERR CONTENTS:\nResponse verify OK"
+
+test -skip {![file exists response1.der]} "Проверяем статус сертификата" {
+	grep "Cert Status" [openssl "ocsp -respin response1.der -text -CAfile $::test::ca/cacert.pem"]
+} 0 "    Cert Status: good\n"
+
+test -createsfiles request2.der "Формируем ГОСТ-подписанный запрос с хэшом SHA1 по сертификату" {
+	openssl "ocsp $client_args -cert U_ocsp_$alg_fn/cert.pem -signer U_ocsp_$alg_fn/cert.pem -signkey U_ocsp_$alg_fn/seckey.pem -reqout request2.der" 
+
+} 0 ""
+
+test -skip {![file exists request2.der]} "Анализируем OID-ы в запросе" {
+	extract_oids request2.der DER
+} 0  " OBJECT            :sha1\n[mkObjList [hash_with_sign_long_name $alg] [hash_with_sign_long_name $alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [hash_with_sign_long_name $alg]]"
+
+
+test -createsfiles response2.der -skip {![file exists request2.der]} "Формируем ответ на подписанный запрос" {
+	openssl "ocsp $server_args -reqin request2.der -respout response2.der"
+	file exists response2.der
+} 0 1
+
+test -skip {![file exists response2.der]} "Проверяем ответ на запрос 2" {	
+	grep "Response .erif" [openssl "ocsp $client_args -respin response2.der"]
+} 0 "Response verify OK\n"
+
+test -createsfiles request3.der "Формируем запрос с ГОСТ-овским хэшом по сертификату" {
+	openssl "ocsp $client_args -[hash_short_name [alg_hash $alg]] -cert U_ocsp_$alg_fn/cert.pem -reqout request3.der" 
+  	file exists request3.der 
+} 0 1
+
+test -skip {![file exists request3.der]} "Анализируем OID-ы в запросе" {
+	extract_oids request3.der DER
+} 0 [mkObjList [hash_long_name $alg]]
+
+test -skip {![file exists request3.der]} -createsfiles response3.der "Формируем ответ на запрос с ГОСТ-овским хэшом" {
+	openssl "ocsp $server_args  -reqin request3.der -respout response3.der"
+	file exists response3.der	
+} 0 1
+
+test -skip {![file exists response3.der] } "Проверяем ответ на запрос 3" {
+	grep "Response .erif" [openssl "ocsp $client_args -respin response3.der"]
+} 0 "Response verify OK\n"
+
+
+test -skip {![file exists response3.der]} "Проверяем статус сертификата" {
+	grep "Cert Status" [openssl "ocsp -respin response3.der -text -CAfile $::test::ca/cacert.pem"]
+} 0 "    Cert Status: good\n"
+
+test -createsfiles request4.der "Формируем запрос с ГОСТ-овским хэшом по serial" {
+	openssl "ocsp $client_args -[hash_short_name [alg_hash $alg]] -serial 0x11E -reqout request4.der" 
+} 0 ""
+
+test -skip {![file exists request4.der]} "Проверяем OID-ы в запросе 4" {
+	extract_oids request4.der DER
+} 0 [mkObjList [hash_long_name $alg]]
+
+
+test -skip {![file exists request4.der]} -createsfiles response4.der "Формируем ответ на запрос с ГОСТ-овским хэшом" {
+	openssl "ocsp $server_args -reqin request4.der -respout response4.der"
+	file exists response4.der
+} 0 1
+
+test -skip {![file exists response4.der] } "Проверяем ответ на запрос 4" {
+	grep "Response .erif" [openssl "ocsp $client_args -respin response4.der"]
+} 0 "Response verify OK\n"
+
+test -createsfiles request5.der "Формируем запрос с двумя сертификатами и разными хэшами" {
+	openssl "ocsp $client_args -[hash_short_name [alg_hash $alg]] -cert U_ocsp_$alg_fn/cert.pem -sha1 -cert U_ocsp2_$alg_fn/cert.pem -reqout request5.der" 
+} 0 ""
+
+test -skip {![file exists request5.der]} "Проверяем OID-ы в запросе 5" {
+	extract_oids request5.der DER
+} 0 "[mkObjList [hash_long_name $alg]] OBJECT            :sha1\n"
+
+
+test -skip {![file exists request5.der]} -createsfiles response5.der "Формируем ответ на запрос с двумя хэшами" {
+	openssl "ocsp $server_args -reqin request5.der -respout response5.der"
+	file exists response5.der
+} 0 1
+
+test -skip {![file exists response5.der] } "Проверяем ответ на запрос 5" {
+	grep "Response .erif" [openssl "ocsp $client_args -respin response5.der"]
+} 0 "Response verify OK\n"
+
+test -skip {![file exists response5.der]} "Проверяем статус сертификатoв" {
+	grep "Cert Status" [openssl "ocsp -respin response5.der -text -CAfile $::test::ca/cacert.pem"]
+} 0 "    Cert Status: good\n    Cert Status: good\n"
+
+}
+
+end_tests
+
