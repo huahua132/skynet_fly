@@ -1,0 +1,283 @@
+name: Wheel Builder
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to build
+  push:
+    tags:
+      - '*.*'
+      - '*.*.*'
+  pull_request:
+    paths:
+      - .github/workflows/wheel-builder.yml
+      - setup.py
+      - setup.cfg
+      - pyproject.toml
+      - src/cryptography/__about__.py
+
+
+jobs:
+  sdist:
+    runs-on: ubuntu-latest
+    name: sdists
+    steps:
+      - uses: actions/checkout@v3.2.0
+        with:
+          # The tag to build or the tag received by the tag event
+          ref: ${{ github.event.inputs.version || github.ref }}
+          persist-credentials: false
+
+      - run: python -m venv .venv
+      - name: Install Python dependencies
+        run: .venv/bin/pip install -U pip wheel cffi setuptools-rust
+      - name: Make sdist (cryptography)
+        run: .venv/bin/python setup.py sdist
+      - name: Make sdist and wheel (vectors)
+        run: cd vectors/ && ../.venv/bin/python setup.py sdist bdist_wheel
+      - uses: actions/upload-artifact@v3.1.1
+        with:
+          name: "cryptography-sdist"
+          path: dist/cryptography*
+      - uses: actions/upload-artifact@v3.1.1
+        with:
+          name: "vectors-sdist-wheel"
+          path: vectors/dist/cryptography*
+
+  manylinux:
+    needs: [sdist]
+    runs-on: ubuntu-latest
+    container: ghcr.io/pyca/${{ matrix.MANYLINUX.CONTAINER }}
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON:
+          - { VERSION: "cp36-cp36m", ABI_VERSION: 'cp36' }
+          - { VERSION: "pp38-pypy38_pp73" }
+          - { VERSION: "pp39-pypy39_pp73" }
+        MANYLINUX:
+          - { NAME: "manylinux2014_x86_64", CONTAINER: "cryptography-manylinux2014:x86_64" }
+          - { NAME: "manylinux_2_24_x86_64", CONTAINER: "cryptography-manylinux_2_24:x86_64"}
+          - { NAME: "manylinux_2_28_x86_64", CONTAINER: "cryptography-manylinux_2_28:x86_64"}
+          - { NAME: "musllinux_1_1_x86_64", CONTAINER: "cryptography-musllinux_1_1:x86_64"}
+        exclude:
+          # There are no readily available musllinux PyPy distributions
+          - PYTHON: { VERSION: "pp38-pypy38_pp73" }
+            MANYLINUX: { NAME: "musllinux_1_1_x86_64", CONTAINER: "cryptography-musllinux_1_1:x86_64"}
+          - PYTHON: { VERSION: "pp39-pypy39_pp73" }
+            MANYLINUX: { NAME: "musllinux_1_1_x86_64", CONTAINER: "cryptography-musllinux_1_1:x86_64"}
+    name: "${{ matrix.PYTHON.VERSION }} for ${{ matrix.MANYLINUX.NAME }}"
+    steps:
+      - uses: actions/download-artifact@v3.0.1
+        with:
+          name: cryptography-sdist
+
+      - run: /opt/python/${{ matrix.PYTHON.VERSION }}/bin/python -m venv .venv
+      - name: Install Python dependencies
+        run: .venv/bin/pip install -U pip wheel cffi setuptools-rust
+      - run: tar zxvf cryptography*.tar.gz && rm cryptography*.tar.gz && mkdir tmpwheelhouse
+      - name: Build the wheel
+        run: |
+          if [ -n "${{ matrix.PYTHON.ABI_VERSION }}" ]; then
+              PY_LIMITED_API="--py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}"
+          fi
+          cd cryptography*
+          LDFLAGS="-L/opt/pyca/cryptography/openssl/lib -L/opt/pyca/cryptography/openssl/lib64" \
+              CFLAGS="-I/opt/pyca/cryptography/openssl/include -Wl,--exclude-libs,ALL" \
+              ../.venv/bin/python setup.py bdist_wheel $PY_LIMITED_API && mv dist/cryptography*.whl ../tmpwheelhouse
+        env:
+          RUSTUP_HOME: /root/.rustup
+      - run: auditwheel repair --plat ${{ matrix.MANYLINUX.NAME }} tmpwheelhouse/cryptograph*.whl -w wheelhouse/
+      - run: unzip wheelhouse/*.whl -d execstack.check
+      - run: |
+          results=$(readelf -lW execstack.check/cryptography/hazmat/bindings/*.so)
+          count=$(echo "$results" | grep -c 'GNU_STACK.*[R ][W ]E' || true)
+          if [ "$count" -ne 0 ]; then
+            exit 1
+          else
+            exit 0
+          fi
+      - run: .venv/bin/pip install cryptography --no-index -f wheelhouse/
+      - run: |
+          .venv/bin/python -c "from cryptography.hazmat.backends.openssl.backend import backend;print('Loaded: ' + backend.openssl_version_text());print('Linked Against: ' + backend._ffi.string(backend._lib.OPENSSL_VERSION_TEXT).decode('ascii'))"
+      - run: mkdir cryptography-wheelhouse
+      - run: mv wheelhouse/cryptography*.whl cryptography-wheelhouse/
+      - uses: actions/upload-artifact@v3.1.1
+        with:
+          name: "cryptography-${{ github.event.inputs.version }}-${{ matrix.MANYLINUX.NAME }}-${{ matrix.PYTHON.VERSION }}"
+          path: cryptography-wheelhouse/
+
+  macos:
+    needs: [sdist]
+    runs-on: macos-12
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON:
+          - VERSION: '3.10'
+            ABI_VERSION: 'cp36'
+            # Despite the name, this is built for the macOS 11 SDK on arm64 and 10.9+ on intel
+            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.10.0/python-3.10.0post2-macos11.pkg'
+            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3'
+            DEPLOYMENT_TARGET: '10.12'
+            # This archflags is default, but let's be explicit
+            ARCHFLAGS: '-arch x86_64 -arch arm64'
+            # See https://github.com/pypa/cibuildwheel/blob/c8876b5c54a6c6b08de5d4b1586906b56203bd9e/cibuildwheel/macos.py#L257-L269
+            # This will change in the future as we change the base Python we
+            # build against
+            _PYTHON_HOST_PLATFORM: 'macosx-10.9-universal2'
+          - VERSION: '3.10'
+            ABI_VERSION: 'cp36'
+            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.10.0/python-3.10.0post2-macos11.pkg'
+            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3'
+            DEPLOYMENT_TARGET: '10.12'
+            # We continue to build a non-universal2 for a bit to see metrics on
+            # download counts (this is a proxy for pip version since universal2
+            # requires a 21.x pip)
+            ARCHFLAGS: '-arch x86_64'
+            _PYTHON_HOST_PLATFORM: 'macosx-10.9-x86_64'
+          - VERSION: 'pypy-3.8'
+            BIN_PATH: 'pypy3'
+            DEPLOYMENT_TARGET: '10.12'
+            _PYTHON_HOST_PLATFORM: 'macosx-10.9-x86_64'
+            ARCHFLAGS: '-arch x86_64'
+          - VERSION: 'pypy-3.9'
+            BIN_PATH: 'pypy3'
+            DEPLOYMENT_TARGET: '10.12'
+            _PYTHON_HOST_PLATFORM: 'macosx-10.9-x86_64'
+            ARCHFLAGS: '-arch x86_64'
+    name: "${{ matrix.PYTHON.VERSION }} ABI ${{ matrix.PYTHON.ABI_VERSION }} macOS ${{ matrix.PYTHON.ARCHFLAGS }}"
+    steps:
+      # Needed for download_openssl.py
+      - uses: actions/checkout@v3.2.0
+        with:
+          # The tag to build or the tag received by the tag event
+          ref: ${{ github.event.inputs.version || github.ref }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v3.0.1
+        with:
+          name: cryptography-sdist
+
+      - name: Setup python
+        run: |
+          curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+          sudo installer -pkg python.pkg -target /
+        env:
+          PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
+        if: contains(matrix.PYTHON.VERSION, 'pypy') == false
+      - name: Setup pypy
+        uses: actions/setup-python@v4.3.1
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION }}
+        if: contains(matrix.PYTHON.VERSION, 'pypy')
+      - run: ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U requests
+      - name: Download OpenSSL
+        run: |
+            ${{ matrix.PYTHON.BIN_PATH }} .github/workflows/download_openssl.py macos openssl-macos-universal2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: dtolnay/rust-toolchain@e645b0cf01249a964ec099494d38d2da0f0b349f
+        with:
+          toolchain: stable
+          # Add the arm64 target in addition to the native arch (x86_64)
+          target: aarch64-apple-darwin
+
+      - run: ${{ matrix.PYTHON.BIN_PATH }} -m venv venv
+      - run: venv/bin/pip install -U pip wheel cffi setuptools-rust
+      - run: tar zxvf cryptography*.tar.gz && mkdir wheelhouse
+      - name: Build the wheel
+        run: |
+          cd cryptography*
+          CRYPTOGRAPHY_SUPPRESS_LINK_FLAGS="1" \
+              LDFLAGS="${HOME}/openssl-macos-universal2/lib/libcrypto.a ${HOME}/openssl-macos-universal2/lib/libssl.a" \
+              CFLAGS="-I${HOME}/openssl-macos-universal2/include" \
+              ../venv/bin/python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }} && mv dist/cryptography*.whl ../wheelhouse
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.PYTHON.DEPLOYMENT_TARGET }}
+          ARCHFLAGS: ${{ matrix.PYTHON.ARCHFLAGS }}
+          _PYTHON_HOST_PLATFORM: ${{ matrix.PYTHON._PYTHON_HOST_PLATFORM }}
+      - run: venv/bin/pip install -f wheelhouse --no-index cryptography
+      - name: Show the wheel's minimum macOS SDK and architectures
+        run: |
+          find venv/lib/*/site-packages/cryptography/hazmat/bindings -name '*.so' -exec vtool -show {} \;
+      - run: |
+          venv/bin/python -c "from cryptography.hazmat.backends.openssl.backend import backend;print('Loaded: ' + backend.openssl_version_text());print('Linked Against: ' + backend._ffi.string(backend._lib.OPENSSL_VERSION_TEXT).decode('ascii'))"
+
+      - run: mkdir cryptography-wheelhouse
+      - run: mv wheelhouse/cryptography*.whl cryptography-wheelhouse/
+      - run: |
+          echo "CRYPTOGRAPHY_WHEEL_NAME=$(basename $(ls cryptography-wheelhouse/cryptography*.whl))" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v3.1.1
+        with:
+          name: "${{ env.CRYPTOGRAPHY_WHEEL_NAME }}"
+          path: cryptography-wheelhouse/
+
+  windows:
+    needs: [sdist]
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        WINDOWS:
+          - {ARCH: 'x86', WINDOWS: 'win32', RUST_TRIPLE: 'i686-pc-windows-msvc'}
+          - {ARCH: 'x64', WINDOWS: 'win64', RUST_TRIPLE: 'x86_64-pc-windows-msvc'}
+        PYTHON:
+          - {VERSION: "3.8", "ABI_VERSION": "cp36"}
+          - {VERSION: "pypy-3.8"}
+          - {VERSION: "pypy-3.9"}
+        exclude:
+          # We need to exclude the below configuration because there is no 32-bit pypy3
+          - WINDOWS: {ARCH: 'x86', WINDOWS: 'win32', RUST_TRIPLE: 'i686-pc-windows-msvc'}
+            PYTHON: {VERSION: "pypy-3.8"}
+          - WINDOWS: {ARCH: 'x86', WINDOWS: 'win32', RUST_TRIPLE: 'i686-pc-windows-msvc'}
+            PYTHON: {VERSION: "pypy-3.9"}
+    name: "${{ matrix.PYTHON.VERSION }} ${{ matrix.WINDOWS.WINDOWS }} ${{ matrix.PYTHON.ABI_VERSION }}"
+    steps:
+      # Needed for download_openssl.py
+      - uses: actions/checkout@v3.2.0
+        with:
+          # The tag to build or the tag received by the tag event
+          ref: ${{ github.event.inputs.version || github.ref }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v3.0.1
+        with:
+          name: cryptography-sdist
+
+      - name: Setup python
+        uses: actions/setup-python@v4.3.1
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION }}
+          architecture: ${{ matrix.WINDOWS.ARCH }}
+      - uses: dtolnay/rust-toolchain@e645b0cf01249a964ec099494d38d2da0f0b349f
+        with:
+          toolchain: stable
+          target: ${{ matrix.WINDOWS.RUST_TRIPLE }}
+
+      - run: pip install requests
+      - name: Download OpenSSL
+        run: |
+            python .github/workflows/download_openssl.py windows openssl-${{ matrix.WINDOWS.WINDOWS }}
+            echo "INCLUDE=C:/openssl-${{ matrix.WINDOWS.WINDOWS }}/include;$INCLUDE" >> $GITHUB_ENV
+            echo "LIB=C:/openssl-${{ matrix.WINDOWS.WINDOWS }}/lib;$LIB" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+
+      - run: python -m pip install -U pip wheel
+      - run: python -m pip install cffi setuptools-rust
+      - run: tar zxvf cryptography*.tar.gz && mkdir wheelhouse
+        shell: bash
+      - run: cd cryptography* && python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }} && mv dist/cryptography*.whl ../wheelhouse
+      - run: pip install -f wheelhouse --no-index cryptography
+      - name: Print the OpenSSL we built and linked against
+        run: |
+            python -c "from cryptography.hazmat.backends.openssl.backend import backend;print('Loaded: ' + backend.openssl_version_text());print('Linked Against: ' + backend._ffi.string(backend._lib.OPENSSL_VERSION_TEXT).decode('ascii'))"
+
+      - run: mkdir cryptography-wheelhouse
+      - run: move wheelhouse\cryptography*.whl cryptography-wheelhouse\
+      - uses: actions/upload-artifact@v3.1.1
+        with:
+          name: "cryptography-${{ github.event.inputs.version }}-${{ matrix.WINDOWS.WINDOWS }}-${{ matrix.PYTHON.VERSION }}-${{ matrix.PYTHON.ABI_VERSION}}"
+          path: cryptography-wheelhouse\

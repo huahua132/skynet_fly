@@ -1,0 +1,32 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir 
+start_tests "Тесты на команду engine" 
+
+switch -exact [engine_name] {
+	"ccore" {set list " \[RAND, gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, id-tc26-cipher-gostr3412-2015-magma-ctracpkm, magma-ctr, magma-ofb, magma-ecb, magma-cbc, magma-cfb, grasshopper-ecb, grasshopper-cbc, grasshopper-ofb, grasshopper-cfb, grasshopper-ctr, id-tc26-cipher-gostr3412-2015-kuznyechik-ctracpkm, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, gost2001, id-GostR3410-2001DH, gost-mac, gost2012_256, gost2012_512, gost-mac-12\]\n"}
+	"open" {set list "(gost) Reference implementation of GOST engine\n \[gost89, gost89-cnt, gost89-cnt-12, gost89-cbc, kuznyechik-ecb, kuznyechik-cbc, kuznyechik-cfb, kuznyechik-ofb, kuznyechik-ctr, magma-ecb, kuznyechik-mgm, magma-cbc, magma-ctr, magma-ctr-acpkm, magma-ctr-acpkm-omac, magma-mgm, kuznyechik-ctr-acpkm, kuznyechik-ctr-acpkm-omac, magma-kexp15, kuznyechik-kexp15, md_gost94, gost-mac, md_gost12_256, md_gost12_512, gost-mac-12, magma-mac, kuznyechik-mac, kuznyechik-ctr-acpkm-omac, gost2001, id-GostR3410-2001DH, gost-mac, gost2012_256, gost2012_512, gost-mac-12, magma-mac, kuznyechik-mac, magma-ctr-acpkm-omac, kuznyechik-ctr-acpkm-omac]\n"}
+}
+
+
+makeFile no_engine.cnf [regsub -all "\n\\s*engines\\s*=\\s*engines_section\[\^\n]*" [getConfig] ""]
+
+save_env2 {OPENSSL_CONF}
+set env(OPENSSL_CONF) [file join [pwd] no_engine.cnf]
+
+test "Проверяем поддержку российских алгоритмов" {
+	grep "gost" [openssl "engine -c $env(ENGINE_NAME)"]
+} 0 $list
+
+if {[engine_name] == "ccore"} {
+test "Получение списка конфигурационных параметров" {
+	openssl "engine -v cryptocom"
+} 0 "(cryptocom) Cryptocom GOST engine
+     RNG, RNG_PARAMS, CRYPT_PARAMS, CCENGINE_LICENSE, GOST_PBE_HMAC
+"
+}
+
+restore_env2 {OPENSSL_CONF}
+
+end_tests

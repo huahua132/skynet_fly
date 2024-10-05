@@ -1,0 +1,17 @@
+#
+# Структура файла
+# алгоритм {
+# ciphersuite host:port[:servertype]
+# ciphersuite host:port
+#
+# }
+# Where servertype can be apache (default) or iis.
+
+gost2001:XA {
+	TLSv1:GOST2001-GOST89-GOST89 tls-ref-cp21.lan.cryptocom.ru:443
+	TLSv1:GOST2001-NULL-GOST94 tls-ref-cp21.lan.cryptocom.ru:4401
+}
+rsa:1024 {
+	TLSv1.2:DHE-RSA-AES256-SHA tls-ref-cp21.lan.cryptocom.ru:4407
+	TLSv1.2:RC4-SHA	tls-ref-cp21.lan.cryptocom.ru:4408
+}

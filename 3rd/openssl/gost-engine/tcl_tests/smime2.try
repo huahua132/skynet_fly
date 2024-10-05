@@ -1,0 +1,204 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+start_tests "Тесты на команду smime - вторая подпись" 
+
+test "Creating CA" {
+	makeCA
+} 0 1
+
+makeFile signed2.dat "Test data for 2 signatures"
+
+
+foreach length {256 512} {
+
+test "Creating users $length" {
+	makeRegisteredUser U_smime_1_$length gost2012_$length:A CN USER1_$length emailAddress test@cryptocom.ru
+	makeRegisteredUser U_smime_2_$length gost2012_$length:A CN USER2_$length emailAddress test@cryptocom.ru
+} 0 1
+
+test -createsfiles signed2_1_$length.asn "Signing in DER format with 1st signature" {
+	openssl "smime -sign -binary -outform der -inform der -nodetach -inkey U_smime_1_$length/seckey.pem -signer U_smime_1_$length/cert.pem -in signed2.dat -out signed2_1_$length.asn"
+	file isfile signed2_1_$length.asn
+} 0 1
+
+test -createsfiles signed2_2_$length.asn "Signing in DER format with 2nd signature" {
+	openssl "smime -resign -binary -outform der -inform der -nodetach -inkey U_smime_2_$length/seckey.pem -signer U_smime_2_$length/cert.pem -in signed2_1_$length.asn -out signed2_2_$length.asn"
+	file isfile signed2_2_$length.asn
+} 0 1
+
+test -createsfiles {was_signed.dat signer.certs} "Verifying signature" {
+	grep "Verif" [openssl "smime -verify -inform der -in signed2_2_$length.asn -noverify -signer signer.certs -out was_signed.dat"]
+} 0 {Verification successful
+}
+
+test "Signed data is extracted correctly" {
+	string eq [getFile signed2.dat]	[getFile was_signed.dat]
+} 0 1
+
+### Test extracted sertificates
+
+test "Extracting signer certificates" {
+	set i 0
+	set subjs {}
+	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
+	foreach cert $certs {
+		makeFile cert[incr i].pem $cert
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
+	}
+	lsort $subjs
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
+}"
+
+test -createsfiles signed2_1_$length\_op.msg "Signing opaque in S/MIME format with 1st signature" {
+	openssl "smime -sign -binary -nodetach -inkey U_smime_1_$length/seckey.pem -signer U_smime_1_$length/cert.pem -in signed2.dat -out signed2_1_$length\_op.msg"
+	file isfile signed2_1_$length\_op.msg
+} 0 1
+
+test -createsfiles signed2_2_$length\_op.msg "Signing opaque in S/MIME format with 2nd signature" {
+	openssl "smime -resign -binary -nodetach -inkey U_smime_2_$length/seckey.pem -signer U_smime_2_$length/cert.pem -in signed2_1_$length\_op.msg -out signed2_2_$length\_op.msg"
+	file isfile signed2_2_$length\_op.msg
+} 0 1
+
+test -createsfiles {was_signed.dat signer.certs} "Verifying opaque signature" {
+	grep "Verif" [openssl "smime -verify -inform smime -in signed2_2_$length\_op.msg -noverify -signer signer.certs -out was_signed.dat"]
+} 0 {Verification successful
+}
+
+test "Signed data is extracted correctly" {
+	string eq [getFile signed2.dat]	[getFile was_signed.dat]
+} 0 1
+
+### Test extracted sertificates
+
+test "Extracting signer certificates" {
+	set i 0
+	set subjs {}
+	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
+	foreach cert $certs {
+		makeFile cert[incr i].pem $cert
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
+	}
+	lsort $subjs
+} 0 "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
+}"
+
+test -createsfiles signed2_1_$length\_det.asn "Signing detached in DER format with 1st signature" {
+	openssl "smime -sign -binary -outform der -inkey U_smime_1_$length/seckey.pem -signer U_smime_1_$length/cert.pem -in signed2.dat -out signed2_1_$length\_det.asn"
+	file isfile signed2_1_$length\_det.asn
+} 0 1
+
+test -createsfiles signed2_2_$length\_det.asn "Signing detached in DER format with 2nd signature" {
+	openssl "smime -resign -binary -inkey U_smime_2_$length/seckey.pem -signer U_smime_2_$length/cert.pem -in signed2_1_$length\_det.asn -content signed2.dat -inform der -outform der -out signed2_2_$length\_det.asn"
+	file isfile signed2_2_$length\_det.asn
+} 0 1
+
+test -createsfiles {was_signed.dat signer.certs} "Verifying detached signature in DER format" {
+	grep "Verif" [openssl "smime -verify -in signed2_2_$length\_det.asn -noverify -signer signer.certs -out was_signed.dat -content signed2.dat -inform der"]
+} 0 {Verification successful
+}
+
+test "Signed data is extracted correctly" {
+	string eq [getFile signed2.dat]	[getFile was_signed.dat]
+} 0 1
+
+### Test extracted sertificates
+
+test "Extracting signer certificates" {
+	set i 0
+	set subjs {}
+	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
+	foreach cert $certs {
+		makeFile cert_asn[incr i].pem $cert
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
+	}
+	lsort  $subjs
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
+}"
+
+test -createsfiles signed2_1_$length.msg "Signing in S/MIME format with 1st signature" {
+	openssl "smime -sign -binary -inform der -inkey U_smime_1_$length/seckey.pem -signer U_smime_1_$length/cert.pem -in signed2.dat -out signed2_1_$length.msg"
+	file isfile signed2_1_$length.msg
+} 0 1
+
+test -createsfiles signed2_2_$length.msg "Signing in S/MIME format with 2nd signature" {
+	grep "SMIME" [openssl "smime -resign -binary -inkey U_smime_2_$length/seckey.pem -signer U_smime_2_$length/cert.pem -in signed2_1_$length.msg -inform smime -out signed2_2_$length.msg"]
+} 0 ""
+
+test -createsfiles {was_signed.dat  signer.certs} "Verifying signature" {
+	grep "Verif" [openssl "smime -verify -in signed2_2_$length.msg -noverify -signer signer.certs -out was_signed.dat -inform smime"]
+} 0 {Verification successful
+}
+
+test "Signed data is extracted correctly" {
+	string eq [getFile signed2.dat]	[getFile was_signed.dat]
+} 0 1
+
+### Test extracted sertificates
+
+test "Extracting signer certificates" {
+	set i 0
+	set subjs {}
+	set certs [regexp -all -inline -- {-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----} [getFile signer.certs]]
+	foreach cert $certs {
+		makeFile cert_smime[incr i].pem $cert
+		lappend subjs [regsub -all " = " [grep subject [openssl "x509 -in cert$i.pem -subject -noout"]] "=" ]
+	}
+	lsort $subjs
+} 0  "{subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER1_$length, emailAddress=test@cryptocom.ru
+} {subject=C=RU, O=Cryptocom, OU=OpenSSL Team, CN=USER2_$length, emailAddress=test@cryptocom.ru
+}"
+
+}
+
+
+test "Resigning in DER format with a unsuitable key length 512" {
+	openssl "smime -resign -binary -inform der -nodetach -inkey U_smime_2_512/seckey.pem -signer U_smime_2_512/cert.pem -in signed2_1_256.asn"
+} 1 "no matching digest"
+
+test "Resigning in DER format with a unsuitable key length 256" {
+	openssl "smime -resign -binary -inform der -nodetach -inkey U_smime_2_256/seckey.pem -signer U_smime_2_256/cert.pem -in signed2_1_512.asn"
+} 1 "no matching digest"
+
+test "Resigning opaque in S/MIME format with a unsuitable key length 512" {
+	openssl "smime -resign -binary -nodetach -inkey U_smime_2_512/seckey.pem -signer U_smime_2_512/cert.pem -in signed2_1_256_op.msg"
+} 1 "no matching digest"
+
+test "Resigning opaque in S/MIME format with a unsuitable key length 256" {
+	openssl "smime -resign -binary -nodetach -inkey U_smime_2_256/seckey.pem -signer U_smime_2_256/cert.pem -in signed2_1_512_op.msg"
+} 1 "no matching digest"
+
+test "Resigning detached in DER format with a unsuitable key length 512" {
+	openssl "smime -resign -binary -inform der -inkey U_smime_2_512/seckey.pem -signer U_smime_2_512/cert.pem -in signed2_1_256_det.asn -content signed2.dat"
+} 1 "no matching digest"
+
+test "Resigning detached in DER format with a unsuitable key length 256" {
+	openssl "smime -resign -binary -inform der -inkey U_smime_2_256/seckey.pem -signer U_smime_2_256/cert.pem -in signed2_1_512_det.asn -content signed2.dat"
+} 1 "no matching digest"
+
+test "Resigning in S/MIME format with a unsuitable key length 512" {
+	openssl "smime -resign -binary -inkey U_smime_2_512/seckey.pem -signer U_smime_2_512/cert.pem -in signed2_1_256.msg"
+} 1 "no matching digest"
+
+test "Resigning in S/MIME format with a unsuitable key length 256" {
+	openssl "smime -resign -binary -inkey U_smime_2_256/seckey.pem -signer U_smime_2_256/cert.pem -in signed2_1_512.msg"
+} 1 "no matching digest"
+
+
+end_tests
+
+#./load_engine smime -sign -binary -outform der -inform der -nodetach -inkey certs/fstek.key -signer certs/fstek.crt -out signed2 -in signed1
+#./load_engine smime -verify -inform der -in signed2 -noverify
+#./load_engine smime -verify -inform der -in signed2 -noverify -signer sss
+#cat sss
+#history 
+#vim sss
+#./load_engine x509 -in sss sss2
+#./load_engine x509 -in sss 
+#./load_engine x509 -in sss -subject -noout
+#./load_engine x509 -in sss2 -subject -noout
+#./load_engine smime -verify -inform der -in signed2 -noverify -signer sss -out qqq

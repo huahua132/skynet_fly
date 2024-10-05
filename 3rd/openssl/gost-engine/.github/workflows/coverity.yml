@@ -1,0 +1,28 @@
+name: Coverity
+
+on:
+  schedule:
+  - cron: "0 0 * * *"
+
+jobs:
+  scan:
+    runs-on: ubuntu-20.04
+    if: ${{ github.repository_owner == 'gost-engine' }}
+    env:
+      COVERITY_SCAN_PROJECT_NAME: 'gost-engine'
+      COVERITY_SCAN_BRANCH_PATTERN: '*'
+      COVERITY_SCAN_NOTIFICATION_EMAIL: 'chipitsine@gmail.com'
+      COVERITY_SCAN_BUILD_COMMAND_PREPEND: ".github/before_script.sh"
+      COVERITY_SCAN_BUILD_COMMAND: ".github/script.sh"
+      OPENSSL_BRANCH: openssl-3.0
+      USE_RPATH: yes
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+           submodules: true
+    - name: Run Coverity Scan
+      env:
+        COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+      run: |
+        curl -fsSL "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true

@@ -1,0 +1,33 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]] 
+package require ossltest
+
+set test_dir [file normalize [file dirname [info script]]]
+
+cd $::test::dir
+start_tests "Тесты на API, используемый только в Apache"
+
+
+
+makeCA
+
+if {$tcl_platform(platform) eq "windows"} { 
+  # Add openssl dir to PATH
+  set dlldir [file nativename [file normalize $test_dir/../../openssl]]
+  set env(PATH) "$dlldir;$env(PATH)"
+}
+test "EVP_PKEY_copy_parameters gost94" {
+	makeRegisteredUser "U_apache_94" gost94:A
+	exec $test_dir/copy_param U_apache_94/seckey.pem U_apache_94/cert.pem
+} 0 "EVP_PKEY_missing_parameters before copy: 1
+EVP_PKEY_missing_parameters after copy: 0
+Check private key:Ok"	
+
+test "EVP_PKEY_copy_parameters gost2001" {
+	makeRegisteredUser "U_apache_94" gost2001:A
+	exec $test_dir/copy_param U_apache_94/seckey.pem U_apache_94/cert.pem
+} 0 "EVP_PKEY_missing_parameters before copy: 1
+EVP_PKEY_missing_parameters after copy: 0
+Check private key:Ok"	
+
+end_tests

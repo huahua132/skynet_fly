@@ -1,0 +1,21 @@
+{% set cnt = namespace(val=-2) %}
+{ const char* envval = NULL;
+{%- for sig in config['sigs'] %}
+   {%- for variant in sig['variants'] %}
+      {%- set cnt.val = cnt.val + 2 %}
+   if ((envval = getenv("OQS_ENCODING_{{variant['name']|upper}}"))) oqs_alg_encoding_list[{{ cnt.val }}] = envval;
+   if ((envval = getenv("OQS_ENCODING_{{variant['name']|upper}}_ALGNAME"))) oqs_alg_encoding_list[{{ cnt.val + 1 }}] = envval;
+      {%- for classical_alg in variant['mix_with'] %}
+         {%- set cnt.val = cnt.val + 2 %}
+   if ((envval = getenv("OQS_ENCODING_{{ classical_alg['name']|upper }}_{{variant['name']|upper}}"))) oqs_alg_encoding_list[{{ cnt.val }}] = envval;
+   if ((envval = getenv("OQS_ENCODING_{{ classical_alg['name']|upper }}_{{variant['name']|upper}}_ALGNAME"))) oqs_alg_encoding_list[{{ cnt.val + 1 }}] = envval;
+      {%- endfor %}
+      {%- for composite_alg in variant['composite'] %}
+         {%- set cnt.val = cnt.val + 2 %}
+   if (getenv("OQS_ENCODING_{{variant['name']|upper}}_{{ composite_alg['name']|upper }}")) oqs_alg_encoding_list[{{ cnt.val }}] = getenv("OQS_ENCODING_{{variant['name']|upper}}_{{ composite_alg['name']|upper }}");
+   if (getenv("OQS_ENCODING_{{variant['name']|upper}}_{{ composite_alg['name']|upper }}_ALGNAME")) oqs_alg_encoding_list[{{ cnt.val + 1 }}] = getenv("OQS_ENCODING_{{variant['name']|upper}}_{{ composite_alg['name']|upper }}_ALGNAME");
+      {%- endfor %}
+   {%- endfor %}
+{%- endfor %}
+}
+

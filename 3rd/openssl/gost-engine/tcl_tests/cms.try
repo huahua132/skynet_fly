@@ -1,0 +1,172 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на команду cms" 
+
+test "Creating CA 2001" {
+	makeCA ${testname}CA gost2001:A
+} 0 1
+
+test "Creating CA 2012" {
+	makeCA
+} 0 1
+
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2001:B gost2001:C gost2012_256:A gost2012_256:B gost2012_256:C gost2012_512:A gost2012_512:B}}
+		"open" {set alg_list {gost2001:A gost2001:B gost2001:C gost2012_256:A gost2012_256:B gost2012_256:C gost2012_512:A gost2012_512:B}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_cms_$alg_fn
+	switch -glob $alg {
+		gost2012* {set ::test::ca ${testname}CA-2012
+		           set ca_sign_alg hash_with_sign12_512
+		          }
+		* {set ::test::ca ${testname}CA
+		   set ca_sign_alg hash_with_sign01_cp
+		  }
+	}
+
+test "Creating user with signing key $alg" {
+	makeRegisteredUser $username $alg
+
+	if {![file exists $username/req.pem]&&[file exists $username/cert.pem]} {
+		file delete $username/cert.pem
+	}	
+	file exists $username/cert.pem
+} 0 1
+
+test -skip {![file exists $username/cert.pem]} -createsfiles [list cms_sign.dat cms_sign_$alg_fn.msg] "Signing a message without cert by $alg" {
+	makeFile cms_sign.dat [string repeat "Test data to cms_sign.\n" 100] 
+	openssl	"cms -sign -in cms_sign.dat -text -out cms_sign_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem -nocerts"
+	file isfile cms_sign_$alg_fn.msg
+} 0 1
+
+test -skip {![file exist cms_sign_$alg_fn.msg]} "Checking micalg param in signed without cert $alg message" {
+	regexp -- micalg="[micalg [alg_hash $alg]]" [grep micalg [getFile cms_sign_$alg_fn.msg]]
+} 0 1
+
+test -createsfiles cms_sign_$alg_fn.pem -skip {![file exist cms_sign_$alg_fn.msg]} "Extracting CMS from signed without cert $alg message" {
+	openssl "cms -cmsout -out cms_sign_$alg_fn.pem -outform PEM -in cms_sign_$alg_fn.msg"
+	file isfile cms_sign_$alg_fn.pem
+} 0 1
+
+
+test -skip {![file exists cms_sign_$alg_fn.pem]} "Checking oids in cms struct" {
+	extract_oids cms_sign_$alg_fn.pem PEM
+} 0 [mkObjList [hash_long_name $alg] [hash_long_name $alg] "GOST R 34.11-2012 with 256 bit hash" "GOST R 34.11-2012 with 512 bit hash" "GOST R 34.11-94" "GOST 28147-89" [alg_long_name $alg]]  
+# hash_12_256 hash_12_512 hash_94 crypt89_cc are from sMIMECapabilities
+
+test -skip {![file exists cms_sign_$alg_fn.msg]} "Verifying a message signed with $alg without ca " {
+	grep Veri [openssl "cms -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -noverify -certfile $username/cert.pem"]
+} 0 "CMS Verification successful
+"
+
+test -skip {![file exists cms_sign_$alg_fn.msg]}  "Verifying a message signed with $alg with ca" {
+	grep Veri [openssl "cms -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -certfile $username/cert.pem -CAfile $::test::ca/cacert.pem"]
+} 0 "CMS Verification successful
+"
+
+test -skip {![file exists cms_sign_$alg_fn.msg]} -createsfiles [list cms_bad_$alg_fn.msg cms_verified.txt] "Verifying corrupted messages signed with $alg" {
+	set corrupted [getFile cms_sign_$alg_fn.msg]
+	set index [string first "Test data" $corrupted ]
+	makeFile cms_bad_$alg_fn.msg [string replace $corrupted $index [expr $index+9] "Bad data"]
+	grep Verification [openssl "cms -verify -text -in cms_bad_$alg_fn.msg -out cms_verified.txt -noverify -certfile $username/cert.pem"]
+} 1 "Verification failure"
+
+test -skip {![file exists $username/cert.pem]}  -createsfiles [list cms_sign.dat cms_sign_c_$alg_fn.msg] "Signing a message by $alg with cert" {
+	makeFile cms_sign.dat [string repeat "Test data to sign.\n" 100] 
+	openssl	"cms -sign -in cms_sign.dat -crlfeol -text -out cms_sign_c_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem"
+	file isfile cms_sign_c_$alg_fn.msg
+} 0 1
+
+test -skip {![file exist cms_sign_c_$alg_fn.msg]} "Checking micalg param in signed with cert $alg message" {
+	regexp -- micalg="[micalg [alg_hash $alg]]" [grep micalg [getFile cms_sign_c_$alg_fn.msg]]
+} 0 1
+
+test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert inside without ca" {
+	grep Veri [openssl "cms -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -noverify"]
+} 0 "CMS Verification successful
+"
+
+test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert with ca" {
+	grep Veri [openssl "cms -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 0 "CMS Verification successful
+"
+
+test -skip {![file exists $username/cert.pem]} -createsfiles {cms_sign.dat cms_sign_op_$alg_fn.msg} "Signing a message by $alg with cert using opaque signing" {
+	makeFile cms_sign.dat [string repeat "Test data to cms_sign.\n" 100] 
+	openssl	"cms -sign -in cms_sign.dat -text -out cms_sign_op_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem -nodetach"
+	file isfile cms_sign_op_$alg_fn.msg
+} 0 1
+
+test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a message signed by $alg having cert inside without ca" {
+	grep Veri [openssl "cms -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -noverify"]
+} 0 "CMS Verification successful
+"
+
+test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a $alg opaque  message with ca" {
+	grep Veri [openssl "cms -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 0 "CMS Verification successful
+"
+
+test -createsfiles cms_broken_op_$alg_fn.msg  -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying broken $alg opaque message" {
+	set data [getFile cms_sign_op_$alg_fn.msg]
+	regexp "(.*)\n\r?\n(.+)" $data match header encoded
+	set asnstruct [::base64::decode $encoded]
+	makeFile cms_broken_op_$alg_fn.msg "$header\n\n[::base64::encode [regsub -all\
+		"Test data" $asnstruct "Best data"]]"
+	grep Verification [openssl "cms -verify -text -in cms_broken_op_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 1 "Verification failure"
+	
+
+test -createsfiles "cms_sign_det_$alg_fn.msg" -skip {![file exists $username/cert.pem]||![file exists cms_sign.dat]} "Creating detached $alg signature" {
+	openssl "cms -sign -binary -in cms_sign.dat -out cms_sign_det_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem"
+	file exists cms_sign_det_$alg_fn.msg
+} 0 1
+
+test -skip {![file exist cms_sign_det_$alg_fn.msg]} "Checking micalg param in detached $alg signature" {
+	regexp -- micalg="[micalg [alg_hash $alg]]" [grep micalg [getFile cms_sign_det_$alg_fn.msg]]
+} 0 1
+
+test -createsfiles cms_sign_det_$alg_fn.pem -skip {![file exist cms_sign_det_$alg_fn.msg]} "Extracting CMS from signed $alg message" {
+openssl "cms -cmsout -out cms_sign_det_$alg_fn.pem -outform PEM -in cms_sign_det_$alg_fn.msg"
+	file isfile cms_sign_$alg_fn.pem
+} 0 1
+
+#We expect cryptocom oids because of cert cms_signed by ca with Cryptocom algs
+# Result sequence
+# 1. digest 
+# 2.  algorithm of CA key
+# 3. algorithm of current key
+# 4. algorithm of CA key
+# 5. digest
+# 6. digests from sMIMECapabilities
+# 7. encryption from sMIMECapabilities
+# 8. algorithm of current key
+test -skip {![file exists cms_sign_$alg_fn.pem]} "Checking oids in cms struct" {
+	extract_oids cms_sign_det_$alg_fn.pem PEM
+} 0 [mkObjList [hash_long_name $alg] [smime_hash_with_sign_long_name $ca_sign_alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [smime_hash_with_sign_long_name  $ca_sign_alg] [hash_long_name $alg] "GOST R 34.11-2012 with 256 bit hash" "GOST R 34.11-2012 with 512 bit hash" "GOST R 34.11-94" "GOST 28147-89" [alg_long_name $alg]]
+
+test -skip {![file exists cms_sign_det_$alg_fn.pem]} "Verifying detached $alg cms_signature" {
+	grep Veri [openssl "cms -verify -binary -content cms_sign.dat -inform PEM -in cms_sign_det_$alg_fn.pem -out cms_verified.txt -noverify"]
+} 0 "CMS Verification successful
+"
+
+test -skip {![file exists cms_sign_det_$alg_fn.msg]} -createsfiles {bad.dat} "Verifying corrupted $alg detached cms_signature" {
+	makeFile bad.dat [regsub Test [getFile cms_sign.dat] Best]
+	grep Verification [openssl "cms -verify -content bad.dat -in cms_sign_det_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 1 "Verification failure"
+
+
+}
+end_tests

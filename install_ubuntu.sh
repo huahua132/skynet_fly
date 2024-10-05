@@ -34,7 +34,7 @@ install_perl() {
 	cd ../../
 }
 
-# 编译openssl-3.3.2
+# 编译openssl-3.4.0
 install_openssl() {
 	# 获取脚本当前目录
 	CURRENT_DIR="$(dirname "$BASH_SOURCE")"
