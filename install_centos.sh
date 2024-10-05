@@ -2,7 +2,7 @@
 
 # 安装编译skynet依赖的一些库
 install_dependencies() {
-	yum install -y git gcc autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc* perl* cpan
+	yum install -y git gcc autoconf automake make libtool curl centos-release-scl devtoolset-9-gcc* perl* cpan sudo
 	# centos8以上 dnf -y group install "Development Tools"
 }
 
@@ -20,17 +20,17 @@ install_perl() {
 
 	if [ -f /usr/bin/perl ]; then
     sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
-        echo "Failed to move perl"
+		echo -e "\033[31m Failed to move perl \033[0m"
         exit 1
     }
 	fi
 
 	sudo cp -f $HOME/localperl/bin/perl /usr/local/bin/perl && echo "Copied perl successfully" || {
-		echo "Failed to copy perl"
+		echo -e "\033[31m Failed to copy perl \033[0m"
 		exit 1
 	}
 	sudo ln -s /usr/local/bin/perl /usr/bin/perl && echo "Created symlink successfully" || {
-		echo "Failed to create symlink"
+		echo -e "\033[31m Failed to create symlink \033[0m"
 		exit 1
 	}
 
@@ -50,22 +50,22 @@ install_openssl() {
 		echo "ABSOLUTE_PATH:$ABSOLUTE_PATH"
 		# 激活 devtoolset-9
 		source /opt/rh/devtoolset-9/enable && echo "Enabled devtoolset-9 successfully" || {
-			echo "Failed to enable devtoolset-9"
+			echo -e "\033[31m Failed to enable devtoolset-9 \033[0m"
 			exit 1
 		}
 		
 		# 配置 OpenSSL
 		./config --prefix="$ABSOLUTE_PATH" -fPIC no-shared && echo "OpenSSL configured successfully" || {
-			echo "OpenSSL configuration failed"
+			echo -e "\033[31m OpenSSL configuration failed \033[0m"
 			exit 1
 		}
 
 		# 编译
 		make -j4 && echo "Make completed successfully" || {
-			echo "Make failed"
+			echo -e "\033[31m Make failed \033[0m"
 			exit 1
 		}
-		echo "OpenSSL installed successfully!"
+		echo -e "\033[32m OpenSSL installed successfully! \033[0m"
 	)
 	cd ../../
 }
