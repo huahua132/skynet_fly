@@ -39,6 +39,7 @@ local config = {
 	logpath         = server_path .. 'logs/',
 	logfilename     = 'server.log',
 	logservice      = 'snlua',
+	log_is_launch_rename = true,
 	daemon          = is_daemon and string.format("./make/skynet.%s.pid", load_mods_name) or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
@@ -100,6 +101,10 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	if cfg.breakpoint_debug_module_index then								--断点调式的可热更模块启动下标
 		config.breakpoint_debug_module_index = cfg.breakpoint_debug_module_index
 	end
+
+	if cfg.log_is_launch_rename ~= nil then
+		config.log_is_launch_rename = cfg.log_is_launch_rename				--启动是否重命名旧日志
+	end
 end
 
 local file_path = server_path .. 'make/'
@@ -113,6 +118,7 @@ local config_path = file_path .. svr_name .. '_config.lua'
 local file = io.open(config_path, 'w+')
 assert(file)
 local str = table_util.table_to_luafile("G", config)
+
 file:write(str)
 file:close()
 print("make " .. config_path)
