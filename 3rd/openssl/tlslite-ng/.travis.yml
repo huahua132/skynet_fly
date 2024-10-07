@@ -1,0 +1,232 @@
+dist: trusty
+sudo: false
+cache: pip
+language: python
+
+# whitelist branches on which tests will be run
+branches:
+  only:
+    - master
+    - tlslite-ng-0.5
+    - tlslite-ng-0.6
+    - tlslite-ng-0.7
+
+addons:
+  apt_packages:
+    # needed for M2Crypto
+    - swig
+    # needed for GMPY
+    - libgmp-dev
+    # needed for GMPY2
+    - libmpfr-dev
+    - libmpc-dev
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
+jobs:
+  include:
+    - python: 2.6
+      env: TACKPY=false
+    - python: 2.7
+      env: TACKPY=false
+    - python: 3.3
+      env: TACKPY=false
+    - python: 3.4
+      env: TACKPY=false
+    - python: 3.5
+      env: TACKPY=false
+    - python: 3.6
+      env: TACKPY=false
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: TACKPY=false
+    - python: 3.8
+      dist: xenial
+      sudo: true
+      env: TACKPY=false
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: TACKPY=false
+    - python: 2.7
+      env: TACKPY=true
+    - python: 3.4
+      env: TACKPY=true
+    - python: 2.7
+      env: M2CRYPTO=true
+    - python: 3.5
+      env: M2CRYPTO=true
+    - python: 3.6
+      env: M2CRYPTO=true
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true
+    - python: 3.8
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true
+    - python: 2.7
+      env: PYCRYPTO=true
+    - python: 3.5
+      env: PYCRYPTO=true
+    - python: 3.6
+      env: PYCRYPTO=true
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PYCRYPTO=true
+    # pycrypto doesn't work on Python 3.8 or 3.9 as time module doesn't have clock()
+    # any more
+    #- python: 3.8
+    #  dist: xenial
+    #  sudo: true
+    #  env: PYCRYPTO=true
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: PYCRYPTODOME=true
+    - python: 2.7
+      env: GMPY=true
+    - python: 3.5
+      env: GMPY=true
+    - python: 3.6
+      env: GMPY=true
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: GMPY=true
+    - python: 3.8
+      dist: xenial
+      sudo: true
+      env: GMPY=true
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: GMPY=true
+    - python: 2.7
+      env: GMPY2=true
+    - python: 3.5
+      env: GMPY2=true
+    - python: 3.6
+      env: GMPY2=true
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: GMPY2=true
+    - python: 3.8
+      dist: xenial
+      sudo: true
+      env: GMPY2=true
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: GMPY2=true
+    - python: 2.7
+      env: M2CRYPTO=true PYCRYPTO=true GMPY=true GMPY2=true
+    - python: 3.5
+      env: M2CRYPTO=true PYCRYPTO=true GMPY=true GMPY2=true
+    - python: 3.6
+      env: M2CRYPTO=true PYCRYPTO=true GMPY=true GMPY2=true
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true PYCRYPTO=true GMPY=true GMPY2=true CC_COV=true
+    - python: 3.8
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true GMPY=true GMPY2=true
+    - python: 3.9
+      dist: xenial
+      sudo: true
+      env: M2CRYPTO=true GMPY=true GMPY2=true
+
+before_install:
+  - |
+       echo -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST\n" \
+               "TRAVIS_REPO_SLUG=$TRAVIS_REPO_SLUG\n" \
+               "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST\n" \
+               "TRAVIS_COMMIT=$TRAVIS_COMMIT\n" \
+               "TRAVIS_PYTHON_VERSION=$TRAVIS_PYTHON_VERSION"
+  - |
+       # workaround https://github.com/travis-ci/travis-ci/issues/2666
+       if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+         URL="https://github.com/${TRAVIS_REPO_SLUG}/pull/${TRAVIS_PULL_REQUEST}.patch"
+         # `--location` makes curl follow redirects
+         PR_FIRST=$(curl --silent --show-error --location $URL | head -1 | grep -o -E '\b[0-9a-f]{40}\b' | tr -d '\n')
+         TRAVIS_COMMIT_RANGE=$PR_FIRST^..$TRAVIS_COMMIT
+       fi
+
+  - pip list
+  # sanity check current commit
+  - git rev-parse HEAD
+  - echo "TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE"
+  - git fetch origin master:refs/remotes/origin/master
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+
+install:
+  - if [[ -e build-requirements-${TRAVIS_PYTHON_VERSION}.txt ]]; then travis_retry pip install -r build-requirements-${TRAVIS_PYTHON_VERSION}.txt; else travis_retry pip install -r build-requirements.txt; fi
+  - if [[ $TACKPY == 'true' ]]; then travis_retry pip install tackpy; fi
+  - |
+      if [[ $M2CRYPTO == 'true' ]]; then
+        # it looks like 0.37.0 broke compatibility with old OpenSSL so try using old version
+        if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]] || [[ $TRAVIS_PYTHON_VERSION == 3.5 ]] || [[ $TRAVIS_PYTHON_VERSION == 3.6 ]] ; then
+           travis_retry pip install 'm2crypto<0.37';
+        else
+           travis_retry pip install --pre m2crypto;
+        fi
+      fi
+  - if [[ $PYCRYPTO == 'true' ]]; then travis_retry pip install pycrypto; fi
+  - if [[ $PYCRYPTODOME == 'true' ]]; then travis_retry pip install pycryptodome; fi
+  - if [[ $GMPY == 'true' ]]; then travis_retry pip install gmpy; fi
+  - if [[ $GMPY2 == 'true' ]]; then travis_retry pip install gmpy2; fi
+  - travis_retry pip install -r requirements.txt
+  - pip list
+  - if [[ $CC_COV == 'true' ]]; then ./cc-test-reporter before-build; fi
+
+script:
+  - |
+      if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then
+          coverage run --branch --source tlslite -m unittest2 discover;
+      else
+          coverage run --branch --source tlslite -m unittest discover;
+      fi
+  - make test-local
+  # --appends is supported only in the new coverage (>4)
+  - coverage combine --append
+  - coverage report -m
+  - ./setup.py install
+  - make test
+  # pylint doesn't work on 2.6: https://bitbucket.org/logilab/pylint/issue/390/py26-compatiblity-broken
+  - |
+      if [[ $TRAVIS_PYTHON_VERSION != '2.6' ]]; then
+        pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" tlslite > pylint_report.txt || :
+        diff-quality --violations=pylint --fail-under=90 pylint_report.txt
+      fi
+  - |
+      if [[ $TRAVIS_PULL_REQUEST != "false" ]]; then
+        echo "Will test commits between $TRAVIS_COMMIT_RANGE:"
+        git log --oneline --reverse $TRAVIS_COMMIT_RANGE
+
+        for i in $(git log --pretty=format:%H --reverse $TRAVIS_COMMIT_RANGE); do
+          git checkout $i
+          make clean
+          if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then
+            unit2 discover || exit 1
+          else
+            python -m unittest discover || exit 1
+          fi
+          make test-local || exit 1
+          cd $TRAVIS_BUILD_DIR
+        done
+      fi
+
+after_success:
+ - travis_retry coveralls
+ - if [[ $CC_COV == 'true' ]]; then coverage xml; ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT; fi

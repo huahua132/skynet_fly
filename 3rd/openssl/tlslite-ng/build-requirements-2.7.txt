@@ -1,0 +1,8 @@
+unittest2
+coverage
+hypothesis
+git+https://github.com/tomato42/coveralls-python.git@add-py26#egg=coveralls
+pylint
+mock
+diff_cover<2.5.0
+pytest>=4.6.5

@@ -1,0 +1,25 @@
+# https://editorconfig.org
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+tab_width = 8
+
+[*.[ch]]
+indent_size = 4
+indent_style = space
+
+[{CMakeLists.txt,*.cmake}]
+indent_size = 2
+indent_style = space
+
+[*.yml]
+indent_size = 4
+indent_style = space
+
+[COMMIT_EDITMSG]
+indent_size = 2
+indent_style = space
+max_line_length = 80

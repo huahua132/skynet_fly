@@ -1,0 +1,127 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на команду ca" 
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_pair_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_pair_list {gost2001:A {gost2001:B} gost2012_256:A {gost2012_256:C} gost2012_512:B {gost2012_256:B gost2012_512:A}}}
+		"open" {
+			set alg_pair_list {
+				gost2001:A {gost2001:B}
+				gost2012_256:A {gost2012_256:B gost2012_512:B}
+				gost2012_256:TCA {gost2012_256:A gost2012_512:A}
+				gost2012_512:A {gost2012_256:A gost2012_256:TCA gost2012_512:A gost2012_512:C}
+				gost2012_512:C {gost2012_256:B gost2012_256:TCB gost2012_512:B gost2012_512:C}
+			}
+		}
+	}
+}
+
+foreach {ca_alg alg_list} $alg_pair_list {
+	set ca_alg_fn [string map {":" "_"} $ca_alg]
+
+test "Creating CA ($ca_alg)" {
+	makeCA ${testname}CA-$ca_alg_fn $ca_alg
+} 0 1
+
+set serial_list ""
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set userdir U_ca_${alg_fn}_for_${ca_alg_fn}
+
+#Depends on previous
+test "Creating user request ($alg)" {
+	makeUser $userdir $alg
+} 0 1
+
+test -skip {![file exists $userdir/req.pem]}  "Registering cert at CA" {
+	grep Sign [openssl "ca -config $::test::ca/ca.conf -in $userdir/req.pem -out $userdir/cert.pem -batch -notext"] 
+} 0 "Signature ok
+"
+if [file exists $userdir/req.pem] {
+set cert [getFile $userdir/req.pem]
+makeFile $userdir/broken.pem  [hackPem "Cryptocom" $cert "Kriptokom"]
+}
+test -skip {![file exists $userdir/broken.pem]} "Registering broken request at ca" {
+	grep Sign [openssl "ca -config $::test::ca/ca.conf -in $userdir/broken.pem -out $userdir/badcert.pem -batch"]
+} 0 "Signature did not match the certificate request
+"
+
+#test "Generating self-signed CA certificate" {
+#
+#} 0 "not written"
+
+test  "Revoking certificate" {
+	set revoking_cert $::test::ca/newcerts/[string trim [getFile $::test::ca/serial.old]].pem
+	append serial_list [regsub "serial=" [openssl "x509 -in $revoking_cert -noout -serial"] "    Serial Number: "]
+	string map {"Data Base" Database Updated updated} [ grep "Data" [openssl "ca -crl_reason keyCompromize -crl_compromise [clock\
+	format [clock seconds]  -format %Y%m%d%H%M%SZ] -revoke $revoking_cert -config $::test::ca/ca.conf"] ]
+} 0 "Database updated
+"
+test -createsfiles test.crl "Generating CRL" {
+	openssl "ca -gencrl -config $::test::ca/ca.conf -out test.crl"
+	file copy -force $::test::ca/cacert.pem test_crl_cacert.pem
+	file exist test.crl
+} 0 1	
+
+
+test -skip {![file exists test.crl]} "Displaying CRL" {
+	regsub -all " = " [grep "(Serial|Version|Signature Alg|Issuer)" [openssl "crl -text -noout -in test.crl"] ] "="
+} 0 "        Version 2 (0x1)
+        Signature Algorithm: [hash_with_sign_long_name $ca_alg]
+        Issuer: C=RU, L=Moscow, CN=Test CA $ca_alg, O=Cryptocom, OU=OpenSSL CA, emailAddress=openssl@cryptocom.ru
+$serial_list    Signature Algorithm: [hash_with_sign_long_name  $ca_alg]
+"
+
+test -skip {![file exists test.crl]} "Verifying CRL OK" {
+	grep verify [openssl "crl -in test.crl -noout -CAfile $::test::ca/cacert.pem"]
+} 0 "verify OK
+"
+
+test -skip {![file exists test.crl]} "Verifying corrupted CRL" {
+	makeFile "badcrl.pem" [hackPem "\01\x1E" [getFile test.crl] "\01\0"]
+	grep verify [openssl "crl -in badcrl.pem -noout -CAfile $::test::ca/cacert.pem"]
+} -1 "verify failure"
+
+test "Verifying CA certificate" {
+	grep "(cacert.pem|error|OK)" [openssl "verify -CAfile $::test::ca/cacert.pem $::test::ca/cacert.pem"]
+} 0 "$::test::ca/cacert.pem: OK
+"
+
+test "Verifying certificate" {
+	grep "cert.pem" [openssl "verify -CAfile $::test::ca/cacert.pem $userdir/cert.pem"]
+} 0 "$userdir/cert.pem: OK
+"
+
+test "Verifying bad certificate" {
+	makeFile "badcert.pem" [hackPem "Team" [getFile $userdir/cert.pem] "meat"]
+	openssl "verify -CAfile $::test::ca/cacert.pem badcert.pem"
+} 1 "certificate signature failure"
+
+test "Verifying revoked certificate" {
+	makeFile ca_crl.pem "[getFile $::test::ca/cacert.pem]\n[getFile test.crl]"
+	openssl "verify -crl_check -CAfile ca_crl.pem $userdir/cert.pem"
+} 1 "certificate revoked"
+
+test "Create a PKCS#7 structure from a certificate and CRL" {
+	openssl "crl2pkcs7 -in test.crl -certfile $userdir/cert.pem -out $userdir/p7.pem"
+	extract_oids $userdir/p7.pem PEM
+} 0 [mkObjList [hash_with_sign_long_name $ca_alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg] $alg] [hash_with_sign_long_name $ca_alg] [hash_with_sign_long_name $ca_alg] [hash_with_sign_long_name $ca_alg]]
+
+test "Creates a PKCS#7 structure without CRL" {
+	openssl "crl2pkcs7 -nocrl -certfile $userdir/cert.pem -certfile $::test::ca/cacert.pem -out $userdir/p7_nocrl.pem"
+	extract_oids $userdir/p7_nocrl.pem PEM
+} 0 [mkObjList [hash_with_sign_long_name $ca_alg] [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg] $alg]  [hash_with_sign_long_name $ca_alg] [hash_with_sign_long_name $ca_alg] [alg_long_name $ca_alg] [pubkey_long_name $ca_alg] [param_hash_long_name [param_hash $ca_alg] $ca_alg] [hash_with_sign_long_name $ca_alg]]
+
+}
+
+}
+
+end_tests

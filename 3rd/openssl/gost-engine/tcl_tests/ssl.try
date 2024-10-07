@@ -1,0 +1,322 @@
+#!/usr/bin/tclsh
+
+lappend auto_path [file dirname [info script]]
+package require ossltest
+if {$argc==2} {
+	switch -exact -- [lindex $argv 0]  {
+	-serverconf {
+		set test::server_conf [lindex $argv 1]
+		set test::suffix "-clt"
+	} 
+	-clientconf {
+		set test::client_conf [lindex $argv 1]
+		set test::suffix "-srv"
+	}
+	default {
+		puts stderr "invalid command line"
+		exit 1;
+	}
+	}
+} elseif $argc {
+	puts stderr "invalid command line"
+	exit 1
+}	
+
+array set protos {
+	TLSv1 -tls1
+	TLSv1.1 -tls1_1
+	TLSv1.2 -tls1_2
+}
+
+cd $::test::dir
+
+start_tests "Тесты на SSL-соединение между s_client и s_server"
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A}}
+		"open" {set alg_list {rsa:1024 gost2001:XA gost2012_256:XA gost2012_512:A}}
+	}
+}
+
+array set suites {
+rsa:1024 {ECDHE-RSA-AES256-SHA@SECLEVEL=0}
+gost2001:XA {GOST2001-GOST89-GOST89@SECLEVEL=0 GOST2001-NULL-GOST94@SECLEVEL=0 LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0 IANA-GOST2012-GOST8912-GOST8912@SECLEVEL=0 GOST2012-NULL-GOST12@SECLEVEL=0}
+gost2012_256:XA {LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0 GOST2012-NULL-GOST12@SECLEVEL=0}
+gost2012_512:A {LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0 GOST2012-NULL-GOST12@SECLEVEL=0}
+}
+
+#
+# Incompatible cipher suites
+#
+array set badsuites {
+gost2012_256:XA {GOST2001-GOST89-GOST89@SECLEVEL=0 GOST2001-NULL-GOST94@SECLEVEL=0} 
+gost2012_512:A {GOST2001-GOST89-GOST89@SECLEVEL=0 GOST2001-NULL-GOST94@SECLEVEL=0}
+}
+
+#
+# Default cipher suite negotiated for algorithm
+#
+array set defsuite {
+rsa:1024 ECDHE-RSA-AES256-SHA@SECLEVEL=0
+#gost94:XA GOST94-GOST89-GOST89
+gost2001:XA GOST2012-GOST8912-GOST8912@SECLEVEL=0
+gost2012_256:XA LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0
+gost2012_512:A LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0
+}
+
+array set defsuite_12 {
+rsa:1024 ECDHE-RSA-AES256-GCM-SHA384@SECLEVEL=0
+#gost94:XA GOST94-GOST89-GOST89
+gost2001:XA LEGACY-GOST2012-GOST8912-GOST8912@SECLEVEL=0
+gost2012_256:XA GOST2012-MAGMA-MAGMAOMAC@SECLEVEL=0
+gost2012_512:A GOST2012-MAGMA-MAGMAOMAC@SECLEVEL=0
+}
+
+set proto_list {"TLSv1" "TLSv1.1" "TLSv1.2"}
+
+if {![file exists sslCA/cacert.pem]} {
+	makeCA sslCA rsa
+} else {
+	set ::test::ca sslCA	
+}
+
+test -skip {[file exist localhost_rsa/cert.pem]} \
+	"Создаем серверный сертификат rsa" {
+	makeRegisteredUser localhost_rsa rsa:1024 CN localhost
+} 0 1
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	
+	test -skip {[file exist localhost_$alg_fn/cert.pem]} \
+		"Создаем серверный сертификат $alg" {
+		makeRegisteredUser localhost_$alg_fn $alg CN localhost OU $alg_fn
+	} 0 1
+
+	test -skip {[file exists ssl_user_$alg_fn/cert.pem]} \
+		"Создаем клиентский сертификат $alg" {
+		makeRegisteredUser ssl_user_$alg_fn $alg CN ssl_user OU $alg_fn
+	} 0 1
+}
+
+foreach alg {gost2001:B gost2012_256:B gost2012_512:B} {
+	set alg_fn [string map {":" "_"} $alg]
+	test -skip {[file exists ssl_user_$alg_fn/cert.pem]} \
+		"Создаем клиентский сертификат $alg" {
+		makeRegisteredUser ssl_user_$alg_fn $alg CN ssl_user OU $alg_fn
+	} 0 1
+}
+
+
+foreach proto $proto_list {
+	foreach alg $alg_list {
+		set alg_fn [string map {":" "_"} $alg]
+
+		if {[string match *2012* $alg]} {
+			foreach suite $badsuites($alg) {
+
+				test "Incompatible suite $alg $suite $proto" {
+					set list [client_server [list -connect localhost:4433 \
+						-CAfile $::test::ca/cacert.pem \
+						-verify_return_error -verify 1 -state -cipher $suite] \
+						[list -www -cert localhost_$alg_fn/cert.pem \
+						-key localhost_$alg_fn/seckey.pem -cipher $suite \
+						$protos($proto)] {}] 
+					list [lindex $list 2] [grep "^New," [lindex $list 0]]
+				} 0 [list 1 "New, (NONE), Cipher is (NONE)\n"]
+			}
+		}
+
+		foreach suite $suites($alg) {
+			set raw_name [lindex [split $suite @] 0]
+
+			if {![string equal $proto "TLSv1.2"] && [string match *OMAC* $suite]} {
+				continue
+			}
+
+			if {[string equal $proto "TLSv1.2"] && [string match *OMAC* $suite]} {
+				set expected_proto "TLSv1.2"
+			} else {
+				set expected_proto "TLSv1.0"
+			}
+
+			test "Запуск сервера $suite $proto" {
+				set f [open_server [list -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem -cipher $suite \
+					$protos($proto)]]
+				stop_server $f
+				foreach {out err status} [stop $f] break	
+				log "SERVER OUTPUT:\n$out\n----"
+				log "SERVER STDERR:\n$err\n----"
+				log "SERVER EXIT CODE: $status"
+				grep "ACCEPT" $out
+			} 0 "ACCEPT\n"
+			log $errorInfo
+			flush [test_log]
+
+			test "Корректный хэндшейк $suite $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -cipher $suite ] \
+					[list -www -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem \
+					-cipher $suite $protos($proto)] {}] 
+				if {[regexp -lineanchor \
+				{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+				[lindex $list 0] -> result_proto result_cipher]} {
+					list [lindex $list 2] $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}	
+			} 0 [list 0 $proto $raw_name]
+
+
+			test "Несовпадающий шиферсьют DHE-RSA-AES256-SHA $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -cipher $suite] \
+					[list -www -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem \
+					-cipher DHE-RSA-AES256-SHA@SECLEVEL=0 $protos($proto)] {}] 
+				list [lindex $list 2] [grep ":fatal:" [lindex $list 1]]
+			} 0 [list 1 "SSL3 alert read:fatal:handshake failure
+"]
+
+			test "Получение странички $suite $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -cipher $suite -ign_eof] \
+					[list -www -cert localhost_$alg_fn/cert.pem \
+					-key localhost_$alg_fn/seckey.pem -cipher $suite \
+					$protos($proto)] "GET /\n\n"] 
+				grep "^New," [lindex $list 0]
+			} 0 "New, $expected_proto, Cipher is $raw_name\nNew, $expected_proto, Cipher is $raw_name\n"
+
+			if {![string match "*-NULL-*" $suite]} {
+
+				test "Сервер поддерживающий много шиферсьютов $proto" {
+					set list [client_server [list -connect localhost:4433 \
+						-CAfile $::test::ca/cacert.pem -verify_return_error \
+						-verify 1 -state -cipher $suite] \
+						[list -www -cert localhost_$alg_fn/cert.pem \
+						-key localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
+					if {[regexp -lineanchor \
+					{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+					[lindex $list 0] -> result_proto result_cipher]} {
+						list [lindex $list 2] $result_proto $result_cipher
+					} else {
+						lindex $list 1
+					}	
+				} 0 [list 0 $proto $raw_name]
+
+
+				test "Сервер c несколькими алгоритмами, клиент $suite $proto" {
+					set list [client_server [list -connect localhost:4433 \
+						-CAfile $::test::ca/cacert.pem -verify_return_error \
+						-verify 1 -state -cipher $suite] \
+						[list -www -cert localhost_rsa/cert.pem \
+						-key localhost_rsa/seckey.pem \
+						-dcert localhost_$alg_fn/cert.pem \
+						-dkey localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
+					if {[regexp -lineanchor \
+					{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+					[lindex $list 0] -> result_proto result_cipher]} {
+						list [lindex $list 2] $result_proto $result_cipher
+					} else {
+						lindex $list 1
+					}	
+				} 0 [list 0 $proto $raw_name]
+
+			}
+
+			test "Сервер c несколькими алгоритмами, клиент AES256-SHA $proto" {
+				set list [client_server [list -connect localhost:4433 \
+					-CAfile $::test::ca/cacert.pem -verify_return_error \
+					-verify 1 -state -cipher AES256-SHA@SECLEVEL=0] \
+					[list -www -cert localhost_rsa/cert.pem \
+					-key localhost_rsa/seckey.pem \
+					-dcert localhost_$alg_fn/cert.pem \
+					-dkey localhost_$alg_fn/seckey.pem $protos($proto) -cipher ALL@SECLEVEL=0] {}] 
+				if {[regexp -lineanchor \
+				{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+				[lindex $list 0] -> result_proto result_cipher]} {
+					list [lindex $list 2] $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}	
+			} 0 [list 0 $proto AES256-SHA]
+
+
+
+			if {[string match *gost* $alg]} {
+				set alg_cli_list [list $alg gost2001:B gost2012_256:B gost2012_512:B]
+			} else {
+				set alg_cli_list $alg
+			}
+
+			foreach alg_cli $alg_cli_list { 
+				set alg_cli_fn [string map {":" "_"} $alg_cli]
+
+				test "Сервер $alg, клиент с сертификатом $alg_cli $proto" {
+					set list [client_server [list -connect localhost:4433\
+						-CAfile $::test::ca/cacert.pem -verify_return_error \
+						-verify 1 -state -cert ssl_user_$alg_cli_fn/cert.pem \
+						-key ssl_user_$alg_cli_fn/seckey.pem -cipher $suite \
+						-ign_eof]\
+						[list -cert localhost_$alg_fn/cert.pem \
+						-key localhost_$alg_fn/seckey.pem -verify_return_error\
+						-Verify 3 -www -CAfile $::test::ca/cacert.pem \
+						-cipher $suite $protos($proto)] "GET /\n"]
+					list [lindex $list 2] [grep "^New," [lindex $list 0]]
+				} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $raw_name\n" 2]]
+
+			}
+
+		}
+
+		if {[string equal $proto "TLSv1.2"]} {
+			set etalon $defsuite_12($alg)
+		} else {
+			set etalon $defsuite($alg)
+		}
+
+		if {[string equal $proto "TLSv1.2"] && ![string match *2001* $alg]} {
+			set expected_proto "TLSv1.2"
+		} else {
+			set expected_proto "TLSv1.0"
+		}
+if {0} {
+		test "Умолчательный хендшейк с ключами $alg $proto" {
+			set list [client_server [list -connect localhost:4433\
+				-CAfile $::test::ca/cacert.pem -verify_return_error -verify 1\
+				-state -ign_eof]\
+				[list -www -cert localhost_$alg_fn/cert.pem\
+				-key localhost_$alg_fn/seckey.pem $protos($proto)] "GET /\n"]
+			if {[regexp -lineanchor \
+			{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+			[lindex $list 0] -> result_proto result_cipher]} {
+				list [lindex $list 2] $result_proto $result_cipher
+			} else {
+				lindex $list 1
+			}	
+		} 0 [list 0 $proto $etalon]
+
+		test "Умолчательный хендшейк с клиентской аутентификацией $alg $proto" {
+			set list [client_server [list -connect localhost:4433\
+				-CAfile $::test::ca/cacert.pem -verify_return_error \
+				-verify 1 -state -cert ssl_user_$alg_fn/cert.pem \
+				-key ssl_user_$alg_fn/seckey.pem -ign_eof]\
+				[list -cert localhost_$alg_fn/cert.pem \
+				-key localhost_$alg_fn/seckey.pem -verify_return_error\
+				-Verify 3 -www -CAfile $::test::ca/cacert.pem $protos($proto)] \
+				"GET /\n"]
+			list [lindex $list 2] [grep "^New," [lindex $list 0]]
+		} 0 [list 0 [string repeat "New, $expected_proto, Cipher is $etalon\n" 2]]
+}; # if {0}
+	}
+}
+
+end_tests

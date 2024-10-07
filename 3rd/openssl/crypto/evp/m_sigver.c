@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -15,8 +15,6 @@
 #include "internal/provider.h"
 #include "internal/numbers.h"   /* includes SIZE_MAX */
 #include "evp_local.h"
-
-#ifndef FIPS_MODULE
 
 static int update(EVP_MD_CTX *ctx, const void *data, size_t datalen)
 {
@@ -355,12 +353,9 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
         ctx->pctx->flag_call_digest_custom = 1;
 
     ret = 1;
-
  end:
-#ifndef FIPS_MODULE
     if (ret > 0)
         ret = evp_pkey_ctx_use_cached_data(locpctx);
-#endif
 
     EVP_KEYMGMT_free(tmp_keymgmt);
     return ret > 0 ? 1 : 0;
@@ -397,7 +392,6 @@ int EVP_DigestVerifyInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     return do_sigver_init(ctx, pctx, type, NULL, NULL, NULL, e, pkey, 1,
                           NULL);
 }
-#endif /* FIPS_MDOE */
 
 int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t dsize)
 {
@@ -469,11 +463,11 @@ int EVP_DigestVerifyUpdate(EVP_MD_CTX *ctx, const void *data, size_t dsize)
     return EVP_DigestUpdate(ctx, data, dsize);
 }
 
-#ifndef FIPS_MODULE
 int EVP_DigestSignFinal(EVP_MD_CTX *ctx, unsigned char *sigret,
                         size_t *siglen)
 {
-    int sctx = 0, r = 0;
+    int sctx = 0;
+    int r = 0;
     EVP_PKEY_CTX *dctx = NULL, *pctx = ctx->pctx;
 
     if ((ctx->flags & EVP_MD_CTX_FLAG_FINALISED) != 0) {
@@ -569,7 +563,7 @@ int EVP_DigestSignFinal(EVP_MD_CTX *ctx, unsigned char *sigret,
         } else {
             int s = EVP_MD_get_size(ctx->digest);
 
-            if (s < 0 || EVP_PKEY_sign(pctx, sigret, siglen, NULL, s) <= 0)
+            if (s <= 0 || EVP_PKEY_sign(pctx, sigret, siglen, NULL, s) <= 0)
                 return 0;
         }
     }
@@ -612,10 +606,10 @@ int EVP_DigestSign(EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen,
 int EVP_DigestVerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sig,
                           size_t siglen)
 {
+    int vctx = 0;
+    unsigned int mdlen = 0;
     unsigned char md[EVP_MAX_MD_SIZE];
     int r = 0;
-    unsigned int mdlen = 0;
-    int vctx = 0;
     EVP_PKEY_CTX *dctx = NULL, *pctx = ctx->pctx;
 
     if ((ctx->flags & EVP_MD_CTX_FLAG_FINALISED) != 0) {
@@ -710,9 +704,7 @@ int EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
         if (ctx->pctx->pmeth != NULL && ctx->pctx->pmeth->digestverify != NULL)
             return ctx->pctx->pmeth->digestverify(ctx, sigret, siglen, tbs, tbslen);
     }
-
     if (EVP_DigestVerifyUpdate(ctx, tbs, tbslen) <= 0)
         return -1;
     return EVP_DigestVerifyFinal(ctx, sigret, siglen);
 }
-#endif /* FIPS_MODULE */
