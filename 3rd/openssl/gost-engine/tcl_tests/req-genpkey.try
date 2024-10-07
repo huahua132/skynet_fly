@@ -1,0 +1,82 @@
+#!/usr/bin/tclsh
+# создание секретного ключа
+# создание заявки и самоподписанного сертификата командой req
+# проверка OIDов алгоритма во всех структурах
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+start_tests "Создание ключей и заявок, команда genpkey"
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2001:B gost2001:C gost2001:XA gost2001:XB gost2012_256:A gost2012_256:B gost2012_256:C gost2012_256:XA gost2012_256:XB gost2012_512:A gost2012_512:B}}
+		"open" {set alg_list {gost2001:A gost2001:B gost2001:C gost2001:XA gost2001:XB gost2012_256:0 gost2012_256:A gost2012_256:B gost2012_256:C gost2012_256:XA gost2012_256:XB gost2012_512:A gost2012_512:B}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username pkey_$alg_fn
+	foreach {alg_only params} [split $alg :] break
+
+test -createsfiles $username/seckey.pem "Секретный ключ, алгоритм $alg" {
+	file delete -force $username
+	file mkdir $username
+	openssl "genpkey -algorithm $alg_only -pkeyopt paramset:$params -out $username/seckey.pem"
+	expr {[file size $username/seckey.pem] > 0}
+} 0 1
+
+test -skip {![file exists $username/seckey.pem]} "OID в секретном ключе" {
+	extract_oids $username/seckey.pem
+} 0 [mkObjList [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]]]
+
+test -skip {![file exists $username/seckey.pem]} "Алгоритм $alg, заявка по секретному ключу" {
+	makeFile $username/req.conf [makeConf]
+	openssl "req -new -config $username/req.conf -key $username/seckey.pem -out $username/req.pem"
+	expr {[file size $username/req.pem] > 0}
+} 0 1
+
+test -skip {![file exists $username/req.pem]} "Подпись под заявкой корректна" {
+	grep "verif" [openssl "req -verify -in $username/req.pem"]
+} 0 {Certificate request self-signature verify OK
+}
+
+test -skip {![file exists $username/req.pem]} "OID в заявке, алгоритм $alg" {
+	extract_oids $username/req.pem
+} 0 [mkObjList [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]] [hash_with_sign_long_name $alg]]
+
+test -skip {![file exists $username/seckey.pem]} "Алгоритм $alg, сертификат по секретному ключу" {
+	openssl "req -new -x509 -config $username/req.conf -key $username/seckey.pem -out $username/cert.pem"
+	expr {[file size $username/cert.pem] > 0}
+} 0 1
+
+test -skip {![file exists $username/cert.pem]} "OID в сертификате" {
+	extract_oids $username/cert.pem
+} 0 [mkObjList  [hash_with_sign_long_name $alg] [alg_long_name $alg] [pubkey_long_name $alg]\
+ [param_hash_long_name [param_hash $alg]] [hash_with_sign_long_name $alg]]
+
+test -createsfiles "$username/seckey.der"  "Алгоритм $alg сохраняем ключ в DER-формате" {
+	openssl "genpkey -algorithm $alg_only -pkeyopt paramset:$params -out $username/seckey.der -outform DER"
+	file exists $username/seckey.der
+} 0 1
+
+test -skip {![file exists $username/seckey.der]} "OID в секретном ключе $alg DER" {
+	extract_oids $username/seckey.der DER
+} 0 [mkObjList [alg_long_name $alg] [pubkey_long_name $alg] [param_hash_long_name [param_hash $alg]]]
+
+test -skip {![file exists $username/seckey.der]} -createsfiles $username/req2.pem "Создаем заявку из ключа в формате DER" {
+	openssl "req -new  -config $username/req.conf -key $username/seckey.der -keyform der  -out $username/req2.pem"	
+	expr {[file size $username/req2.pem] > 0}
+} 0 1
+
+test -skip {![file exists $username/req2.pem]} "Подпись под заявкой корректна" {
+	grep "verif" [openssl "req -verify -in $username/req2.pem"]
+} 0 {Certificate request self-signature verify OK
+}
+
+}
+
+
+end_tests

@@ -1,0 +1,5 @@
+tox
+coveralls
+hypothesis
+pytest>=4.6.0
+coverage

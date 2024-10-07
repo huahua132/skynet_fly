@@ -1,0 +1,8 @@
+gost2001:XA {
+	GOST2001-GOST89-GOST89 tls-ref-cp20.lan.cryptocom.ru:443
+	GOST2001-NULL-GOST94 tls-ref-cp20.lan.cryptocom.ru:4401
+}
+rsa:1024 {
+	DHE-RSA-AES256-SHA tls-ref-cp20.lan.cryptocom.ru:4407
+	RC4-SHA	tls-ref-cp20.lan.cryptocom.ru:4408
+}

@@ -1,0 +1,142 @@
+on: [push, pull_request]
+
+name: Nightly
+
+env:
+  RUSTFLAGS: "-D warnings"
+  RUSTDOCFLAGS: "--cfg docsrs"
+  TOOLCHAIN: "nightly"
+
+jobs:
+  quiche:
+    runs-on: ubuntu-latest
+    # Only run on "pull_request" event for external PRs. This is to avoid
+    # duplicate builds for PRs created from internal branches.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.TOOLCHAIN }}
+          components: rustfmt
+          override: true
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --all-targets --features=ffi,qlog
+
+      # Need to run doc tests separately.
+      # (https://github.com/rust-lang/cargo/issues/6669)
+      - name: Run cargo doc test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --doc --features=ffi,qlog
+
+      - name: Run cargo package
+        uses: actions-rs/cargo@v1
+        with:
+          command: package
+          args: --verbose --workspace --exclude=quiche_apps --allow-dirty
+
+      - name: Run cargo doc
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps --all-features --document-private-items
+
+      - name: Build C examples
+        run: |
+          sudo apt-get install libev-dev uthash-dev
+          make -C quiche/examples
+
+  fuzz:
+    runs-on: ubuntu-latest
+    # Only run on "pull_request" event for external PRs. This is to avoid
+    # duplicate builds for PRs created from internal branches.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.TOOLCHAIN }}
+          components: rustfmt
+          override: true
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Run cargo fuzz for packet_recv_client
+        uses: actions-rs/cargo@v1
+        with:
+          command: fuzz
+          args: run packet_recv_client -- -runs=1
+
+      - name: Run cargo fuzz for packet_recv_server
+        uses: actions-rs/cargo@v1
+        with:
+          command: fuzz
+          args: run packet_recv_server -- -runs=1
+
+      - name: Run cargo fuzz for qpack_decode
+        uses: actions-rs/cargo@v1
+        with:
+          command: fuzz
+          args: run qpack_decode -- -runs=1
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path=fuzz/Cargo.toml -- --check
+
+  http3_test:
+    runs-on: ubuntu-latest
+    # Only run on "pull_request" event for external PRs. This is to avoid
+    # duplicate builds for PRs created from internal branches.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.TOOLCHAIN }}
+          components: rustfmt
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-run --verbose --manifest-path=tools/http3_test/Cargo.toml
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path=tools/http3_test/Cargo.toml -- --check

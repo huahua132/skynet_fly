@@ -1,0 +1,11 @@
+rsa:1024 {
+	DHE-RSA-AES256-SHA	tls-ref-098.lan.cryptocom.ru:443
+	SSLv2:DES-CBC3-MD5 tls-ref-098.lan.cryptocom.ru:4402
+	SSLv3:DES-CBC-SHA tls-ref-098.lan.cryptocom.ru:4403
+	RC4-SHA	tls-ref-098.lan.cryptocom.ru:4404
+}
+
+dsa:dsaparams.pem {
+	DHE-DSS-AES256-SHA  tls-ref-098.lan.cryptocom.ru:444
+	SSLv3:EDH-DSS-DES-CBC3-SHA tls-ref-098.lan.cryptocom.ru:4401
+}	

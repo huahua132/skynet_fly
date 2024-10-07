@@ -1,0 +1,63 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+
+start_tests "Тесты на команду pkcs12" 
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2001:B gost2001:C gost2001:XA gost2001:XB gost2012_256:A gost2012_256:B gost2012_256:C gost2012_256:XA gost2012_256:XB gost2012_512:A gost2012_512:B}}
+		"open" {
+			set alg_list {
+				gost2001:A gost2001:B gost2001:C
+				gost2001:XA gost2001:XB
+				gost2012_256:A gost2012_256:B gost2012_256:C
+				gost2012_256:XA gost2012_256:XB
+				gost2012_256:TCA gost2012_256:TCB gost2012_256:TCC gost2012_256:TCD
+				gost2012_512:A gost2012_512:B gost2012_512:C
+			}
+		}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_pkcs12_$alg_fn
+	switch -glob $alg {
+		gost2012_512:* {set hash_alg md_gost12_512}
+		gost2012_256:* {set hash_alg md_gost12_256}
+		default {set hash_alg md_gost94}
+	}
+	
+test -createsfiles [list $username/sscert.pem $username/sskey.pem]\
+  "Генерируем сертификат и секретный ключ $alg" {
+	makeSecretKey $username $alg
+	makeFile $username/req.conf [makeConf]
+	openssl "req -new -x509 -config $username/req.conf -key $username/seckey.pem -out $username/cert.pem"	
+	expr {[file size $username/cert.pem] > 0}
+} 0 1
+
+test -createsfiles {$username/pkcs12.p12} "Собираем pkcs12 с алгоритмом $alg" {
+	openssl "pkcs12 -export -inkey $username/seckey.pem -in $username/cert.pem -out $username/pkcs12.p12 -password pass:12345 -keypbe gost89 -certpbe gost89 -macalg $hash_alg"
+	file exists $username/pkcs12.p12
+} 0 1
+
+test -skip {![file exists $username/pkcs12.p12]} -createsfiles [list $username/extracted_cert.pem $username/extracted_key.pem] "Разбираем pkcs12 c алгоритмом $alg" {
+	openssl "pkcs12 -in $username/pkcs12.p12 -nodes -out $username/dump.pem -password pass:12345"
+	set dump [getFile $username/dump.pem]
+	set lextr [regexp -all -inline "\n-----BEGIN .*?\n-----END \[^\n\]+-----\n" $dump]
+	
+	list [llength $lextr] [expr {[lindex $lextr 0] eq "\n[getFile $username/cert.pem]"}] [expr {[lindex $lextr 1] eq "\n[openssl "pkcs8 -nocrypt -topk8 -in $username/seckey.pem"]"}]    
+	
+} 0 {2 1 1}
+
+
+#./load_engine pkcs12 -export -in t/z/U_enc_gost94_/cert.pem -inkey t/z/U_enc_gost94_/seckey.pem -certfile t/z/testCA/cacert.pem -name "CERTIFICATE" -out mycert.p12 -password pass:12345
+#./load_engine pkcs12 -in mycert.p12 -out mycert.pem 
+
+}
+
+end_tests

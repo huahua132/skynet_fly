@@ -1,0 +1,6 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+start_tests "Тесты на команду dgst" 
+end_tests

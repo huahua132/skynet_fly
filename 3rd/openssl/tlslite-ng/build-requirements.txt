@@ -1,0 +1,7 @@
+coverage
+hypothesis
+coveralls
+pylint
+diff_cover
+pytest>=4.6.5
+pluggy>=0.7

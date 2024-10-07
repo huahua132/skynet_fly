@@ -1,0 +1,149 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+
+#Первый параметр задает используемый сайферсьют.
+#Вариант p0 не предназначена для использования в автоматических тестах, так как
+#мы не можем программно оценить корректность результата. При использовании
+#этого варианта тесты будут гарантированно фейлиться, поэтому использовать 
+#его следует только для ручного запуска и внимательно читать логи.
+array set cipher_name {
+	p8k GOST2012-KUZNYECHIK-KUZNYECHIKOMAC 
+	p8m GOST2012-MAGMA-MAGMAOMAC 
+	p2 GOST2012-GOST8912-GOST8912
+	p1 GOST2001-GOST89-GOST89
+	p20 GOST2012-NULL-GOST12
+	p10 GOST2001-NULL-GOST94
+	p0 {}  
+}
+proc cipher_openssl {sn} {return $::cipher_name($sn)}
+proc cipher_command_line_option {sn} {
+	if {$sn == "p0"} {
+		return $::cipher_name($sn)
+	} else {
+		return "-cipher $::cipher_name($sn)"
+	}
+}
+	
+proc ciphers_usage {} {
+	global cipher_name
+	set res {}
+	foreach name [array names cipher_name] {
+		append res [format "\t%-3s - %s\n" $name $cipher_name($name)]
+	}
+	return $res
+}
+
+# Второй параметр задает четвёрку значений:
+#- алгоритм ключа сервера
+#- параметры ключа сервера
+#- список имен клиентских сертификатов
+#- алгоритм ключа УЦ 
+array set alg_name {
+	5xa {gost2012_512 A {Xchg512A Sign512A} gost2012_512}
+	2xa {gost2012_256 XA {Xchg256A Sign256A} gost2012_256} 
+	1xa {gost2001 XA {XchgA SignA} gost2001}
+}
+proc alg_alg {sn} {return [lindex $::alg_name($sn) 0]}
+proc alg_crtdir {sn} {return [format "srv_%s_%s" [lindex $::alg_name($sn) 0] [lindex $::alg_name($sn) 1]]}
+proc alg_openssl {sn} {return [format "%s:%s" [lindex $::alg_name($sn) 0] [lindex $::alg_name($sn) 1]]}
+proc alg_certid_list {sn} {return [lindex $::alg_name($sn) 2]}
+proc alg_ca {sn} {return [lindex $::alg_name($sn) 3]}
+proc algs_usage {} {
+	global alg_name
+	set res {}
+	foreach name [array names alg_name] {
+		append res [format "\t%-3s - %s:%s\n" $name [lindex $alg_name($name) 0] [lindex $alg_name($name) 1]]
+	}
+	return $res
+}
+
+if {$argc < 1 || ![regexp {^([^-]+)-([^-]+)-([^-]+)-(.+)$} [lindex $argv 0] -> cipher alg tls host]} {
+	puts stderr "Usage $argv0 cipher-alg-tlsver-hostname \[s_server-option\]"
+	puts stderr "cipher:\n[ciphers_usage]"
+	puts stderr "alg:\n[algs_usage]"
+	puts stderr "tlsver: -tls* s_server option"
+	exit 1
+}
+set test::suffix "-$cipher-$alg-$tls-$host[lindex $argv 1]" 
+if {![regexp @ $host]} {
+	set host build@$host
+}	
+
+set CAhost lynx.lan.cryptocom.ru
+set CAprefix /cgi-bin/autoca 
+set mydir [file normalize [file dirname [info script]]]
+
+cd $::test::dir
+set http_tcl http.[info hostname].[clock seconds].[pid].tcl
+
+start_tests "CSP клиент ($cipher, $alg, $host) [lindex $argv 1]" 
+
+test  "Делаем копию http.tcl на $host" {
+	save_env2 {LD_LIBRARY_PATH OPENSSL_CONF}
+	catch {unset env(LD_LIBRARY_PATH)}
+	catch {unset env(OPENSSL_CONF)}
+	exec $env(CVS_RSH) $host "cat >$http_tcl" < $mydir/http.tcl
+	restore_env2 {LD_LIBRARY_PATH OPENSSL_CONF}
+	set copied 1
+} 0 1
+
+set crtdir [alg_crtdir $alg]
+
+test -platformex {![file exists $crtdir/cert.pem]} "Получаем сертификат HTTPS-сервера" {
+	if {![makeUser $crtdir [alg_openssl $alg] CN [info hostname]]} {
+		error "Request generation failed"
+	}
+	registerUserAtCA $crtdir $CAhost $CAprefix [alg_ca $alg]
+	file exists $crtdir/cert.pem
+} 0 1
+
+
+test -platformex {![file exists ca_[alg_ca $alg].pem]} "Получаем сертификат CA" {
+	getCAcert $CAhost $CAprefix [alg_ca $alg]
+	file exists ca_[alg_ca $alg].pem
+} 0 1
+
+
+custom_client "$env(CVS_RSH) $host tclsh $http_tcl" \
+	{LD_LIBRARY_PATH OPENSSL_CONF}
+
+set server_args [concat [cipher_command_line_option $cipher] \
+	[list -bugs -msg -cert $crtdir/cert.pem -key $crtdir/seckey.pem	\
+	-CAfile ca_[alg_ca $alg].pem -www] -$tls [lindex $argv 1]]
+
+
+test -skip {![info exists copied]} "Сервер не требует сертификата" {
+	set list [client_server https://[info hostname]:4433 $server_args {}]
+	grep New, [lindex $list 0]
+} 0 "New, TLSv1/SSLv3, Cipher is [cipher_openssl $cipher]\n"
+
+
+test -skip {![info exists copied]} "Сервер требует сертификат, сертификата нет" {
+	set list [client_server \
+		[list https://[info hostname]:4433 no-such-cert-at-all] \
+		[concat $server_args {-Verify 2}] {}]
+	list [lindex $list 2] [lindex [split [lindex $list 1] " "] 0]
+} 0 [list 1 "0x80072f0c"]
+
+
+foreach alg_certid [alg_certid_list $alg] {
+	test -skip {![info exists copied]} \
+	"Сервер требует сертификат, клиент $alg_certid" {
+		set list [client_server \
+			[list https://[info hostname]:4433 $alg_certid] \
+		[	concat $server_args {-Verify 2}]  {}]
+		grep New, [lindex $list 0]
+	} 0 "New, TLSv1/SSLv3, Cipher is [cipher_openssl $cipher]\n"
+}
+
+test "Удаляем копию http.tcl на $host" {
+	save_env2 {LD_LIBRARY_PATH OPENSSL_CONF}
+	catch {unset env(LD_LIBRARY_PATH)}
+	catch {unset env(OPENSSL_CONF)}
+	set rc [exec $env(CVS_RSH) $host rm -f $http_tcl]
+	restore_env2 {LD_LIBRARY_PATH OPENSSL_CONF}
+	set rc
+} 0 ""
+
+end_tests

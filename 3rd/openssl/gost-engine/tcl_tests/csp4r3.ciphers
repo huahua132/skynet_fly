@@ -1,0 +1,14 @@
+gost2001:XA {
+	GOST2001-GOST89-GOST89 v-cp4r3-01.vm.cryptocom.ru:443:iis
+	GOST2012-GOST8912-GOST8912 v-cp4r3-01.vm.cryptocom.ru:443:iis
+}
+gost2012_256:XA {
+	TLSv1:GOST2012-GOST8912-GOST8912 v-cp4r3-12S.vm.cryptocom.ru:443:iis
+	TLSv1.1:GOST2012-GOST8912-GOST8912 v-cp4r3-12S.vm.cryptocom.ru:443:iis
+	TLSv1.2:GOST2012-GOST8912-GOST8912 v-cp4r3-12S.vm.cryptocom.ru:443:iis
+}
+gost2012_512:A {
+	TLSv1:GOST2012-GOST8912-GOST8912 v-cp4r3-12L.vm.cryptocom.ru:443:iis
+	TLSv1.1:GOST2012-GOST8912-GOST8912 v-cp4r3-12L.vm.cryptocom.ru:443:iis
+	TLSv1.2:GOST2012-GOST8912-GOST8912 v-cp4r3-12L.vm.cryptocom.ru:443:iis
+}
