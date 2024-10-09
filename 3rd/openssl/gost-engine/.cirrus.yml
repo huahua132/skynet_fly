@@ -1,0 +1,22 @@
+FreeBSD_task:
+  freebsd_instance:
+    image_family: freebsd-13-1
+  env:
+    PREFIX: ${HOME}/opt
+    PATH: ${PREFIX}/bin:${PATH}
+    OPENSSL_BRANCH: master
+  install_script:
+    - pkg install -y git cmake p5-App-cpanminus gdb pkgconf
+    - sudo cpanm --notest Test2::V0
+  update_git_script:
+    - git submodule update --recursive --init
+  script:
+    - git clone --depth 1 -b ${OPENSSL_BRANCH} https://github.com/openssl/openssl.git
+    - cd openssl
+    - ./config shared -d --prefix=${PREFIX} --openssldir=${PREFIX} -Wl,-rpath=${PREFIX}/lib && make all install_sw > build.log 2>&1 || (cat build.log && exit 1)
+    - cd ..
+    - mkdir build
+    - cd build
+    - cmake -DOPENSSL_ROOT_DIR=${PREFIX} -DOPENSSL_ENGINES_DIR=${PREFIX}/engines ..
+    - make
+    - make test CTEST_OUTPUT_ON_FAILURE=1

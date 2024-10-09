@@ -1,0 +1,6 @@
+package ifneeded test 0.2 [list source -encoding utf-8 [file join $dir test.tcl]]
+package ifneeded testlib 0.1 [list source -encoding utf-8 [file join $dir testlib.tcl]]
+package ifneeded fgetopt 0.1 [list source -encoding utf-8 [file join $dir fgetopt.tcl]]
+package ifneeded asn 0.7.1 [list source -encoding utf-8 [file join $dir asn.tcl]]
+package ifneeded base64 2.3.2 [list source -encoding utf-8 [file join $dir base64.tcl]]
+package ifneeded ossltest 0.7 [list source -encoding utf-8 [file join $dir ossltest.tcl]]

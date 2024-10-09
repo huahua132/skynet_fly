@@ -1,0 +1,80 @@
+[package]
+name = "quiche"
+version = "0.18.0"
+authors = ["Alessandro Ghedini <alessandro@ghedini.me>"]
+edition = "2018"
+build = "src/build.rs"
+description = "🥧 Savoury implementation of the QUIC transport protocol and HTTP/3"
+repository = "https://github.com/cloudflare/quiche"
+readme = "README.md"
+keywords = ["quic", "http3"]
+categories = ["network-programming"]
+license = "BSD-2-Clause"
+rust-version = "1.66"
+include = [
+    "/*.md",
+    "/*.toml",
+    "/COPYING",
+    "/deps/boringssl/**/*.[chS]",
+    "/deps/boringssl/**/*.asm",
+    "/deps/boringssl/src/**/*.cc",
+    "/deps/boringssl/**/CMakeLists.txt",
+    "/deps/boringssl/**/sources.cmake",
+    "/deps/boringssl/LICENSE",
+    "/examples",
+    "/include",
+    "/quiche.svg",
+    "/src",
+]
+
+[features]
+default = ["boringssl-vendored"]
+
+# Build the vendored BoringSSL library.
+boringssl-vendored = []
+
+# Use the BoringSSL library provided by the boring crate.
+boringssl-boring-crate = ["boring", "foreign-types-shared"]
+
+# Generate pkg-config metadata file for libquiche.
+pkg-config-meta = []
+
+# Equivalent to "--cfg fuzzing", but can also be checked in build.rs.
+fuzzing = []
+
+# Build and expose the FFI API.
+ffi = []
+
+[package.metadata.docs.rs]
+no-default-features = true
+features = ["boringssl-boring-crate", "qlog"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[build-dependencies]
+cmake = "0.1"
+
+[dependencies]
+either = { version = "1.8", default-features = false }
+log = { version = "0.4", features = ["std"] }
+libc = "0.2"
+libm = "0.2"
+ring = "0.16"
+slab = "0.4"
+once_cell = "1"
+octets = { version = "0.2", path = "../octets" }
+boring = { version = "3", optional = true }
+foreign-types-shared = { version = "0.3.0", optional = true }
+intrusive-collections = "0.9.5"
+qlog = { version = "0.9", path = "../qlog", optional = true }
+sfv = { version = "0.9", optional = true }
+smallvec = { version = "1.10", features = ["serde", "union"] }
+
+[target."cfg(windows)".dependencies]
+winapi = { version = "0.3", features = ["wincrypt", "ws2def", "ws2ipdef", "ws2tcpip"] }
+
+[dev-dependencies]
+mio = { version = "0.8", features = ["net", "os-poll"] }
+url = "1"
+
+[lib]
+crate-type = ["lib", "staticlib", "cdylib"]

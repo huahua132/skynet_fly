@@ -1,0 +1,67 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+start_tests "Подгрузка engine без явно указанного dynamic_path"
+
+set config [getConfig]
+regexp {\ndynamic_path\s*=\s*(\S[^\n]+)} $config => path
+if [file exist [file join [file dirname $::OPENSSL_CONF] cryptocom.lic]] {
+file copy -force [file join [file dirname $::OPENSSL_CONF] cryptocom.lic] cryptocom.lic
+}
+if {[info exists path]} {
+	set env(OPENSSL_ENGINES) [subst -nocommands -nobackslashes [regsub {\$ENV::(\w+)} [file dirname $path] {$env(\1)}]]
+	puts $env(OPENSSL_ENGINES)
+	makeFile nodp.conf [regsub  {\ndynamic_path\s*=\s*([^\n]+)} $config {}]
+	set env(OPENSSL_CONF) "[pwd]/nodp.conf"
+}
+test -platformex {[info exists path]} -createsfiles dgst.dat  "Вычисление дайджеста md_gost94" {
+	makeFile dgst.dat [string repeat "Test data to digest.\n" 100] binary
+		grep "md_gost94\\(" [openssl "dgst -md_gost94 dgst.dat"]
+} 0 "md_gost94\(dgst.dat)= 42e462ce1c2b4bf72a4815b7b4877c601f05e5781a71eaa36f63f836c021865c\n"
+
+set plain "Test data to encrypt"
+test -platformex {[info exists path]} -createsfiles {enc.enc enc.dat} "Encrypting file in CFB mode" {
+	makeFile enc.dat $plain binary
+	openssl "enc -gost89 -out enc.enc -in enc.dat -k 1234567890 -p"
+	file isfile enc.enc
+} 0 1
+
+test -platformex {[info exists path]} -createsfiles {cnt.enc} "Encrypting file in CNT mode" {
+	makeFile enc.dat $plain binary
+	openssl "enc -gost89-cnt -out cnt.enc -in enc.dat -k 1234567890 -p"
+	file isfile cnt.enc
+} 0 1
+
+test -platformex {[info exists path]} -skip {![file exists enc.enc]} "Ciphered text in CFB mode  differs from clear text" {
+	set ciphered [getFile enc.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test -platformex {[info exists path]} -skip {![file exists cnt.enc]} "Ciphered text in CNT mode  differs from clear text" {
+	set ciphered [getFile cnt.enc binary]
+	string first $ciphered $plain
+} 0 -1
+
+test -platformex {[info exists path]} -skip {![file exists enc.enc]} -createsfiles enc.dec "Decrypting file, encrypted in CFB mode" {
+	openssl "enc -gost89 -d -in enc.enc -out enc.dec -k 1234567890 -p"
+	getFile enc.dec 
+} 0 $plain
+
+test -platformex {[info exists path]} -skip {![file exists cnt.enc]} -createsfiles cnt.dec "Decrypting file, encrypted in CNT mode" {
+	openssl "enc -gost89-cnt -d -in cnt.enc -out cnt.dec -k 1234567890 -p"
+	getFile cnt.dec 
+} 0 $plain
+
+test -platformex {[info exists path]} "Вычисление MAC gost89" {
+	grep gost-mac [openssl "dgst -mac gost-mac -macopt key:12345678901234567890123456789012 dgst.dat"]
+} 0 "GOST-MAC-gost-mac(dgst.dat)= 37f646d2\n"
+
+test -platformex {[info exists path]} -createsfiles nodp2001.key "Создание секретного ключа gost2001" {
+	makeSecretKey nodp2001 gost2001:A
+	file exists nodp2001/seckey.pem
+} 0 1	
+
+
+file delete cryptocom.lic
+end_tests

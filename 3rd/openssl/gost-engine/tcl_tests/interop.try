@@ -1,0 +1,156 @@
+#!/usr/bin/tclsh
+
+proc make_fn {alg} {
+	return [string map {":" "_"} $alg]
+}
+if {[info exists env(PKG_PATH)]} {
+	lappend auto_path $env(PKG_PATH)
+} else {	
+	lappend auto_path [file dirname [info script]]
+}
+if {![info exists env(OTHER_DIR)]} {
+   puts stderr "Environment variable OTHER_DIR not set"
+   exit 1
+} else {
+	set data_dir $env(OTHER_DIR)
+}	
+if {[file normalize $data_dir] == "[pwd]"} {
+	set suffix _bck 
+} elseif {[file normalize $data_dir] == [file normalize [pwd]/../OtherVersion]} {
+	set suffix _oth
+} else {
+	set suffix _fwd
+}	
+package require ossltest
+#cd z
+set ::test::suffix $suffix
+cd $::test::dir 
+start_tests "Интероперабельность, сравнение с $data_dir"
+
+if {[info exists env(ALG_LIST)]} {
+  set alg_list $env(ALG_LIST)
+} else {
+  set alg_list {gost2001:A gost2001:B gost2001:C gost2012_256:A gost2012_256:B gost2012_256:C gost2012_512:A gost2012_512:B}
+}
+if {[info exist env(ENC_LIST)]} {
+	set enc_list $env(ENC_LIST)
+} else {	
+	set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 gost2001:XA:  gost2012_256:XA:1.2.643.2.2.31.1 gost2012_256:XB:1.2.643.7.1.2.5.1.1 gost2012_256:XA: gost2012_512:A:1.2.643.2.2.31.3 gost2012_512:B:1.2.643.7.1.2.5.1.1 gost2012_512:A:}
+}
+
+test -createsfiles cfb2.$suffix\
+"Расшифрование текста, зашифрованного на пароле в режиме CFB" {
+	set plain [getFile $data_dir/enc2.dat]
+	openssl "enc -gost89 -d -in $data_dir/cfb2.enc -out cfb2.$suffix -k 1234567890 -p"
+	set result [getFile cfb2.$suffix] 
+	expr  {[string equal $plain $result]?1:$result}
+} 0 1
+
+test -createsfiles cnt2.$suffix\
+"Расшифрование текста, зашифрованного на пароле в режиме CNT" {
+	set plain [getFile $data_dir/enc2.dat]
+	openssl "enc -gost89-cnt -d -in $data_dir/cnt2.enc -out cnt2.$suffix -k 1234567890 -p"
+	set result [getFile cnt2.$suffix] 
+	expr  {[string equal $plain $result]?1:$result}
+} 0 1
+
+test -createsfiles cbc2.$suffix\
+"Расшифрование текста, зашифрованного на пароле в режиме CBC" {
+	set plain [getFile $data_dir/enc2.dat]
+	openssl "enc -gost89-cbc -d -in $data_dir/cbc2.enc -out cbc2.$suffix -k 1234567890 -p"
+	set result [getFile cbc2.$suffix] 
+	expr  {[string equal $plain $result]?1:$result}
+} 0 1
+
+save_env2 {CRYPT_PARAMS}
+test -createsfiles cbc3.$suffix\
+"Расшифрование текста, зашифрованного в режиме CBC с параметрами РИК 1" {
+	set plain [getFile $data_dir/enc2.dat]
+	set env(CRYPT_PARAMS) "id-Gost28147-89-CryptoPro-RIC-1-ParamSet"
+	openssl "enc -gost89-cbc -d -in $data_dir/cbc3.enc -out cbc3.$suffix -k 1234567890 -p"
+	set result [getFile cbc3.$suffix] 
+	expr  {[string equal $plain $result]?1:$result}
+} 0 1
+restore_env2 {CRYPT_PARAMS}
+
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username $data_dir/U_smime_$alg_fn
+	set userdir $data_dir/U_smime_${alg_fn}
+	switch -glob $alg {
+		gost2012* {set CA_dir_suffix CA-2012}
+		* {set CA_dir_suffix CA}
+	}
+
+
+test "Проверка заявки $alg" {
+	grep "verif" [openssl "req -verify -in $username/req.pem"]
+} 0 {verify OK
+}
+
+test "Проверка сертификата $alg" {
+	grep "cert.pem" [openssl "verify -CAfile $data_dir/smime$CA_dir_suffix/cacert.pem $userdir/cert.pem"]
+} 0 "$userdir/cert.pem: OK
+"
+
+test "Проверка CRL" {
+	grep verify [openssl "crl -in $data_dir/test.crl -noout -CAfile $data_dir/test_crl_cacert.pem"]
+} 0 "verify OK
+"
+
+test "Проверка документа, подписанного $alg, smime" {
+	grep Veri [openssl "smime -verify -text -in $data_dir/sign_$alg_fn.msg -out verified.$suffix -CAfile $data_dir/smime$CA_dir_suffix/cacert.pem -certfile $username/cert.pem"]
+} 0 "Verification successful
+"
+
+set username $data_dir/U_cms_$alg_fn
+test "Проверка документа, подписанного $alg, cms" {
+	grep Veri [openssl "cms -verify -text -in $data_dir/cms_sign_$alg_fn.msg -out cms_verified.$suffix -CAfile $data_dir/cms$CA_dir_suffix/cacert.pem -certfile $username/cert.pem"]
+} 0 "Verification successful
+"
+
+test -createsfiles [list extracted_cert.pem.$suffix extracted_key.pem.$suffix] "Разбираем pkcs12 c алгоритмом $alg" {
+	openssl "pkcs12 -in $data_dir/U_pkcs12_$alg_fn/pkcs12.p12 -nodes -out dump.pem.$suffix -password pass:12345"
+	set dump [getFile dump.pem.$suffix]
+	set lextr [regexp -all -inline "\n-----BEGIN .*?\n-----END \[^\n\]+-----\n" $dump]
+	
+	list [llength $lextr] [expr {[lindex $lextr 0] eq "\n[getFile $data_dir/U_pkcs12_$alg_fn/cert.pem]"}] [expr {[lindex $lextr 1] eq "\n[openssl "pkcs8 -nocrypt -topk8 -in $data_dir/U_pkcs12_$alg_fn/seckey.pem"]"}]    
+	
+} 0 {2 1 1}
+
+
+} 
+
+save_env2 {CRYPT_PARAMS}
+foreach enc_tuple $enc_list {
+	if {![regexp {^([^:]*:[^:]*):(.*)$} $enc_tuple -> alg crypt_param]} {
+		set alg $enc_tuple
+		set crypt_param {}
+	}
+	if {[string length $crypt_param]} {
+		set env(CRYPT_PARAMS) $crypt_param
+	} else {
+		if {[info exists env(CRYPT_PARAMS)]} {unset env(CRYPT_PARAMS)}
+	}
+	set alg_fn [make_fn $enc_tuple]
+	set username U_enc_$alg_fn
+
+test "Расшифрование документа на keyexchange $alg, smime" {
+	set expected [getFile $data_dir/encrypt.dat]
+	openssl "smime -decrypt -in $data_dir/enc_${alg_fn}.msg -recip $data_dir/U_enc_${alg_fn}/cert.pem -inkey $data_dir/U_enc_${alg_fn}/seckey.pem -out decrypt1.$alg_fn.$suffix"
+	set result [getFile decrypt1.$alg_fn.$suffix]
+	string eq $expected $result
+} 0 1
+
+test "Расшифрование документа на keyexchange $alg, cms" {
+	set expected [getFile $data_dir/encrypt.dat]
+	openssl "cms -decrypt -in $data_dir/cms_enc_${alg_fn}.msg -recip $data_dir/U_cms_enc_${alg_fn}/cert.pem -inkey $data_dir/U_cms_enc_${alg_fn}/seckey.pem -out cms_decrypt1.$alg_fn.$suffix"
+	set result [getFile cms_decrypt1.$alg_fn.$suffix]
+	string eq $expected $result
+} 0 1
+
+
+}
+restore_env2 {CRYPT_PARAMS}
+end_tests

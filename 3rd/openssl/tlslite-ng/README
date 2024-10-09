@@ -1,0 +1,45 @@
+tlslite-ng is a pure python implementation of SSLv3.0, TLS 1.0, TLS 1.1,
+TLS 1.2 and TLS 1.3 protocols.
+
+It can use pycrypto, m2crypto and gmp for acceleration of cryptographic
+operations but is not dependant upon them.
+
+Functionality implemented include:
+ - all above mentioned protocols, including support for client certificates
+   (RFC 6101, RFC 2246, RFC 4346, RFC 5246, RFC 8446 - not complete)
+ - RSA, RSA-PSS and ECDSA certificates
+ - RC4, 3DES-CBC, AES-CBC, AES-GCM, AES-CCM, AES-CCM_8 and ChaCha20 ciphers
+   (RFC 5246, RFC 6347, RFC 4492, RFC 5288, RFC 5289, RFC 7539, RFC 7905,
+   RFC 6655, RFC 7251)
+ - MD5, SHA1, SHA256 and SHA384 HMACs as well as AEAD mode of operation with
+   GCM or Poly1305 authenticator
+ - RSA, DHE_RSA, ECDHE_RSA, ECDHE_ECDSA key exchange
+ - full set of signature hashes (md5, sha1, sha224, sha256, sha384, sha512,
+   rsa_pss_rsae_sha256, rsa_pss_rsae_sha384 and rsa_pss_rsae_sha512) for
+   ServerKeyExchange and CertfificateVerify
+ - secp256r1, secp384r1, secp521r1, secp256k1, secp224r1 and secp192r1 curves
+   for ECDHE key exchange (support for last two depends on the version of ecdsa
+   library used)
+ - x25519 and x448 curves for ECDHE key exchage (RFC 7748. RFC 4492bis)
+ - anonymous DHE key exchange
+ - anonymous ECDH key exchange
+ - PSK and PSK-DH key exchange in TLS 1.3
+ - session ticket based resumption in TLS 1.3
+ - post-handshake key authentication in TLS 1.3
+ - NULL encryption ciphersuites
+ - FALLBACK_SCSV (RFC 7507)
+ - encrypt-then-MAC mode of operation for CBC ciphersuites (RFC 7366)
+ - TACK certificate pinning
+ - SRP_SHA_RSA and SRP_SHA ciphersuites (RFC 5054)
+ - Extended Master Secret calculation for TLS connections (RFC 7627)
+ - padding extension (RFC 7685)
+ - Keying material exporter (RFC 5705)
+ - Next Protocol Negotiation
+ - Application-Layer Protocol Negotiation Extension (RFC 7301)
+ - FFDHE prime/group negotiation (RFC 7919)
+ - Heartbeat Extension (RFC 6520)
+ - Record Size Limit (RFC 8449)
+
+
+tlslite-ng aims to be a drop-in replacement for tlslite while providing more
+comprehensive set of features and more secure defaults.

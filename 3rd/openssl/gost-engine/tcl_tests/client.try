@@ -1,0 +1,142 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+
+package require ossltest
+
+if {$argc != 1} {
+	puts stderr "Usage $argv0 cipher-list-file"
+	exit 1
+}	
+
+array set protos {
+	SSLv2 -ssl2
+	SSLv3 -ssl3
+	TLSv1 -tls1
+	TLSv1.1 -tls1_1
+	TLSv1.2 -tls1_2
+    "default" {}
+}	
+get_hosts [lindex $argv 0]
+cd $::test::dir 
+start_tests "TLS-соединение от клиента [lindex $argv 0]"
+
+set CAhost lynx.lan.cryptocom.ru
+set CAprefix /cgi-bin/autoca
+
+
+foreach alg [array names hosts] {
+	set alg2 [regsub {(gost\d+)cp} $alg {\1}]
+	set alg_fn [string map {":" "_"} $alg2]
+	set alg_ca [regexp -inline {^[^:]+} $alg]
+	log "alg_fn=$alg_fn"
+	if {[string match gost2001* $alg]} {
+                set alg_cli_list "gost2001_A gost2001_XA"
+        } elseif {[string match gost2012* $alg]} {
+                set alg_cli_list "gost2001_A gost2012_256_A gost2012_256_XA gost2012_512_A gost2012_512_B"
+	} else {
+		set alg_cli_list $alg_ca
+	}
+
+
+	test -skip {[file exist ca_$alg_ca.pem]} "Получить сертификат $alg_ca CA" {
+		getCAcert $CAhost $CAprefix $alg_ca
+	} 0 "ca_$alg_ca.pem"
+
+	test -skip {[file exist srv_$alg_fn/cert.pem]} "Получить сертификат $alg для сервера" {
+		getCAAlgParams $CAhost $CAprefix $alg_ca
+		if {![makeUser srv_$alg_fn $alg2 CN [info hostname]]} {
+			error "Request generation failed"
+		}
+		registerUserAtCA srv_$alg_fn $CAhost $CAprefix $alg_ca
+		file exists srv_$alg_fn/cert.pem
+	} 0 1
+
+	if {[array exists suites]} {array unset suites}
+	array set suites $hosts($alg)
+	foreach suite [array names suites] {
+		if {![regexp {(.+):(.+)} $suite => proto cs]} {
+			set cs $suite
+			set proto "default"
+		}	
+		if {[info exists suite_map($cs)]} {
+			set mycs $suite_map($cs)
+		} else {
+			set mycs $cs
+		}	
+		set host [lindex [split $suites($suite) :] 0]
+		set host_short [lindex [split $host .] 0]
+		# We assume that CA certificates are already copied into Apache
+		# cert dir
+		set ca_file "/etc/apache/ssl.crt/${alg_ca}-root.crt"
+
+		test "Корректный хэндшейк $suite" {
+			remote_client $host
+			set list [client_server [list -connect [info hostname]:4433 \
+				-CAfile $ca_file -state -cipher $cs] \
+				[concat [list -www -cert srv_$alg_fn/cert.pem \
+				-key srv_$alg_fn/seckey.pem -cipher $mycs] $protos($proto)] {}]
+			set cln_exit_code [lindex $list 2]
+			set srv_error [string match "*error*" [lindex $list 4]]
+			if {[regexp -lineanchor \
+			{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+			[lindex $list 0] -> result_proto result_cipher]} {
+				if {$proto == "default"} {set result_proto "default"}
+				list $cln_exit_code $srv_error $result_proto $result_cipher
+			} else {
+				lindex $list 1
+			}	
+		} 0 [list 0 0 $proto $cs]
+
+
+		test "Сервер требует сертификат, сертификата нет $suite" {
+			remote_client $host
+			set list [client_server [list -connect [info hostname]:4433 \
+				-CAfile $ca_file -state -cipher $cs] \
+				[concat [list -www -cert srv_$alg_fn/cert.pem \
+				-key srv_$alg_fn/seckey.pem -cipher $mycs -Verify 3 \
+				-verify_return_error] $protos($proto)] {}]
+			string match "*error*" [lindex $list 4]
+		} 0 1 
+
+
+		test "Некорректный клиентский сертфиикат $suite" {
+			remote_client $host
+			set list [client_server [list -connect [info hostname]:4433 \
+				-cert /home/build/client-$alg_ca/cert.pem \
+				-key /home/build/client-$alg_ca/seckey.pem \
+				-CAfile $ca_file -state -cipher $cs] \
+				[concat [list -www -cert srv_$alg_fn/cert.pem \
+				-key srv_$alg_fn/seckey.pem -cipher $mycs -Verify 3 \
+				-verify_return_error] $protos($proto)] {}]
+			string match "*error*" [lindex $list 4]
+		} 0 1
+
+
+
+		foreach alg_cli $alg_cli_list {
+
+			test "Клиентский сертификат $alg_cli $suite" {
+				remote_client $host
+				set list [client_server [list -connect [info hostname]:4433 \
+					-cert /home/build/client-$alg_cli/cert.pem \
+					-key /home/build/client-$alg_cli/seckey.pem \
+					-CAfile $ca_file -state -cipher $cs] \
+					[concat [list -www -cert srv_$alg_fn/cert.pem \
+					-key srv_$alg_fn/seckey.pem -CAfile ca_$alg_ca.pem \
+					-cipher $mycs -Verify 3 -verify_return_error] \
+					$protos($proto)] {}]
+				set cln_exit_code [lindex $list 2]
+				set srv_error [string match "*error*" [lindex $list 4]]
+				if {[regexp -lineanchor \
+				{^\s*Protocol\s*:\s*(\S*)\s*$.*^\s*Cipher\s*:\s*(\S*)\s*$} \
+				[lindex $list 0] -> result_proto result_cipher]} {
+					if {$proto == "default"} {set result_proto "default"}
+					list $cln_exit_code $srv_error $result_proto $result_cipher
+				} else {
+					lindex $list 1
+				}	
+			} 0 [list 0 0 $proto $cs]
+		}
+	}
+}	
+end_tests

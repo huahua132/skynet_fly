@@ -1,0 +1,204 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+
+
+package require ossltest
+
+if {$argc != 1} {
+	puts stderr "Usage $argv0 cipher-list-file"
+	exit 1
+}	
+array set protos {
+	SSLv2 -ssl2
+	SSLv3 -ssl3
+	TLSv1 -tls1
+	TLSv1.1 -tls1_1
+	TLSv1.2 -tls1_2
+	"default" {}
+}
+get_hosts [lindex $argv 0]
+cd $::test::dir
+start_tests "TLS-соединение с сервером [lindex $argv 0]"
+
+if {[engine_name] eq "ccore"} {
+	array unset hosts gost94*
+}
+
+array set suite_map {
+CRYPTOPRO-DHGOST94-DSS-GOST89-STREAMGOST89 GOST94-GOST89-GOST89
+CRYPTOPRO-DHGOST94-DSS-NULL-GOST94 GOST94-NULL-GOST94
+CRYPTOPRO-DHGOST-DSS-GOST89-STREAMGOST89 GOST2001-GOST89-GOST89
+CRYPTOPRO-DHGOST-DSS-NULL-GOST94 GOST2001-NULL-GOST94
+}
+
+set CAhost lynx.lan.cryptocom.ru  
+set CAprefix /cgi-bin/autoca 
+
+foreach alg [array names hosts] {
+	set alg2 [regsub {(gost\d+)cp} $alg {\1}]
+	set alg_fn [string map {":" "_"} $alg2]
+	set alg_short [regexp -inline {^[^:]+} $alg2]
+	set alg_ca [regexp -inline {^[^:]+} $alg]
+
+	test -skip {[file exist ca_$alg_short.pem]} "Получить сертификат $alg_ca CA" {
+		getCAcert $CAhost $CAprefix $alg_ca
+	} 0 "ca_$alg_ca.pem"
+
+	if {[array exists suites]} {array unset suites}
+	array set suites $hosts($alg)
+	foreach suite [array names suites] {
+		if {![regexp {(.+):(.+)} $suite => proto cs]} {
+			set cs $suite
+			set proto "default"
+		}
+		if {[info exists suite_map($cs)]} {
+			set mycs $suite_map($cs)
+		} else {
+			set mycs $cs
+		}	
+		if {![regexp {(.+:\d+):(.*)} $suites($suite) x url servertype]} {
+			set servertype apache
+			set url $suites($suite)
+		}	
+		if {$servertype eq "iis"} {
+			set failure "HTTP 403.7 - Forbidden: Client certificate required"
+			set failure_exit_code 0
+		} else {
+			set failure "ssl handshake failure"
+			set failure_exit_code 1
+		}
+		
+		regexp {(.+):(\d+)} $url dummy get_hostname get_port
+
+		test "$suite статическая страница " {	
+			grep "<H1>" [openssl [concat s_client $protos($proto) \
+				[list -cipher $mycs -CAfile ca_$alg_ca.pem -connect $url \
+				-verify_return_error -verify 1 -ign_eof \
+				<< "GET /ssl_test.html HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+		} 0 "<H1>Test SSL static page</H1>\n"
+
+
+		test "$suite большая страница" {
+			grep "<H1>" [openssl [concat s_client $protos($proto) \
+				[list -cipher $mycs -CAfile ca_$alg_ca.pem -connect $url \
+				-verify_return_error -verify 1 -ign_eof \
+				<< "GET /ssl_test_big.html HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+		} 0 "<H1>Big test SSL static page</H1>\n"	
+
+
+		if {$servertype eq "iis"} {
+			test "$suite скрипт printenv.asp" {
+				grep "SERVER_PORT_SECURE:" [openssl \
+					[concat s_client $protos($proto) \
+					[list -cipher $mycs -CAfile ca_$alg_ca.pem\
+					-connect $url -verify_return_error -verify 1 -ign_eof \
+					<< "GET /printenv.asp HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+			} 0 "SERVER_PORT_SECURE: 1\n"
+		} else {
+			test "$suite скрипт printenv" {
+				grep "SSL_CIPHER=" [openssl \
+					[concat s_client $protos($proto) \
+					[list -cipher $mycs -CAfile ca_$alg_ca.pem \
+					-connect $url -verify_return_error -verify 1 -ign_eof \
+					<< "GET /cgi-bin/printenv HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+			} 0 "SSL_CIPHER=\"$cs\"\n"
+		}
+
+		if {[string match *GOST2012* $suite]} {
+			set alg_cli_list "$alg gost2001:B gost2012_256:B gost2012_512:B"
+		} elseif {[string match *GOST2001* $suite]} {
+			set alg_cli_list "$alg gost2001:B"
+		} else {
+			set alg_cli_list $alg
+		}
+
+		foreach alg_cli $alg_cli_list {
+			set alg_cli_fn [string map {":" "_"} $alg_cli]
+			set alg_cli_short [regexp -inline {^[^:]+} $alg_cli]
+
+			test -skip {[file exist U_x_$alg_cli_fn/cert.pem]} "Получение клиентского сертификата $alg_cli" {
+				getCAAlgParams  $CAhost $CAprefix $alg_cli_short
+				if {![makeUser U_x_$alg_cli_fn $alg_cli CN \
+				"Test engine on [info hostname]"]} {
+					error "Request generation failed"
+				}
+				registerUserAtCA U_x_$alg_cli_fn $CAhost $CAprefix $alg_ca
+				file exists U_x_$alg_cli_fn/cert.pem
+			} 0 1
+
+
+			test "$suite  нет сертификата, статичеcкая страница" {
+	   			set out [openssl [concat s_client $protos($proto) \
+					[list -msg -cipher $mycs -CAfile ca_$alg_ca.pem \
+					-verify_return_error -verify 1 -connect $url -ign_eof \
+					<< "GET /ssl_auth_test.html HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+				if {[regexp $failure $out match]} {
+					set match
+				} else {
+					set out
+				}	
+			} $failure_exit_code $failure
+
+
+			test -skip {![file exists U_x_$alg_cli_fn/cert.pem]} \
+			"$suite, есть сертификат, статическая страница" {
+				grep "<H1>" [openssl [concat s_client $protos($proto) \
+					[list -msg -cipher $mycs -cert U_x_$alg_cli_fn/cert.pem \
+					-key U_x_$alg_cli_fn/seckey.pem -CAfile ca_$alg_ca.pem \
+					-verify_return_error -verify 1 -connect $url -ign_eof \
+					<< "GET /ssl_auth_test.html HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+			} 0 "<H1>Test SSL static page</H1>\n"
+
+
+			if {$servertype eq "iis"} {
+
+				test "$suite, нет сертификата, скрипт printenv_auth.asp" {
+					set out [openssl [concat s_client $protos($proto) \
+						[list -msg -cipher $mycs -CAfile ca_$alg_ca.pem \
+						-verify_return_error -verify 1 -connect $url -ign_eof \
+						<< "GET /printenv_auth.asp HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+					if {[regexp $failure $out match]} {
+						set match
+					} else {
+						set out
+					}	
+				} 0 $failure 
+
+
+				test  -skip {![file exists U_x_$alg_cli_fn/cert.pem]} \
+				"$suite, есть сертификат, скрипт printenv_auth.asp" {
+					grep CERT_FLAGS [openssl [concat s_client $protos($proto) \
+						[list -msg -cipher $mycs -cert U_x_$alg_cli_fn/cert.pem\
+						-key U_x_$alg_cli_fn/seckey.pem -CAfile ca_$alg_ca.pem \
+						-verify_return_error -verify 1 -connect $url -ign_eof \
+						<< "GET /printenv_auth.asp HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+				} 0 "CERT_FLAGS: 1\n"	
+
+			} else {
+
+				test "$suite, нет сертификата, скрипт printenv" {
+					set out [openssl [concat s_client $protos($proto) \
+						[list -cipher $mycs -CAfile ca_$alg_ca.pem \
+						-verify_return_error -verify 1 -connect $url -ign_eof \
+						<< "GET /cgi-bin/printenv/auth HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+					if {[regexp "ssl handshake failure" $out match]} {
+						set match
+					} else {
+						set out
+					}	
+				} 1 "ssl handshake failure" 
+
+				test  -skip {![file exists U_x_$alg_cli_fn/cert.pem]} \
+				"$suite, есть сертификат, скрипт printenv" {
+	   				grep SSL_CLIENT_VERIFY [openssl \
+						[concat s_client $protos($proto) \
+						[list -cipher $mycs -cert U_x_$alg_cli_fn/cert.pem \
+		   				-key U_x_$alg_cli_fn/seckey.pem -CAfile ca_$alg_ca.pem \
+						-verify_return_error -verify 1 -connect $url -ign_eof \
+						<< "GET /cgi-bin/printenv/auth HTTP/1.1\nHost: $get_hostname\nConnection: close\n\n"]]]
+				} 0 "SSL_CLIENT_VERIFY=\"SUCCESS\"\n"	
+			}
+		}	
+  	}	
+}	
+end_tests

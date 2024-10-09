@@ -1,0 +1,80 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на совместтимость cms и smime -sign" 
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2001:B gost2001:C gost2012_256:A gost2012_256:B gost2012_256:C gost2012_512:A gost2012_512:B}}
+		"open" {set alg_list {gost2001:A gost2001:B gost2001:C gost2012_256:A gost2012_256:B gost2012_256:C gost2012_512:A gost2012_512:B}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_cms_$alg_fn
+	switch -glob $alg {
+		gost2012* {set ::test::ca cmsCA-2012
+		           set ca_sign_alg hash_with_sign12_512
+		          }
+		* {set ::test::ca cmsCA
+		   set ca_sign_alg hash_with_sign01_cp
+		  }
+	}
+
+test -skip {![file exists cms_sign_$alg_fn.msg]} "Verifying a message signed with $alg without ca " {
+	grep Veri [openssl "smime -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -noverify -certfile $username/cert.pem"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists cms_sign_$alg_fn.msg]}  "Verifying a message signed with $alg with ca" {
+	grep Veri [openssl "smime -verify -text -in cms_sign_$alg_fn.msg -out cms_verified.txt -certfile $username/cert.pem -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists cms_bad_$alg_fn.msg]} -createsfiles cms_verified.txt "Verifying corrupted messages signed with $alg" {
+	grep Verification [openssl "smime -verify -text -in cms_bad_$alg_fn.msg -out cms_verified.txt -noverify -certfile $username/cert.pem"]
+} 1 "Verification failure"
+
+test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert inside without ca" {
+	grep Veri [openssl "smime -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -noverify"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists cms_sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert with ca" {
+	grep Veri [openssl "smime -verify -text -in cms_sign_c_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification successful
+"
+
+test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a message signed by $alg having cert inside without ca" {
+	grep Veri [openssl "smime -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -noverify"]
+} 0 "Verification successful
+"
+
+test -createsfiles cms_verified.txt -skip {![file exists cms_sign_op_$alg_fn.msg]} "Verifying a $alg opaque  message with ca" {
+	grep Veri [openssl "smime -verify -text -in cms_sign_op_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists cms_broken_op_$alg_fn.msg]} "Verifying broken $alg opaque message" {
+	grep Verification [openssl "smime -verify -text -in cms_broken_op_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 1 "Verification failure"
+	
+test -skip {![file exists cms_sign_det_$alg_fn.msg]} "Verifying detached $alg signature" {
+	grep Veri [openssl "smime -verify -content cms_sign.dat -in cms_sign_det_$alg_fn.msg -out cms_verified.txt -noverify"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists cms_sign_det_$alg_fn.msg]} -createsfiles {bad.dat} "Verifying corrupted $alg detached signature" {
+	makeFile bad.dat [regsub Test [getFile cms_sign.dat] Best]
+	grep Verification [openssl "smime -verify -content bad.dat -in cms_sign_det_$alg_fn.msg -out cms_verified.txt -CAfile $::test::ca/cacert.pem"]
+} 1 "Verification failure"
+
+
+}
+end_tests

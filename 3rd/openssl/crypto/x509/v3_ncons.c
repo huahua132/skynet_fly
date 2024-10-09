@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2003-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -34,8 +34,8 @@ static int do_i2r_name_constraints(const X509V3_EXT_METHOD *method,
 static int print_nc_ipadd(BIO *bp, ASN1_OCTET_STRING *ip);
 
 static int nc_match(GENERAL_NAME *gen, NAME_CONSTRAINTS *nc);
-static int nc_match_single(int effective_type, GENERAL_NAME *sub,
-                           GENERAL_NAME *gen);
+static int nc_match_single(int effective_type, GENERAL_NAME *gen,
+                           GENERAL_NAME *base);
 static int nc_dn(const X509_NAME *sub, const X509_NAME *nm);
 static int nc_dns(ASN1_IA5STRING *sub, ASN1_IA5STRING *dns);
 static int nc_email(ASN1_IA5STRING *sub, ASN1_IA5STRING *eml);
@@ -45,6 +45,26 @@ static int nc_ip(ASN1_OCTET_STRING *ip, ASN1_OCTET_STRING *base);
 
 const X509V3_EXT_METHOD ossl_v3_name_constraints = {
     NID_name_constraints, 0,
+    ASN1_ITEM_ref(NAME_CONSTRAINTS),
+    0, 0, 0, 0,
+    0, 0,
+    0, v2i_NAME_CONSTRAINTS,
+    i2r_NAME_CONSTRAINTS, 0,
+    NULL
+};
+
+const X509V3_EXT_METHOD ossl_v3_holder_name_constraints = {
+    NID_holder_name_constraints, 0,
+    ASN1_ITEM_ref(NAME_CONSTRAINTS),
+    0, 0, 0, 0,
+    0, 0,
+    0, v2i_NAME_CONSTRAINTS,
+    i2r_NAME_CONSTRAINTS, 0,
+    NULL
+};
+
+const X509V3_EXT_METHOD ossl_v3_delegated_name_constraints = {
+    NID_delegated_name_constraints, 0,
     ASN1_ITEM_ref(NAME_CONSTRAINTS),
     0, 0, 0, 0,
     0, 0,

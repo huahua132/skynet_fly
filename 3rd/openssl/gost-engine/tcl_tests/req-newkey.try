@@ -1,0 +1,100 @@
+#!/usr/bin/tclsh
+if {[info exists env(PKG_PATH)]} {
+	lappend auto_path $env(PKG_PATH)
+} else {
+	lappend auto_path [file dirname [info script]]
+}
+package require ossltest
+package require asn 0.4.1
+cd $::test::dir
+
+switch -exact [engine_name] {
+	"ccore" {
+		set no_param_set "no public key parameters set"
+		set invalid_paramset "invalid pubic key paramset name"
+	}
+	"open" {
+		set no_param_set "no parameters set"
+		set invalid_paramset "parameter error"
+	}
+}
+
+start_tests "Создание ключей и заявок, команда req -newkey"
+makeCA
+foreach {alg descr code result} {
+gost2001: "ГОСТ 2001 Криптопро" 1 no_param_set
+gost2001:A "ГОСТ 2001 Криптопро A" 0 1.2.643.2.2.35.1
+gost2001:B "ГОСТ 2001 Криптопро B" 0 1.2.643.2.2.35.2
+gost2001:C "ГОСТ 2001 Криптопро C" 0 1.2.643.2.2.35.3
+gost2001:D "ГОСТ 2001 Криптопро неверный параметр" 1 invalid_paramset
+gost2001:test "ГОСТ 2001 Криптопро тестовый" 0 1.2.643.2.2.35.0
+gost2001:XA "ГОСТ 2001 Криптопро XA" 0 1.2.643.2.2.36.0
+gost2001:XB "ГОСТ 2001 Криптопро XB" 0 1.2.643.2.2.36.1
+gost2001:id-GostR3410-2001-CryptoPro-XchB-ParamSet  "ГОСТ 2001 Криптопро XB по имени" 0 1.2.643.2.2.36.1
+gost2001:1.2.643.2.2.36.1 "ГОСТ 2001 Криптопро XB по OID" 0 1.2.643.2.2.36.1
+gost2001:1.2.840.113549.1.1.1 "Недопустимый OID" 1 invalid_paramset
+gost2001:RSAencryption: "Недопустимое имя объекта" 1 invalid_paramset
+gost2012_256: "ГОСТ 2012 256 бит" 1 no_param_set
+gost2012_256:A "ГОСТ 2012 256 бит Криптопро A" 0 1.2.643.2.2.35.1
+gost2012_256:B "ГОСТ 2012 256 бит Криптопро B" 0 1.2.643.2.2.35.2
+gost2012_256:C "ГОСТ 2012 256 бит Криптопро C" 0 1.2.643.2.2.35.3
+gost2012_256:D "ГОСТ 2012 256 бит Криптопро неверный параметр" 1 invalid_paramset
+gost2012_256:TCA "ГОСТ 2012 256 бит ТК26 A" 0 1.2.643.7.1.2.1.1.1
+gost2012_256:TCB "ГОСТ 2012 256 бит ТК26 B" 0 1.2.643.7.1.2.1.1.2
+gost2012_256:TCC "ГОСТ 2012 256 бит ТК26 C" 0 1.2.643.7.1.2.1.1.3
+gost2012_256:TCD "ГОСТ 2012 256 бит ТК26 D" 0 1.2.643.7.1.2.1.1.4
+gost2012_256:TCE "ГОСТ 2012 256 бит ТК26 неверный параметр" 1 invalid_paramset
+gost2012_256:id-GostR3410-2001-CryptoPro-B-ParamSet  "ГОСТ 2012 256 бит Криптопро B по имени" 0 1.2.643.2.2.35.2
+gost2012_256:1.2.643.2.2.35.1 "ГОСТ 2012 256 бит Криптопро A по OID" 0 1.2.643.2.2.35.1
+gost2012_256:1.2.840.113549.1.1.1 "Недопустимый OID" 1 invalid_paramset
+gost2012_256:RSAencryption: "Недопустимое имя объекта" 1 invalid_paramset
+gost2012_512: "ГОСТ 2012 512 бит" 1 no_param_set
+gost2012_512:A "ГОСТ 2012 512 бит ТК26 A" 0 1.2.643.7.1.2.1.2.1
+gost2012_512:B "ГОСТ 2012 512 бит ТК26 B" 0 1.2.643.7.1.2.1.2.2
+gost2012_512:C "ГОСТ 2012 512 бит ТК26 C" 0 1.2.643.7.1.2.1.2.3
+gost2012_512:D "ГОСТ 2012 512 бит неверный параметр" 1 invalid_paramset
+gost2012_512:id-tc26-gost-3410-2012-512-paramSetB  "ГОСТ 2012 512 бит набор параметров B по имени" 0 1.2.643.7.1.2.1.2.2
+gost2012_512:1.2.643.7.1.2.1.2.1 "ГОСТ 2012 512 бит набор параметров A по OID" 0 1.2.643.7.1.2.1.2.1
+gost2012_512:1.2.643.2.2.35.1 "Недопустимый OID" 1 invalid_paramset
+gost2012_512:RSAencryption: "Недопустимое имя объекта" 1 invalid_paramset
+
+
+} {
+
+	switch -exact $result {
+		"no_param_set" { set result $no_param_set }
+		"invalid_paramset" { set result $invalid_paramset }
+	}
+
+	set index [string first ":" $alg]
+	if {$index != -1} {
+		set algname [string range $alg 0 [expr $index-1]]
+		set algparam [string range $alg [expr $index+1] end]
+	} else {
+		set algname $alg
+		set algparam ""
+	}
+	if {$algparam ne ""} {
+		set algparamcmdline "-pkeyopt paramset:$algparam"
+	} else {
+		set algparamcmdline ""
+	}
+
+	test -skip {{[engine_name] eq "open" && $alg eq "gost2001:test"}} $descr {
+		openssl "req -newkey $algname $algparamcmdline -keyout test.key -out test.req -batch -nodes -config $::test::ca/req.conf"
+		set pkcs8 [readpem test.key]
+		asn::asnGetSequence pkcs8 seq1
+		asn::asnGetInteger seq1 int0
+		asn::asnGetSequence seq1 seq2
+		asn::asnGetObjectIdentifier seq2 oid
+		asn::asnGetSequence seq2 seq3
+		asn::asnGetObjectIdentifier seq3 oid
+		join $oid .
+	} $code $result
+	log "errorInfo: $errorInfo"
+
+	test -skip {![file exists test.req]} "Заявка подписана корректно" {
+		grep "verif" [openssl "req -verify -in test.req"]
+	} 0 "Certificate request self-signature verify OK\n"
+}
+end_tests

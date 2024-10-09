@@ -3,7 +3,7 @@
 # 安装编译skynet依赖的一些库
 install_dependencies() {
     apt-get update
-	apt-get install -y git gcc autoconf automake make libtool curl libgdbm-dev libdb-dev libgdbm-compat-dev
+	apt-get install -y git gcc autoconf automake make libtool curl libgdbm-dev libdb-dev libgdbm-compat-dev sudo
 }
 
 # 安装Perl
@@ -17,16 +17,16 @@ install_perl() {
 	)
 	if [ -f /usr/bin/perl ]; then
     sudo mv /usr/bin/perl /usr/bin/perl.old && echo "Moved perl successfully" || {
-        echo "Failed to move perl"
+		echo -e "\033[31m Failed to move perl \033[0m"
         exit 1
     }
 	fi
 	sudo cp -f $HOME/localperl/bin/perl /usr/local/bin/perl && echo "Copied perl successfully" || {
-		echo "Failed to copy perl"
+		echo -e "\033[31m Failed to copy perl \033[0m"
 		exit 1
 	}
 	sudo ln -s /usr/local/bin/perl /usr/bin/perl && echo "Created symlink successfully" || {
-		echo "Failed to create symlink"
+		echo -e "\033[31m Failed to create symlink \033[0m"
 		exit 1
 	}
 
@@ -34,7 +34,7 @@ install_perl() {
 	cd ../../
 }
 
-# 编译openssl-3.3.2
+# 编译openssl-3.4.0
 install_openssl() {
 	# 获取脚本当前目录
 	CURRENT_DIR="$(dirname "$BASH_SOURCE")"
@@ -47,16 +47,16 @@ install_openssl() {
 		
 		# 配置 OpenSSL
 		./config --prefix="$ABSOLUTE_PATH" -fPIC no-shared && echo "OpenSSL configured successfully" || {
-			echo "OpenSSL configuration failed"
+			echo -e "\033[31m OpenSSL configuration failed \033[0m"
 			exit 1
 		}
 
 		# 编译
 		make -j4 && echo "Make completed successfully" || {
-			echo "Make failed"
+			echo -e "\033[31m Make failed \033[0m"
 			exit 1
 		}
-		echo "OpenSSL installed successfully!"
+		echo -e "\033[32m OpenSSL installed successfully! \033[0m"
 	)
 	cd ../../
 }

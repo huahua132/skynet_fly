@@ -52,7 +52,7 @@ QQ群号：102993581
 编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
 	- `git clone https://github.com/huahua132/skynet_fly`
 	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
-        - 在skynet_fly目录下 `make linux`
+        - 在skynet_fly目录下 `make linux` 
 
 ## 快速开始 简单可热更服务 (运行examples/AB_question)
 * **构建服务**

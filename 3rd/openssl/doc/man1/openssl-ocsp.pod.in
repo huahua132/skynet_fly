@@ -24,14 +24,14 @@ B<openssl> B<ocsp>
 [B<-req_text>]
 [B<-resp_text>]
 [B<-text>]
-[B<-reqout> I<file>]
-[B<-respout> I<file>]
-[B<-reqin> I<file>]
-[B<-respin> I<file>]
+[B<-reqout> I<filename>]
+[B<-respout> I<filename>]
+[B<-reqin> I<filename>]
+[B<-respin> I<filename>]
 [B<-url> I<URL>]
 [B<-host> I<host>:I<port>]
 [B<-path> I<pathname>]
-[B<-proxy> I<[http[s]://][userinfo@]host[:port][/path]>]
+[B<-proxy> I<[http[s]://][userinfo@]host[:port][/path][?query][#fragment]>]
 [B<-no_proxy> I<addresses>]
 [B<-header>]
 [B<-timeout> I<seconds>]
@@ -155,11 +155,14 @@ a nonce is automatically added specifying B<-no_nonce> overrides this.
 
 Print out the text form of the OCSP request, response or both respectively.
 
-=item B<-reqout> I<file>, B<-respout> I<file>
+=item B<-reqout> I<file>, B<-respout> I<filename>
 
-Write out the DER encoded certificate request or response to I<file>.
+Write out the DER-encoded OCSP request or response to I<filename>.
+The output filename can be the same as the input filename,
+which leads to replacing the file contents.
+Note that file I/O is not atomic. The output file is truncated and then written.
 
-=item B<-reqin> I<file>, B<-respin> I<file>
+=item B<-reqin> I<file>, B<-respin> I<filename>
 
 Read OCSP request or response file from I<file>. These option are ignored
 if OCSP request or response creation is implied by other options (for example
@@ -168,7 +171,7 @@ with B<-serial>, B<-cert> and B<-host> options).
 =item B<-url> I<responder_url>
 
 Specify the responder host and optionally port and path via a URL.
- Both HTTP and HTTPS (SSL/TLS) URLs can be specified.
+Both HTTP and HTTPS (SSL/TLS) URLs can be specified.
 The optional userinfo and fragment components are ignored.
 Any given query component is handled as part of the path component.
 For details, see the B<-host> and B<-path> options described next.
@@ -179,17 +182,20 @@ If the B<-host> option is present then the OCSP request is sent to the host
 I<host> on port I<port>.
 The I<host> may be a domain name or an IP (v4 or v6) address,
 such as C<127.0.0.1> or C<[::1]> for localhost.
+If it is an IPv6 address, it must be enclosed in C<[> and C<]>.
+
 The B<-path> option specifies the HTTP pathname to use or "/" by default.
 This is equivalent to specifying B<-url> with scheme
 http:// and the given I<host>, I<port>, and optional I<pathname>.
 
-=item B<-proxy> I<[http[s]://][userinfo@]host[:port][/path]>
+=item B<-proxy> I<[http[s]://][userinfo@]host[:port][/path][?query][#fragment]>
 
 The HTTP(S) proxy server to use for reaching the OCSP server unless B<-no_proxy>
 applies, see below.
+If the host string is an IPv6 address, it must be enclosed in C<[> and C<]>.
 The proxy port defaults to 80 or 443 if the scheme is C<https>; apart from that
 the optional C<http://> or C<https://> prefix is ignored,
-as well as any userinfo and path components.
+as well as any userinfo, path, query, and fragment components.
 Defaults to the environment variable C<http_proxy> if set, else C<HTTP_PROXY>
 in case no TLS is used, otherwise C<https_proxy> if set, else C<HTTPS_PROXY>.
 

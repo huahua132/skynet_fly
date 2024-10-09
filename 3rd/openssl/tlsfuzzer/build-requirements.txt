@@ -1,0 +1,5 @@
+coverage
+coveralls
+pylint
+diff_cover
+mock>2.0.0
