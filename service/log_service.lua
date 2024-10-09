@@ -23,9 +23,13 @@ local file = nil
 local file_path = skynet.getenv('logpath')
 local file_name = skynet.getenv('logfilename')
 local daemon = skynet.getenv('daemon')
+local log_is_launch_rename = skynet.getenv('log_is_launch_rename')
 local hook_hander_list = {}
 
 local function rename_old_file()
+    if log_is_launch_rename ~= 'true' then
+        return
+    end
     if not daemon then
         return
     end

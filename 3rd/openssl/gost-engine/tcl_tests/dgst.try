@@ -1,0 +1,125 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+start_tests "Тесты на команду dgst"
+
+switch -exact [engine_name] {
+	"ccore" {set signalg { gost2001:A gost2012_256:A gost2012_512:A}}
+	"open" {set signalg { gost2001:A gost2012_256:A gost2012_512:A}}
+}
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	set alg_list $signalg
+}
+
+set hash_alg_list { md5 hash_94 hash_12_256 hash_12_512 }
+
+# ===============
+# GOST 34.11-2012
+# ===============
+
+test -createsfiles {dgst.dat dgst0.dat dgst2.dat dgst8.dat dgst63.dat dgst_CF.dat} "Формирование тестовых данных" {
+	makeFile dgst.dat [string repeat "Test data to digest.\n" 100] binary
+	makeFile dgst0.dat "" binary
+	makeFile dgst63.dat "012345678901234567890123456789012345678901234567890123456789012" binary
+	file copy -force $::test::src/dgst_CF.dat $::test::src/dgst_ex1.dat $::test::src/dgst_ex2.dat .
+} 0 ""
+
+test "Вычисление дайджеста алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst63.dat"]
+} 0 "md_gost12_256\(dgst63.dat)= 9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500\n"
+
+test "Два дайджеста алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst63.dat dgst63.dat"]
+} 0 "md_gost12_256\(dgst63.dat)= 9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500\nmd_gost12_256\(dgst63.dat)= 9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500\n" 
+
+test "Дайджест от данных нулевой длины алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst0.dat"]
+} 0 "md_gost12_256\(dgst0.dat)= 3f539a213e97c802cc229d474c6aa32a825a360b2a933a949fd925208d9ce1bb\n"
+
+test "Дайджест от спец.данных алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst_CF.dat"]
+} 0 "md_gost12_256\(dgst_CF.dat)= 81bb632fa31fcc38b4c379a662dbc58b9bed83f50d3a1b2ce7271ab02d25babb\n"
+
+test "Дайджест от контрольного примера 1 алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst_ex1.dat"]
+} 0 "md_gost12_256\(dgst_ex1.dat)= 9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500\n"
+
+test "Дайджест от контрольного примера 2 алгоритмом md_gost12_256" {
+	grep "md_gost12_256\\(" [openssl "dgst -md_gost12_256 dgst_ex2.dat"]
+} 0 "md_gost12_256\(dgst_ex2.dat)= 9dd2fe4e90409e5da87f53976d7405b0c0cac628fc669a741d50063c557e8f50\n"
+
+test "Вычисление дайджеста алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst63.dat"]
+} 0 "md_gost12_512\(dgst63.dat)= 1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48\n"
+
+test "Два дайджеста алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst63.dat dgst63.dat"]
+} 0 "md_gost12_512\(dgst63.dat)= 1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48\nmd_gost12_512\(dgst63.dat)= 1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48\n" 
+
+test "Дайджест от данных нулевой длины алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst0.dat"]
+} 0 "md_gost12_512\(dgst0.dat)= 8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a\n"
+
+test "Дайджест от спец.данных алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst_CF.dat"]
+} 0 "md_gost12_512\(dgst_CF.dat)= 8b06f41e59907d9636e892caf5942fcdfb71fa31169a5e70f0edb873664df41c2cce6e06dc6755d15a61cdeb92bd607cc4aaca6732bf3568a23a210dd520fd41\n"
+
+test "Дайджест от контрольного примера 1 алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst_ex1.dat"]
+} 0 "md_gost12_512\(dgst_ex1.dat)= 1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48\n"
+
+test "Дайджест от контрольного примера 2 алгоритмом md_gost12_512" {
+	grep "md_gost12_512\\(" [openssl "dgst -md_gost12_512 dgst_ex2.dat"]
+} 0 "md_gost12_512\(dgst_ex2.dat)= 1e88e62226bfca6f9994f1f2d51569e0daf8475a3b0fe61a5300eee46d961376035fe83549ada2b8620fcd7c496ce5b33f0cb9dddc2b6460143b03dabac9fb28\n"
+
+test "Вычисление дайджеста алгоритмом md_gost94" {
+	grep "md_gost94\\(" [openssl "dgst -md_gost94 dgst.dat"]
+} 0 "md_gost94\(dgst.dat)= 42e462ce1c2b4bf72a4815b7b4877c601f05e5781a71eaa36f63f836c021865c\n"
+
+test  "Вычисление двух дайджестов алгоритмом md_gost94" {
+	grep "md_gost94\\(" [openssl "dgst -md_gost94 dgst.dat dgst.dat"]
+} 0 "md_gost94\(dgst.dat)= 42e462ce1c2b4bf72a4815b7b4877c601f05e5781a71eaa36f63f836c021865c\nmd_gost94\(dgst.dat)= 42e462ce1c2b4bf72a4815b7b4877c601f05e5781a71eaa36f63f836c021865c\n" 
+
+test "Вычисление дайджеста от данных нулевой длины алгоритмом md_gost94" {
+	grep "md_gost94\\(" [openssl "dgst -md_gost94 dgst0.dat"]
+} 0 "md_gost94\(dgst0.dat)= 3f25bc1fbbce27ca10fb1958f319473ae7e17482c3b53ecf47a7e2de8aabe4c8\n"
+
+
+foreach alg $alg_list {
+  set alg_fn [string map {":" "_"} $alg]
+  set username dgst_$alg_fn
+
+  test -createsfiles $username/seckey.pem "Секретный ключ, алгоритм $alg" {
+    makeSecretKey $username $alg
+  } 0 1
+
+
+  foreach hash_alg $hash_alg_list {
+
+    if { ($alg eq "rsa:") || ($hash_alg eq [alg_hash $alg]) } {
+
+      test -skip {![file exists $username/seckey.pem]||![file exists dgst.dat]} -createsfiles $username/sig.bin  "Подпись дайджеста $hash_alg алгоритмом $alg" {
+        openssl "dgst -[hash_short_name $hash_alg] -sign $username/seckey.pem -out $username/sig.bin dgst.dat"
+        expr {[file size $username/sig.bin] > 0}
+      } 0 1
+
+      test -skip {![file exists $username/seckey.pem]||![file exists $username/sig.bin]} "Проверка подписи под дайджестом $hash_alg на алгоритме $alg" {
+        grep Verif [openssl "dgst -[hash_short_name $hash_alg] -prverify $username/seckey.pem -signature $username/sig.bin dgst.dat"]	
+      } 0 "Verified OK
+"
+
+    } else {
+      test -skip {![file exists $username/seckey.pem]||![file exists dgst.dat]} -createsfiles "testmd5.bin"  "Подпись несовместимого дайджеста $hash_alg c подписью $alg" {
+        grep Error [openssl "dgst -[hash_short_name $hash_alg] -sign $username/seckey.pem -out testmd5.bin dgst.dat"]
+      } 1 {invalid digest type}
+    }
+
+  }
+
+}
+
+end_tests

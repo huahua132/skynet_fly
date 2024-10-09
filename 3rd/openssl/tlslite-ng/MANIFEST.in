@@ -1,0 +1,6 @@
+recursive-include tests *
+recursive-include docs/_build/html *
+include LICENSE
+include README
+include Makefile
+include MANIFEST.in

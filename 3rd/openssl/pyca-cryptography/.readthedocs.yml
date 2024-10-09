@@ -1,0 +1,22 @@
+# https://docs.readthedocs.io/en/stable/config-file/v2.html#supported-settings
+
+version: 2
+
+sphinx:
+  # The config file overrides the UI settings:
+  # https://github.com/pyca/cryptography/issues/5863#issuecomment-817828152
+  builder: dirhtml
+
+build:
+  # readdocs master now includes a rust toolchain
+  os: "ubuntu-20.04"
+  tools:
+    python: "3.9"
+    rust: "1.55"
+
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs

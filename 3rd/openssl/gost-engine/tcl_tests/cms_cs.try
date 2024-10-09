@@ -1,0 +1,125 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на интероперабельность результатов подписи командой cms с smime-проверками на эталонниках" 
+
+if {[info exists env(ALG_LIST)]} {
+	set alg_list $env(ALG_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set alg_list {gost2001:A gost2001:B gost2001:C}}
+		"open" {set alg_list {gost2001:A gost2001:B gost2001:C}}
+	}
+}
+
+foreach alg $alg_list {
+	set alg_fn [string map {":" "_"} $alg]
+	set username U_cms_$alg_fn
+	switch -glob $alg {
+		gost2012* {set ::test::ca cmsCA-2012
+		           set ca_sign_alg hash_with_sign12_512
+		          }
+		* {set ::test::ca cmsCA
+		   set ca_sign_alg hash_with_sign01_cp
+		  }
+	}
+set hosts [list tls-ref-cp21]
+foreach hstname $hosts {
+
+
+#test -skip {![file exists $username/cert.pem]} -createsfiles [list sign.dat sign_$alg_fn.msg] "Signing a message by smime without cert by $alg (verify by smime)" {
+#	makeFile sign.dat [string repeat "Test data to sign.\n" 100] 
+#	openssl	"cms -sign -in sign.dat -text -out sign_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem -nocerts"
+#	file isfile sign_$alg_fn.msg
+#} 0 1
+
+test -skip {![file exists sign_$alg_fn.msg]} "Verifying a message signed with $alg without ca via smime" {
+	grep Veri [openssl_remote "$username sign_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_$alg_fn.msg -out TESTPATH/verified.txt -noverify -certfile TESTPATH/$username/cert.pem" "cms"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists sign_$alg_fn.msg]}  "Verifying a message signed with $alg with ca via smime" {
+	grep Veri [openssl_remote "$::test::ca sign_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_$alg_fn.msg -out TESTPATH/verified.txt -certfile TESTPATH/$username/cert.pem -CAfile TESTPATH/$::test::ca/cacert.pem" "cms"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists sign_$alg_fn.msg]} -createsfiles [list bad_$alg_fn.msg TESTPATH/verified.txt] "Verifying corrupted messages signed with $alg via smime" {
+	set corrupted [getFile sign_$alg_fn.msg]
+	set index [string first "Test data" $corrupted ]
+	makeFile bad_$alg_fn.msg [string replace $corrupted $index [expr $index+9] "Bad data"]
+	grep Verification [openssl_remote "bad_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/bad_$alg_fn.msg -out TESTPATH/verified.txt -noverify -certfile TESTPATH/$username/cert.pem" "cms"]
+} 1 "Verification failure"
+
+#test -skip {![file exists $username/cert.pem]}  -createsfiles [list sign.dat sign_c_$alg_fn.msg] "Signing a message by $alg with cert" {
+#	makeFile sign.dat [string repeat "Test data to sign.\n" 100] 
+#	openssl	"cms -sign -in sign.dat -crlfeol -text -out sign_c_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem"
+#	file isfile sign_c_$alg_fn.msg
+#} 0 1
+
+test -skip {![file exists sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert inside without ca via smime" {
+	grep Veri [openssl_remote "sign_c_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_c_$alg_fn.msg -out TESTPATH/verified.txt -noverify" "cms"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists sign_c_$alg_fn.msg]} "Verifying a message signed with $alg having cert with ca via smime" {
+	grep Veri [openssl_remote "sign_c_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_c_$alg_fn.msg -out TESTPATH/verified.txt -CAfile TESTPATH/$::test::ca/cacert.pem" "cms"]
+} 0 "Verification successful
+"
+
+#test -skip {![file exists $username/cert.pem]} -createsfiles {sign.dat sign_op_$alg_fn.msg} "Signing a message by $alg with cert using opaque signing" {
+#	makeFile sign.dat [string repeat "Test data to sign.\n" 100] 
+#	openssl	"cms -sign -in sign.dat -text -out sign_op_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem -nodetach"
+#	file isfile sign_op_$alg_fn.msg
+#} 0 1
+
+test -createsfiles TESTPATH/verified.txt -skip {![file exists sign_op_$alg_fn.msg]} "Verifying a message signed by $alg having cert inside without ca via smime" {
+	grep Veri [openssl_remote "sign_op_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_op_$alg_fn.msg -out TESTPATH/verified.txt -noverify" "cms"]
+} 0 "Verification successful
+"
+
+test -createsfiles TESTPATH/verified.txt -skip {![file exists sign_op_$alg_fn.msg]} "Verifying a $alg opaque  message with ca via smime" {
+	grep Veri [openssl_remote "sign_op_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/sign_op_$alg_fn.msg -out TESTPATH/verified.txt -CAfile TESTPATH/$::test::ca/cacert.pem" "cms"]
+} 0 "Verification successful
+"
+
+test -createsfiles broken_op_$alg_fn.msg  -skip {![file exists sign_op_$alg_fn.msg]} "Verifying broken $alg opaque message" {
+	set data [getFile sign_op_$alg_fn.msg]
+	regexp "(.*)\n\r?\n(.+)" $data match header encoded
+	set asnstruct [::base64::decode $encoded]
+	makeFile broken_op_$alg_fn.msg "$header\n\n[::base64::encode [regsub -all\
+		"Test data" $asnstruct "Best data"]]"
+	grep Verification [openssl_remote "broken_op_$alg_fn.msg" "$hstname" "smime -verify -text -in TESTPATH/broken_op_$alg_fn.msg -out TESTPATH/verified.txt -CAfile TESTPATH/$::test::ca/cacert.pem" "cms"]
+} 1 "Verification failure"
+
+#test -createsfiles "sign_det_$alg_fn.msg" -skip {![file exists $username/cert.pem]||![file exists sign.dat]} "Creating detached $alg signature" {
+#	openssl "cms -sign -binary -in sign.dat -out sign_det_$alg_fn.msg -signer $username/cert.pem -inkey $username/seckey.pem"
+#	file exists sign_det_$alg_fn.msg
+#} 0 1
+
+#We expect cryptocom oids because of cert signed by ca with Cryptocom algs
+# Result sequence
+# 1. digest 
+# 2.  algorithm of CA key
+# 3. algorithm of current key
+# 4. algorithm of CA key
+# 5. digest
+# 6. digests from sMIMECapabilities
+# 7. encryption from sMIMECapabilities
+# 8. algorithm of current key
+
+test -skip {![file exists pk7sign_$alg_fn.pem]} "Verifying detached $alg signature via smime" {
+	grep Veri [openssl_remote "pk7sign_$alg_fn.pem sign.dat" "$hstname" "smime -verify -content TESTPATH/sign.dat -inform PEM -in TESTPATH/pk7sign_$alg_fn.pem -out TESTPATH/verified.txt -noverify" "cms"]
+} 0 "Verification successful
+"
+
+test -skip {![file exists pk7sign_$alg_fn.pem]} -createsfiles {bad.dat} "Verifying corrupted $alg detached signature" {
+	makeFile bad.dat [regsub Test [getFile sign.dat] Best]
+	grep Verification [openssl_remote "sign_det_$alg_fn.msg bad.dat" "$hstname" "smime -verify -content TESTPATH/bad.dat -in TESTPATH/sign_det_$alg_fn.msg -out TESTPATH/verified.txt -CAfile TESTPATH/$::test::ca/cacert.pem" "cms"]
+} 1 "Verification failure"
+}
+
+}
+end_tests

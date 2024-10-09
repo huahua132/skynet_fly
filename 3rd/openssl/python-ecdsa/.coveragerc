@@ -1,0 +1,7 @@
+# -*- conf -*-
+
+[run]
+include =
+ src/ecdsa/*
+omit =
+ src/ecdsa/_version.py

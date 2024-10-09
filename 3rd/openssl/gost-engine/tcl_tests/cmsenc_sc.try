@@ -1,0 +1,190 @@
+#!/usr/bin/tclsh
+lappend auto_path [file dirname [info script]]
+package require ossltest
+package require test
+cd $::test::dir
+set testname [file rootname [file tail $::argv0]]
+
+start_tests "Тесты на cms -encrypt с участием эталонных серверов (шифрование на эталонниках)" 
+proc make_fn {alg} {
+	return [string map {":" "_"} $alg]
+}
+
+proc map {str list} {
+	set result {}
+	foreach a $list {
+		lappend result [subst $str]
+	}
+	return $result
+}
+	
+if {![file exist encrypt.dat]} {
+	makeFile encrypt.dat [string repeat "Test data to encrypt.\n" 100] 
+}
+
+#if {![info exist env(/NO_RSA)]} {
+#test "Creating RSA CA" {
+#	makeCA ${testname}CA-RSA rsa:512
+#} 0 1
+#
+
+#set ::test::ca cmsencCA-RSA
+
+#foreach user {U_cms_enc_rsa_1 U_cms_enc_rsa_2} {
+#test "Make registered user $user" {
+#	makeRegisteredUser $user rsa:512 CAname ${testname}CA-RSA
+#} 0 1
+#}
+
+#set hosts tls-ref-cp21
+#foreach hstname $hosts {
+
+#test -createsfiles cms_enc_rsa.msg "RSA User 1 encrypts message for RSA user 2" {
+#	openssl "cms -encrypt -in encrypt.dat -des -out cms_enc_rsa.msg U_cms_enc_rsa_2/cert.pem"
+#	file isfile cms_enc_rsa.msg
+#} 0 1
+
+#test "RSA User 1 cannot decrypt message for RSA user 2" {
+#	grep "Error"	[openssl_remote "cms_enc_rsa.msg U_cms_enc_rsa_1" "$hstname" "cms -decrypt -in TESTPATH/cms_enc_rsa.msg -recip TESTPATH/U_cms_enc_rsa_1/cert.pem -inkey TESTPATH/U_cms_enc_rsa_1/seckey.pem" "rsa"]
+#} 1 {Error decrypting CMS}
+
+#test -skip {![file exists cms_decrypt.rsa]} "RSA User 2 (with cert) can decrypt message for RSA user 2" {
+#	set expected [getFile encrypt.dat]
+#	openssl_remote "U_cms_enc_rsa_2" "$hstname" "cms -decrypt -in TESTPATH/cms_enc_rsa.msg -recip TESTPATH/U_cms_enc_rsa_2/cert.pem -inkey TESTPATH/U_cms_enc_rsa_1/seckey.pem -out TESTPATH/cms_decrypt.rsa" "rsa"
+#	set result [getFile cms_decrypt.rsa]
+#	string eq $expected $result
+#} 0 1
+
+#test -skip{![file exists cms_decrypt_nocert.rsa]} "RSA User 2 (without cert) can decrypt message for RSA user 2" {
+#	set expected [getFile encrypt.dat]
+#	openssl_remote "$hstname" "cms -decrypt -in TESTPATH/cms_enc_rsa.msg -inkey TESTPATH/U_cms_enc_rsa_2/seckey.pem -out TESTPATH/cms_decrypt_nocert.rsa" "rsa"
+#	set result [getFile cms_decrypt_nocert.rsa]
+#	string eq $expected $result
+#} 0 1
+#}
+
+#test "Creating CA 2001" {
+#	makeCA ${testname}CA gost2001:A
+#} 0 1
+
+#test "Creating CA 2012" {
+#	makeCA
+#} 0 1
+#
+
+set hosts [list tls-ref-cp21 tls-ref-cp20]
+foreach hstname $hosts {
+
+if {[info exist env(ENC_LIST)]} {
+	set enc_list $env(ENC_LIST)
+} else {
+	switch -exact [engine_name] {
+		"ccore" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 }}
+		"open" {set enc_list {gost2001:XA:1.2.643.2.2.31.3 gost2001:XB:1.2.643.2.2.31.4 }}
+	}
+}
+
+save_env2 {OPENSSL_CONF CRYPT_PARAMS}
+makeFile cmsenc1.cnf [regsub -all "\n\\s*CRYPT_PARAMS\\s*=\[\^\n]*" [getConfig] ""]
+set ::env(OPENSSL_CONF) [file join [pwd] cmsenc1.cnf]
+
+foreach enc_tuple $enc_list {
+	if {![regexp {^([^:]*:[^:]*):(.*)$} $enc_tuple -> alg crypt_param]} {
+		set alg $enc_tuple
+		set crypt_param {}
+	}
+	set alg_fn [make_fn $enc_tuple]
+	set username U_cms_enc_$alg_fn
+	switch -glob $alg {
+		gost2012* {set ::test::ca cmsencCA-2012}
+		* {set ::test::ca cmsencCA}
+	}
+
+if {[string length $crypt_param]} {
+	set env(CRYPT_PARAMS) $crypt_param
+} else {
+	if {[info exists env(CRYPT_PARAMS)]} {unset env(CRYPT_PARAMS)}
+}
+
+test -createsfiles cms_enc_sc_$alg_fn.msg "Encrypting for $username" {
+	file mkdir 1_$hstname/$alg_fn
+	set res [open 1_$hstname/$alg_fn/cms_enc_sc_$alg_fn.msg w]
+	puts $res [openssl_remote "encrypt.dat $username $::test::ca" "$hstname" "cms -encrypt -in TESTPATH/encrypt.dat -gost89 TESTPATH/$username/cert.pem" "$testname"]
+	close $res
+} 0 ""
+
+#if {[info exists env(CRYPT_PARAMS)]} {unset env(CRYPT_PARAMS)}
+
+test "Decrypting file encrypted for $username" {
+    set expected [getFile encrypt.dat]
+    set result [openssl "cms -decrypt -in 1_$hstname/$alg_fn/cms_enc_sc_$alg_fn.msg -recip $username/cert.pem -inkey $username/seckey.pem"]
+    string eq $expected $result
+} 0 1
+
+if {[string length $crypt_param]} {
+	set env(CRYPT_PARAMS) $crypt_param
+} else {
+	if {[info exists env(CRYPT_PARAMS)]} {unset env(CRYPT_PARAMS)}
+}
+
+test -createsfiles cms_enc_t_$alg_fn.msg "Encrypting for $username - text format" {
+	file mkdir 2_$hstname/$alg_fn
+	set res [open 2_$hstname/$alg_fn/cms_enc_sc_t_$alg_fn.msg w]
+	puts $res [openssl_remote "encrypt.dat $username $::test::ca" "$hstname" "cms -encrypt -text -in TESTPATH/encrypt.dat -gost89 TESTPATH/$username/cert.pem" "$testname"]
+	close $res
+} 0 ""
+
+#if {[info exists env(CRYPT_PARAMS)]} {unset env(CRYPT_PARAMS)}
+
+
+
+test "Decrypting file text-encrypted for $username" {
+	set expected [getFile encrypt.dat]
+	set result [openssl "cms -decrypt -text -in 2_$hstname/$alg_fn/cms_enc_sc_t_$alg_fn.msg -recip $username/cert.pem -inkey $username/seckey.pem"]
+	string eq $expected $result
+} 0 1
+
+test "Decrypting file text-encrypted for $username without cert" {
+	set expected [getFile encrypt.dat]
+	set result [openssl "cms -decrypt -text -in 2_$hstname/$alg_fn/cms_enc_sc_t_$alg_fn.msg -inkey $username/seckey.pem"]
+	string eq $expected $result
+} 0 1
+
+}
+
+foreach enc_tuple $enc_list {
+	if {![regexp {^([^:]*:[^:]*):(.*)$} $enc_tuple -> alg crypt_param]} {
+		set alg $enc_tuple
+		set crypt_param {}
+	}
+	set alg_fn [make_fn $enc_tuple]
+	set username U_cms_enc_$alg_fn
+
+# Не мапится $a, потому отваливаются тесты. Выяснить, почему
+test "Encrypt for all" {
+	file mkdir 3_$hstname/$alg_fn
+	set res [open 3_$hstname/$alg_fn/cms_enc_4all_old.msg w]
+	puts $res [openssl_remote "encrypt.dat $username $::test::ca" "$hstname" "cms -encrypt -in TESTPATH/encrypt.dat -gost89 [map {TESTPATH/U_cms_enc_[make_fn $a]/cert.pem} $enc_list]" "$testname"]
+	close $res
+} 0 ""
+	
+test -skip {![file exists cms_enc_4all_old.msg]} "Decrypting gost-encrypted file, recipient $alg_fn" {
+	set expected [getFile encrypt.dat]
+	set result [openssl "cms -decrypt -in 3_$hstname/$alg_fn/cms_enc_4all_old.msg -recip $username/cert.pem -inkey $username/seckey.pem"]
+	string eq $expected $result
+} 0 1
+
+test -skip {![file exists cms_enc_4all_old.msg]} -createsfiles cms_decrypt_4all_nocert.$alg_fn "Decrypting gost-encrypted file without cert, recipient $alg_fn" {
+	set expected [getFile encrypt.dat]
+	set result [openssl "cms -decrypt -in 3_$hstname/$alg_fn/cms_enc_4all_old.msg -inkey $username/seckey.pem"]
+	string eq $expected $result
+} 0 1
+
+}
+
+restore_env2 {OPENSSL_CONF CRYPT_PARAMS}
+}
+
+
+
+end_tests

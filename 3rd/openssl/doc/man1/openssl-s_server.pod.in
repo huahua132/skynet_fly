@@ -75,7 +75,7 @@ B<openssl> B<s_server>
 [B<-status>]
 [B<-status_verbose>]
 [B<-status_timeout> I<int>]
-[B<-proxy> I<[http[s]://][userinfo@]host[:port][/path]>]
+[B<-proxy> I<[http[s]://][userinfo@]host[:port][/path][?query][#fragment]>]
 [B<-no_proxy> I<addresses>]
 [B<-status_url> I<val>]
 [B<-status_file> I<infile>]
@@ -412,7 +412,6 @@ information about the ciphers used and various session parameters.
 The output is in HTML format so this option can be used with a web browser.
 The special URL C</renegcert> turns on client cert validation, and C</reneg>
 tells the server to request renegotiation.
-The B<-early_data> option cannot be used with this option.
 
 =item B<-WWW>, B<-HTTP>
 
@@ -428,7 +427,6 @@ Extensions of C<html>, C<htm>, and C<php> are C<text/html> and all others are
 C<text/plain>.
 In addition, the special URL C</stats> will return status
 information like the B<-www> option.
-Neither of these options can be used in conjunction with B<-early_data>.
 
 =item B<-http_server_binmode>
 
@@ -522,13 +520,14 @@ certificate signer that is required for certificate status requests.
 
 Sets the timeout for OCSP response to I<int> seconds.
 
-=item B<-proxy> I<[http[s]://][userinfo@]host[:port][/path]>
+=item B<-proxy> I<[http[s]://][userinfo@]host[:port][/path][?query][#fragment]>
 
 The HTTP(S) proxy server to use for reaching the OCSP server unless B<-no_proxy>
 applies, see below.
+If the host string is an IPv6 address, it must be enclosed in C<[> and C<]>.
 The proxy port defaults to 80 or 443 if the scheme is C<https>; apart from that
 the optional C<http://> or C<https://> prefix is ignored,
-as well as any userinfo and path components.
+as well as any userinfo, path, query, and fragment components.
 Defaults to the environment variable C<http_proxy> if set, else C<HTTP_PROXY>
 in case no TLS is used, otherwise C<https_proxy> if set, else C<HTTPS_PROXY>.
 
