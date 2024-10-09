@@ -15,9 +15,10 @@ function M.new_client(db_name)
 	assert(conf_map and conf_map[db_name],"not mongo conf")
 
 	local conf = conf_map[db_name]
-	
+	local authdb = conf.authdb
+	conf.authdb = nil
 	local c = mongo.client(conf)
-    local db = c[conf.authdb]
+    local db = c[authdb]
     return db
 end
 
