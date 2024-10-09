@@ -1,4 +1,3 @@
-local table_util = require "skynet-fly.utils.table_util"
 local mongof = require "skynet-fly.db.mongof"
 local log = require "skynet-fly.log"
 
@@ -9,6 +8,7 @@ local error = error
 local tinsert = table.insert
 local tremove = table.remove
 local pcall = pcall
+local ipairs = ipairs
 
 local M = {}
 local mata = {__index = M}
@@ -81,7 +81,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
             if cur > len then break end
             for j = 1, self.batch_insert_num do
                 if entry_data_list[cur] then
-                    insert_list[j] = table_util.deep_copy(entry_data_list[cur])   --需要拷贝一下，因为 safe_batch_insert会改动原表
+                    insert_list[j] = entry_data_list[cur]
                     ref_list[j] = entry_data_list[cur]
                 else
                     insert_list[j] = nil
@@ -243,7 +243,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
         for i = 1, min_len do
             updates[i] = {
-                query = table_util.deep_copy(query),
+                query = {},
                 update = {
                     ['$set'] = nil,
                 }
@@ -258,7 +258,7 @@ function M:builder(tab_name, field_list, field_map, key_list)
                 cur = cur + 1
                 if entry_data then
                     local update = updates[i]
-                    for k,_ in pairs(update.query) do
+                    for k,_ in pairs(query) do
                         update.query[k] = entry_data[k]
                     end
 

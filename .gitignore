@@ -4,10 +4,6 @@
 *.log
 *.pid
 *.old
-examples/*/script
-examples/*/*_config.lua*
-examples/*/module_info*
+examples/*/make
 
-test/script
-test/*_config.lua*
-test/module_info*
+test/make
