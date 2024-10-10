@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 local mysqlf = require "skynet-fly.db.mysqlf"
+local mysqli = require "skynet-fly.db.mysqli"
 local CMD = {}
 
 local function test()
@@ -43,8 +44,8 @@ local function test()
 
 end
 
-local function test_l_new_client()
-	local db = mysqlf.l_new_client("game")
+local function test_new_client()
+	local db = mysqli.new_client("game")
 	db.conn:query("drop table if exists user")
 
 	local create_sql = [[
@@ -75,7 +76,7 @@ end
 
 function CMD.start()
 	--skynet.fork(test)
-	skynet.fork(test_l_new_client)
+	skynet.fork(test_new_client)
 	return true
 end
 

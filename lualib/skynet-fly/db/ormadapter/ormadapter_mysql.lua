@@ -1,7 +1,7 @@
 local contriner_client = require "skynet-fly.client.contriner_client"
 local table_util = require "skynet-fly.utils.table_util"
 local string_util = require "skynet-fly.utils.string_util"
-local mysqlf = require "skynet-fly.db.mysqlf"
+local mysqli = require "skynet-fly.db.mysqli"
 local log = require "skynet-fly.log"
 local json = require "cjson"
 
@@ -46,16 +46,6 @@ local FIELD_TYPE_SQL_TYPE = {
     [FIELD_TYPE.text] = "text",
     [FIELD_TYPE.blob] = "blob",
     [FIELD_TYPE.table] = "blob",
-}
-
-local IS_NUMBER_TYPE = {
-    [FIELD_TYPE.int8] = true,
-    [FIELD_TYPE.int16] = true,
-    [FIELD_TYPE.int32] = true,
-    [FIELD_TYPE.int64] = true,
-    [FIELD_TYPE.uint8] = true,
-    [FIELD_TYPE.uint16] = true,
-    [FIELD_TYPE.uint32] = true,
 }
 
 local FIELD_TYPE_LUA_TYPE = {}
@@ -104,7 +94,7 @@ local mata = {__index = M}
 -- 新建适配对象
 function M:new(db_name)
     local t = {
-        _db = mysqlf.l_new_client(db_name),
+        _db = mysqli.new_client(db_name),
         _tab_name = nil,
         _field_list = nil,
         _field_map = nil,
