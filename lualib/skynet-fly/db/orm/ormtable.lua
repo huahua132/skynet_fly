@@ -42,6 +42,7 @@ local FIELD_TYPE = {
 
     text         = 51,
     blob         = 52,
+    table        = 53,
 }
 
 local INVAILD_POINT = {count = 0, total_count = 0}  --无效叶点
@@ -68,6 +69,7 @@ local FIELD_LUA_DEFAULT = {
 
     [FIELD_TYPE.text] = "",
     [FIELD_TYPE.blob] = "",
+    [FIELD_TYPE.table] = {},
 }
 
 local function create_check_str(len)
@@ -98,6 +100,7 @@ local FIELD_TYPE_CHECK_FUNC = {
 
     [FIELD_TYPE.text] = function(str) return type(str) == 'string' end,
     [FIELD_TYPE.blob] = function(str) return type(str) == 'string' end,
+    [FIELD_TYPE.table] = function(tab) return type(tab) == 'table' end,
 }
 
 local function add_field_name_type(t,field_name,field_type)
@@ -355,7 +358,11 @@ local function init_entry_data(t, entry_data, is_old)
         if entry_data[fn] then
             new_entry_data[fn] = entry_data[fn]
         else
-            new_entry_data[fn] = FIELD_LUA_DEFAULT[ft]
+            if ft ~= FIELD_TYPE.table then
+                new_entry_data[fn] = FIELD_LUA_DEFAULT[ft]
+            else
+                new_entry_data[fn] = {}
+            end
         end
     end
     return new_entry_data
@@ -752,35 +759,38 @@ local function get_entry_by_in(t, in_values, key_values)
         else
             key_values[kv_len + 1] = nil
             local entry_data_list = t._adapterinterface:get_entry_by_in(in_values, key_values)
-            if not entry_data_list or not next(entry_data_list) then
-                --添加无效条目站位，防止缓存穿透
-                for i = #in_values, 1, -1 do
-                    local v = in_values[i]
-                    key_values[kv_len + 1] = v
-                    local invaild_entry = create_invaild_entry(t, key_values)
-                    add_key_select(t, invaild_entry)
-                    set_total_count(t, key_values, 0)
+            local in_v_count_map = {}
+            local in_v_cnt = 0
+            for i = 1,#entry_data_list do
+                local entry_data = init_entry_data(t, entry_data_list[i], true)
+                local entry = ormentry:new(t, entry_data)
+                tinsert(res_entry_list, add_key_select(t, entry))
+                local inv = entry_data[in_field_name]
+                if not in_v_count_map[inv] then
+                    in_v_count_map[inv] = 0
+                    in_v_cnt = in_v_cnt + 1
                 end
-                return res_entry_list, false
-            else
-                local in_v_count_map = {}
-                for i = 1,#entry_data_list do
-                    local entry_data = init_entry_data(t, entry_data_list[i], true)
-                    local entry = ormentry:new(t, entry_data)
-                    tinsert(res_entry_list, add_key_select(t, entry))
-                    local inv = entry_data[in_field_name]
-                    if not in_v_count_map[inv] then
-                        in_v_count_map[inv] = 0
-                    end
-                    in_v_count_map[inv] = in_v_count_map[inv] + 1
-                end
-
-                for inv, count in pairs(in_v_count_map) do
-                    key_values[kv_len + 1] = inv
-                    set_total_count(t, key_values, count)
-                end
-                return res_entry_list, false
+                in_v_count_map[inv] = in_v_count_map[inv] + 1
             end
+
+            for inv, count in pairs(in_v_count_map) do
+                key_values[kv_len + 1] = inv
+                set_total_count(t, key_values, count)
+            end
+
+            --添加无效条目站位，防止缓存穿透
+            if in_v_cnt ~= #in_values then
+                for i = 1, #in_values do
+                    local v = in_values[i]
+                    if not in_v_count_map[v] then
+                        key_values[kv_len + 1] = v
+                        local invaild_entry = create_invaild_entry(t, key_values)
+                        add_key_select(t, invaild_entry)
+                        set_total_count(t, key_values, 0)
+                    end
+                end
+            end
+            return res_entry_list, false
         end
     end
 
