@@ -43,8 +43,39 @@ local function test()
 
 end
 
+local function test_l_new_client()
+	local db = mysqlf.l_new_client("game")
+	db.conn:query("drop table if exists user")
+
+	local create_sql = [[
+		CREATE TABLE IF NOT EXISTS `user` (
+			`id` int(11) NOT NULL,
+			`name` varchar(255) DEFAULT NULL,
+			PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+	]]
+	db.conn:query(create_sql)
+
+	local stmt_insert = db.conn:prepare("INSERT user (id,name) VALUES (?,?),(?,?)")
+	log.info("stmt_insert >>> ", stmt_insert)
+	local r = db.conn:execute(stmt_insert,10001, "'", 10002, "'ddd")
+	log.info("insert ret:", r)
+	-- os.execute("pkill mysql")
+    -- log.info("杀掉数据库》》》》》》》》》》》》》")
+
+    skynet.sleep(500)
+
+    -- os.execute("systemctl start mysql")
+    -- log.info("启动数据库》》》》》》》》》》》》》")
+	local r = db.conn:execute(stmt_insert,10003, "'", 10004, "'ddd")
+	log.info("insert ret:", r)
+
+	log.info("select:", db.conn:query("select * from user;"))
+end
+
 function CMD.start()
-	skynet.fork(test)
+	--skynet.fork(test)
+	skynet.fork(test_l_new_client)
 	return true
 end
 

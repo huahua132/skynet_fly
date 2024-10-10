@@ -1455,7 +1455,6 @@ end
 
 --压测
 --stress testing
---用skynet.queue qps = 823
 local function stress_testing()
     delete_table()
     local adapter = ormadapter_mongo:new("admin")
@@ -1697,6 +1696,114 @@ local function test_get_entry_limit()
         end
     end
     delete_table()
+
+    --测试1个key
+    delete_table()
+    --测试有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :set_keys("player_id")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('player_id') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('player_id') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+
+    delete_table()
+
+    --测试没有缓存的
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :set_keys("player_id")
+    :builder(adapter)
+
+    for i = 1, 100 do
+        orm_obj:create_one_entry({player_id = i})
+    end
+
+    --测试升序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, 1)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('player_id') == (i - 1) * 10 + k)
+        end
+    end
+
+    --测试降序
+    local entry_list = nil
+    local curson = nil
+    local count = nil
+    for i = 1, 10 do
+        curson, entry_list, count = orm_obj:get_entry_by_limit(curson, 10, -1)
+        assert(curson == i * 10)
+
+        if i == 1 then
+            assert(count == 100)
+        else
+            assert(not count)
+        end
+
+        for k,v in ipairs(entry_list) do
+            assert(v:get('player_id') == (10 - i + 1) * 10 - (k - 1))
+        end
+    end
+    delete_table()
 end
 
 local function test_delete_by_range()
@@ -1773,6 +1880,35 @@ local function test_delete_by_range()
     delete_table()
 end
 
+--测试table
+local function test_table_type()
+    delete_table()
+
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :table("info")
+    :set_keys("player_id")
+    :set_cache(500,500)   --5秒保存一次
+    :builder(adapter)
+
+    local entry = orm_obj:create_one_entry({player_id = 10001, info = {a = 1, b = 2, c = "'"}})
+    assert(entry)
+    local info = entry:get('info')
+    info.d = 100
+    info.c = nil
+    entry:set('info', info)
+    orm_obj:save_one_entry(entry)
+
+    local entry = orm_obj:get_one_entry(10001)
+    assert(entry)
+    local info = entry:get('info')
+    assert(info.c == nil)
+    assert(info.d == 100)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1825,7 +1961,8 @@ function CMD.start()
         test_get_entry_limit()
         log.info("test_delete_by_range")
         test_delete_by_range()
-
+        log.info("test_table_type")
+        test_table_type()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

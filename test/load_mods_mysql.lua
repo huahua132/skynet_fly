@@ -4,8 +4,26 @@ local user = "root"
 local password = "123456"
 
 return {
+	share_config_m = {
+		launch_seq = 1,
+		launch_num = 1,
+		default_arg = {
+			--直连的配置
+			mysql = {
+				game = {
+					host = host,
+					port = port,
+					max_packet_size = 1048576,
+					user = user,
+					password = password,
+					database = 'gamedb',
+				}
+			}
+		}
+	},
+
 	mysql_m = {
-		launch_seq = 4,
+		launch_seq = 2,
 		launch_num = 4,
 		mod_args = {
 			{
@@ -60,7 +78,7 @@ return {
 	},
 	
     mysql_test_m = {
-		launch_seq = 2,
+		launch_seq = 3,
 		launch_num = 1,
 	}
 }
