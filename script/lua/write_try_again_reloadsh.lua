@@ -26,8 +26,8 @@ if [ ! -f "./make/$1.tmp_reload_cmd.txt" ]; then
 fi
 ]]
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 try_again_reload | \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s | \n")
-shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s $1 handle_reload_result | xargs \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -t curl -s | \n")
+shell_str = shell_str .. string.format("xargs -t %s %s/console.lua %s %s $1 handle_reload_result | xargs \n",lua_path,script_path,skynet_fly_path,svr_name)
 
 local shell_path = server_path .. 'make/script/'
 

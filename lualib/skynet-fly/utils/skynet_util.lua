@@ -1,12 +1,16 @@
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
+local log = require "skynet-fly.log"
+local json = require "cjson"
 
+local debug_getinfo = debug.getinfo
 local tonumber = tonumber
 local assert = assert
 local table = table
 local type = type
 local next = next
 local pairs = pairs
+
 local retpack = skynet.retpack
 local tunpack = table.unpack
 local NOT_RET = {}
@@ -83,7 +87,11 @@ end
 local g_info_func_map = {}
 
 local old_skynet_info_func = skynet.info_func
-skynet.info_func = nil
+skynet.info_func = function(func)
+    local info = debug_getinfo(2,"S")
+    local key = info.short_src
+    g_info_func_map[key] = func
+end
 
 old_skynet_info_func(function()
     local info = {}
@@ -91,7 +99,7 @@ old_skynet_info_func(function()
         info[name] = func()
     end
 
-    return info
+    return json.encode(info)
 end)
 
 --注册info_name信息的生成函数
@@ -122,6 +130,24 @@ function M.is_hot_container_server()
         return true
     else
         return false
+    end
+end
+
+local g_shutdown_func_map = {}
+--注册关服处理函数
+function M.reg_shutdown_func(func)
+    local info = debug_getinfo(2,"S")
+    local key = info.short_src
+    g_shutdown_func_map[key] = func
+end
+
+--执行关服处理函数
+function M.execute_shutdown()
+    for src, func in pairs(g_shutdown_func_map) do
+        local isok, err = x_pcall(func)
+        if not isok then
+            log.error("execute_shutdown err ", err)
+        end
     end
 end
 
