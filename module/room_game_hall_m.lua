@@ -687,4 +687,20 @@ function CMD.exit()
 	end
 end
 
+--安全关服处理
+skynet_util.reg_shutdown_func(function()
+	log.warn("-------------shutdown save begin---------------")
+	for _,agent in pairs(g_player_map) do
+		if agent then
+			local isok,errorcode,errormsg = interface:goout(agent.player_id, "shutdown")
+			if not isok then
+				log.warn("shutdown goout err ",errorcode,errormsg)
+			else
+				log.warn("shutdown goout succ ", agent.player_id)
+			end
+		end
+	end
+	log.warn("-------------shutdown save begin---------------")
+end)
+
 return CMD
