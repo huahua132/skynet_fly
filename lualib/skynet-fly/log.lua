@@ -1,11 +1,11 @@
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
 local time_util = require "skynet-fly.utils.time_util"
+local module_info = require "skynet-fly.etc.module_info"
 local sformat = string.format
 local sdump = table_util.dump
 local serror = skynet.error
 local debug_getinfo = debug.getinfo
-local MODULE_NAME = MODULE_NAME
 local SERVICE_NAME = SERVICE_NAME
 local pairs = pairs
 local assert = assert
@@ -66,16 +66,21 @@ local function create_log_func(level_name,is_format)
 			end
 		end
 
-		local server_name = SERVICE_NAME
-		if MODULE_NAME then
-			server_name = MODULE_NAME
+		local server_name = nil
+		local base_info = module_info.get_base_info()
+		if base_info.module_name then
+			server_name = base_info.module_name
+		else
+			server_name = SERVICE_NAME
 		end
 
 		serror(sformat("[%s][%s][%s]%s",level_name,server_name,lineinfo,log_str))
 
 		local log_hook = hooks[level]
-		for _,hook_func in ipairs(log_hook) do
-			hook_func(log_str)
+		local len = #log_hook
+		for i = 1, len do
+			local func = log_hook[len]
+			func(log_str)
 		end
 	end
 end

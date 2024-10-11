@@ -23,11 +23,11 @@ load_mods_name=$1
 shift
 ]]
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s ${load_mods_name} get_list | \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s |\n")
-shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} find_server_id sharedata_service 2 | \\\n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs -I {} %s %s/console.lua %s %s ${load_mods_name} upsharedata {} | \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("xargs curl -s | \n")
-shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} handle_upsharedata_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -t curl -s |\n")
+shell_str = shell_str .. string.format("xargs -t %s %s/console.lua %s %s ${load_mods_name} find_server_id sharedata_service 2 | \\\n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -t -I {} %s %s/console.lua %s %s ${load_mods_name} upsharedata {} | \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("xargs -t curl -s | \n")
+shell_str = shell_str .. string.format("xargs -t %s %s/console.lua %s %s ${load_mods_name} handle_upsharedata_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
 
 local shell_path = server_path .. 'make/script/'
 

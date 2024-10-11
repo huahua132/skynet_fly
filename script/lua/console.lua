@@ -27,14 +27,22 @@ if file then
 end
 
 local function get_host()
-	assert(debug_port)
+	if not debug_port then
+		print("can`t get debug_port", load_modsfile)
+		return
+	end
 	return string.format("http://127.0.0.1:%s",debug_port)
 end
 
 local CMD = {}
 
 function CMD.get_list()
-	print(get_host() .. '/list')
+	local host = get_host()
+	if not host then
+		print("can`t get host", load_modsfile)
+		return
+	end
+	print(host .. '/list')
 end
 
 function CMD.find_server_id()
@@ -47,7 +55,7 @@ function CMD.find_server_id()
 			return
 		end
 	end
-	assert(1 == 2)
+	print("can`t find_server_id ", module_name)
 end
 
 function CMD.reload()

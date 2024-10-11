@@ -372,6 +372,46 @@ function CMD.hotfix(source, ...)
 	return queue(hotfix, module_map)
 end
 
+--安全关服
+function CMD.shutdown()
+	local load_mods = loadfile(loadmodsfile)()
+	local module_list = {}
+	for mod_name, cfg in pairs(load_mods) do
+		tinsert(module_list, {mod_name = mod_name, launch_seq = cfg.launch_seq})
+	end
+
+	tsort(module_list, function(a, b) return a.launch_seq > b.launch_seq end)
+
+	local downed_map = {}
+	--后启动的先关闭
+	for _, one in ipairs(module_list) do
+		local mod_name = one.mod_name
+		local id_list = g_id_list_map[mod_name]
+		if id_list then
+			for _, id in ipairs(id_list) do
+				skynet.call(id, "debug", 'shutdown')
+				downed_map[skynet.address(id)] = true
+			end
+		end
+	end
+
+	local address_map = skynet.call(".launcher", "lua", "LIST")
+	local address_list = {}
+	for address, infostr in pairs(address_map) do
+		tinsert(address_list, address)
+	end
+
+	tsort(address_list, function(a,b ) return a > b end)
+	--后启动的先关闭
+	for _,address in ipairs(address_list) do
+		if not downed_map[address] then
+			skynet.call(address, "debug", 'shutdown')
+		end
+	end
+
+	return "shutdown ok"
+end
+
 skynet.start(function()
 	skynet.register('.contriner_mgr')
 	skynet_util.lua_dispatch(CMD)

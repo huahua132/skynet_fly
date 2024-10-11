@@ -1,4 +1,8 @@
 local skynet = require "skynet"
+local file_util = require "skynet-fly.utils.file_util"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local log = require "skynet-fly.log"
+local skynet_debug = require "skynet.debug"
 local debug = debug
 local xpcall = xpcall
 local pcall = pcall
@@ -10,12 +14,6 @@ local tunpack = table.unpack
 
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 assert(skynet_fly_path,'not skynet_fly_path')
-
-local file_util = loadfile(skynet_fly_path .. '/lualib/skynet-fly/utils/file_util.lua')()
-assert(file_util,'can`t load file_util')
-
-local log = loadfile(skynet_fly_path .. '/lualib/skynet-fly/log.lua')()
-assert(log,"not log file")
 
 package.path = file_util.create_luapath(skynet_fly_path)
 
@@ -40,3 +38,10 @@ function xx_pcall(f,...)
 
 	return tunpack(ret)
 end
+
+skynet_debug.reg_debugcmd("shutdown", function()
+	log.warn("---------------------------------shutdown begin-------------------------------")
+	skynet_util.execute_shutdown()
+	log.warn("---------------------------------shutdown end-------------------------------")
+	skynet.retpack(nil)
+end)

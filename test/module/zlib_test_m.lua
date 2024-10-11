@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local zlib = require "zlib"
 local log = require "skynet-fly.log"
+local skynet_util = require "skynet-fly.utils.skynet_util"
 
 local assert = assert
 
@@ -19,5 +20,11 @@ end
 function CMD.exit()
 	return true
 end
+
+skynet_util.reg_shutdown_func(function()
+	log.info("shutdowning begin")
+	skynet.sleep(500)
+	log.info("shutdowning end")
+end)
 
 return CMD
