@@ -60,7 +60,7 @@ QQ群号：102993581
 	- `sh ../../binshell/make_server.sh ../../`
 
 * **运行服务**
-	`sh script/run.sh load_mods.lua 0`
+	`sh make/script/run.sh load_mods.lua 0`
 
 这个简单的示例是`A服务`向`B服务`发送hello消息，得到回应后打印。
 
@@ -166,7 +166,7 @@ end
 ```
 
 ### 热更
-在`B_m.lua`随意加个空格，再执行`sh script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
+在`B_m.lua`随意加个空格，再执行`sh make/script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
 旧的`B_m`将会十分钟检查一次，直到没有访问者，`CMD.check_exit()`也是同意退出的，再调用`CMD.exit()`，如果返回`true`,服务将会在十分钟后调用`skynet.exit()`
 而A服务将会切换访问到新启动的`B_m`服务。
 ```lua
@@ -245,7 +245,7 @@ end
 `gc`
 
 然后调用快进时间快进1个小时
-`sh script/fasttime.sh load_mods.lua '2023:05:23 18:00:00' 1`
+`sh make/script/fasttime.sh load_mods.lua '2023:05:23 18:00:00' 1`
 然后在用`debug_console`看看还有哪些服务在
 `nc 127.0.0.1 8888`
 `mem`
@@ -274,7 +274,7 @@ end
 	- `sh ../../binshell/make_server.sh ../../`
 
 * **运行服务**
-	`sh script/run.sh load_mods.lua 0`
+	`sh make/script/run.sh load_mods.lua 0`
 
 基于tcp长连接实现不停服更新 `digitalbomb` 数字炸弹游戏。
 除了登录 `login` 服不能热更。
@@ -299,11 +299,11 @@ room_game_alloc_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
 room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 
-执行 `sh script/restart.sh` 
+执行 `sh make/script/restart.sh` 
 
 * **热更新**
 	client_m 表写了测试用例，可以用来验证热更新。
-	也可以通过`script/check_reload.sh`的方式，不过你先修改好文件，然后开始执行。
+	也可以通过`make/script/check_reload.sh`的方式，不过你先修改好文件，然后开始执行。
 
 * **游戏热更新原理**
 	新服替换旧服务的方案。
@@ -315,29 +315,29 @@ room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
 1. 构建skynet_config, webapp运维脚本
     - `cd examples/webapp/`
     - `sh ../../binshell/make_server.sh ../../`
-    - 如果一些顺利的话将会生成script文件夹，文件夹下有:
+    - 如果一些顺利的话将会生成make/script文件夹，文件夹下有:
       - `run.sh` 运行并配置日志分割
       - `stop.sh` 停止
       - `restart.sh` 重启
       - `reload.sh` 热更某个可热更模块。
       - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
       - `check_reload.sh` 检测可热更模块是否有文件或者配置修改，有就更新。
-      - `fasttime.sh` 快进时间。 `sh script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
+      - `fasttime.sh` 快进时间。 `sh make/script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
       - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
       - `check_hotfix.sh` 检测刷热更脚本。
       - `hotfix.sh` 刷热更脚本。
     - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
 2. 运行
-   - `sh script/run.sh load_mods.lua 0`
+   - `sh make/script/run.sh load_mods.lua 0`
    - **load_mods.lua**是指启动用的配置文件。
-   - **0**表示不用后台运行。不传就是后台运行。`sh script/run.sh load_mods.lua`。
+   - **0**表示不用后台运行。不传就是后台运行。`sh make/script/run.sh load_mods.lua`。
    - 后台运行，日志会写入log文件。
 3. 访问
    - 浏览器打开 `x.x.x.x:8688`
    - 如果一切顺利的话，网页将会显示内容。
 4. 热更
     - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
-    - 之后执行 `sh script/check_reload.sh load_mods.lua`
+    - 之后执行 `sh make/script/check_reload.sh load_mods.lua`
     - 再次访问网站就更新了。
     - 也可以观察webapp/logs/server.log
 
