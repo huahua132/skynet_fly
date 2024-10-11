@@ -409,6 +409,7 @@ function CMD.shutdown()
 		end
 	end
 
+	skynet.call('.logger', 'lua', 'log', '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<shutdown over>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 	return "shutdown ok"
 end
 

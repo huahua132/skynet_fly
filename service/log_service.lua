@@ -115,6 +115,15 @@ function CMD.add_hook(file_name)
     return true
 end
 
+function CMD.log(msg)
+    if file then
+        file:write(msg .. '\n')
+        file:flush()
+    else
+        print(msg)
+    end
+end
+
 skynet.start(function()
     rename_old_file()
     open_file()
