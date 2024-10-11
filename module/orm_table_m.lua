@@ -246,6 +246,7 @@ end
 
 skynet_util.reg_shutdown_func(function()
     log.warn("-------------shutdown save begin---------------",g_config.instance_name)
+    G_ISCLOSE = true
     g_orm_obj.save_change_now(g_orm_obj)
     log.warn("-------------shutdown save end---------------",g_config.instance_name)
 end)
