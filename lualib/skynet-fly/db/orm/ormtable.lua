@@ -1046,7 +1046,7 @@ function M:save_change_now()
         return
     end
 
-    return inval_time_out(self._week_t)
+    return queue_doing(self, nil, inval_time_out, self._week_t)
 end
 
 -- 通过数据获得entry
