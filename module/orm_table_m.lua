@@ -1,7 +1,10 @@
 local skynet = require "skynet"
-local queue = require "skynet.queue"()
 local log = require "skynet-fly.log"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local skynet_util = require "skynet-fly.utils.skynet_util"
+local wait = require "skynet-fly.time_extend.wait"
+local timer = require "skynet-fly.timer"
+
 local assert = assert
 local pairs = pairs
 local type = type
@@ -11,6 +14,10 @@ local tunpack = table.unpack
 local g_orm_plug = nil
 local g_orm_obj = nil
 local G_ISCLOSE = false
+local g_config = nil
+
+local g_is_init = false
+local g_wait = wait:new(timer.second * 10)
 
 local g_handle = {}
 
@@ -180,7 +187,7 @@ local CMD = {}
 
 function CMD.start(config)
     assert(config.orm_plug)
-
+    g_config = config
     g_orm_plug = require(config.orm_plug)
     assert(g_orm_plug.init, "not init")        --初始化 
     assert(g_orm_plug.handle, "not handle")    --自定义处理函数
@@ -192,7 +199,9 @@ function CMD.start(config)
     end
 
     skynet.fork(function ()
-        g_orm_obj = queue(g_orm_plug.init)
+        g_orm_obj = g_orm_plug.init()
+        g_is_init = true
+        g_wait:wakeup("waiting_init")
     end)
     return true
 end
@@ -204,18 +213,22 @@ function CMD.call(func_name,...)
 
     local func = assert(g_handle[func_name], "func_name not exists:" .. func_name)
 
-    return false, queue(func, ...)
+    if not g_is_init then
+        g_wait:wait("waiting_init")
+        assert(g_is_init, "not init ok")
+    end
+    return false, func(...)
 end
 
 function CMD.herald_exit()
     G_ISCLOSE = true
 
-    queue(g_orm_obj.save_change_now,g_orm_obj)
+    g_orm_obj.save_change_now(g_orm_obj)
 end
 
 function CMD.exit()
 
-    queue(g_orm_obj.save_change_now,g_orm_obj)
+    g_orm_obj.save_change_now(g_orm_obj)
     return true
 end
 
@@ -230,5 +243,11 @@ end
 function CMD.check_exit()
     return true
 end
+
+skynet_util.reg_shutdown_func(function()
+    log.warn("-------------shutdown save begin---------------",g_config.instance_name)
+    g_orm_obj.save_change_now(g_orm_obj)
+    log.warn("-------------shutdown save end---------------",g_config.instance_name)
+end)
 
 return CMD
