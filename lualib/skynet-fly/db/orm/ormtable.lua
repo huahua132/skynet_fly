@@ -636,6 +636,13 @@ function M:set_change_entry(entry)
     self._change_flag_map[entry] = true
 end
 
+-- 是否table
+function M:is_table_field(field_name)
+    local field_map = self._field_map
+    local ft = field_map[field_name]
+    return ft == FIELD_TYPE.table
+end
+
 get_entry = function(t, key_values, is_init_get_all)
     local key_list = t._keylist
     local entry_list = {}

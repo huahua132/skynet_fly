@@ -36,8 +36,9 @@ end
 
 -- 修改条目数据的值
 function M:set(field_name, field_value)
-    if field_value == self._entry_data[field_name] then return end
     local ormtab = self._ormtab
+    if field_value == self._entry_data[field_name] and not ormtab:is_table_field(field_name) then return end
+ 
     ormtab:check_one_field(field_name, field_value)
     self._entry_data[field_name] = field_value
     self._change_map[field_name] = true      --标记变更

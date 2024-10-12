@@ -1888,8 +1888,8 @@ local function test_table_type()
     local orm_obj = ormtable:new("t_player")
     :int64("player_id")
     :table("info")
+    :table("data")
     :set_keys("player_id")
-    :set_cache(500,500)   --5秒保存一次
     :builder(adapter)
 
     local entry = orm_obj:create_one_entry({player_id = 10001, info = {a = 1, b = 2, c = "'"}})
@@ -1905,6 +1905,18 @@ local function test_table_type()
     local info = entry:get('info')
     assert(info.c == nil)
     assert(info.d == 100)
+
+    local data = entry:get('data')
+    data[1] = true
+    data[2] = true
+
+    entry:set('data', data)
+
+    orm_obj:save_one_entry(entry)
+
+    local entry = orm_obj:get_one_entry(10001)
+    local data = entry:get('data')
+    log.info("data: >>>", data)
 
     delete_table()
 end
