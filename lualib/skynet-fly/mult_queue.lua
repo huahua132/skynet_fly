@@ -10,9 +10,9 @@ local queue = require "skynet.queue"
 local coroutine = coroutine
 local setmetatable = setmetatable
 local tinsert = table.insert
+local tpack = table.pack
 local tunpack = table.unpack
 local tremove = table.remove
-local select = select
 local assert = assert
 local x_pcall = x_pcall
 
@@ -69,7 +69,7 @@ function M:multi(key, func, ...)
         self.multi_len = self.multi_len + 1
         self.doing_co[co] = true
         self.que_len_map[key] = self.que_len_map[key] + 1
-        local ret = {x_pcall(queue, func, ...)}
+        local ret = tpack(x_pcall(queue, func, ...))
         self.doing_co[co] = nil
         self.que_len_map[key] = self.que_len_map[key] - 1
         self.multi_len = self.multi_len - 1
@@ -86,7 +86,7 @@ function M:multi(key, func, ...)
 
         local isok, err = ret[1],ret[2]
         assert(isok, err)
-        return select(2, tunpack(ret))
+        return tunpack(ret, 2, ret.n)
     else
         tinsert(self.waits, {
             type = MULTI_TYPE,
@@ -115,7 +115,7 @@ function M:unique(func, ...)
     else
         self.doing_co[co] = true
         self.unique_len = self.unique_len + 1
-        local ret = {x_pcall(self.unique_queue, func, ...)}
+        local ret = tpack(x_pcall(self.unique_queue, func, ...))
         self.doing_co[co] = nil
         self.unique_len = self.unique_len - 1
         assert(self.unique_len >= 0)
@@ -125,7 +125,7 @@ function M:unique(func, ...)
         end
         local isok, err = ret[1], ret[2]
         assert(isok, err)
-        return select(2, tunpack(ret))
+        return tunpack(ret, 2, ret.n)
     end
 end
 

@@ -11,7 +11,6 @@ local setmetatable = setmetatable
 local assert = assert
 local tinsert = table.insert
 local tremote = table.remove
-local tunpack = table.unpack
 local tsort = table.sort
 local pairs = pairs
 local type = type

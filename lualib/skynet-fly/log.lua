@@ -16,6 +16,8 @@ local sfind = string.find
 local ssub = string.sub
 local schar = string.char
 local math_floor = math.floor
+local tpack = table.pack
+local tunpack = table.unpack
 local osdate = os.date
 
 local M = {
@@ -51,8 +53,7 @@ local use_level = level_map[loglevel] or 0
 local function create_log_func(level_name,is_format)
 	local level = level_map[level_name]
 	return function (...)
-		local msgs = {...}
-
+		local msgs = tpack(...)
 		if level < use_level or #msgs < 1 then return end
 
 		local info = debug_getinfo(2,"Sl")
@@ -61,7 +62,7 @@ local function create_log_func(level_name,is_format)
 		if is_format then
 			log_str = sformat(...)
 		else
-			for i = 1,#msgs do
+			for i = 1,msgs.n do
 				log_str = log_str .. sdump(msgs[i]) .. ' '
 			end
 		end

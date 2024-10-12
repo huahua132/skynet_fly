@@ -9,7 +9,6 @@ local assert = assert
 local pairs = pairs
 local type = type
 local tinsert = table.insert
-local tunpack = table.unpack
 
 local g_orm_plug = nil
 local g_orm_obj = nil

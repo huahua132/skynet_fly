@@ -27,7 +27,6 @@ local ipairs = ipairs
 local next = next
 local tinsert = table.insert
 local tremove = table.remove
-local tunpack = table.unpack
 local type = type
 local pcall = pcall
 local tostring = tostring
