@@ -1973,7 +1973,6 @@ local function test_table_type()
     :int64("player_id")
     :table("info")
     :set_keys("player_id")
-    :set_cache(500,500)   --5秒保存一次
     :builder(adapter)
 
     local entry = orm_obj:create_one_entry({player_id = 10001, info = {a = 1, b = 2, c = "'"}})
