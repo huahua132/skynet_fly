@@ -10,6 +10,7 @@ local math = math
 local tostring = tostring
 
 local tremove = table.remove
+local tpack = table.pack
 local tunpack = table.unpack
 
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
@@ -29,14 +30,14 @@ end
 local x_pcall = x_pcall
 
 function xx_pcall(f,...)
-	local ret = {x_pcall(f,...)}
+	local ret = tpack(x_pcall(f,...))
 	local isok = tremove(ret,1)
 	if not isok then
 		log.error(ret[1])
 		return
 	end
 
-	return tunpack(ret)
+	return tunpack(ret, 1, ret.n)
 end
 
 skynet_debug.reg_debugcmd("shutdown", function()

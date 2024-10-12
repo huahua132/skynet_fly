@@ -12,7 +12,6 @@ local next = next
 local pairs = pairs
 
 local retpack = skynet.retpack
-local tunpack = table.unpack
 local NOT_RET = {}
 
 local g_is_regiter = false
@@ -22,6 +21,11 @@ local g_CMD = nil
 local M = {
     NOT_RET = NOT_RET
 }
+
+local function rsp_retpack(arg1, ...)
+    if arg1 == M.NOT_RET then return end
+    retpack(arg1, ...)
+end
 
 --常用的lua消息处理函数
 --[[
@@ -40,11 +44,7 @@ function M.lua_dispatch(cmd_func)
         if session == 0 then
             f(...)
         else
-            local ret = {f(...)}
-            local r1 = ret[1]
-            if r1 ~= M.NOT_RET then
-                retpack(tunpack(ret))
-            end
+            rsp_retpack(f(...))
         end
     end)
 end
@@ -62,11 +62,7 @@ function M.lua_src_dispatch(cmd_func)
         if session == 0 then
             f(source, ...)
         else
-            local ret = {f(source, ...)}
-            local r1 = ret[1]
-            if r1 ~= M.NOT_RET then
-                retpack(tunpack(ret))
-            end
+            rsp_retpack(f(source, ...))
         end
     end)
 end

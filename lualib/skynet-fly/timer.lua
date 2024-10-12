@@ -7,6 +7,7 @@ local x_pcall = x_pcall
 local tostring = tostring
 local assert = assert
 local setmetatable = setmetatable
+local tpack = table.pack
 local tunpack = table.unpack
 
 ----------------------------------------------------------------------------------------
@@ -27,7 +28,7 @@ local function repeat_register(t)
 end
 
 local function execute_call_back(t)
-	local is_ok,err = x_pcall(t.callback,tunpack(t.args))
+	local is_ok,err = x_pcall(t.callback,tunpack(t.args, 1, t.args.n))
 	if not is_ok then
 		log.error("time_out_func err ",err,t.callback,t.args)
 	end
@@ -87,7 +88,7 @@ function M:new(expire,times,callback,...)
 		expire = expire,
 		times = times,
 		callback = callback,
-		args = {...},
+		args = tpack(...),
 		is_cancel = false,
 		is_over = false,
 		cur_times = 0,
@@ -141,7 +142,7 @@ function M:extend(ex_expire)
 
 	local expire = pre_expire + ex_expire
 	self:cancel()
-	local nt = M:new(expire,pre_times,pre_callback,tunpack(pre_args))
+	local nt = M:new(expire,pre_times,pre_callback,tunpack(pre_args, 1, pre_args.n))
 	nt.cur_times = pre_cur_times
 	nt.expire_time = time_util.skynet_int_time() + (pre_expire_time - time_util.skynet_int_time()) + ex_expire
 	nt.is_after_next = pre_is_after_next

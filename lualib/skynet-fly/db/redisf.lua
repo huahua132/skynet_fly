@@ -12,7 +12,7 @@ local ipairs = ipairs
 local pairs = pairs
 local type = type
 local string = string
-local select = select
+local tpack = table.pack
 local tunpack = table.unpack
 local debug_getinfo = debug.getinfo
 
@@ -84,14 +84,14 @@ local mt = {
 
 			local cmd = command[k]
 			if cmd then
-				local ret = {pcall(cmd,self,...)}
+				local ret = tpack(pcall(cmd,self,...))
 				local isok = ret[1]
 				local err = ret[2]
 				if not isok then
 					log.error("call redis command faild ",get_line_info(),err,k,...)
 					return
 				else
-					return select(2,tunpack(ret))
+					return tunpack(ret, 2, ret.n)
 				end
 			else
 				local isok,ret = pcall(self.conn[k],self.conn,...)

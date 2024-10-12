@@ -2,7 +2,7 @@ local contriner_client = require "skynet-fly.client.contriner_client"
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
 local setmetatable = setmetatable
-local select = select
+local tpack = table.pack
 local tunpack = table.unpack
 local assert = assert
 local error = error
@@ -20,10 +20,10 @@ local mt = {__index = function(t,k)
         local ret = nil
         --尝试 100 次，还不成功，那肯定是数据库挂逼了或者热更后执行保存比较耗时
         for i = 1,100 do
-            ret = {t._client:mod_call_by_name("call", k, ...)}
+            ret = tpack(t._client:mod_call_by_name("call", k, ...))
             local is_move = ret[1]
             if not is_move then
-                return select(2,tunpack(ret))
+                return tunpack(ret, 2, ret.n)
             end
             skynet.yield()
         end

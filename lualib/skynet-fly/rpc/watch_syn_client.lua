@@ -11,6 +11,7 @@ local pairs = pairs
 local next = next
 local assert = assert
 local type = type
+local tpack = table.pack
 local tunpack = table.unpack
 
 local M = {}
@@ -93,16 +94,16 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
                 local channel_map = get_channel_map(svr_name, channel_name)
                 local channel_svr_id_map = get_channel_svr_id_map(svr_name, svr_id, channel_name)
                 if channel_map or channel_svr_id_map then
-                    local args = {skynet.unpack(luamsg)}
+                    local args = tpack(skynet.unpack(luamsg))
                     if channel_map then
                         for _, handler in pairs(channel_map) do
-                            skynet.fork(handler, cluster_name, tunpack(args))
+                            skynet.fork(handler, cluster_name, tunpack(args, 1, args.n))
                         end
                     end
 
                     if channel_svr_id_map then
                         for _, handler in pairs(channel_svr_id_map) do
-                            skynet.fork(handler, cluster_name, tunpack(args))
+                            skynet.fork(handler, cluster_name, tunpack(args, 1, args.n))
                         end
                     end
                 end
