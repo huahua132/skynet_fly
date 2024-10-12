@@ -95,6 +95,11 @@ function M.table_creator(table_id, table_name, ...)
 				return m_logic:game_status_req(player_id,packname,pack_body)
 			end
 		},
+		--客户端消息处理之前 返回true 才继续下发处理消息
+		handle_before = function(player_id, packname, pack_body)
+			log.info("handle_before >>> ", player_id, packname, pack_body)
+			return true
+		end,
 
 		handle_end = function(player_id, packname, pack_body, ret, errcode, errmsg)
 			log.info("handle_end >>> ", player_id, packname, ret, errcode, errmsg)
