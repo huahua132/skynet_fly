@@ -142,6 +142,7 @@ end
 
 local del_key_select = nil  --function
 local get_entry = nil       --function
+local save_entry = nil      --function
 
 -- 添加进key索引表
 local function add_key_select(t, entry, is_add)
@@ -429,7 +430,7 @@ function M:set_keys(...)
 end
 
 --定期保存修改
-local function inval_time_out(week_t)
+local function inval_time_out(week_t, is_save_now)
     local t = next(week_t)
     if not t then return end
     if t._inval_saveting then return end
@@ -453,7 +454,13 @@ local function inval_time_out(week_t)
         end
 
         local is_have_fail = false
-        local res_list = t:save_entry(entry_list)
+        local res_list = nil
+        if not is_save_now then                     --避免muit锁冲突问题
+            res_list = t:save_entry(entry_list)
+        else
+            res_list = save_entry(t, entry_list)
+        end
+       
         for i = 1, #entry_list do
             local res = res_list[i]
             local entry = entry_list[i]
@@ -841,7 +848,7 @@ local function get_entry_by_limit(t, cursor, limit, sort, key_values)
     end
 end
 
-local function save_entry(t, entry_list)
+save_entry = function(t, entry_list)
     local entry_data_list = {}
     local change_map_list = {}
     local result_list = {}
@@ -1053,7 +1060,7 @@ function M:save_change_now()
         return
     end
 
-    return queue_doing(self, nil, inval_time_out, self._week_t)
+    return queue_doing(self, nil, inval_time_out, self._week_t, true)
 end
 
 -- 通过数据获得entry

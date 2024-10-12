@@ -117,11 +117,15 @@ skynet_util.register_info_func("hot_container",function()
 	local info = {
 		module_info = module_info.get_base_info(),
 		server_state = contriner_interface.get_server_state(),
-		source_map = g_source_map,
+		source_map = {},
 		exit_remain_time = g_exit_timer and g_exit_timer:remain_expire() or 0,
 		week_visitor_map = contriner_client:get_week_visitor_map(),
 		need_visitor_map = contriner_client:get_need_visitor_map(),
 	}
+
+	for source in pairs(g_source_map) do
+		info['' .. source] = true
+	end
 
 	return info
 end)
