@@ -134,6 +134,13 @@ local function handle_msg(agent, header, body)
 			skynet.send(table_server_id, 'lua', 'request', table_id, agent.player_id, header, body)
 		end
 	else
+		
+		if hall_plug.handle_before then
+			if not hall_plug.handle_before(agent.player_id, header, body) then
+				return
+			end
+		end
+
 		if hall_plug.handle_end then
 			hall_plug.handle_end(agent.player_id, header, body, func(agent.player_id,header,body))
 		else

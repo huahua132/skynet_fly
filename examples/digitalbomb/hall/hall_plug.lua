@@ -114,6 +114,12 @@ function M.goout(player_id)
 	log.info("hall_plug goout ",player_id)
 end
 
+--客户端消息处理之前 返回true 才继续下发处理消息
+function M.handle_before(player_id, packname, pack_body)
+	log.info("handle_before >>> ", player_id, packname, pack_body)
+	return true
+end
+
 -- 客户端消息处理结束
 function M.handle_end(player_id, packname, pack_body, ret, errcode, errmsg)
 	log.info("handle_end >>> ", packname, ret, errcode, errmsg)
