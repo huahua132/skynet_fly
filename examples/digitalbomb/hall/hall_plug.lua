@@ -93,7 +93,7 @@ function M.init(interface_mgr)
 end
 
 function M.connect(player_id)
-	log.info("hall_plug connect ",player_id)
+	log.info("hall_plug connect ",player_id, g_interface_mgr:get_addr(player_id))
 	return {
 		player_id = player_id,
 	}
@@ -104,7 +104,7 @@ function M.disconnect(player_id)
 end
 
 function M.reconnect(player_id)
-	log.info("hall_plug reconnect ",player_id)
+	log.info("hall_plug reconnect ",player_id, g_interface_mgr:get_addr(player_id))
 	return {
 		player_id = player_id,
 	}

@@ -89,7 +89,7 @@ end
 --发送消息
 local function send_msg(table_id, player_id, header, body)
 	if not is_online(table_id,player_id) then
-		log.info("send msg not online ",table_id, player_id)
+		log.info("send msg not online ",table_id, player_id, header)
 		return
 	end
 	local player = get_player_info(table_id, player_id)
@@ -104,7 +104,7 @@ end
 local function send_msg_by_player_list(table_id, player_list, header, body)
 	local t_info = get_table_info(table_id)
 	if not t_info then
-		log.warn("send_msg_by_player_list not exists table_id = ",table_id)
+		log.warn("send_msg_by_player_list not exists table_id = ",table_id, header)
 		return
 	end
 	
@@ -260,12 +260,23 @@ function interface:call_alloc(cmd,...)
 
 	return skynet.call(t_info.alloc_server_id,'lua',cmd,table_id,...)
 end
+
+--获取客户端连接IP:PORT
+function interface:get_addr(player_id)
+	local table_id = self.table_id
+	local player = get_player_info(table_id, player_id)
+	if not player then
+		return ""
+	end
+
+	return player.addr
+end
 -------------------------------------------------------------------------------
 --CMD
 -------------------------------------------------------------------------------
 local CMD = {}
 --创建房间
-function CMD.create_table(table_id,alloc_server_id, ...)
+function CMD.create_table(table_id, alloc_server_id, ...)
 	assert(not g_table_map[table_id])
 	g_table_map[table_id] = {
 		alloc_server_id = alloc_server_id,
@@ -276,7 +287,7 @@ function CMD.create_table(table_id,alloc_server_id, ...)
 end
 
 --进入房间
-function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
+function CMD.enter(table_id, player_id, gate, fd, is_ws, addr, hall_server_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -289,6 +300,7 @@ function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
 		gate = gate,
 		hall_server_id = hall_server_id,     --大厅服id
 		is_ws = is_ws,
+		addr = addr,
 	}
 
 	local isok,errcode,errmsg = t_info.game_table.enter(player_id)
@@ -300,7 +312,7 @@ function CMD.enter(table_id,player_id,gate,fd,is_ws,hall_server_id)
 end
 
 --离开房间
-function CMD.leave(table_id,player_id,reason)
+function CMD.leave(table_id, player_id, reason)
 	assert(g_table_map[table_id])
 
 	local t_info = g_table_map[table_id]
@@ -308,7 +320,7 @@ function CMD.leave(table_id,player_id,reason)
 
 	assert(player_map[player_id])
 
-	local isok,errcode,errmsg = t_info.game_table.leave(player_id,reason)
+	local isok,errcode,errmsg = t_info.game_table.leave(player_id, reason)
 	if not isok then
 		return isok,errcode,errmsg
 	end
@@ -350,7 +362,7 @@ function CMD.disconnect(gate,fd,table_id,player_id)
 end
 
 --重新连接
-function CMD.reconnect(gate,fd,is_ws,table_id,player_id)
+function CMD.reconnect(gate, fd, is_ws, addr, table_id, player_id)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -360,6 +372,7 @@ function CMD.reconnect(gate,fd,is_ws,table_id,player_id)
 	player.fd = fd
 	player.gate = gate
 	player.is_ws = is_ws
+	player.addr = addr
 
 	t_info.game_table.reconnect(player_id)
 	return true

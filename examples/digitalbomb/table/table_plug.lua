@@ -61,6 +61,7 @@ function M.table_creator(table_id, table_name, ...)
 	log.info("table_creator >>> ",table_id, table_name, create_player_id)
     return {
         enter = function(player_id)
+			log.info("enter:", player_id, m_interface_mgr:get_addr(player_id))
             return m_logic:enter(player_id)
         end,
 
@@ -73,6 +74,7 @@ function M.table_creator(table_id, table_name, ...)
 		end,
 
 		reconnect = function(player_id)
+			log.info("reconnect:", player_id, m_interface_mgr:get_addr(player_id))
 			return m_logic:reconnect(player_id)
 		end,
         

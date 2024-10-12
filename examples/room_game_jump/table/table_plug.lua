@@ -5,8 +5,9 @@ local timer = require "skynet-fly.timer"
 
 local M = {}
 
+local g_interface_mgr = nil
 function M.init(interface_mgr)
-
+	g_interface_mgr = interface_mgr
 end
 
 M.send = pbnet_util.send
@@ -17,11 +18,11 @@ M.ws_broadcast = ws_pbnet_util.broadcast
 --游戏桌子创建者
 function M.table_creator(table_id)
 	local m_player_map = {}
-
+	local m_interface_mgr = g_interface_mgr:new(table_id)
     return {
 		--玩家进入桌子
         enter = function(player_id)
-			log.info("enter ", player_id)
+			log.info("enter ", player_id, m_interface_mgr:get_addr(player_id))
 			m_player_map[player_id] = {
 				is_canleave = false
 			}
@@ -49,7 +50,7 @@ function M.table_creator(table_id)
 		end,
 		--玩家重连
 		reconnect = function(player_id)
-			log.info("reconnect ", player_id)
+			log.info("reconnect ", player_id, m_interface_mgr:get_addr(player_id))
 		end,
 		--消息分发处理
 		handle = {}
