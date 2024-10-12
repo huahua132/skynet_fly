@@ -43,7 +43,7 @@ local function jump_one_player(agent)
 		local new_hall_client = contriner_client:new("room_game_hall_m", nil, NOT_SWITCH_FUNC)
 		new_hall_client:set_mod_num(player_id)
 		local server_id = new_hall_client:get_mod_server_id()
-		ret,errno,errmsg = new_hall_client:mod_call("jump_join", agent.gate, agent.fd, agent.is_ws, player_id, SELF_ADDRESS)	--跳入新服务
+		ret,errno,errmsg = new_hall_client:mod_call("jump_join", agent.gate, agent.fd, agent.is_ws, agent.addr, player_id, SELF_ADDRESS)	--跳入新服务
 		log.warn_fmt("jump_join server_id[%s] gate[%s] fd[%s] is_ws[%s] player_id[%s] ret[%s] errno[%s] errmsg[%s]", skynet.address(server_id), agent.gate, agent.fd, agent.is_ws, player_id, ret, errno, errmsg)
 		if ret then
 			agent.hall_client = new_hall_client
@@ -99,7 +99,7 @@ local function close_fd(fd)
 	skynet.send(agent.gate,'lua','kick',fd)
 end
 
-local function connect_hall(gate, fd, is_ws, player_id)
+local function connect_hall(gate, fd, is_ws, addr, player_id)
 	local old_agent = g_player_map[player_id]
 	local hall_client = nil
 	if old_agent then
@@ -113,7 +113,7 @@ local function connect_hall(gate, fd, is_ws, player_id)
 		hall_client:set_mod_num(player_id)
 	end
 	
-	local ret,errcode,errmsg = hall_client:mod_call("connect",gate, fd, is_ws, player_id, SELF_ADDRESS)
+	local ret,errcode,errmsg = hall_client:mod_call("connect",gate, fd, is_ws, addr, player_id, SELF_ADDRESS)
 	if not ret then
 		login_plug.login_failed(player_id,errcode,errmsg)
 		return
@@ -124,6 +124,7 @@ local function connect_hall(gate, fd, is_ws, player_id)
 		old_agent.fd = fd
 		old_agent.gate = gate
 		old_agent.is_ws = is_ws
+		old_agent.addr = addr
 	else
 		g_player_map[player_id] = {
 			player_id = player_id,
@@ -131,6 +132,7 @@ local function connect_hall(gate, fd, is_ws, player_id)
 			gate = gate,
 			fd = fd,
 			is_ws = is_ws,
+			addr = addr,
 			queue = queue(),
 		}
 	end
@@ -139,7 +141,7 @@ local function connect_hall(gate, fd, is_ws, player_id)
 	return true
 end
 
-local function check_func(gate, fd, is_ws, ...)
+local function check_func(gate, fd, is_ws, addr, ...)
 	local player_id,errcode,errmsg = login_plug.check(...)
 	if player_id == continue then
 		return continue
@@ -157,7 +159,7 @@ local function check_func(gate, fd, is_ws, ...)
 	end
 	
 	g_login_lock_map[player_id] = true
-	local isok,err = x_pcall(connect_hall, gate, fd, is_ws, player_id)
+	local isok,err = x_pcall(connect_hall, gate, fd, is_ws, addr, player_id)
 	g_login_lock_map[player_id] = nil
 	if not isok then
 		log.error("connect_hall failed ",err)
@@ -267,8 +269,19 @@ function interface:broad_cast_msg(header, body, filter_map)
 	end
 end
 
+--继续等待登录消息
 function interface:continue()
 	return continue
+end
+
+--获取客户端连接IP:PORT
+function interface:get_addr(player_id)
+	local agent = g_player_map[player_id]
+	if not agent then
+		return ""
+	end
+
+	return agent.addr
 end
 ----------------------------------------------------------------------------------
 --CMD
@@ -453,7 +466,7 @@ skynet.start(function()
 				return
 			end
 			
-			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, header, body)
+			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, agent.addr, header, body)
 			if not player_id then
 				close_fd(fd)
 			elseif player_id == continue then
