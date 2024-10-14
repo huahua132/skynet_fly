@@ -2,8 +2,8 @@ local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local wait = require "skynet-fly.time_extend.wait"
 local timer = require "skynet-fly.timer"
+local queue = require "skynet.queue"()
 
 local assert = assert
 local pairs = pairs
@@ -14,9 +14,6 @@ local g_orm_plug = nil
 local g_orm_obj = nil
 local G_ISCLOSE = false
 local g_config = nil
-
-local g_is_init = false
-local g_wait = wait:new(timer.second * 10)
 
 local g_handle = {}
 
@@ -198,9 +195,7 @@ function CMD.start(config)
     end
 
     skynet.fork(function ()
-        g_orm_obj = g_orm_plug.init()
-        g_is_init = true
-        g_wait:wakeup("waiting_init")
+        g_orm_obj = queue(g_orm_plug.init)
     end)
     return true
 end
@@ -212,22 +207,18 @@ function CMD.call(func_name,...)
 
     local func = assert(g_handle[func_name], "func_name not exists:" .. func_name)
 
-    if not g_is_init then
-        g_wait:wait("waiting_init")
-        assert(g_is_init, "not init ok")
-    end
-    return false, func(...)
+    return false, queue(func, ...)
 end
 
 function CMD.herald_exit()
     G_ISCLOSE = true
 
-    g_orm_obj.save_change_now(g_orm_obj)
+    queue(g_orm_obj.save_change_now,g_orm_obj)
 end
 
 function CMD.exit()
 
-    g_orm_obj.save_change_now(g_orm_obj)
+    queue(g_orm_obj.save_change_now,g_orm_obj)
     return true
 end
 
@@ -246,7 +237,7 @@ end
 skynet_util.reg_shutdown_func(function()
     log.warn("-------------shutdown save begin---------------",g_config.instance_name)
     G_ISCLOSE = true
-    g_orm_obj.save_change_now(g_orm_obj)
+    queue(g_orm_obj.save_change_now,g_orm_obj)
     log.warn("-------------shutdown save end---------------",g_config.instance_name)
 end)
 
