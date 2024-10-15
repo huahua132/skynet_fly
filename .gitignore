@@ -34,3 +34,5 @@ test/make
 3rd/zlib/zconf.h
 3rd/zlib/zlib.pc
 
+3rd/zlib/zlib.a
+

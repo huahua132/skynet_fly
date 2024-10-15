@@ -6,6 +6,7 @@ targetpath=./skynet-fly-release
 # 删除已有目标路径并新建目录
 rm -rf ${targetpath}
 mkdir -p ${targetpath}/skynet/3rd
+mkdir -p ${targetpath}/skynet/3rd/lua
 
 # 复制 skynet_fly 相关文件和目录
 
@@ -29,5 +30,6 @@ mkdir -p ${targetpath}/skynet # 确保 skynet 目录存在
 # 复制 c 相关的文件和目录
 [ -f "skynet/skynet" ] && cp skynet/skynet ${targetpath}/skynet/skynet
 [ -d "skynet/luaclib" ] && cp -r skynet/luaclib ${targetpath}/skynet/luaclib
-[ -d "skynet/3rd/lua" ] && cp -r skynet/3rd/lua ${targetpath}/skynet/3rd/lua
+cp skynet/3rd/lua/lua ${targetpath}/skynet/3rd/lua/lua
+cp skynet/3rd/lua/liblua.a ${targetpath}/skynet/3rd/lua/liblua.a
 [ -d "skynet/cservice" ] && cp -r skynet/cservice ${targetpath}/skynet/cservice
