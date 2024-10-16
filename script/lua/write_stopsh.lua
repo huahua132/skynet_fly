@@ -25,8 +25,8 @@ load_mods_name=$1
 
 shell_str = shell_str .. string.format('if pgrep -f "skynet.make/%s_config.lua ${load_mods_name}" > /dev/null; then\n', svr_name)
 shell_str = shell_str .. string.format("\t%s %s/console.lua %s %s ${load_mods_name} get_list | \n",lua_path,script_path,skynet_fly_path,svr_name)
-shell_str = shell_str .. string.format("\txargs -t curl -s |\n")
-shell_str = shell_str .. string.format("\txargs -t %s %s/console.lua %s %s ${load_mods_name} find_server_id contriner_mgr 2 | \n",lua_path,script_path,skynet_fly_path,svr_name)
+shell_str = shell_str .. string.format("\txargs curl -s |\n")
+shell_str = shell_str .. string.format("\txargs %s %s/console.lua %s %s ${load_mods_name} find_server_id contriner_mgr 2 | \n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("\txargs -t %s %s/console.lua %s %s ${load_mods_name} call shutdown | \n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("\txargs -t curl -s\n")
 shell_str = shell_str .. string.format('\tpids=$(pgrep -f "skynet.make/%s_config.lua ${load_mods_name}")\n',svr_name)
