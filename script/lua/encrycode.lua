@@ -54,6 +54,7 @@ for file_name, file_path, file_info in file_util.diripairs('./') do
                 if not newfile then
                     print("can`t openfile >>> ", new_path)
                 else
+                    newfile:write("skynet-fly-encrycode\n")
                     newfile:write(encode_str)
                     newfile:close()
                     print("encry file succ:", new_path)
