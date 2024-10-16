@@ -6,7 +6,13 @@ local table = table
 local ipairs = ipairs
 
 local loadmodsfile = skynet.getenv("loadmodsfile")
-local load_mods = loadfile(loadmodsfile)()
+
+local load_mods = {}
+do
+    local chunk, err = loadfile(loadmodsfile)
+    assert(chunk, err)
+    load_mods = chunk()
+end
 
 --这是可热更服务的启动
 
