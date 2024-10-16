@@ -719,7 +719,7 @@ skynet_util.reg_shutdown_func(function()
 			end
 		end
 	end
-	log.warn("-------------shutdown save begin---------------")
+	log.warn("-------------shutdown save end---------------")
 end)
 
 return CMD
