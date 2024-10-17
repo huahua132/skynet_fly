@@ -105,12 +105,12 @@ local function join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name
     end
 end
 
-local function match_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
+local function match_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
     assert(not g_player_map[player_id])
-    local table_id = alloc_plug.match(player_id)
+    local table_id = alloc_plug.match(player_id, ...)
     local _,errcode,errmsg
     if not table_id then
-        table_id,errcode,errmsg = create_table(table_name)
+        table_id,errcode,errmsg = create_table(table_name, ...)
         if not table_id then
             log.info("create_table err ",errcode,errmsg)
             return nil,errcode,errmsg
@@ -120,9 +120,9 @@ local function match_join(player_id, gate, fd, is_ws, addr, hall_server_id, tabl
     return join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name, table_id)
 end
 
-local function create_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
+local function create_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
 	assert(not g_player_map[player_id])
-	local ok,errcode,errmsg = create_table(table_name)
+	local ok,errcode,errmsg = create_table(table_name, ...)
 	if not ok then
 		return ok,errcode,errmsg
 	end
@@ -202,13 +202,13 @@ end
 ----------------------------------------------------------------------------------
 local CMD = {}
 --创建进入房间
-function CMD.create_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
-	return queue(create_join, player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
+function CMD.create_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
+	return queue(create_join, player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
 end
 
 --匹配进入房间
-function CMD.match_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
-    return queue(match_join, player_id, gate, fd, is_ws, addr, hall_server_id, table_name)
+function CMD.match_join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
+    return queue(match_join, player_id, gate, fd, is_ws, addr, hall_server_id, table_name, ...)
 end
 
 --指定房间进入
