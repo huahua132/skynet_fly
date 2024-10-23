@@ -12,9 +12,14 @@ local INDEX = tonumber(ARGV[2])
 local LAUNCH_DATE = ARGV[3]
 local LAUNCH_TIME = tonumber(ARGV[4])
 local VERSION = tonumber(ARGV[5])
+local IS_RECORD_ON = tonumber(ARGV[6])			--是否记录录像
 assert(MODULE_NAME)
 
 local new_loaded = _loaded
+
+if IS_RECORD_ON == 1 then
+	skynet.start_record(ARGV)
+end
 
 local CMD = {}
 
@@ -45,6 +50,7 @@ module_info.set_base_info {
 	launch_date = LAUNCH_DATE,
 	launch_time = LAUNCH_TIME,
 	version = VERSION,
+	is_record_on = IS_RECORD_ON,
 }
 
 local SERVER_STATE = SERVER_STATE_TYPE.loading
