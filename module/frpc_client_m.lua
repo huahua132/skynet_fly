@@ -629,6 +629,9 @@ local function get_watch_channel(svr_name, svr_id)
 	end
 
 	node_info = g_node_info_map[svr_name]
+	if not node_info then
+		return false
+	end
 	watch_channel_map = node_info.watch_channel_map
 
 	if not watch_channel_map[cluster_name] then
