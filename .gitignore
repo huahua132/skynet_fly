@@ -7,6 +7,7 @@
 *.old
 *.o
 *.lo
+*.record
 
 examples/*/make
 
