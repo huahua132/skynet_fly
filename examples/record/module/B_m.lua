@@ -3,6 +3,10 @@ local log = require "skynet-fly.log"
 local httpc = require "http.httpc"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local socket = require "skynet.socket"
+local timer = require "skynet-fly.timer"
+local hotfix_func = hotfix_require "testhotfix.hotfix_func"
+local hotfix_table = hotfix_require "testhotfix.hotfix_table"
+
 contriner_client:register("A_m", "share_config_m")
 
 local CMD = {}
@@ -122,6 +126,14 @@ local function test_ostime()
     end
 end
 
+--测试热更
+local function test_hotfix()
+    timer:new(timer.second * 5, 0, function()
+        log.info("hotfixtest:", hotfix_func.hello())
+        log.info("hotfixtest:", hotfix_table)
+    end)
+end
+
 function CMD.start()
     skynet.fork(function()
         test_service_api()
@@ -132,6 +144,7 @@ function CMD.start()
         test_utp()
         test_math_rand()
         test_ostime()
+        test_hotfix()
     end)
     return true
 end
