@@ -24,6 +24,8 @@ QQ群号：102993581
 	* 支持快进时间。
 	* 支持orm（数据关系映射）目前适配了(mysql,mongo),数据库可无缝切换。
 	* 支持断点调试。
+	* 支持lua代码加密。
+	* 支持服务录像、录像重放。
 
 * [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
 * [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
@@ -285,21 +287,6 @@ end
 
 * **业务解耦**
 	对**登录**，**大厅**，**匹配**，**游戏**，还有协议都完成了解耦，开发新游戏只需要实现对应的插件接口即可。
-
-* **切换示例**
-	把digitalbomb游戏由pb协议转换到跑json协议。
-
-	修改配置文件 load_mods.lua
-
-client_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
-
-room_game_hall_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
-
-room_game_alloc_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
-
-room_game_table_m 配置的 net_util由`pbnet_util` 改为 `jsonet_util`
-
-执行 `sh make/script/restart.sh` 
 
 * **热更新**
 	client_m 表写了测试用例，可以用来验证热更新。
