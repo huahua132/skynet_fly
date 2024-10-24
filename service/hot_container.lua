@@ -253,3 +253,9 @@ contriner_client:CMD(CMD)
 skynet.start(function()
 	skynet_util.lua_dispatch(CMD)
 end)
+
+if IS_RECORD_ON == 1 then
+	skynet_util.reg_shutdown_func(function()
+		skynet.recordoff()
+	end)
+end

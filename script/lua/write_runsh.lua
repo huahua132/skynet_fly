@@ -18,12 +18,13 @@ shell_str = shell_str .. [[
 if [ "$#" -lt 1 ]; then
 	echo "arg1 [load_mods] 启动的load_mods配置"
 	echo "arg2 [is_daemon] 是否守护进程运行 1是0不是 默认1"
+	echo "arg3 [recordfile] 播放录像文件路径  可选"
 	echo "please format make/script/run.sh load_mods.lua is_daemon"
 	exit 1
 fi
 ]]
-shell_str = shell_str .. string.format("echo run %s $1\n",svr_name)
-shell_str = shell_str .. string.format("%s %s/write_config.lua %s $1 $2\n",lua_path,script_path,skynet_fly_path)
+shell_str = shell_str .. string.format("echo run %s $1 $2 $3\n",svr_name)
+shell_str = shell_str .. string.format("%s %s/write_config.lua %s $1 $2 $3\n",lua_path,script_path,skynet_fly_path)
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 create_running_config\n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 create_load_mods_old\n",lua_path,script_path,skynet_fly_path,svr_name)
 shell_str = shell_str .. string.format("%s/skynet make/%s_config.lua $1\n",skynet_path,svr_name)

@@ -3,6 +3,7 @@ local ARGV = { ... }
 local skynet_fly_path = ARGV[1]
 local load_mods_name = ARGV[2]
 local is_daemon = ARGV[3]
+local recordfile = ARGV[4]
 assert(skynet_fly_path, '缺少 skynet_fly_path')
 
 package.cpath = skynet_fly_path .. "/luaclib/?.so;"
@@ -61,7 +62,8 @@ local config = {
 	lua_path        = "",
 	enablessl       = true,
 	loadmodsfile    = load_mods_name, --可热更服务启动配置
-	recordfile      = "",
+	recordfile      = recordfile,		 --播放录像的文件名
+	recordlimit     = 1024 * 1024 * 100, --录像记录限制(字节数) 超过不再写录像
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
@@ -109,8 +111,8 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	if cfg.recordpath then
 		config.recordpath = cfg.recordpath									--录像文件目录
 	end
-	if cfg.recordfile then													--播放录像时的文件路径
-		config.recordfile = cfg.recordfile
+	if cfg.recordlimit then													--录像记录限制
+		config.recordlimit = cfg.recordlimit
 	end
 end
 

@@ -5,7 +5,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			server_cfg = {
-				recordfile = "./records/00000010.record"        --指定播放录像文件
+                recordlimit = 1024 * 10,
 			},
 
             redis = {
