@@ -2,6 +2,9 @@ local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local log = require "skynet-fly.log"
 local string_util = require "skynet-fly.utils.string_util"
+local file_util = require "skynet-fly.utils.file_util"
+local time_util = require "skynet-fly.utils.time_util"
+local skynet = require "skynet"
 
 local old_require = require
 local assert = assert
@@ -14,11 +17,16 @@ local string = string
 local rawget = rawget
 local tinsert = table.insert
 local tsort = table.sort
+local sgsub = string.gsub
+
+local g_recordpath = skynet.getenv("recordpath")
+local g_recordfile = skynet.getenv("recordfile")        --如果不是空就说明是播放录像
 
 local g_loadedmap = {}
 local M = {}
 
 local g_seq = 1
+local g_patch = 0
 
 local g_tb = _G
 
@@ -47,11 +55,11 @@ function M.require(name)
 
     assert(contriner_interface:get_server_state() == SERVER_STATE_TYPE.loading)     --必须load阶段require，否则不好记录文件修改时间
 	local package = g_tb.package
-    local f_dir = package.searchpath(name, package.path)
-    assert(f_dir, "hot_require err can`t find module = " .. name)
+    local f_path = package.searchpath(name, package.path)
+    assert(f_path, "hot_require err can`t find module = " .. name)
 
     g_loadedmap[name] = {
-        dir = f_dir,
+        path = f_path,
         seq = g_seq,
     }
     g_seq = g_seq + 1
@@ -59,7 +67,14 @@ function M.require(name)
 end
 
 --热更
-function M.hotfix(hotfixmods)
+function M.hotfix(hotfixmods, is_record_on)
+    g_patch = g_patch + 1
+
+    local patch_dir
+    if g_recordfile ~= "" then              --说明是播放录像
+        patch_dir = file_util.path_join(g_recordpath, string.format("addr_%08x/patch_%s/", skynet.self(), g_patch))
+    end
+
     local hot_ret = {}
     local name_list = string_util.split(hotfixmods, '|')
     local sort_list = {}
@@ -80,8 +95,11 @@ function M.hotfix(hotfixmods)
     for _,info in ipairs(sort_list) do
         local name = info.name
         local info = g_loadedmap[name]
-        local dir = info.dir
-        local mainfunc = loadfile(dir, "t", g_dummy_env)
+        local path = info.path
+        if patch_dir then
+            path = sgsub(path, './', patch_dir, 1)
+        end
+        local mainfunc = loadfile(path, "t", g_dummy_env)
         if not mainfunc then
             log.warn_fmt("hotfix loadfile err name:%s", name)
             hot_ret[name] = "loadfile err"
@@ -158,7 +176,33 @@ function M.hotfix(hotfixmods)
         else
             log.info("hotfix ok ", name)
             hot_ret[name] = "ok:" .. i
-        end        
+        end
+    end
+
+    if is_record_on and g_recordfile == "" then
+        local patch_dir = file_util.path_join(g_recordpath, string.format("addr_%08x/patch_%s/", skynet.self(), g_patch))
+        local pathcmd = ""
+        local dir_path_map = {}
+        for i, info in ipairs(sort_list) do
+            local name = info.name
+            local info = g_loadedmap[name]
+            local path = info.path
+            local new_path = sgsub(path, './', patch_dir, 1)
+            local filename = string.match(path, "([^/]+%.lua)$")
+            local dir_path = sgsub(new_path, filename, '', 1)
+            dir_path_map[dir_path] = true
+            pathcmd = pathcmd .. string.format('cp %s %s;\n', path, new_path)
+        end
+
+        local mkcmd = "mkdir -p "
+        for dir_path in pairs(dir_path_map) do
+            mkcmd = mkcmd .. dir_path .. ' '
+        end
+        mkcmd = mkcmd .. ';' .. pathcmd
+        local isok, err = os.execute(mkcmd)
+        if not isok then
+            log.error("record cp file err ", err)
+        end
     end
 
     return true,hot_ret

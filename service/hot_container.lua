@@ -240,10 +240,10 @@ end
 --热更
 assert(not CMD['hotfix'], "repeat cmd hotfix")
 function CMD.hotfix(hotfixmods)
-	local isok, ret = hotfix.hotfix(hotfixmods)
+	local isok, ret = hotfix.hotfix(hotfixmods, IS_RECORD_ON)
 	if isok and INDEX == 1 then
 		local hotfix_loaded = hotfix.get_loadedmap()
-		skynet.fork(write_mod_required,"hotfix_info",MODULE_NAME,hotfix_loaded)
+		skynet.fork(write_mod_required,"make/hotfix_info",MODULE_NAME,hotfix_loaded)
 	end
 	return ret
 end
