@@ -5,7 +5,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			server_cfg = {
-                recordlimit = 1024 * 10,
+                recordlimit = 1024 * 1024,
 			},
 
             redis = {

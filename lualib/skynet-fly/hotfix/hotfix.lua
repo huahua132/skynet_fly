@@ -4,6 +4,7 @@ local log = require "skynet-fly.log"
 local string_util = require "skynet-fly.utils.string_util"
 local file_util = require "skynet-fly.utils.file_util"
 local time_util = require "skynet-fly.utils.time_util"
+local module_info = require "skynet-fly.etc.module_info"
 local skynet = require "skynet"
 
 local old_require = require
@@ -20,7 +21,6 @@ local tsort = table.sort
 local sgsub = string.gsub
 
 local g_recordpath = skynet.getenv("recordpath")
-local g_recordfile = skynet.getenv("recordfile")        --如果不是空就说明是播放录像
 
 local g_loadedmap = {}
 local M = {}
@@ -46,6 +46,31 @@ local g_mata = {
 
 setmetatable(g_dummy_env, g_mata)
 
+local function get_patch_file_path(file_path, patch_dir)
+    local depth = 0
+    for w in string.gmatch(file_path, "%.%.%/") do
+        depth = depth + 1
+    end
+    local path = patch_dir
+    local pat = ""
+    if depth == 0 then
+        path = path .. 'cur/'
+        pat = './'
+    else
+        for i = 1, depth do
+            path = path .. 'pre/'
+            pat = pat .. '../'
+        end
+    end
+    
+    return sgsub(file_path, pat, path, 1)
+end
+
+local function get_patch_dir()
+    local base_info = module_info.get_base_info()
+    return file_util.path_join(g_recordpath, string.format("hotfix_%s/patch_%s/", base_info.module_name, g_patch))
+end
+
 --可热更模块加载
 function M.require(name)
     if g_loadedmap[name] then
@@ -67,12 +92,13 @@ function M.require(name)
 end
 
 --热更
-function M.hotfix(hotfixmods, is_record_on)
+function M.hotfix(hotfixmods)
+    local base_info = module_info.get_base_info()
     g_patch = g_patch + 1
 
     local patch_dir
-    if g_recordfile ~= "" then              --说明是播放录像
-        patch_dir = file_util.path_join(g_recordpath, string.format("addr_%08x/patch_%s/", skynet.self(), g_patch))
+    if skynet.is_record_handle() then              --说明是播放录像
+        patch_dir = get_patch_dir()
     end
 
     local hot_ret = {}
@@ -90,6 +116,7 @@ function M.hotfix(hotfixmods, is_record_on)
             seq = info.seq,
         })
     end
+
     tsort(sort_list, function(a, b) return a.seq > b.seq end)
     
     for _,info in ipairs(sort_list) do
@@ -97,7 +124,7 @@ function M.hotfix(hotfixmods, is_record_on)
         local info = g_loadedmap[name]
         local path = info.path
         if patch_dir then
-            path = sgsub(path, './', patch_dir, 1)
+            path = get_patch_file_path(path, patch_dir)
         end
         local mainfunc = loadfile(path, "t", g_dummy_env)
         if not mainfunc then
@@ -179,15 +206,15 @@ function M.hotfix(hotfixmods, is_record_on)
         end
     end
 
-    if is_record_on and g_recordfile == "" then
-        local patch_dir = file_util.path_join(g_recordpath, string.format("addr_%08x/patch_%s/", skynet.self(), g_patch))
+    if skynet.is_write_record() and base_info.index == 1 then --第一个启动记录下就行
+        local patch_dir = get_patch_dir()
         local pathcmd = ""
         local dir_path_map = {}
         for i, info in ipairs(sort_list) do
             local name = info.name
             local info = g_loadedmap[name]
             local path = info.path
-            local new_path = sgsub(path, './', patch_dir, 1)
+            local new_path = get_patch_file_path(path, patch_dir)
             local filename = string.match(path, "([^/]+%.lua)$")
             local dir_path = sgsub(new_path, filename, '', 1)
             dir_path_map[dir_path] = true

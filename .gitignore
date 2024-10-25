@@ -8,7 +8,7 @@
 *.o
 *.lo
 *.record
-*record
+*records
 
 examples/*/make
 
