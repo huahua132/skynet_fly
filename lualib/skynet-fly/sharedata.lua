@@ -4,7 +4,9 @@ local sharetable = require "skynet.sharetable"
 local watch_syn = require "skynet-fly.watch.watch_syn"
 local service_watch_interface = require "skynet-fly.watch.interface.service_watch_interface"
 local timer = require "skynet-fly.timer"
+local module_info = require "skynet-fly.etc.module_info"
 local log = require "skynet-fly.log"
+local file_util = require "skynet-fly.utils.file_util"
 
 local sinterface = service_watch_interface:new(".sharedata_service")
 
@@ -15,10 +17,16 @@ local pairs = pairs
 local table = table
 local ipairs = ipairs
 local type = type
+local string = string
+local os = os
+local loadfile = loadfile
+
+local g_recordpath = skynet.getenv("recordpath")
 
 local g_mode_map = {}
 local g_data_map = {}
 local g_version_map = {}
+local g_patch_map = {}          --热更的patch编号
 local g_flush_time_obj = nil
 
 local M = {
@@ -28,6 +36,61 @@ local M = {
     }
 }
 local mt = {__index = M}
+
+local function get_patch_file_path(file_path, patch_dir)
+    local depth = 0
+    for w in string.gmatch(file_path, "%.%.%/") do
+        depth = depth + 1
+    end
+    local path = patch_dir
+    local pat = ""
+    if depth == 0 then
+        path = path .. 'cur/'
+        pat = './'
+    else
+        for i = 1, depth do
+            path = path .. 'pre/'
+            pat = pat .. '../'
+        end
+    end
+    
+    return string.gsub(file_path, pat, path, 1)
+end
+
+local function add_patch(file_path)
+    local function get_patch_dir()
+        if not g_patch_map[file_path] then
+            g_patch_map[file_path] = 0
+        end
+        g_patch_map[file_path] = g_patch_map[file_path] + 1
+        local patch = g_patch_map[file_path]
+        local base_info = module_info.get_base_info()
+        return file_util.path_join(g_recordpath, string.format("sharedata_%s/patch_%s/", base_info.module_name, patch))
+    end
+
+    if skynet.is_write_record() then        --如果写录像
+        local patch_dir = get_patch_dir()
+        local new_path = get_patch_file_path(file_path, patch_dir)
+        local filename = string.match(file_path, "([^/]+%.lua)$")
+        local dir_path = string.gsub(new_path, filename, '', 1)
+        local cmd = string.format("mkdir -p %s;\ncp %s %s;", dir_path, file_path, new_path)
+        local isok, err = os.execute(cmd)
+        if not isok then
+            log.error("record cp file err ", err)
+        end
+    end
+
+    if skynet.is_record_handle() then       --如果是读录像
+        local patch_dir = get_patch_dir()
+        local path = get_patch_file_path(file_path, patch_dir)
+        local f = loadfile(path)
+        if not f then
+            log.error("play record err can`t loadfile ", path)
+            assert(1 == 2)
+        end
+        g_data_map[file_path] = f()
+    end
+end
 
 local g_mode_funcs = {}
 g_mode_funcs[M.enum.sharedata] = {
@@ -67,6 +130,7 @@ local function watch_update(watchcli, file_path)
             local mode = g_mode_map[file_path]
             local mode_func = g_mode_funcs[mode]
             g_data_map[file_path] = mode_func.update(file_path)
+            add_patch(file_path)
             g_version_map[file_path] = new_version
         end
     end
