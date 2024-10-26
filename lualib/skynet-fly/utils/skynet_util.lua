@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
 local log = require "skynet-fly.log"
+local table_util = require "skynet-fly.utils.table_util"
 local json = require "cjson"
 
 local debug_getinfo = debug.getinfo
@@ -9,7 +10,7 @@ local assert = assert
 local table = table
 local type = type
 local next = next
-local pairs = pairs
+local x_pcall = x_pcall
 
 local retpack = skynet.retpack
 local NOT_RET = {}
@@ -91,7 +92,7 @@ end
 
 old_skynet_info_func(function()
     local info = {}
-    for name,func in pairs(g_info_func_map) do
+    for name,func in table_util.sort_ipairs_byk(g_info_func_map) do
         info[name] = func()
     end
 
@@ -139,7 +140,7 @@ end
 
 --执行关服处理函数
 function M.execute_shutdown()
-    for src, func in pairs(g_shutdown_func_map) do
+    for src, func in table_util.sort_ipairs_byk(g_shutdown_func_map) do
         local isok, err = x_pcall(func)
         if not isok then
             log.error("execute_shutdown err ", err)

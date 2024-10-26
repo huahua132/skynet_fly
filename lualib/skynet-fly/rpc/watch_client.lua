@@ -12,7 +12,6 @@ local table_util = require "skynet-fly.utils.table_util"
 local queue = require "skynet.queue"()
 
 local x_pcall = x_pcall
-local pairs = pairs
 local next = next
 local assert = assert
 local type = type
