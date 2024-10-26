@@ -11,7 +11,6 @@ contriner_client:register("web_agent_m")
 
 local table  = table
 local string = string
-local pairs = pairs
 local assert = assert
 local math = math
 local os = os
