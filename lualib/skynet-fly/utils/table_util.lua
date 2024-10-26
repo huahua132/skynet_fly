@@ -307,6 +307,31 @@ function M.sort_ipairs(t,comp)
 	end
 end
 
+--通用的排序后遍历 对比k
+function M.sort_ipairs_byk(t,comp)
+	assert(t)
+	assert(not comp or type(comp) == 'function')
+	local list = {}
+	for k,v in pairs(t) do
+		tinsert(list,k)
+	end
+
+	tsort(list,comp)
+	local index = 1
+	local len = #list
+	return function()
+		if index > len then
+			return nil
+		end
+
+		local k = list[index]
+		local v = t[k]
+		local is_end = index == len
+		index = index + 1
+		return k,v,is_end
+	end
+end
+
 --写luafile mode = G M
 function M.table_to_luafile(mode,tab)
 	local ret_str = ""
