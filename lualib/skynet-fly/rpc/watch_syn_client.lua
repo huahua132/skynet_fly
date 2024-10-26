@@ -7,7 +7,6 @@ local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
 local table_util = require "skynet-fly.utils.table_util"
 
-local pairs = pairs
 local next = next
 local assert = assert
 local type = type

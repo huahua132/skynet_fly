@@ -5,7 +5,6 @@ local skynet = require "skynet"
 local setmetatable = setmetatable
 local assert = assert
 local coroutine = coroutine
-local pairs = pairs
 local next = next
 local tinsert = table.insert
 local tremove = table.remove
