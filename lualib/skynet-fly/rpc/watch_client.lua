@@ -8,21 +8,26 @@ local tti = require "skynet-fly.cache.tti"
 local timer = require "skynet-fly.timer"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
+local table_util = require "skynet-fly.utils.table_util"
 local queue = require "skynet.queue"()
 
-local table = table
+local x_pcall = x_pcall
 local pairs = pairs
 local next = next
 local assert = assert
 local type = type
 local tpack = table.pack
 local tunpack = table.unpack
+local tinsert = table.insert
+local tremove = table.remove
 
 local M = {}
 
 local g_is_watch_up_map = {}            --监听上线的svr_name 列表
 local g_watch_channel_name_map = {}     --监听svr_name所有节点的channel_name处理函数 列表
+local g_watch_channel_handlers_map = {}
 local g_watch_channel_svr_id_map = {}   --指定svr_id的channel_name处理函数 列表
+local g_watch_channel_svr_id_handlers_map = {}
 local g_tti_map = {}
 
 local function get_channel_map(svr_name, channel_name)
@@ -30,11 +35,15 @@ local function get_channel_map(svr_name, channel_name)
         return 
     end
 
-    if not g_watch_channel_name_map[svr_name][channel_name] then
-        return 
+    return g_watch_channel_name_map[svr_name][channel_name]
+end
+
+local function get_channel_handlers(svr_name, channel_name)
+    if not g_watch_channel_handlers_map[svr_name] then
+        return
     end
 
-    return g_watch_channel_name_map[svr_name][channel_name]
+    return g_watch_channel_handlers_map[svr_name][channel_name]
 end
 
 local function get_channel_svr_id_map(svr_name, svr_id, channel_name)
@@ -46,11 +55,19 @@ local function get_channel_svr_id_map(svr_name, svr_id, channel_name)
         return
     end
 
-    if not g_watch_channel_svr_id_map[svr_name][svr_id][channel_name] then
+    return g_watch_channel_svr_id_map[svr_name][svr_id][channel_name]
+end
+
+local function get_channel_svr_id_handlers(svr_name, svr_id, channel_name)
+    if not g_watch_channel_svr_id_handlers_map[svr_name] then
         return
     end
 
-    return g_watch_channel_svr_id_map[svr_name][svr_id][channel_name]
+    if not g_watch_channel_svr_id_handlers_map[svr_name][svr_id] then
+        return
+    end
+
+    return g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name]
 end
 
 skynet_util.extend_cmd_func(SYSCMD.frpcpubmsg, function(session, svr_name, svr_id, channel_name, msg)
@@ -65,19 +82,29 @@ skynet_util.extend_cmd_func(SYSCMD.frpcpubmsg, function(session, svr_name, svr_i
     end
 
     tti_obj:set_cache(session, true)
-    local channel_map = get_channel_map(svr_name, channel_name)
-    local channel_svr_id_map = get_channel_svr_id_map(svr_name, svr_id, channel_name)
-    if channel_map or channel_svr_id_map then
+    local handlers = get_channel_handlers(svr_name, channel_name)
+    local svr_id_handlers = get_channel_svr_id_handlers(svr_name, svr_id, channel_name)
+    if handlers or svr_id_handlers then
         local args = tpack(skynet.unpack(msg))
-        if channel_map then
-            for handle_name,handler in pairs(channel_map) do
-                skynet.fork(handler, cluster_name, tunpack(args, 1, args.n))
+        if handlers then
+            for i = 1, #handlers do
+                local handle_name = handlers[i]
+                local handle_func = g_watch_channel_name_map[svr_name][channel_name][handle_name]
+                local isok, err = x_pcall(handle_func, cluster_name, tunpack(args, 1, args.n))
+                if not isok then
+                    log.error("frpc watch msg exec err ", cluster_name, channel_name, handle_name, err)
+                end
             end
         end
 
-        if channel_svr_id_map then
-            for handle_name,handler in pairs(channel_svr_id_map) do
-                skynet.fork(handler, cluster_name, tunpack(args, 1, args.n))
+        if svr_id_handlers then
+            for i = 1, #svr_id_handlers do
+                local handle_name = svr_id_handlers[i]
+                local handle_func = g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name]
+                local isok, err = x_pcall(handle_func, cluster_name, tunpack(args, 1, args.n))
+                if not isok then
+                    log.error("frpc watch svr_id msg exec err ", cluster_name, channel_name, handle_name, err)
+                end
             end
         end
     end
@@ -129,14 +156,14 @@ end
 local function queue_up_cluster_server(svr_name, svr_id)
     local watch_channel_map = g_watch_channel_name_map[svr_name]
     if watch_channel_map then
-        for channel_name in pairs(watch_channel_map) do
+        for channel_name in table_util.sort_ipairs_byk(watch_channel_map) do
             watch_channel_name(svr_name, svr_id, channel_name)
         end
     end
 
     if g_watch_channel_svr_id_map[svr_name] and g_watch_channel_svr_id_map[svr_name][svr_id] then
         local watch_svr_map = g_watch_channel_svr_id_map[svr_name][svr_id]
-        for channel_name in pairs(watch_svr_map) do
+        for channel_name in table_util.sort_ipairs_byk(watch_svr_map) do
             watch_channel_name(svr_name, svr_id, channel_name)
         end
     end
@@ -155,14 +182,18 @@ local function watch(svr_name, channel_name, handle_name, handler)
     local is_new = false
     if not g_watch_channel_name_map[svr_name] then
         g_watch_channel_name_map[svr_name] = {}
+        g_watch_channel_handlers_map[svr_name] = {}
     end
 
     if not g_watch_channel_name_map[svr_name][channel_name] then
         g_watch_channel_name_map[svr_name][channel_name] = {}
+        g_watch_channel_handlers_map[svr_name][channel_name] = {}
         is_new = true
     end
     assert(not g_watch_channel_name_map[svr_name][channel_name][handle_name], "exists handle_name " .. handle_name)
     g_watch_channel_name_map[svr_name][channel_name][handle_name] = handler
+    tinsert(g_watch_channel_handlers_map[svr_name][channel_name], handle_name)
+    
     if is_new and (not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
         local svr_list = frpc_client:get_active_svr_ids(svr_name)
         if #svr_list == 0 then
@@ -191,12 +222,20 @@ local function unwatch(svr_name, channel_name, handle_name)
 
     if not channel_map[handle_name] then return end
     channel_map[handle_name] = nil
+    local handlers = get_channel_handlers(svr_name, channel_name)
+    for i = 1, #handlers do
+        if handlers[i] == handle_name then
+            tremove(handlers, i)
+            break
+        end
+    end
 
     if next(channel_map) then          --说明还存在监听
         return
     end
     --不存在了本服务可以取消对channel_name的监听了
     g_watch_channel_name_map[svr_name][channel_name] = nil
+    g_watch_channel_handlers_map[svr_name][channel_name] = nil
     local svr_list = frpc_client:get_active_svr_ids(svr_name)
     for i = 1, #svr_list do
         local svr_id = svr_list[i]
@@ -207,6 +246,7 @@ local function unwatch(svr_name, channel_name, handle_name)
     end
 
     g_watch_channel_name_map[svr_name] = nil
+    g_watch_channel_handlers_map[svr_name] = nil
 end 
 
 --取消监听 svr_name 的所有结点
@@ -226,16 +266,21 @@ local function watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
     local is_new = false
     if not g_watch_channel_svr_id_map[svr_name] then
         g_watch_channel_svr_id_map[svr_name] = {}
+        g_watch_channel_svr_id_handlers_map[svr_name] = {}
     end
     if not g_watch_channel_svr_id_map[svr_name][svr_id] then
         g_watch_channel_svr_id_map[svr_name][svr_id] = {}
+        g_watch_channel_svr_id_handlers_map[svr_name][svr_id] = {}
     end
     if not g_watch_channel_svr_id_map[svr_name][svr_id][channel_name] then
         g_watch_channel_svr_id_map[svr_name][svr_id][channel_name] = {}
+        g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name] = {}
         is_new = true
     end
     assert(not g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name], "exists handle_name " .. handle_name)
     g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name] = handler
+    tinsert(g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name], handle_name)
+
     if is_new and (not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
         watch_channel_name(svr_name, svr_id, channel_name)
     end
@@ -257,22 +302,33 @@ local function unwatch_byid(svr_name, svr_id, channel_name, handle_name)
 
     channel_map[handle_name] = nil
 
+    local handlers = get_channel_svr_id_handlers(svr_name, svr_id, channel_name)
+    for i = 1, #handlers do
+        if handlers[i] == handle_name then
+            tremove(handlers, i)
+            break
+        end
+    end
+
     if next(channel_map) then          --说明还存在监听
         return
     end
     
     g_watch_channel_svr_id_map[svr_name][svr_id][channel_name] = nil
+    g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name] = nil
     if next(g_watch_channel_svr_id_map[svr_name][svr_id]) then
         return
     end
     --不存在了本服务可以取消对channel_name的监听了
     g_watch_channel_svr_id_map[svr_name][svr_id] = nil
+    g_watch_channel_svr_id_handlers_map[svr_name][svr_id] = nil
     check_unwatch_channel_name(svr_name, svr_id, channel_name)
     if next(g_watch_channel_svr_id_map[svr_name]) then
         return
     end
 
     g_watch_channel_svr_id_map[svr_name] = nil
+    g_watch_channel_svr_id_handlers_map[svr_name] = nil
 end
 --指定svr_id取消监听
 function M.unwatch_byid(svr_name, svr_id, channel_name, handle_name)
