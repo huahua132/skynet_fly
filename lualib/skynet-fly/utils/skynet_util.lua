@@ -10,7 +10,6 @@ local assert = assert
 local table = table
 local type = type
 local next = next
-local x_pcall = x_pcall
 
 local retpack = skynet.retpack
 local NOT_RET = {}
