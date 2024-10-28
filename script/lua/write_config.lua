@@ -116,6 +116,11 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	end
 end
 
+--重放录像时用一个工作线程即可
+if recordfile then
+	config.thread = 1
+end
+
 local file_path = server_path .. 'make/'
 
 if not os.execute("mkdir -p " .. file_path) then
