@@ -630,8 +630,8 @@ function CMD.start(config)
 	--检查掉线超时，掉线超时还没有重新连接的需要清理
 	local timer_obj = timer:new(timer.minute,timer.loop,function()
 		local cur_time = time_util.skynet_int_time()
-		for _,agent in table_util.sort_ipairs_byk(g_player_map) do
-			if g_player_map[agent] and not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then
+		for player_id,agent in table_util.sort_ipairs_byk(g_player_map) do
+			if g_player_map[player_id] and not interface:is_online(agent.player_id) and cur_time - agent.dis_conn_time > hall_plug.disconn_time_out then
 				local isok,errorcode,errormsg = interface:goout(agent.player_id, "disconnect time out")
 				if not isok then
 					log.warn("disconn_time_out goout err ",errorcode,errormsg)
@@ -703,8 +703,8 @@ end
 --安全关服处理
 skynet_util.reg_shutdown_func(function()
 	log.warn("-------------shutdown save begin---------------")
-	for _,agent in table_util.sort_ipairs_byk(g_player_map) do
-		if g_player_map[agent] then
+	for player_id,agent in table_util.sort_ipairs_byk(g_player_map) do
+		if g_player_map[player_id] then
 			local isok,errorcode,errormsg = interface:goout(agent.player_id, "shutdown")
 			if not isok then
 				log.warn("shutdown goout err ",errorcode,errormsg)
