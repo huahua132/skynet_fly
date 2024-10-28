@@ -126,7 +126,7 @@ function M.hotfix(hotfixmods)
         if patch_dir then
             path = get_patch_file_path(path, patch_dir)
         end
-        local mainfunc = loadfile(path, "t", g_dummy_env)
+        local mainfunc = loadfile(path, "bt", g_dummy_env)
         if not mainfunc then
             log.warn_fmt("hotfix loadfile err name:%s", name)
             hot_ret[name] = "loadfile err"
