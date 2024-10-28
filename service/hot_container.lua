@@ -260,14 +260,3 @@ if IS_RECORD_ON == 1 then
 		skynet.recordoff()
 	end)
 end
-
-local hotfix = {}
-
-function hotfix.logic()
-
-end
-
-
-local function update_thread()
-	hotfix.logic()
-end
