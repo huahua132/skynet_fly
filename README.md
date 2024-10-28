@@ -8,6 +8,8 @@
 # 技术交流群
 QQ群号：102993581
 
+# ![网络不好可以去gitree clone](https://gitee.com/huaa/skynet_fly)
+
 # skynet_fly简介
 	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
 	使用skynet_fly的好处：
