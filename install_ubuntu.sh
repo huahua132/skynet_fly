@@ -83,6 +83,16 @@ compile() {
 	)
 }
 
+# 还原perl环境
+revert_perl() {
+	(
+		sudo mv /usr/bin/perl.old /usr/bin/perl && echo "revert perl successfully" || {
+			echo -e "\033[31m Failed to revert perl \033[0m"
+			exit 1
+    	}
+	)
+}
+
 # 主程序
 main() {
 	install_dependencies
@@ -90,6 +100,7 @@ main() {
 	install_openssl
 	install_zlib
 	compile
+	revert_perl
 }
 
 main
