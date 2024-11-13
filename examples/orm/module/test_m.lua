@@ -104,8 +104,19 @@ local function test()
     log.info("all_data >>> ", ret, all_data)
 end
 
+--切换测试
+local function switch_test()
+    local client = orm_table_client:new("player")
+    while true do
+        skynet.sleep(300)
+        local entry_data = client:switch_test()
+        log.info("switch_test:",entry_data)
+    end
+end
+
 function CMD.start()
     skynet.fork(test)
+    skynet.fork(switch_test)
     return true
 end
 

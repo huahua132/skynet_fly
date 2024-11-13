@@ -17,6 +17,15 @@ local sformat = string.format
 local osdate = os.date
 local contriner_client = nil
 
+local g_framename = [[
+####   #     #   #    ###      ##       #          ##      #      #   #
+#      # #    # #    #   #    #  #    #####        #       #       # #
+####   ##      #     #   #    ####      #        #####     #        #
+   #   # #    #      #   #    #         #          #       #       #
+####   #     #       #   #    ####      ###        #      ###     #
+https://github.com/huahua132/skynet_fly.git
+]]
+
 local SELF_ADDRESS = skynet.self()
 
 local file = nil
@@ -61,6 +70,7 @@ local function open_file()
     local file_p = file_util.path_join(file_path,file_name)
     file = io.open(file_p, 'a+')
     file:write('open log file' .. file_p .. '\n')
+    file:write(g_framename)
     file:flush()
     assert(file, "can`t open file " .. file_p)
 end

@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local timer = require "skynet-fly.timer"
 local queue = require "skynet.queue"()
@@ -16,8 +15,6 @@ local G_ISCLOSE = false
 local g_config = nil
 
 local g_handle = {}
-
-contriner_interface.close_hotreload()
 
 --------------------常用handle定义------------------
 --批量创建数据

@@ -18,19 +18,20 @@ local skynet_exit = skynet.exit
 
 local SELF_ADDRESS = skynet.self()
 local IS_CLOSE = false
-local is_close_swtich = false
-local is_ready = true   --是否准备好了
+local is_close_swtich = false	--是否关闭服务切换
+local is_ready = true   		--是否准备好了
 local is_monitor_all = false
 
 local g_mod_svr_version_map = {}
 local g_name_id_list_map = {}
 local g_is_watch_map = {}
-local g_register_map = {}    --注册表
+local g_register_map = {}     --注册表
 local g_week_visitor_map = {} --弱访问者
 local g_instance_map = {}     --常驻实例
 local g_queryed_map = {}      --查询到地址的回调列表
 local g_querycbed_map = {}	  --查询到地址已执行回调列表
 local g_updated_map = {}      --更新地址的回调列表
+local g_always_swtich_map = {}--总能切换的modulename服务，不受is_close_swtich限制
 local SERVICE_NAME = SERVICE_NAME
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
@@ -65,7 +66,7 @@ local function register_visitor(id_list)
 end
 
 local function switch_svr(t)
-	if is_close_swtich then return end
+	if is_close_swtich and not g_always_swtich_map[t.module_name] then return end
 
 	if t.can_switch_func() then
 		local old_t = t.cur_id_list
@@ -102,7 +103,7 @@ local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		local id_list,name_id_list,version = skynet.call(get_contriner_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
-		if not is_close_swtich then
+		if not is_close_swtich or g_always_swtich_map[key] then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
 			t[key] = id_list
@@ -263,6 +264,14 @@ function M:set_week_visitor(...)
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
 		g_week_visitor_map[mod_name] = true
+	end
+end
+
+--设置总能切换到新服务
+function M:set_always_swtich(...)
+	local mod_name_list = {...}
+	for _,mod_name in ipairs(mod_name_list) do
+		g_always_swtich_map[mod_name] = true
 	end
 end
 

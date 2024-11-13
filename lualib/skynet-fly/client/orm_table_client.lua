@@ -9,6 +9,7 @@ local error = error
 
 
 contriner_client:register("orm_table_m")
+contriner_client:set_always_swtich("orm_table_m")   --一直会切换访问新服务
 
 local g_instance_map = {}
 

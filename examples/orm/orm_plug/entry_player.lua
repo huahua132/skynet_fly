@@ -58,6 +58,11 @@ function handle.change_status(player_id, status)
     return res_list[1]
 end
 
+-- 测试切换
+function handle.switch_test()
+    return "switch_test:" .. skynet.self()
+end
+
 M.handle = handle
 
 return M
