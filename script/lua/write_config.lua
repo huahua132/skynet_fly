@@ -64,6 +64,7 @@ local config = {
 	loadmodsfile    = load_mods_name, --可热更服务启动配置
 	recordfile      = recordfile,		 --播放录像的文件名
 	recordlimit     = 1024 * 1024 * 100, --录像记录限制(字节数) 超过不再写录像
+	machine_id      = 1,				 --机器ID(全局唯一)
 }
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
@@ -113,6 +114,9 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	end
 	if cfg.recordlimit then													--录像记录限制
 		config.recordlimit = cfg.recordlimit
+	end
+	if cfg.machine_id then
+		config.machine_id = cfg.machine_id
 	end
 end
 
