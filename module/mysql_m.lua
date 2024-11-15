@@ -37,7 +37,11 @@ function CMD.start(config)
 			return
 		end
 
-		conn:query('CREATE DATABASE IF NOT EXISTS ' .. database .. ';')
+		local sql_ret = conn:query('CREATE DATABASE IF NOT EXISTS `' .. database .. '`;')
+		if sql_ret.errno then
+			log.error("create database err ", sql_ret)
+			error("create database err ", sql_ret.err)
+		end
 		conn:disconnect()
 		g_db_conf.database = database
 	end
