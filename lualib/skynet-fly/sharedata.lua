@@ -73,10 +73,16 @@ local function add_patch(file_path)
         local new_path = get_patch_file_path(file_path, patch_dir)
         local filename = string.match(file_path, "([^/]+%.lua)$")
         local dir_path = string.gsub(new_path, filename, '', 1)
-        local cmd = string.format("mkdir -p %s;\ncp %s %s;", dir_path, file_path, new_path)
-        local isok, err = os.execute(cmd)
+        local isok, err = file_util.mkdir(dir_path)
         if not isok then
-            log.error("record cp file err ", err)
+            log.error("record mkdir err ", err)
+        else
+            local copy_file_obj = file_util.new_copy_file()
+            copy_file_obj.set_source_target(file_path, new_path)
+            local isok, err = copy_file_obj:execute()
+            if not isok then
+                log.error("record cp file err ", err)
+            end
         end
     end
 

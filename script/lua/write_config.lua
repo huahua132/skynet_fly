@@ -127,8 +127,9 @@ end
 
 local file_path = server_path .. 'make/'
 
-if not os.execute("mkdir -p " .. file_path) then
-	error("create file_path err")
+local isok, err = file_util.mkdir(file_path)
+if not isok then
+	error("create file_path err " .. err)
 end
 
 local config_path = file_path .. svr_name .. '_config.lua'

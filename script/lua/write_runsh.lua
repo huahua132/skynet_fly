@@ -30,8 +30,9 @@ shell_str = shell_str .. string.format("%s %s/console.lua %s %s $1 create_load_m
 shell_str = shell_str .. string.format("%s/skynet make/%s_config.lua $1\n",skynet_path,svr_name)
 local shell_path = server_path .. 'make/script/'
 
-if not os.execute("mkdir -p " .. shell_path) then
-	error("create shell_path err")
+local isok, err = file_util.mkdir(shell_path)
+if not isok then
+	error("create shell_path err " .. err)
 end
 
 local file_path = shell_path .. 'run.sh'

@@ -25,8 +25,9 @@ shell_str = shell_str .. string.format("xargs -r -t sh make/script/hotfix.sh $1 
 
 local shell_path = server_path .. 'make/script/'
 
-if not os.execute("mkdir -p " .. shell_path) then
-	error("create shell_path err")
+local isok, err = file_util.mkdir(shell_path)
+if not isok then
+	error("create shell_path err " .. err)
 end
 
 local file_path = shell_path .. 'check_hotfix.sh'

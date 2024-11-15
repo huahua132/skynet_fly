@@ -203,14 +203,16 @@ function CMD.call()
 end
 
 function CMD.create_load_mods_old()
-	local cmd = string.format("cp %s make/%s.old", load_modsfile, load_modsfile)
-	os.execute(cmd)
+	local copy_obj = file_util.new_copy_file(false)
+	copy_obj.set_source_target(load_modsfile, string.format("make/%s.old", load_modsfile))
+	copy_obj.execute(cmd)
 end
 
 --拷贝一个运行时配置供console.lua读取
 function CMD.create_running_config()
-	local cmd = string.format("cp make/%s_config.lua make/%s_config.lua.%s.run",svr_name, svr_name, load_modsfile)
-	os.execute(cmd)
+	local copy_obj = file_util.new_copy_file(false)
+	copy_obj.set_source_target(string.format("make/%s_config.lua", svr_name), string.format("make/%s_config.lua.%s.run", svr_name, load_modsfile))
+	copy_obj.execute(cmd)
 end
 
 --快进时间

@@ -115,4 +115,62 @@ function M.convert_path(path)
     return path
 end
 
+--递归创建文件夹
+function M.mkdir(path)
+    -- 逐层获取并创建每个文件夹
+    local current_path = ""
+
+    for part in path:gmatch("([^/\\]+)") do
+        current_path = current_path .. part .. "/"
+
+        -- 检查当前路径是否存在
+        if lfs.attributes(current_path) == nil then
+            -- 如果不存在，则创建目录
+            local success, err = lfs.mkdir(current_path)
+            if not success then
+                return nil, "Error creating directory: " .. current_path .. " - " .. err
+            end
+        end
+    end
+
+    return true
+end
+
+function M.new_copy_file(is_dir)
+	local cmd = nil
+	--windows
+	local is_window = false
+	if package.config:sub(1, 1) == '\\' then
+		is_window = true
+		if is_dir then
+			cmd = "xcopy "
+		else
+			cmd = "copy "
+		end
+	else
+		if is_dir then
+			cmd = "cp -r "
+		else
+			cmd = "cp "
+		end
+	end
+
+	local list = {}
+	return {
+		set_source_target = function(source, target)
+			table.insert(list, cmd .. source .. ' ' .. target)
+		end,
+
+		execute = function()
+			local excute_cmd = nil
+			if is_window then
+				excute_cmd = table.concat(list, " && ")
+			else
+				excute_cmd = table.concat(list, ";")
+			end
+			return os.execute(excute_cmd)
+		end
+	}
+end
+
 return M

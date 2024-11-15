@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Documentation">
+      <UniqueIdentifier>{5f59194b-ab7f-4922-8952-df1f886e5637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerfiles">
+      <UniqueIdentifier>{1eaa8308-ee3f-4aaf-9f0b-b3513bfa2ec5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\ChangeLog">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\common.mk">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\GNUmakefile">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\Makefile">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\README">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\README.BENCHTESTS">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\runorder.mk">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.GC">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.GCE">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.MSVC2005.x86">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.VC">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.VCE">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\SIZES.VSE">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\Wmakefile">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\Bmakefile">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\..\tests\Debug.plg">
+      <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\Debug.txt">
+      <Filter>Documentation</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tests\benchtest.h">
+      <Filter>Headerfiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tests\test.h">
+      <Filter>Headerfiles</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\tests\Debug.txt">
+      <Filter>Documentation</Filter>
+    </Text>
+  </ItemGroup>
+</Project>

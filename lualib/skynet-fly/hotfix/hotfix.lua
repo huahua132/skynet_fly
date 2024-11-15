@@ -208,7 +208,7 @@ function M.hotfix(hotfixmods)
 
     if skynet.is_write_record() and base_info.index == 1 then --第一个启动记录下就行
         local patch_dir = get_patch_dir()
-        local pathcmd = ""
+        local copy_file_obj = file_util.new_copy_file()
         local dir_path_map = {}
         for i, info in ipairs(sort_list) do
             local name = info.name
@@ -218,17 +218,19 @@ function M.hotfix(hotfixmods)
             local filename = string.match(path, "([^/]+%.lua)$")
             local dir_path = sgsub(new_path, filename, '', 1)
             dir_path_map[dir_path] = true
-            pathcmd = pathcmd .. string.format('cp %s %s;\n', path, new_path)
+            copy_file_obj.set_source_target(path, new_path)
         end
 
-        local mkcmd = "mkdir -p "
         for dir_path in pairs(dir_path_map) do
-            mkcmd = mkcmd .. dir_path .. ' '
+            local isok, err = file_util.mkdir(dir_path)
+            if not isok then
+                log.error("hotfix mkdir err ", dir_path, err)
+            end
         end
-        mkcmd = mkcmd .. ';' .. pathcmd
-        local isok, err = os.execute(mkcmd)
+
+        local isok, err = copy_file_obj:execute()
         if not isok then
-            log.error("record cp file err ", err)
+            log.error("hotfix cp file err ", err)
         end
     end
 

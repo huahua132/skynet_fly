@@ -63,9 +63,9 @@ local function open_file()
         file:close()
     end
     print(file_path,file_name)
-    os.execute('mkdir -p ' .. file_path)
-    if not os.execute("mkdir -p " .. file_path) then
-        error("create dir err")
+    local isok, err = file_util.mkdir(file_path)
+    if not isok then
+        error("create dir err " .. err)
     end
     local file_p = file_util.path_join(file_path,file_name)
     file = io.open(file_p, 'a+')

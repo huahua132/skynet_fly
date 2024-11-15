@@ -16,13 +16,12 @@ if not targetpath then
     targetpath = './encrycode/'
 end
 
-if not os.execute("mkdir -p " .. targetpath) then
-	error("create targetpath err")
-end
-
 local file_util = require "skynet-fly.utils.file_util"
 local table_util = require "skynet-fly.utils.table_util"
 local crypt = require "client.crypt"
+
+local isok, err = file_util.mkdir(targetpath)
+assert(isok, err)
 
 targetpath = file_util.path_join(targetpath, '/')
 
@@ -32,9 +31,11 @@ local loadfile = loadfile
 local sdump = string.dump
 local io = io
 
-local cmd = string.format("cp -r %s %s", './', targetpath)
-if not os.execute(cmd) then
-    error("cp err ", cmd)
+local copy_obj = file_util.new_copy_file(true)
+copy_obj.set_source_target('./', targetpath)
+local isok, err = copy_obj:execute()
+if not isok then
+    error("cp err ", err)
 end
 
 for file_name, file_path, file_info in file_util.diripairs('./') do
@@ -47,8 +48,9 @@ for file_name, file_path, file_info in file_util.diripairs('./') do
             local encode_str = crypt.desencode(key, code_str)
             local new_path = sgsub(file_path, './', targetpath, 1)
             local dir_path = sgsub(new_path, file_name, '', 1)
-            if not os.execute("mkdir -p " .. dir_path) then
-                print("create dir_path err ", dir_path)
+            local isok, err = file_util.mkdir(dir_path)
+            if not isok then
+                print("create dir_path err ", dir_path, err)
             else
                 local newfile = io.open(new_path, "w+")
                 if not newfile then

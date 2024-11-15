@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local lfs = require "lfs"
 local log = require "skynet-fly.log"
+local file_util = require "skynet-fly.utils.file_util"
 local os = os
 local io = io 
 local pairs = pairs
@@ -10,8 +11,9 @@ local loadmodsfile = skynet.getenv("loadmodsfile")
 
 return function(headname, mod_name, loaded)
 	local write_dir = headname .. "." .. loadmodsfile
-	if not os.execute("mkdir -p " .. write_dir) then
-		log.error("write_mod_required mkdir err ", headname)
+	local isok, err = file_util.mkdir(write_dir)
+	if not isok then
+		log.error("write_mod_required mkdir err ", headname, err)
 		return
 	end
 	local info_file_name = mod_name .. '.required'

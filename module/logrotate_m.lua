@@ -118,7 +118,10 @@ local function create_rotate(cfg)
         for i = #back_list,m_max_backups + 1, -1 do
             --删除文件
             local f = tremove(back_list,i)
-            os_execute("rm -f " .. f.file_path)
+            local success, err = os.remove(f.file_path)
+            if not success then
+                log.warn("remove file err ", f.file_path, err)
+            end
         end
 
         local cur_time = os.time()
@@ -128,7 +131,10 @@ local function create_rotate(cfg)
             local f = back_list[i]
             --过期了
             if cur_time - f.time > max_age_time then
-                os_execute("rm -f " .. f.file_path)
+                local success, err = os.remove(f.file_path)
+                if not success then
+                    log.warn("remove file err ", f.file_path, err)
+                end
             else
                 --有序的，当前这个没过期，前面的肯定也没有过期
                 break
