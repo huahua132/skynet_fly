@@ -41,6 +41,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     aux_source_directory(win3rd/posix POSIX_SRC)
     add_subdirectory(win3rd/pthread-win32)
     add_library(liblua SHARED ${LUA_LIB_SRC})
+
     target_include_directories(liblua PRIVATE skynet/skynet-src)
     add_library(libposix SHARED ${POSIX_SRC})
     target_compile_definitions(libposix PRIVATE POSIX_LIBRARY)
@@ -52,6 +53,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 编译 skynet 可执行文件
     add_executable(skynet skynet/skynet-src/skynet_main.c)
     target_link_libraries(skynet ws2_32 liblua libposix libskynet pthreadVC3)
+
+    # 重新设置动态库输出路径
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/3rd/lua)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/3rd/lua)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    # 编译 lua 可执行文件
+    add_executable(lua skynet/3rd/lua/lua.c)
+    add_library(lualibb SHARED ${LUA_LIB_SRC})
+    target_include_directories(lualibb PRIVATE skynet/skynet-src)
+    target_link_libraries(lua lualibb)
 
     # 重新设置动态库输出路径
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/luaclib)
