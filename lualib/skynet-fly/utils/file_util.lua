@@ -90,7 +90,14 @@ end
 --获取当前目录文件夹名称
 function M.get_cur_dir_name()
 	local curdir = lfs.currentdir()
-	local strsplit = string_util.split(curdir,'/')
+	local strsplit = nil
+	--window系统下
+	if package.config:sub(1, 1) == '\\' then
+		strsplit = string_util.split(curdir,'\\')
+	else
+		strsplit = string_util.split(curdir,'/')
+	end
+
 	return strsplit[#strsplit]
 end
 

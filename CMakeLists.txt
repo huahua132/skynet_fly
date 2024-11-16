@@ -59,11 +59,16 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/3rd/lua)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    # 编译 lua 可执行文件
+
+    # 生成lua.exe
     add_executable(lua skynet/3rd/lua/lua.c)
-    add_library(lualibb SHARED ${LUA_LIB_SRC})
-    target_include_directories(lualibb PRIVATE skynet/skynet-src)
-    target_link_libraries(lua lualibb)
+    target_link_libraries(lua liblua)
+
+    # 定义复制目标
+    add_custom_command(TARGET liblua POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:liblua>
+    ${CMAKE_BINARY_DIR}/skynet/3rd/lua/liblua.dll)  # 目标复制路径
 
     # 重新设置动态库输出路径
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/luaclib)
@@ -111,7 +116,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
                         skynet/lualib-src/lua-crypt.c
                         skynet/lualib-src/lsha1.c)
     target_include_directories(client PRIVATE skynet/skynet-src)
-    target_link_libraries(client ws2_32 liblua libposix pthreadVC3)
+    target_link_libraries(client liblua ws2_32 libposix pthreadVC3 libskynet)
 
     # 生成动态库 sproto.so
     aux_source_directory(skynet/lualib-src/sproto SPROTO_SRC)
@@ -177,7 +182,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 设置动态库属性
     set_target_properties(
         lpeg sproto client md5 bson skynetso ltls
-        pb lfs skiplist chat_filter snapshot openssl cjson
+        pb skiplist chat_filter snapshot openssl lfs cjson
         PROPERTIES
         PREFIX ""
         SUFFIX .so )
@@ -210,6 +215,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/skynet/test/ DESTINATION skynet_fly/skynet/test NO
 file(COPY ${CMAKE_SOURCE_DIR}/skynet/service/ DESTINATION skynet_fly/skynet/service NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/skynet/examples/ DESTINATION skynet_fly/skynet/examples NO_SOURCE_PERMISSIONS)
 
+file(COPY ${CMAKE_SOURCE_DIR}/binbat/ DESTINATION skynet_fly/binbat NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/lualib/ DESTINATION skynet_fly/lualib NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/test/ DESTINATION skynet_fly/test NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/service/ DESTINATION skynet_fly/service NO_SOURCE_PERMISSIONS)
