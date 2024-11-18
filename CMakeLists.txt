@@ -62,7 +62,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 
     # 生成lua.exe
     add_executable(lua skynet/3rd/lua/lua.c)
-    target_link_libraries(lua liblua)
+    target_link_libraries(lua liblua ws2_32 libposix)
 
     # 定义复制目标
     add_custom_command(TARGET liblua POST_BUILD
@@ -114,7 +114,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 生成动态库 client.so
     add_library(client SHARED skynet/lualib-src/lua-crypt.c skynet/lualib-src/lsha1.c)
     target_include_directories(client PRIVATE skynet/skynet-src)
-    target_link_libraries(client liblua)
+    target_link_libraries(client liblua ws2_32 libposix)
 
     # 生成动态库 sproto.so
     aux_source_directory(skynet/lualib-src/sproto SPROTO_SRC)

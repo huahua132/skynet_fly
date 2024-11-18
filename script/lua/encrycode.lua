@@ -52,7 +52,7 @@ for file_name, file_path, file_info in file_util.diripairs('./') do
             if not isok then
                 print("create dir_path err ", dir_path, err)
             else
-                local newfile = io.open(new_path, "w+")
+                local newfile = io.open(new_path, "w+b")
                 if not newfile then
                     print("can`t openfile >>> ", new_path)
                 else
@@ -61,8 +61,13 @@ for file_name, file_path, file_info in file_util.diripairs('./') do
                     newfile:write(size)
                     newfile:write(encode_str)
                     newfile:close()
-                    print("encry file succ:", new_path, #encode_str)
-                    loadfile(new_path)                  --测试加载
+                    
+                    local func,err = loadfile(new_path)                  --测试加载
+                    if not func then
+                        print("loadfile err ", err)
+                    else
+                        print("encry file succ:", new_path, #encode_str)
+                    end
                 end
             end
         end
