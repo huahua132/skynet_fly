@@ -149,6 +149,11 @@ function M.convert_linux_to_windows_relative(linux_path)
     return windows_path
 end
 
+function M.convert_windows_to_linux_relative(window_path)
+	local linux_path = window_path:gsub("\\", "/")
+    return linux_path
+end
+
 function M.is_window()
 	return package.config:sub(1, 1) == '\\'
 end
@@ -175,7 +180,11 @@ function M.new_copy_file(is_dir)
 	return {
 		set_source_target = function(source, target)
 			if is_window then
-				table.insert(list, cmd .. M.convert_linux_to_windows_relative(source) .. ' ' .. M.convert_linux_to_windows_relative(target) .. ' /E /I /Y')
+				if is_dir then
+					table.insert(list, cmd .. M.convert_linux_to_windows_relative(source) .. ' ' .. M.convert_linux_to_windows_relative(target) .. ' /E /I /Y')
+				else
+					table.insert(list, cmd .. M.convert_linux_to_windows_relative(source) .. ' ' .. M.convert_linux_to_windows_relative(target) .. ' /Y')
+				end
 			else
 				table.insert(list, cmd .. source .. ' ' .. target)
 			end

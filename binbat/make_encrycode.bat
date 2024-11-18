@@ -4,17 +4,17 @@ set key=%2
 set targetpath=%3
 
 if "%skynet_fly_path%" == "" (
-    echo "please format make_encrycode.bat skynet_fly_path key targetpath"
+    echo please format make_encrycode.bat skynet_fly_path key targetpath
     exit /b 1
 )
 
 if "%key%" == "" (
-    echo "please format make_encrycode.bat skynet_fly_path key targetpath"
+    echo please format make_encrycode.bat skynet_fly_path key targetpath
     exit /b 1
 )
 
 if "%targetpath%" == "" (
-    echo "please format make_encrycode.bat skynet_fly_path key targetpath"
+    echo please format make_encrycode.bat skynet_fly_path key targetpath
     exit /b 1
 )
 

@@ -23,6 +23,8 @@ else
 	is_daemon = false
 end
 
+skynet_fly_path = file_util.convert_windows_to_linux_relative(skynet_fly_path)
+
 local skynet_path = file_util.path_join(skynet_fly_path, '/skynet/')
 local server_path = "./"
 local common_path = "../../commonlualib/"
