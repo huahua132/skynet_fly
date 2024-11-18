@@ -53,7 +53,7 @@ int clock_gettime(int what, struct timespec* ti) {
         u64.HighPart = ft.dwHighDateTime;
 
         ti->tv_sec = (uint32_t)((u64.QuadPart - 116444736000000000ULL) / 10000000); // 转换为秒
-        ti->tv_nsec = (uint32_t)(st.wMilliseconds * 1000000); // 毫秒转纳秒
+        ti->tv_nsec = (uint32_t)((u64.QuadPart % 10000000) * 100); // 获取纳秒部分
         return 0; // 响应成功
     default:
         return 3;
