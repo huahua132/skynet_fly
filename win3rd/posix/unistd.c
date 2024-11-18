@@ -3,7 +3,9 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
-#include <Windows.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <windows.h>
 #include <conio.h>
 
 static LONGLONG get_cpu_freq() {
@@ -36,20 +38,23 @@ void usleep(size_t us) {
 void sleep(size_t ms) { Sleep(ms); }
 
 int clock_gettime(int what, struct timespec* ti) {
-
     switch (what) {
     case CLOCK_MONOTONIC:
     case CLOCK_REALTIME:
     case CLOCK_THREAD_CPUTIME_ID: {
-        LONGLONG freq = get_cpu_freq();
-        LARGE_INTEGER counter;
-        QueryPerformanceCounter(&counter);
+        SYSTEMTIME st;
+        GetSystemTime(&st); // 获取 UTC 时间
 
-        ti->tv_sec = counter.QuadPart / freq;
-        ti->tv_nsec =
-            (LONGLONG)(counter.QuadPart / ((double)freq / NANOSEC)) % NANOSEC;
-        // ti->tv_nsec *= 1000;
-        return 0;
+        // 将 SYSTEMTIME 转换为 UNIX 时间戳
+        FILETIME ft;
+        SystemTimeToFileTime(&st, &ft);
+        ULARGE_INTEGER u64;
+        u64.LowPart = ft.dwLowDateTime;
+        u64.HighPart = ft.dwHighDateTime;
+
+        ti->tv_sec = (uint32_t)((u64.QuadPart - 116444736000000000ULL) / 10000000); // 转换为秒
+        ti->tv_nsec = (uint32_t)(st.wMilliseconds * 1000000); // 毫秒转纳秒
+        return 0; // 响应成功
     default:
         return 3;
     } break;
