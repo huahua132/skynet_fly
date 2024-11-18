@@ -112,11 +112,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(md5 liblua)
 
     # 生成动态库 client.so
-    add_library(client SHARED skynet/lualib-src/lua-clientsocket.c
-                        skynet/lualib-src/lua-crypt.c
-                        skynet/lualib-src/lsha1.c)
+    add_library(client SHARED skynet/lualib-src/lua-crypt.c skynet/lualib-src/lsha1.c)
     target_include_directories(client PRIVATE skynet/skynet-src)
-    target_link_libraries(client liblua ws2_32 libposix pthreadVC3 libskynet)
+    target_link_libraries(client liblua)
 
     # 生成动态库 sproto.so
     aux_source_directory(skynet/lualib-src/sproto SPROTO_SRC)

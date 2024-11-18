@@ -56,10 +56,12 @@ for file_name, file_path, file_info in file_util.diripairs('./') do
                 if not newfile then
                     print("can`t openfile >>> ", new_path)
                 else
-                    newfile:write("skynet-fly-encrycode\n")
+                    local size = string.pack(">I4", #encode_str)
+                    newfile:write("skynet-fly-encrycode")
+                    newfile:write(size)
                     newfile:write(encode_str)
                     newfile:close()
-                    print("encry file succ:", new_path)
+                    print("encry file succ:", new_path, #encode_str)
                     loadfile(new_path)                  --测试加载
                 end
             end

@@ -143,12 +143,21 @@ function M.mkdir(path)
     return true
 end
 
+function M.convert_linux_to_windows_relative(linux_path)
+    -- 替换斜杠为反斜杠
+    local windows_path = linux_path:gsub("/", "\\")
+    return windows_path
+end
+
+function M.is_window()
+	return package.config:sub(1, 1) == '\\'
+end
+
 function M.new_copy_file(is_dir)
 	local cmd = nil
 	--windows
-	local is_window = false
-	if package.config:sub(1, 1) == '\\' then
-		is_window = true
+	local is_window = M.is_window()
+	if is_window then
 		if is_dir then
 			cmd = "xcopy "
 		else
@@ -165,7 +174,11 @@ function M.new_copy_file(is_dir)
 	local list = {}
 	return {
 		set_source_target = function(source, target)
-			table.insert(list, cmd .. source .. ' ' .. target)
+			if is_window then
+				table.insert(list, cmd .. M.convert_linux_to_windows_relative(source) .. ' ' .. M.convert_linux_to_windows_relative(target) .. ' /E /I /Y')
+			else
+				table.insert(list, cmd .. source .. ' ' .. target)
+			end
 		end,
 
 		execute = function()
@@ -175,6 +188,7 @@ function M.new_copy_file(is_dir)
 			else
 				excute_cmd = table.concat(list, ";")
 			end
+
 			return os.execute(excute_cmd)
 		end
 	}
