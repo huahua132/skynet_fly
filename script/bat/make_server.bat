@@ -12,3 +12,4 @@ if not exist "%lua%" (
 
 %lua% "%script_path%\write_config.lua" %skynet_fly_path% %load_mods_name%
 %lua% "%script_path%\write_runsh.lua" %skynet_fly_path%
+%lua% "%script_path%\write_stopsh.lua" %skynet_fly_path%
