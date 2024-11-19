@@ -66,7 +66,7 @@ else
 	script_path = file_util.convert_linux_to_windows_relative(script_path)
 	skynet_fly_path = file_util.convert_linux_to_windows_relative(skynet_fly_path)
 	skynet_path = file_util.convert_linux_to_windows_relative(skynet_path)
-	--window
+	--windows
 	local bat_str = [[
 @echo off
 set load_mods=%1

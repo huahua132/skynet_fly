@@ -44,7 +44,7 @@ fi
 	file:close()
 	print("make " .. file_path)
 else
-	--window
+	--windows
 	local bat_str = [[
 @echo off
 set load_mods=%1

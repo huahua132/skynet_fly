@@ -305,5 +305,15 @@ function CMD.handle_upsharedata_result()
 	print("ret = ", ret)
 end
 
+--偏移拼接所有参数
+function CMD.offset_param()
+	local offset = tonumber(assert(ARGV[ARGV_HEAD + 1]))
+    local param = {}
+	for i = ARGV_HEAD + offset + 2,#ARGV do
+		table.insert(param, ARGV[i])
+	end
+	print(table.concat(param, ' '))
+end
+
 assert(CMD[cmd],'not cmd:' .. cmd)
 CMD[cmd]()
