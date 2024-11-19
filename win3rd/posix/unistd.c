@@ -45,14 +45,14 @@ int clock_gettime(int what, struct timespec* ti) {
         static __int64 StartTime = 0;
         if (Freq == 0) {
             StartTime = time(NULL);
-            QueryPerformanceFrequency((LARGE_INTEGER *)&Freq);
-            QueryPerformanceCounter((LARGE_INTEGER *)&Start);
+            QueryPerformanceFrequency((LARGE_INTEGER*)&Freq);
+            QueryPerformanceCounter((LARGE_INTEGER*)&Start);
         }
         __int64 Count = 0;
-        QueryPerformanceCounter((LARGE_INTEGER *)&Count);
+        QueryPerformanceCounter((LARGE_INTEGER*)&Count);
 
         //乘以1000，把秒化为毫秒
-        __int64 now =(__int64)((double)(Count - Start) / (double)Freq * 1000.0) + StartTime * 1000;
+        __int64 now = (__int64)((double)(Count - Start) / (double)Freq * 1000.0) + StartTime * 1000;
         ti->tv_sec = now / 1000;
         ti->tv_nsec = (now - now / 1000 * 1000) * 1000 * 1000;
         return 0;
@@ -70,7 +70,7 @@ int clock_gettime(int what, struct timespec* ti) {
         ti->tv_sec = (uint32_t)((u64.QuadPart - 116444736000000000ULL) / 10000000); // 转换为秒
         ti->tv_nsec = (uint32_t)((u64.QuadPart % 10000000) * 100); // 获取纳秒部分
         return 0; // 响应成功
-    case CLOCK_THREAD_CPUTIME_ID: {
+    case CLOCK_THREAD_CPUTIME_ID:
         // 获取当前线程的 CPU 时间
         FILETIME creation_time, exit_time, kernel_time, user_time;
         if (GetThreadTimes(GetCurrentThread(), &creation_time, &exit_time, &kernel_time, &user_time)) {
@@ -81,12 +81,10 @@ int clock_gettime(int what, struct timespec* ti) {
             ti->tv_sec = (uint32_t)((u64.QuadPart - 116444736000000000ULL) / 10000000); // 转换为秒
             ti->tv_nsec = (uint32_t)((u64.QuadPart % 10000000) * 100); // 获取纳秒部分
             return 0;
-        } else {
+        }
+        else {
             return -1; // 获取失败
         }
-    default:
-        return 3;
-    } break;
     }
     return -1;
 }
