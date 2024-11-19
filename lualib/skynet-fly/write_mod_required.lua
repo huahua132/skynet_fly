@@ -10,7 +10,7 @@ local string = string
 local loadmodsfile = skynet.getenv("loadmodsfile")
 
 return function(headname, mod_name, loaded)
-	local write_dir = headname .. "." .. loadmodsfile
+	local write_dir = headname .. "_" .. loadmodsfile:sub(1, #loadmodsfile - 4) --去掉.lua
 	local isok, err = file_util.mkdir(write_dir)
 	if not isok then
 		log.error("write_mod_required mkdir err ", headname, err)
@@ -35,7 +35,7 @@ return function(headname, mod_name, loaded)
 			if f_info then
 				local f_last_change_time = f_info.modification
 				info_file:write(string.format("\t['%s'] = {\n",f_name))
-				info_file:write(string.format("\t\t['dir'] = '%s',\n",f_dir))
+				info_file:write(string.format("\t\t['dir'] = '%s',\n",file_util.convert_windows_to_linux_relative(f_dir)))
 				info_file:write(string.format("\t\t['last_change_time'] = %s,\n",f_last_change_time))
 				info_file:write(string.format("\t},\n"))
 				skynet.yield()

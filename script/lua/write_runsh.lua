@@ -54,7 +54,7 @@ if "%load_mods%" == "" (
 	echo arg1 [load_mods] 启动的load_mods配置
 	echo arg2 [is_daemon] 是否守护进程运行 1是0不是 默认1
 	echo arg3 [recordfile] 播放录像文件路径  可选
-	echo please format make/script/run.bat load_mods.lua is_daemon
+	echo please format make\script\run.bat load_mods.lua is_daemon
 	exit /b 1
 )
 ]]

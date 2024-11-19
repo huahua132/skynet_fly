@@ -41,8 +41,8 @@ load_mods_name=$1
 	shell_str = shell_str .. "\trm -f ./make/skynet.$1.pid\n"
 	shell_str = shell_str .. string.format("\trm -f ./make/%s_config.lua.$1.run\n",svr_name)
 	shell_str = shell_str .. "\trm -f ./make/$1.old\n"
-	shell_str = shell_str .. "\trm -rf ./make/module_info.$1\n"
-	shell_str = shell_str .. "\trm -rf ./make/hotfix_info.$1\n"
+	shell_str = shell_str .. "\trm -rf ./make/module_info_$(echo \"$load_mods_name\" | sed 's/\\.lua$//')\n"
+	shell_str = shell_str .. "\trm -rf ./make/hotfix_info_$(echo \"$load_mods_name\" | sed 's/\\.lua$//')\n"
 	shell_str = shell_str .. "else\n"
 	shell_str = shell_str .. "\techo not exists pid\n"
 	shell_str = shell_str .. "fi\n"
@@ -72,7 +72,7 @@ else
 set load_mods=%1
 if "%load_mods%" == "" (
 	echo arg1 [load_mods] 启动的load_mods配置
-	echo please format script/stop.sh load_mods.lua
+	echo please format make\script\stop.bat load_mods.lua
 	exit /b 1
 )
 
@@ -124,8 +124,8 @@ for /f "skip=3 tokens=2" %%i in ('tasklist /FI "WINDOWTITLE eq skynet make\{svr_
 
 del /F .\make\{svr_name}_config.lua.%load_mods%.run
 del /F .\make\%load_mods%.old
-rmdir /S /Q .\make\module_info.%load_mods%
-rmdir /S /Q .\make\hotfix_info.%load_mods%
+rmdir /S /Q .\make\module_info_%load_mods:~0,-4%
+rmdir /S /Q .\make\hotfix_info_%load_mods:~0,-4%
 ]]
 	bat_str = string.gsub(bat_str, "{(.-)}", function(name)
 		if name == "svr_name" then

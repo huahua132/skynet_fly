@@ -103,7 +103,7 @@ function CMD.try_again_reload()
 end
 
 function CMD.check_reload()
-	local module_info_dir = "make/module_info." .. load_modsfile
+	local module_info_dir = "make/module_info_" .. load_modsfile:sub(1, #load_modsfile - 4)
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
 	local load_mods = loadfile (load_modsfile)()
@@ -112,8 +112,12 @@ function CMD.check_reload()
 	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
 		local m_name = string.sub(f_name,1,#f_name - 9)
 		if load_mods[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
-			local f_tb = loadfile(f_path)()
-			module_info_map[m_name] = f_tb
+			local func, err = loadfile(f_path)
+			if func then
+				module_info_map[m_name] = func()
+			else
+				error("loadfile err:" .. err)
+			end
 		end
 	end
 
@@ -164,9 +168,19 @@ function CMD.check_reload()
 		end
 	end
 
+
+	local args_list = {}
 	for module_name,change_file in pairs(need_reload_module) do
-		print(module_name)
-		print(string.format('change_des>>>%s', change_file))
+		table.insert(args_list, module_name)
+		table.insert(args_list, change_file)
+	end
+
+	if file_util.is_window() then
+		print(table.concat(args_list, ' '))
+	else
+		for _,v in ipairs(args_list) do
+			print(v)
+		end
 	end
 end
 
@@ -178,9 +192,18 @@ function CMD.check_kill_mod()
 	end
 	old_mod_confg = old_mod_confg()
 
+	local args_list = {}
 	for mod_name,_ in pairs(old_mod_confg) do
 		if not load_mods[mod_name] then
-			print(mod_name)
+			table.insert(args_list, mod_name)
+		end
+	end
+
+	if file_util.is_window() then
+		print(table.concat(args_list, ' '))
+	else
+		for _,v in ipairs(args_list) do
+			print(v)
 		end
 	end
 end
@@ -228,7 +251,7 @@ end
 
 --检查热更
 function CMD.check_hotfix()
-	local module_info_dir = "make/hotfix_info." .. load_modsfile
+	local module_info_dir = "make/hotfix_info_" .. load_modsfile:sub(1, #load_modsfile - 4)
 	local dir_info = lfs.attributes(module_info_dir)
 	assert(dir_info and dir_info.mode == 'directory')
 	local load_mods = loadfile (load_modsfile)()
@@ -237,8 +260,12 @@ function CMD.check_hotfix()
 	for f_name,f_path,f_info in file_util.diripairs(module_info_dir) do
 		local m_name = string.sub(f_name,1,#f_name - 9)
 		if load_mods[m_name] and f_info.mode == 'file' and string.find(f_name,'.required',nil,true) then
-			local f_tb = loadfile(f_path)()
-			module_info_map[m_name] = f_tb
+			local func, err = loadfile(f_path)
+			if func then
+				module_info_map[m_name] = func()
+			else
+				error("loadfile err:" .. err)
+			end
 		end
 	end
 
@@ -264,9 +291,17 @@ function CMD.check_hotfix()
 		end
   	end
 
+	local args_list = {}
 	for module_name,change_file in pairs(need_reload_module) do
-		print(module_name)
-		print(change_file)
+		table.insert(args_list, module_name)
+		table.insert(args_list, change_file)
+	end
+	if file_util.is_window() then
+		print(table.concat(args_list, ' '))
+	else
+		for _,v in ipairs(args_list) do
+			print(v)
+		end
 	end
 end
 

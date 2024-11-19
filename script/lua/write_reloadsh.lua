@@ -56,12 +56,12 @@ set load_mods=%1
 set mod_name1=%2
 
 if "%load_mods%" == "" (
-	echo echo please format script/reload.sh load_mods.lua ***_m ***_m
+	echo please format make\script\reload.bat load_mods.lua ***_m ***_m
 	exit /b 1
 )
 
 if "%mod_name1%" == "" (
-    echo echo please format script/reload.sh load_mods.lua ***_m ***_m
+    echo please format make\script\reload.bat load_mods.lua ***_m ***_m
 	exit /b 1
 )
 
