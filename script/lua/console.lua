@@ -63,13 +63,13 @@ function CMD.reload()
 	assert(file)
 	local load_mods = loadfile(load_modsfile)()
 	local server_id = assert(ARGV[ARGV_HEAD + 1])
-	local mod_name_str = ",0"
+	local mod_name_str = "0"
 	for i = ARGV_HEAD + 2,#ARGV, 2 do
 		local module_name = ARGV[i]
-		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
+		mod_name_str = mod_name_str .. '/' .. module_name
 		assert(load_mods[module_name], "module_name not exists " .. module_name)
 	end
-	local reload_url = string.format('%s/call/%s/"load_modules"%s',get_host(),server_id,mod_name_str)
+	local reload_url = string.format('%s/call/%s/load_modules/%s',get_host(),server_id,mod_name_str)
 	file:write(string.format("'%s'",reload_url))
 	file:close()
 	print(string.format("'%s'",reload_url))
@@ -191,14 +191,10 @@ function CMD.call()
 
 	local mod_cmd_args = ""
 	for i = ARGV_HEAD + 2,#ARGV - 1 do
-		if tonumber(ARGV[i]) then
-			mod_cmd_args = mod_cmd_args .. string.format(',%s',ARGV[i])
-		else
-			mod_cmd_args = mod_cmd_args .. string.format(',"%s"',ARGV[i])
-		end
+		mod_cmd_args = mod_cmd_args .. string.format('/%s',ARGV[i])
 	end
 
-	local cmd_url = string.format('%s/call/%s/"%s"%s',get_host(),server_id,mod_cmd,mod_cmd_args)
+	local cmd_url = string.format('%s/call/%s/%s%s',get_host(),server_id,mod_cmd,mod_cmd_args)
  	print(string.format("'%s'",cmd_url))
 end
 
@@ -278,15 +274,15 @@ end
 function CMD.hotfix()
 	local load_mods = loadfile(load_modsfile)()
 	local server_id = assert(ARGV[ARGV_HEAD + 1])
-	local mod_name_str = ",0"
+	local mod_name_str = "0"
 	for i = ARGV_HEAD + 2,#ARGV, 2 do
 		local module_name = ARGV[i]
 		local hotmods = ARGV[i + 1]
-		mod_name_str = mod_name_str .. ',"' .. module_name .. '"'
-		mod_name_str = mod_name_str .. ',"' .. hotmods .. '"'
+		mod_name_str = mod_name_str .. '/' .. module_name
+		mod_name_str = mod_name_str .. '/' .. hotmods
 		assert(load_mods[module_name])
 	end
-	local url = string.format('%s/call/%s/"hotfix"%s',get_host(),server_id,mod_name_str)
+	local url = string.format('%s/call/%s/hotfix/%s',get_host(),server_id,mod_name_str)
 	print(string.format("'%s'",url))
 end
 
@@ -299,7 +295,7 @@ end
 --更新共享数据
 function CMD.upsharedata()
 	local server_id = assert(ARGV[ARGV_HEAD + 1])
-	local url = string.format('%s/call/%s/"check_reload"', get_host(), server_id)
+	local url = string.format('%s/call/%s/check_reload/', get_host(), server_id)
 	print(string.format("'%s'", url))
 end
 
