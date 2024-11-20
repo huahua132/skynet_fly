@@ -49,6 +49,7 @@ function CMD.load(dir_list, mode)
     local m = g_modes[mode]
     for _,dir in pairs(dir_list) do
         for file_name,file_path,file_info in file_util.diripairs(dir) do
+            file_path = file_util.convert_windows_to_linux_relative(file_path)
             log.info("sharedata load loadfile:", file_path)
             if string.find(file_name, '.lua', nil, true) then
                 m.load(file_path)

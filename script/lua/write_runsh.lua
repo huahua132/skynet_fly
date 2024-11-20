@@ -68,7 +68,7 @@ if "%load_mods%" == "" (
 	bat_str = bat_str .. string.format("%s %s\\write_config.lua %s %%load_mods%% %%is_daemon%% %%recordfile%%\n",lua_path,script_path,skynet_fly_path)
 	bat_str = bat_str .. string.format("%s %s\\console.lua %s %s %%load_mods%% create_running_config\n",lua_path,script_path,skynet_fly_path,svr_name)
 	bat_str = bat_str .. string.format("%s %s\\console.lua %s %s %%load_mods%% create_load_mods_old\n",lua_path,script_path,skynet_fly_path,svr_name)
-	bat_str = bat_str .. string.format('start "skynet make\\AB_question_config.lua %%load_mods%%" %s\\skynet.exe make\\%s_config.lua %%load_mods%%\n',skynet_path,svr_name)
+	bat_str = bat_str .. string.format('start "skynet make\\%s_config.lua %%load_mods%%" %s\\skynet.exe make\\%s_config.lua %%load_mods%%\n',svr_name,skynet_path,svr_name)
 
 	local bat_path = server_path .. 'make\\script\\'
 	local isok, err = file_util.mkdir(bat_path)
