@@ -16,7 +16,7 @@ local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
 if [ "$#" -ne 1 ]; then
-	echo "please format script/upsharedata.sh load_mods.lua"
+	echo "please format make/script/upsharedata.sh load_mods.lua"
 	exit 1
 fi
 load_mods_name=$1

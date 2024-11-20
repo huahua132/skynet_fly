@@ -16,7 +16,7 @@ local script_path = file_util.path_join(skynet_fly_path, '/script/lua')
 local shell_str = "#!/bin/bash\n"
 shell_str = shell_str .. [[
 if [ "$#" -ne 3 ]; then
-	echo "please format script/fasttime.sh load_mods.lua '2023:10:26 19:22:50' 1"
+	echo "please format make/script/fasttime.sh load_mods.lua '2023:10:26 19:22:50' 1"
 	exit 1
 fi
 ]]

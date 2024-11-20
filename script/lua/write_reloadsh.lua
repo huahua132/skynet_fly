@@ -17,7 +17,7 @@ if not file_util.is_window() then
     local shell_str = "#!/bin/bash\n"
     shell_str = shell_str .. [[
 if [ "$#" -lt 2 ]; then
-    echo "please format script/reload.sh load_mods.lua ***_m ***_m"
+    echo "please format make/script/reload.sh load_mods.lua ***_m ***_m"
     exit 1
 fi
 load_mods_name=$1

@@ -19,7 +19,7 @@ if not file_util.is_window() then
 	shell_str = shell_str .. [[
 if [ "$#" -lt 1 ]; then
 	echo "arg1 [load_mods] 启动的load_mods配置"
-	echo "please format script/stop.sh load_mods.lua"
+	echo "please format make/script/stop.sh load_mods.lua"
 	exit 1
 fi
 load_mods_name=$1

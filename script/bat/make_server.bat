@@ -17,3 +17,4 @@ if not exist "%lua%" (
 %lua% "%script_path%\write_check_reloadsh.lua" %skynet_fly_path%
 %lua% "%script_path%\write_killmodsh.lua" %skynet_fly_path%
 %lua% "%script_path%\write_restartsh.lua" %skynet_fly_path%
+%lua% "%script_path%\write_try_again_reloadsh.lua" %skynet_fly_path%
