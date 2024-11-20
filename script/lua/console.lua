@@ -240,7 +240,7 @@ function CMD.fasttime()
 	local one_add = ARGV[ARGV_HEAD + 2]  --单次加速时间 1表示1秒
 	assert(fastdate,"not fastdate")
 	assert(one_add, "not one_add")
-	local date,err = time_util.string_to_date(fastdate)
+	local date,err = time_util.string_to_date(fastdate, '-', ':')
 	if not date then
 		error(err)
 	end

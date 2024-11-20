@@ -36,8 +36,10 @@ function M.date(time)
 end
 
 --string格式的时间转换成date日期table 2023:10:26 19:22:50
-function M.string_to_date(str)
-	local datetime = string_util.split(str,' ',':')
+function M.string_to_date(str, split1, split2)
+	split1 = split1 or " "
+	split2 = split2 or ":"
+	local datetime = string_util.split(str, split1, split2)
 	if #datetime ~= 2 then
 		return nil,"err not space"
 	end
