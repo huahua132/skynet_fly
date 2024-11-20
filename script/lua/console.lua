@@ -139,7 +139,7 @@ function CMD.check_reload()
 		end
 
 		if #change_f_name > 0 then
-			need_reload_module[module_name] = "changefile:" .. table.concat(change_f_name,'|')
+			need_reload_module[module_name] = "changefile:" .. table.concat(change_f_name,':::')
 		end
   	end
 
@@ -287,7 +287,7 @@ function CMD.check_hotfix()
 		end
 
 		if #change_f_name > 0 then
-			need_reload_module[module_name] = table.concat(change_f_name,'|')
+			need_reload_module[module_name] = table.concat(change_f_name,':::')
 		end
   	end
 

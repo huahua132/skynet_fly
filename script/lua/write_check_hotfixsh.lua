@@ -40,5 +40,56 @@ fi
 	print("make " .. file_path)
 else
 	--windows
-	
+	lua_path = file_util.convert_linux_to_windows_relative(lua_path) .. ".exe"
+	script_path = file_util.convert_linux_to_windows_relative(script_path)
+	skynet_fly_path = file_util.convert_linux_to_windows_relative(skynet_fly_path)
+	skynet_path = file_util.convert_linux_to_windows_relative(skynet_path)
+	local bat_str = [[
+@echo off
+set load_mods=%1
+
+if "%load_mods%" == "" (
+	echo please format make\script\check_hotfix.bat load_mods.lua
+	exit /b 1
+)
+
+set params=""
+for /f "delims=" %%i in ('{lua_path} {skynet_fly_path}\script\lua\console.lua {skynet_fly_path} {svr_name} %load_mods% check_hotfix') do (
+    set params=%%i
+)
+
+if "%params%" == """" (
+    echo not need hotfix module_name
+    exit /b 1
+)
+
+call make\script\hotfix.bat %load_mods% %params%
+]]
+
+	bat_str = string.gsub(bat_str, "{(.-)}", function(name)
+		if name == "svr_name" then
+			return svr_name
+		elseif name == "lua_path" then
+			return lua_path
+		elseif name == "skynet_path" then
+			return skynet_path
+		elseif name == "skynet_fly_path" then
+			return skynet_fly_path
+		else
+			error("unknown pat name:", name)
+		end
+	end)
+
+	local bat_path = server_path .. 'make\\script\\'
+	local isok, err = file_util.mkdir(bat_path)
+	if not isok then
+		error("create bat_path err " .. err)
+	end
+	local file_path = bat_path .. 'check_hotfix.bat'
+
+	local file = io.open(file_path,'w+')
+	assert(file)
+	file:write(bat_str)
+	file:close()
+	print("make " .. file_path)
 end

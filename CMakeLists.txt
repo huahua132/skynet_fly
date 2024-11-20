@@ -214,6 +214,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/skynet/service/ DESTINATION skynet_fly/skynet/serv
 file(COPY ${CMAKE_SOURCE_DIR}/skynet/examples/ DESTINATION skynet_fly/skynet/examples NO_SOURCE_PERMISSIONS)
 
 file(COPY ${CMAKE_SOURCE_DIR}/binbat/ DESTINATION skynet_fly/binbat NO_SOURCE_PERMISSIONS)
+file(COPY ${CMAKE_SOURCE_DIR}/commonlualib/ DESTINATION skynet_fly/commonlualib NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/lualib/ DESTINATION skynet_fly/lualib NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/test/ DESTINATION skynet_fly/test NO_SOURCE_PERMISSIONS)
 file(COPY ${CMAKE_SOURCE_DIR}/service/ DESTINATION skynet_fly/service NO_SOURCE_PERMISSIONS)

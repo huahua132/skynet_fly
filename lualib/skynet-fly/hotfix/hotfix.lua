@@ -102,7 +102,7 @@ function M.hotfix(hotfixmods)
     end
 
     local hot_ret = {}
-    local name_list = string_util.split(hotfixmods, '|')
+    local name_list = string_util.split(hotfixmods, ':::')
     local sort_list = {}
     for _,name in ipairs(name_list) do
         local info = g_loadedmap[name]
