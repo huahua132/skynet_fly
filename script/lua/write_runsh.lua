@@ -50,6 +50,7 @@ else
 set load_mods=%1
 set is_daemon=%2
 set recordfile=%3
+chcp 65001
 if "%load_mods%" == "" (
 	echo arg1 [load_mods] 启动的load_mods配置
 	echo arg2 [is_daemon] 是否守护进程运行 1是0不是 默认1
