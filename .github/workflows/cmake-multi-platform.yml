@@ -39,6 +39,8 @@ jobs:
 
     - name: Install Visual Studio 2022
       uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '[17.10,17.10)'
     
     - name: skynet
       run: git submodule update --init
