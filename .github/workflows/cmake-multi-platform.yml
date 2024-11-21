@@ -11,8 +11,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    env:
-      MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -52,5 +50,4 @@ jobs:
         cmake --no-warn-unused-cli -S ../ -B ./ -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
 
     - name: build
-      run: |
-        %MSBUILD_PATH% skynet_fly.sln /Build Release
+      run: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com skynet_fly.sln /Build Release
