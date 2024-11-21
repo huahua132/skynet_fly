@@ -40,12 +40,12 @@ jobs:
     - name: skynet
       run: git submodule update --init
 
-    - name: Debug List current working directory
-      run: dir
-
-    - name: pwd
-      run: pwd
-
+    - name: Install Visual Studio 2022
+      uses: microsoft/setup-msbuild@v2
+      with:
+        msbuild-architecture: x64
+        vs-version: '[17.10)'
+ 
     - name: cmake
       run: |
         mkdir build
