@@ -38,7 +38,7 @@ jobs:
     - uses: actions/checkout@master
 
     - name: Install Visual Studio 2022
-      uses: microsoft/setup-msbuild@v1.3
+      uses: microsoft/setup-msbuild@v1.2
     
     - name: skynet
       run: git submodule update --init
