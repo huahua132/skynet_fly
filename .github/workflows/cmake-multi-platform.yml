@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ windows-latest }}
+    runs-on: windows-latest
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -36,6 +36,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+
+    - name: skynet
+      run: git submodule update --init
 
     - name: cmake
       run: cmake --no-warn-unused-cli -S ../ -B ./ -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
