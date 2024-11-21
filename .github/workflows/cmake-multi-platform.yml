@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -23,15 +23,15 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [windows-2022]
+        os: [windows-latest]
         build_type: [Release]
         c_compiler: [clang]
         include:
-          - os: windows-2022
+          - os: windows-latest
             c_compiler: clang
             cpp_compiler: clang
         exclude:
-          - os: windows-2022
+          - os: windows-latest
             c_compiler: clang
 
     steps:
