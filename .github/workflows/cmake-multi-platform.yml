@@ -23,22 +23,22 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [windows-2019]
+        os: [windows-2022]
         build_type: [Release]
         c_compiler: [clang]
         include:
-          - os: windows-2019
+          - os: windows-2022
             c_compiler: clang
             cpp_compiler: clang
         exclude:
-          - os: windows-2019
+          - os: windows-2022
             c_compiler: clang
 
     steps:
     - uses: actions/checkout@master
 
     - name: Install Visual Studio 2022
-      uses: microsoft/setup-msbuild@v1.2
+      uses: microsoft/setup-msbuild@v1.1
     
     - name: skynet
       run: git submodule update --init
