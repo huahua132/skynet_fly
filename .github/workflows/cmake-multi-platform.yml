@@ -40,6 +40,9 @@ jobs:
     - name: skynet
       run: git submodule update --init
 
+    - name: Debug List current working directory
+      run: ls -alh
+
     - name: cmake
       run: cmake --no-warn-unused-cli -S ../ -B ./ -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
 
