@@ -10,7 +10,9 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    env:
+      MSBUILD_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -36,15 +38,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-
+    
     - name: skynet
       run: git submodule update --init
-
-    - name: Install Visual Studio 2022
-      uses: microsoft/setup-msbuild@v2
-      with:
-        msbuild-architecture: x64
-        vs-version: '[17.9, 17.10)'
  
     - name: cmake
       run: |
