@@ -531,7 +531,7 @@ static void openssl_initialize() {
 #endif
 }
 
-LUALIB_API int luaopen_openssl(lua_State*L)
+int luaopen_openssl(lua_State*L)
 {
   openssl_initialize();
 

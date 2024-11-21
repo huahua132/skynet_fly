@@ -176,11 +176,16 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(snapshot liblua)
 
     # 生成动态库 openssl.so
-    aux_source_directory(3rd/lua-openssl-0.9.0-0 OPENSSL_SRC)
+    aux_source_directory(3rd/lua-openssl-0.9.0-0/src OPENSSL_SRC)
     aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/auxiliar OPENSSL_AUX_SRC)
     aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/lua-compat OPENSSL_COMPAT_SRC)
-    add_library(openssl SHARED ${OPENSSL_COMPAT_SRC} ${OPENSSL_AUX_SRC} ${OPENSSL_SRC})
-    target_include_directories(openssl PRIVATE win3rd/openssl/include/ 3rd/lua-openssl-0.9.0-0 3rd/lua-openssl-0.9.0-0/deps/auxiliar 3rd/lua-openssl-0.9.0-0/deps/lua-compat)
+    aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/lua-compat/c-api OPENSSL_COMPAT_API_SRC)
+    add_library(openssl SHARED ${OPENSSL_COMPAT_SRC} ${OPENSSL_AUX_SRC} ${OPENSSL_SRC} ${OPENSSL_COMPAT_API_SRC})
+    target_include_directories(openssl PRIVATE win3rd/openssl/include/
+    3rd/lua-openssl-0.9.0-0/deps/auxiliar/
+    3rd/lua-openssl-0.9.0-0/src/
+    3rd/lua-openssl-0.9.0-0/deps/lua-compat/
+    3rd/lua-openssl-0.9.0-0/deps/lua-compat/c-api/)
     target_link_directories(openssl PRIVATE win3rd/openssl/lib/windows/)
     target_link_libraries(openssl ws2_32 mswsock liblua libposix pthreadVC3 libssl libcrypto Crypt32)
 
