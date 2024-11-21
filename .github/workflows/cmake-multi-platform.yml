@@ -38,6 +38,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+
+    - name: Install Visual Studio 2022
+      uses: microsoft/setup-msbuild@v2
     
     - name: skynet
       run: git submodule update --init
