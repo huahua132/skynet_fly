@@ -26,7 +26,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     message(STATUS "The value of CMAKE_BINARY_DIR is: ${CMAKE_BINARY_DIR}")
 
     # 添加到全局搜索路径
-    include_directories(win3rd/posix win3rd/pthread-win32)
+    include_directories(win3rd/posix win3rd/pthread-win32 3rd/zlib)
     add_compile_options(/FI ${CMAKE_SOURCE_DIR}/win3rd/posix/unistd.h)
 
     aux_source_directory(skynet/3rd/lua LUA_LIB_SRC)
@@ -41,6 +41,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(REMOVE_ITEM LIB_SKYNET_SRC skynet/skynet-src/skynet_main.c)
     aux_source_directory(win3rd/posix POSIX_SRC)
     add_subdirectory(win3rd/pthread-win32)
+    add_subdirectory(3rd/zlib)
     add_library(liblua SHARED ${LUA_LIB_SRC})
 
     target_include_directories(liblua PRIVATE skynet/skynet-src)
@@ -175,6 +176,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_library(snapshot SHARED 3rd/lua-snapshot/snapshot.c)
     target_link_libraries(snapshot liblua)
 
+    # 生成动态库 zlib.so
+    add_library(zlib SHARED 3rd/lzlib/lzlib.c)
+    target_link_libraries(zlib zlibstatic liblua)
+
     # 生成动态库 openssl.so
     aux_source_directory(3rd/lua-openssl-0.9.0-0/src OPENSSL_SRC)
     aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/auxiliar OPENSSL_AUX_SRC)
@@ -192,7 +197,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 设置动态库属性
     set_target_properties(
         lpeg sproto client md5 bson skynetso ltls
-        pb skiplist chat_filter snapshot openssl lfs cjson
+        pb skiplist chat_filter snapshot openssl lfs cjson zlib
         PROPERTIES
         PREFIX ""
         SUFFIX .so )

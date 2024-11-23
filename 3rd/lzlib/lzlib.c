@@ -883,7 +883,7 @@ static int lzlib_decompress(lua_State *L)
 
 #endif
 
-LUALIB_API int luaopen_zlib(lua_State *L)
+int luaopen_zlib(lua_State *L)
 {
     const luaL_Reg lzstream_meta[] =
     {
