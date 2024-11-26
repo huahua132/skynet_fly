@@ -176,6 +176,11 @@ function g_handle.delete_entry_by_range(left, right, ...)
     return g_orm_obj:delete_entry_by_range(left, right, ...)
 end
 
+-- IN 删除
+function g_handle.delete_entry_by_in(in_values, ...)
+    return g_orm_obj:delete_entry_by_in(in_values, ...)
+end
+
 local CMD = {}
 
 function CMD.start(config)

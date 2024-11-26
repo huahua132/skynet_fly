@@ -102,6 +102,11 @@ local function test()
     local ret = client:delete_entry_by_range(10002)
     local all_data = client:get_all_entry()
     log.info("all_data >>> ", ret, all_data)
+
+    --in删除
+    local ret = client:delete_entry_by_in({10001})
+    local all_data = client:get_all_entry()
+    log.info("all_data >>> ", ret, all_data)
 end
 
 --切换测试
