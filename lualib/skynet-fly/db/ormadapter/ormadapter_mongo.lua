@@ -344,6 +344,25 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return true
     end
 
+    self._delete_in = function(in_values, key_values)
+        local args = {}
+        local len = #key_values
+        for i = 1, len do
+            args[key_list[i]] = key_values[i]
+        end
+
+        local end_field_name = key_list[len + 1]
+        args[end_field_name] = {["$in"] = in_values}
+
+        local isok,err = collect_db:safe_delete(args)
+        if not isok then
+            log.error("_delete_in doc err ", self._tab_name, err)
+            error("_delete_in doc err")
+        end
+
+        return true
+    end
+
     return self
 end
 
@@ -419,6 +438,11 @@ end
 -- 范围删除
 function M:delete_entry_by_range(left, right, key_values)
     return self._delete_by_range(left, right, key_values)
+end
+
+-- IN 删除
+function M:delete_entry_by_in(in_values, key_values)
+    return self._delete_in(in_values, key_values)
 end
 
 return M

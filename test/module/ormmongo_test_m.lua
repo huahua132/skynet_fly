@@ -1921,6 +1921,81 @@ local function test_table_type()
     delete_table()
 end
 
+--测试delete in
+local function test_delete_in(is_cache)
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :string64("email")
+    :uint8("sex1")
+    :set_keys("player_id","role_id","sex")
+
+    if is_cache then
+        orm_obj = orm_obj:set_cache(500, 500) --5秒保存一次
+    end
+    
+    orm_obj = orm_obj:builder(adapter)
+    local new_data_list = {
+        {player_id = 10001, role_id = 1, sex = 1},
+        {player_id = 10001, role_id = 1, sex = 2},
+        {player_id = 10001, role_id = 2, sex = 1},
+        {player_id = 10001, role_id = 2, sex = 2},
+        {player_id = 10001, role_id = 3, sex = 1},
+        {player_id = 10001, role_id = 3, sex = 2},
+        {player_id = 10001, role_id = 4, sex = 1},
+        {player_id = 10001, role_id = 4, sex = 2},
+
+        {player_id = 10002, role_id = 1, sex = 1},
+        {player_id = 10002, role_id = 1, sex = 2},
+        {player_id = 10002, role_id = 2, sex = 1},
+        {player_id = 10002, role_id = 2, sex = 2},
+        {player_id = 10002, role_id = 3, sex = 1},
+        {player_id = 10002, role_id = 3, sex = 2},
+        {player_id = 10002, role_id = 4, sex = 1},
+        {player_id = 10002, role_id = 4, sex = 2},
+    }
+
+    orm_obj:create_entry(new_data_list)
+
+    --测试 传入2个key
+    local ret = orm_obj:delete_entry_by_in({2}, 10001, 1) --删除 player_id = 10001 , role_id = 1, sex = 2
+    assert(ret)
+
+    local del_num = 0
+    local entry = orm_obj:get_one_entry(10001, 1, 2)
+    assert(not entry)   --被删除了，肯定查不到
+    del_num = del_num + 1   --删掉了一条数据
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == #new_data_list - del_num, string.format("err len[%s] datalen[%s] del_num[%s]", #entry_list, #new_data_list, del_num))     
+
+    --测试传入1个key
+    local ret = orm_obj:delete_entry_by_in({2}, 10001) --删除 player_id = 10001 role_id = 2
+    assert(ret)
+    del_num = del_num + 2   --删掉了二条数据
+
+    local entry_list = orm_obj:get_entry(10001, 2)
+    assert(#entry_list == 0, #entry_list)
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == #new_data_list - del_num, string.format("err len[%s] datalen[%s] del_num[%s]", #entry_list, #new_data_list, del_num))
+
+    --测试不传入key
+    local ret = orm_obj:delete_entry_by_in({10002})
+    assert(ret)
+    local entrt_list = orm_obj:get_entry(10002)
+    assert(#entrt_list == 0)
+    del_num = del_num + 8 --删掉了8条数据
+
+    local entry_list = orm_obj:get_all_entry()
+    assert(#entry_list == #new_data_list - del_num, string.format("err len[%s] datalen[%s] del_num[%s]", #entry_list, #new_data_list, del_num))
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -1975,6 +2050,10 @@ function CMD.start()
         test_delete_by_range()
         log.info("test_table_type")
         test_table_type()
+        log.info("test_delete_in cache")
+        test_delete_in(true)
+        log.info("test_delete_in not cache")
+        test_delete_in()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
