@@ -422,6 +422,20 @@ function M:builder(tab_name, field_list, field_map, key_list)
 
     select_count_pre_pare = new_prepare_obj(count_sql)
 
+    -- delete from player where key1 in (?);
+    -- delete from player where key1=?,key2 in (?);
+    -- delete from player where key1=?,key2=?,key3 in (?);
+    --delete in prepare 处理
+    local delete_in_prepare_list = {}
+    for i = 1, len do
+        local end_field_name = key_list[i]
+        if i == 1 then
+            delete_in_prepare_list[i] = sformat("%s%s`%s` in ", delete_format_head, select_format_center, end_field_name)
+        else
+            delete_in_prepare_list[i] = sformat("%s%s%s and `%s` in ", delete_format_head, select_format_center, select_format_end_list[i - 1], end_field_name)
+        end
+    end
+
     select_format_head = nil
     select_format_key_head = nil
     count_sql = nil
@@ -898,6 +912,41 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return true
     end
 
+    self._delete_in = function(in_values, key_values)
+        local len = #key_values
+        local prepare_str = delete_in_prepare_list[len + 1]
+        prepare_str = prepare_str .. '('
+        local in_len = #in_values
+
+        local args = {}
+        for i = 1, len do
+            args[#args + 1] = key_values[i]  
+        end
+        for i = 1, in_len do
+            if i == in_len then
+                prepare_str = prepare_str .. '?'
+            else
+                prepare_str = prepare_str .. '?,'
+            end
+            args[#args + 1] = in_values[i]
+        end
+        prepare_str = prepare_str .. ')'
+
+        local prepare_obj = new_prepare_obj(prepare_str)
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
+        
+        local stmt = prepare_obj.stmt
+        if stmt then
+            pcall(self._db.conn.stmt_close, self._db.conn, stmt)
+        end
+        if not isok or not ret or ret.err then
+            log.error("_delete_in err ", ret, key_values)
+            error("_delete_in err ")
+        end
+
+        return true
+    end
+
     return self
 end
 
@@ -949,6 +998,11 @@ end
 -- 范围删除
 function M:delete_entry_by_range(left, right, key_values)
     return self._delete_by_range(left, right, key_values)
+end
+
+-- IN 删除
+function M:delete_entry_by_in(in_values, key_values)
+    return self._delete_in(in_values, key_values)
 end
 
 return M

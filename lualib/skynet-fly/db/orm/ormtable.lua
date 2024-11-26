@@ -264,7 +264,7 @@ local function get_key_select(t, key_values)
                     return
                 end
             end
-            if not cache.total_count then return end
+            if not cache.total_count then return key_select_map[field_value] end
             return key_select_map[field_value], cache.count == cache.total_count
         end
     end
@@ -979,6 +979,38 @@ local function delete_entry_by_range(t, left, right, key_values)
     return res
 end
 
+local function delete_entry_by_in(t, in_values, key_values)
+    local res = t._adapterinterface:delete_entry_by_in(in_values, key_values)
+    if not res then return end
+
+    local change_flag_map = t._change_flag_map
+    local key_list = t._keylist
+    local kv_len = #key_values
+    local depth = #key_list - kv_len - 1
+    for i = #in_values, 1, -1 do
+        local v = in_values[i]
+        key_values[kv_len + 1] = v
+        local entry_list_map = get_key_select(t, key_values)
+        if entry_list_map then
+            local entry_list = {}
+            if depth > 0 then
+                entry_list = table_util.depth_to_list(entry_list_map, depth)
+            else
+                entry_list = {entry_list_map}
+            end
+            for _,entry in ipairs(entry_list) do
+                change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
+                if t._cache_map then
+                    t._cache_map:del_cache(entry)
+                end
+                entry:clear_change()
+                del_key_select(t, entry, true)
+            end
+        end
+    end
+
+    return res
+end
 -- 批量创建新数据
 function M:create_entry(entry_data_list)
     assert(self._is_builder, "not builder can`t create_entry")
@@ -1150,6 +1182,29 @@ function M:delete_entry_by_range(left, right, ...)
 
     local key1value = key_values[1]
     return queue_doing(self, key1value, delete_entry_by_range, self, left, right, key_values)
+end
+
+-- in 删除
+function M:delete_entry_by_in(in_values, ...)
+    assert(self._is_builder, "not builder can`t delete_entry_by_in")
+    local key_list = self._keylist
+    local key_values = {...}
+    local key_len = #key_list
+    local kv_len = #key_values
+    local inv_len = #in_values
+    assert(key_len > 0, "not keys can`t use")            --没有索引不能使用
+    assert(inv_len > 0, "in_values err")                 --in_values得有值
+    assert(kv_len < key_len, "kv len err")               --如果是 3个key kv最多是填2个，in_value 是第3个的值
+    --in_values 是 len + 1 位置的key的值
+    check_key_values(self, key_values)
+
+    local end_field_name = self._keylist[kv_len + 1]
+    for i = 1,#in_values do
+        check_one_field(self, end_field_name, in_values[i])
+    end
+   
+    local key1value = key_values[1]
+    return queue_doing(self, key1value, delete_entry_by_in, self, in_values, key_values)
 end
 
 return M
