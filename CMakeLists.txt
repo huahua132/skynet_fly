@@ -98,8 +98,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         skynet/lualib-src/lua-stm.c
         skynet/lualib-src/lua-debugchannel.c
         skynet/lualib-src/lua-datasheet.c
-        skynet/lualib-src/lua-sharetable.c 
-        lualib-src/lua-frpcpack.c)
+        skynet/lualib-src/lua-sharetable.c )
     message(STATUS "The value of LIB_SKYNET_SRC is: ${LIB_SKYNET_SRC}")
     add_library(skynetso SHARED ${LUA_CLIB_SKYNET_SRC})
     target_include_directories(skynetso PRIVATE skynet/skynet-src)
@@ -147,6 +146,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+    # 生成动态库 frpcpack.so
+    add_library(frpcpack SHARED lualib-src/lua-frpcpack.c)
+    target_include_directories(frpcpack PRIVATE skynet/skynet-src)
+    target_link_libraries(frpcpack liblua)
+
     # 生成动态库 pb.so
     aux_source_directory(3rd/lua-protobuf-0.4.0 PB_SRC)
     add_library(pb SHARED ${PB_SRC})
@@ -180,6 +184,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_library(zlib SHARED 3rd/lzlib/lzlib.c)
     target_link_libraries(zlib zlibstatic liblua)
 
+
     # 生成动态库 openssl.so
     aux_source_directory(3rd/lua-openssl-0.9.0-0/src OPENSSL_SRC)
     aux_source_directory(3rd/lua-openssl-0.9.0-0/deps/auxiliar OPENSSL_AUX_SRC)
@@ -197,7 +202,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 设置动态库属性
     set_target_properties(
         lpeg sproto client md5 bson skynetso ltls
-        pb skiplist chat_filter snapshot openssl lfs cjson zlib
+        pb skiplist chat_filter snapshot openssl lfs cjson frpcpack zlib 
         PROPERTIES
         PREFIX ""
         SUFFIX .so )

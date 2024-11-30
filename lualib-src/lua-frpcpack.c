@@ -612,7 +612,7 @@ lconcat(lua_State *L) {
 	return 2;
 }
 
-LUAMOD_API int
+int
 luaopen_frpcpack_core(lua_State *L) {
 	luaL_Reg l[] = {
 		{ "packrequest", lpackrequest},
