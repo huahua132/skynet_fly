@@ -18,6 +18,10 @@ QQ群号：102993581
 - [安装CMake](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170)
 - [安装Clang](https://learn.microsoft.com/en-us/cpp/build/clang-support-cmake?view=msvc-170)
 
+## openssl 链接出错
+[下载链接](https://slproweb.com/products/Win32OpenSSL.html)
+请自行下载 openssl 对应系统版本， 替换`win3rd/include 和win3rd/lib`，lib使用MT的。
+
 # skynet_fly简介
 	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
 	使用skynet_fly的好处：
