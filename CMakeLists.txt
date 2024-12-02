@@ -184,6 +184,22 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_library(zlib SHARED 3rd/lzlib/lzlib.c)
     target_link_libraries(zlib zlibstatic liblua)
 
+    # 生成动态库 socket.so
+    add_library(socket SHARED 3rd/luasocket/src/luasocket.c
+    3rd/luasocket/src/timeout.c
+    3rd/luasocket/src/buffer.c
+    3rd/luasocket/src/io.c
+    3rd/luasocket/src/auxiliar.c
+    3rd/luasocket/src/compat.c
+    3rd/luasocket/src/options.c
+    3rd/luasocket/src/inet.c
+    3rd/luasocket/src/except.c
+    3rd/luasocket/src/select.c
+    3rd/luasocket/src/tcp.c
+    3rd/luasocket/src/udp.c
+    3rd/luasocket/src/wsocket.c)
+    target_link_libraries(socket liblua ws2_32 mswsock libposix pthreadVC3)
+    target_include_directories(socket PRIVATE 3rd/luasocket/src/)
 
     # 生成动态库 openssl.so
     aux_source_directory(3rd/lua-openssl-0.9.0-0/src OPENSSL_SRC)
@@ -202,7 +218,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     # 设置动态库属性
     set_target_properties(
         lpeg sproto client md5 bson skynetso ltls
-        pb skiplist chat_filter snapshot openssl lfs cjson frpcpack zlib 
+        pb skiplist chat_filter snapshot openssl lfs cjson frpcpack zlib socket
         PROPERTIES
         PREFIX ""
         SUFFIX .so )
