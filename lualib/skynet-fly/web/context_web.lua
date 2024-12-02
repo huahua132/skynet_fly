@@ -68,7 +68,7 @@ local function read_filecache(_, filepath)
     end
     local fpath = filepath
     log.debug("read_filecache. fpath:", fpath)
-    local f = iopen(fpath)
+    local f = iopen(fpath, 'rb')
     if f then
         local content = f:read "a"
         f:close()
