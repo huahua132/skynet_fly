@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <windows.h>
 #include <conio.h>
+#include <errno.h>
 
 static LONGLONG get_cpu_freq() {
     LARGE_INTEGER freq;
@@ -182,8 +183,13 @@ int write(int fd, const void* ptr, unsigned int sz) {
     vecs[0].len = sz;
 
     DWORD bytesSent;
-    if (WSASend(fd, vecs, 1, &bytesSent, 0, NULL, NULL))
+    if (WSASend(fd, vecs, 1, &bytesSent, 0, NULL, NULL)) {
+        errno = WSAGetLastError();
+        if (errno == WSAEWOULDBLOCK) {
+            errno = EAGAIN;
+        }
         return -1;
+    }
     else
         return bytesSent;
 }
@@ -197,7 +203,11 @@ int read(int fd, void* buffer, unsigned int sz) {
     DWORD bytesRecv = 0;
     DWORD flags = 0;
     if (WSARecv(fd, vecs, 1, &bytesRecv, &flags, NULL, NULL)) {
-        if (WSAGetLastError() == WSAECONNRESET)
+        errno = WSAGetLastError();
+        if (errno == WSAEWOULDBLOCK) {
+            errno = EAGAIN;
+        }
+        if (errno == WSAECONNRESET)
             return 0;
         return -1;
     }
