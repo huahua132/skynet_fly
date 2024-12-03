@@ -16,7 +16,7 @@ local function alloc_id()
     return id
 end
 
-local g_rotate_map = setmetatable({}, {__mode = "kv"})
+local g_rotate_map = {}
 
 contriner_client:register("logrotate_m")
 
