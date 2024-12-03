@@ -20,4 +20,9 @@ return {
         launch_seq = 2,
         launch_num = 1,
     },
+
+    rotate_test_m = {
+        launch_seq = 3,
+        launch_num = 1,
+    },
 }

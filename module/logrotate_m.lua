@@ -15,6 +15,7 @@ local tsort = table.sort
 local tonumber = tonumber
 local ipairs = ipairs
 local pairs = pairs
+local tostring = tostring
 
 local g_rotates_map = {}
 
@@ -48,7 +49,7 @@ local function create_rotate(cfg)
     local m_timer_obj = nil                                             --定时器对象
 
     m_rename_format = m_rename_format .. '_' .. m_filename
-    log.info("log name :",os.date(m_rename_format,time_util.time()))
+    log.info("rotate format name :",os.date(m_rename_format,time_util.time()))
     --切割
     local function rotate()
         local file_url = file_util.path_join(m_file_path, m_filename)
@@ -164,34 +165,52 @@ end
 
 local CMD = {}
 
-function CMD.add_rotate(server_id, cfg)
+function CMD.add_rotate(server_id, cfg, key)
     if not g_rotates_map[server_id] then
         g_rotates_map[server_id] = {}
     end
-    tinsert(g_rotates_map[server_id],create_rotate(cfg))
+    assert(not g_rotates_map[server_id][key], "key rotate exists: " .. tostring(key))
+
+    g_rotates_map[server_id][key] = create_rotate(cfg)
+    
     return true
 end
 
-function CMD.cancel(server_id)
-    local rlist = g_rotates_map[server_id]
-    if not rlist then return end
+function CMD.cancel(server_id, key)
+    local rmap = g_rotates_map[server_id]
+    if not rmap or not rmap[key] then
+        return
+    end
+
+    local cancel = rmap[key]
+    cancel()
+
+    return true
+end
+
+function CMD.cancel_all(server_id)
+    local rmap = g_rotates_map[server_id]
+    if not rmap then return end
 
     g_rotates_map[server_id] = nil
 
-    for _,cancel in ipairs(rlist) do
+    for _,cancel in pairs(rmap) do
         cancel()
     end
+
+    return true
 end
 
 function CMD.start(config)
-    g_rotates_map[skynet.self()] = {}
-    tinsert(g_rotates_map[skynet.self()],create_rotate(config))
+    local self_address = skynet.self()
+    g_rotates_map[self_address] = {}
+    CMD.add_rotate(self_address, config, 1)
     return true
 end
 
 function CMD.fix_exit()
-    for _,rlist in pairs(g_rotates_map) do
-        for _,cancel in ipairs(rlist) do
+    for _,rmap in pairs(g_rotates_map) do
+        for _,cancel in pairs(rmap) do
             cancel()
         end
     end
