@@ -166,4 +166,9 @@ function M:del_cache(key)
 	return true
 end
 
+--遍历
+function M:pairs()
+	return pairs(self.cache_map)
+end
+
 return M
