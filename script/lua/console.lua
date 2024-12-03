@@ -8,7 +8,11 @@ assert(svr_name,'缺少 svr_name' .. table.concat(ARGV, ','))
 assert(load_modsfile, "缺少 启动配置文件 " .. table.concat(ARGV,','))
 assert(cmd,"缺少命令 " .. table.concat(ARGV,','))
 
-package.cpath = skynet_fly_path .. "/luaclib/?.so;"
+if package.config:sub(1, 1) == '\\' then
+	package.cpath = skynet_fly_path .. "/luaclib/?.dll;"
+else
+	package.cpath = skynet_fly_path .. "/luaclib/?.so;"
+end
 package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
 
 local ARGV_HEAD = 4

@@ -8,8 +8,11 @@ assert(key, "缺少 key")
 assert(key:len() == 8, "key 长度不对 ".. key)
 
 local skynet_path = skynet_fly_path .. '/skynet'
-
-package.cpath = skynet_fly_path .. "/luaclib/?.so;" .. skynet_path .. '/luaclib/?.so;'
+if package.config:sub(1, 1) == '\\' then
+    package.cpath = skynet_fly_path .. "/luaclib/?.dll;" .. skynet_path .. '/luaclib/?.dll;'
+else
+    package.cpath = skynet_fly_path .. "/luaclib/?.so;" .. skynet_path .. '/luaclib/?.so;'
+end
 package.path = './?.lua;' .. skynet_fly_path .. "/lualib/?.lua;"
 
 if not targetpath then

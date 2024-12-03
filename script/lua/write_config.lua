@@ -5,8 +5,12 @@ local load_mods_name = ARGV[2]
 local is_daemon = ARGV[3]
 local recordfile = ARGV[4]
 assert(skynet_fly_path, '缺少 skynet_fly_path')
+if package.config:sub(1, 1) == '\\' then
+	package.cpath = skynet_fly_path .. "/luaclib/?.dll;"
+else
+	package.cpath = skynet_fly_path .. "/luaclib/?.so;"
+end
 
-package.cpath = skynet_fly_path .. "/luaclib/?.so;"
 package.path = './?.lua;' .. skynet_fly_path .. "/lualib/?.lua;"
 
 local lfs = require "lfs"
@@ -50,10 +54,6 @@ local config = {
 	debug_port      = 8888,
 	skynet_fly_path = skynet_fly_path,
 	preload         = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/preload.lua;'),
-	cpath           = file_util.path_join(skynet_fly_path, '/cservice/?.so;') .. skynet_path .. "cservice/?.so;",
-
-	lua_cpath       = file_util.path_join(skynet_fly_path, '/luaclib/?.so;') .. skynet_path .. "luaclib/?.so;",
-
 	--luaservice 约束服务只能放在 server根目录 || server->service || common->service || skynet_fly->service || skynet->service
 	luaservice      = server_path .. "?.lua;" ..
 					  server_path .. "service/?.lua;" ..
@@ -68,6 +68,14 @@ local config = {
 	recordlimit     = 1024 * 1024 * 100, --录像记录限制(字节数) 超过不再写录像
 	machine_id      = 1,				 --机器ID(全局唯一)
 }
+
+if package.config:sub(1, 1) == '\\' then
+	config.cpath = file_util.path_join(skynet_fly_path, '/cservice/?.dll;') .. skynet_path .. "cservice/?.dll;"
+	config.lua_cpath = file_util.path_join(skynet_fly_path, '/luaclib/?.dll;') .. skynet_path .. "luaclib/?.dll;"
+else
+	config.cpath = file_util.path_join(skynet_fly_path, '/cservice/?.so;') .. skynet_path .. "cservice/?.so;"
+	config.lua_cpath = file_util.path_join(skynet_fly_path, '/luaclib/?.so;') .. skynet_path .. "luaclib/?.so;"
+end
 
 config.lua_path = file_util.create_luapath(skynet_fly_path)
 

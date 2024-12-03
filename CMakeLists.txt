@@ -221,7 +221,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         pb skiplist chat_filter snapshot openssl lfs cjson frpcpack zlib socket
         PROPERTIES
         PREFIX ""
-        SUFFIX .so )
+        SUFFIX .dll )
 
     # 重新设置动态库输出路径
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/skynet/cservice)
@@ -242,7 +242,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
         add_library(${LIB_NAME} SHARED ${FILE_PATH})
         target_include_directories(${LIB_NAME} PRIVATE skynet/skynet-src)
         target_link_libraries(${LIB_NAME} ws2_32 libskynet)
-        set_target_properties(${LIB_NAME} PROPERTIES PREFIX "" SUFFIX .so ENABLE_EXPORTS ON)
+        set_target_properties(${LIB_NAME} PROPERTIES PREFIX "" SUFFIX .dll ENABLE_EXPORTS ON)
     endforeach()
 endif ()
 

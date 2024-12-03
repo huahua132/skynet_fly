@@ -2,8 +2,12 @@ local assert = assert
 local ARGV = {...}
 local skynet_fly_path = ARGV[1]
 assert(skynet_fly_path,'缺少 skynet_fly_path')
+if package.config:sub(1, 1) == '\\' then
+	package.cpath = skynet_fly_path .. "/luaclib/?.dll;"
+else
+	package.cpath = skynet_fly_path .. "/luaclib/?.so;"
+end
 
-package.cpath = skynet_fly_path .. "/luaclib/?.so;"
 package.path = './?.lua;' .. skynet_fly_path .."/lualib/?.lua;"
 local file_util = require "skynet-fly.utils.file_util"
 local svr_name = file_util.get_cur_dir_name()
