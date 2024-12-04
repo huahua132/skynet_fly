@@ -11,22 +11,24 @@ local io = io
 local M = {}
 
 --递归遍历目录
-function M.diripairs(path_url)
+--max_depth 最大遍历深度 nil表示到底
+function M.diripairs(path_url, max_depth)
 	local stack = {}
 	
-	local function push_stack(path)
+	local function push_stack(path, depth)
 		local next,meta1,meta2 = lfs.dir(path)
 		tinsert(stack,{
 			path = path,
 			next = next,
 			meta1 = meta1,
 			meta2 = meta2,
+			depth = depth,
 		})
 	end
 
 	local root_info = lfs.attributes(path_url)
 	if root_info and root_info.mode == 'directory' then
-		push_stack(path_url)
+		push_stack(path_url, 0)
 	end
 
 	return function() 
@@ -37,8 +39,11 @@ function M.diripairs(path_url)
 			elseif file_name then
 				local file_path = M.path_join(cur.path, '/' .. file_name)
 				local file_info, errmsg, errno = lfs.attributes(file_path)
+				local depth = cur.depth
 				if file_info and file_info.mode == 'directory' then
-					push_stack(file_path)
+					if not max_depth or depth < max_depth then
+						push_stack(file_path, depth + 1)
+					end
 				end
 				return file_name, file_path, file_info, errmsg, errno
 			else

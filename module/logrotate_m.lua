@@ -99,7 +99,7 @@ local function create_rotate(cfg)
         end
 
         local back_list = {}
-        for file_name,file_path,file_info, errmsg, errno in file_util.diripairs(m_file_path) do
+        for file_name,file_path,file_info, errmsg, errno in file_util.diripairs(m_file_path, 0) do
             if file_name ~= m_filename and string.find(file_name,m_filename,nil,true) then
                 if file_info then
                     tinsert(back_list, {
