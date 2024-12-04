@@ -27,8 +27,21 @@ local function os_execute(cmd)
     return isok
 end
 
+local function remove_file(file_path, is_dir)
+    if is_dir then
+        local success, err = file_util.rmdir(file_path)
+        if not success then
+            log.warn("remove dir err ", file_path, err)
+        end
+    else
+        local success, err = os.remove(file_path)
+        if not success then
+            log.warn("remove file err ", file_path, err)
+        end
+    end
+end
+
 local function create_rotate(cfg)
-    assert(cfg.filename,"not filename")
     local m_filename = cfg.filename                                     --文件名
     local m_rename_format = cfg.rename_format or "%Y%m%d"               --重命名文件格式
     local m_file_path = cfg.file_path or './'                           --文件路径
@@ -45,11 +58,15 @@ local function create_rotate(cfg)
     local m_sec = cfg.sec  or 0                                         --几秒
     local m_wday = cfg.wday or 1                                        --周几
     local m_yday = cfg.yday or 1                                        --一年第几天
+
+    local m_back_pattern = cfg.back_pattern                             --保留文件整理的查找pattern
   
     local m_timer_obj = nil                                             --定时器对象
 
-    m_rename_format = m_rename_format .. '_' .. m_filename
-    log.info("rotate format name :",os.date(m_rename_format,time_util.time()))
+    if m_filename then
+        m_rename_format = m_rename_format .. '_' .. m_filename
+        log.info("rotate format name :",os.date(m_rename_format,time_util.time()))
+    end
     --切割
     local function rotate()
         local file_url = file_util.path_join(m_file_path, m_filename)
@@ -99,12 +116,15 @@ local function create_rotate(cfg)
         end
 
         local back_list = {}
-        for file_name,file_path,file_info, errmsg, errno in file_util.diripairs(m_file_path, 0) do
-            if file_name ~= m_filename and string.find(file_name,m_filename,nil,true) then
+
+        for file_name, file_path, file_info, errmsg, errno in file_util.diripairs(m_file_path, 0) do
+            if (m_filename and file_name ~= m_filename and string.find(file_name,m_filename,nil,true))                                       --按文件名整理
+            or (m_back_pattern and string.find(file_name, m_back_pattern)) then                                                              --按back_pattern整理
                 if file_info then
                     tinsert(back_list, {
                         file_path = file_path,
-                        time = file_info.modification               --最近一次修改时间
+                        time = file_info.modification,               --最近一次修改时间
+                        is_dir = file_info.mode == 'directory',
                     })
                 else
                     log.warn("backup file can`t get file_info ", file_path, errmsg, errno)
@@ -114,15 +134,11 @@ local function create_rotate(cfg)
 
         --最新的在前面
         tsort(back_list,function(a,b) return a.time > b.time end)
-
         --保留文件数
         for i = #back_list,m_max_backups + 1, -1 do
             --删除文件
             local f = tremove(back_list,i)
-            local success, err = os.remove(f.file_path)
-            if not success then
-                log.warn("remove file err ", f.file_path, err)
-            end
+            remove_file(f.file_path, f.is_dir)
         end
 
         local cur_time = os.time()
@@ -132,10 +148,7 @@ local function create_rotate(cfg)
             local f = back_list[i]
             --过期了
             if cur_time - f.time > max_age_time then
-                local success, err = os.remove(f.file_path)
-                if not success then
-                    log.warn("remove file err ", f.file_path, err)
-                end
+                remove_file(f.file_path, f.is_dir)
             else
                 --有序的，当前这个没过期，前面的肯定也没有过期
                 break
@@ -152,7 +165,9 @@ local function create_rotate(cfg)
     time_obj:set_wday(m_wday)
     time_obj:set_yday(m_yday)
     time_obj:builder(function()
-        rotate()
+        if m_filename then
+            rotate()
+        end
         backup()
     end)
 

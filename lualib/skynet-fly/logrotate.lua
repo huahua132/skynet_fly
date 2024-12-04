@@ -124,7 +124,8 @@ end
 function M:set_month(month)
     assert(not self.is_builder, "builded can`t use set_month")
     assert(month >= 1 and month <= 12)
-    self.month = month
+    local cfg = self.cfg
+    cfg.month = month
     return self
 end
 --[[
@@ -137,7 +138,8 @@ end
 function M:set_day(day)
     assert(not self.is_builder, "builded can`t use set_day")
     assert(day >= 1 and day <= 31)
-    self.day = day
+    local cfg = self.cfg
+    cfg.day = day
     return self
 end
 --[[
@@ -150,7 +152,8 @@ end
 function M:set_hour(hour)
     assert(not self.is_builder, "builded can`t use set_hour")
     assert(hour >= 0 and hour <= 23)
-    self.hour = hour
+    local cfg = self.cfg
+    cfg.hour = hour
     return self
 end
 --[[
@@ -163,7 +166,8 @@ end
 function M:set_min(min)
     assert(not self.is_builder, "builded can`t use set_min")
     assert(min >= 0 and min <= 59)
-    self.min = min
+    local cfg = self.cfg
+    cfg.min = min
     return self
 end
 --[[
@@ -176,7 +180,8 @@ end
 function M:set_sec(sec)
     assert(not self.is_builder, "builded can`t use set_sec")
     assert(sec >= 0 and sec <= 59)
-    self.sec = sec
+    local cfg = self.cfg
+    cfg.sec = sec
     return self
 end
 
@@ -190,7 +195,8 @@ end
 function M:set_wday(wday)
     assert(not self.is_builder, "builded can`t use set_wday")
     assert(wday >= 1 and wday <= 7)
-    self.wday = wday
+    local cfg = self.cfg
+    cfg.wday = wday
     return self
 end
 
@@ -204,7 +210,17 @@ end
 function M:set_yday(yday)
     assert(not self.is_builder, "builded can`t use set_yday")
     assert(yday >= 1 and yday <= 366)
-    self.yday = yday
+    local cfg = self.cfg
+    cfg.yday = yday
+    return self
+end
+
+--设置保留文件整理匹配表达式
+function M:set_back_pattern(back_pattern)
+    assert(not self.is_builder, "builded can`t use set_back_pattern")
+    assert(type(back_pattern) == 'string', "back_pattern not string")
+    local cfg = self.cfg
+    cfg.back_pattern = back_pattern
     return self
 end
 
