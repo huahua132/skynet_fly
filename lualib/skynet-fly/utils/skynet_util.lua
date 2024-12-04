@@ -130,17 +130,22 @@ function M.is_hot_container_server()
 end
 
 local g_shutdown_func_map = {}
+
 --注册关服处理函数
-function M.reg_shutdown_func(func)
+function M.reg_shutdown_func(func, sort_weight)
+    sort_weight = sort_weight or 0
+    assert(type(func) == 'function', "not function")
+    assert(type(sort_weight) == 'number', "not number")
     local info = debug_getinfo(2,"S")
     local key = info.short_src
-    g_shutdown_func_map[key] = func
+
+    g_shutdown_func_map[key] = {func = func, weight = sort_weight}
 end
 
 --执行关服处理函数
 function M.execute_shutdown()
-    for src, func in table_util.sort_ipairs_byk(g_shutdown_func_map) do
-        local isok, err = x_pcall(func)
+    for src, info in table_util.sort_ipairs(g_shutdown_func_map, function(a, b) return a.weight > b.weight end) do
+        local isok, err = x_pcall(info.func)
         if not isok then
             log.error("execute_shutdown err ", err)
         end

@@ -3,6 +3,7 @@ local sharedata = require "skynet.sharedata"
 local sharetable = require "skynet.sharetable"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local file_util = require "skynet-fly.utils.file_util"
+local time_util = require "skynet-fly.utils.time_util"
 local watch_syn = require "skynet-fly.watch.watch_syn"
 
 local log = require "skynet-fly.log"
@@ -47,6 +48,7 @@ local CMD = {}
 function CMD.load(dir_list, mode)
     assert(g_modes[mode], "not exists mode:" .. tostring(mode))
     local m = g_modes[mode]
+    local cur_time = time_util.time()
     for _,dir in pairs(dir_list) do
         for file_name,file_path,file_info in file_util.diripairs(dir) do
             file_path = file_util.convert_windows_to_linux_relative(file_path)
@@ -60,7 +62,7 @@ function CMD.load(dir_list, mode)
                     last_change_time = file_info.modification,
                 }
 
-                g_watch_server:register(file_path, g_file_changetime_map[file_path].version)
+                g_watch_server:register(file_path, g_file_changetime_map[file_path].version .. '-' .. cur_time)
             end
         end
     end
@@ -68,6 +70,7 @@ end
 
 function CMD.check_reload()
     local reload_list = {}
+    local cur_time = time_util.time()
     for file_path, info in pairs(g_file_changetime_map) do
         local file_info, errinfo, errno = lfs.attributes(file_path)
         if not file_info then
@@ -81,7 +84,7 @@ function CMD.check_reload()
                 info.version = info.version + 1
                 table.insert(reload_list, file_path)
 
-                g_watch_server:publish(file_path, info.version)
+                g_watch_server:publish(file_path, info.version .. '-' .. cur_time)
             end
         end
     end

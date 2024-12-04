@@ -19,6 +19,7 @@ local rawget = rawget
 local tinsert = table.insert
 local tsort = table.sort
 local sgsub = string.gsub
+local os = os
 
 local g_recordpath = skynet.getenv("recordpath")
 
@@ -26,7 +27,6 @@ local g_loadedmap = {}
 local M = {}
 
 local g_seq = 1
-local g_patch = 0
 
 local g_tb = _G
 
@@ -66,9 +66,12 @@ local function get_patch_file_path(file_path, patch_dir)
     return sgsub(file_path, pat, path, 1)
 end
 
-local function get_patch_dir()
+local function get_patch_dir(up_time)
     local base_info = module_info.get_base_info()
-    return file_util.path_join(g_recordpath, string.format("hotfix_%s/patch_%s/", base_info.module_name, g_patch))
+
+    return file_util.path_join(g_recordpath, string.format("hotfix_%s-%s-%s/patch_%s/",
+    base_info.module_name, base_info.version, os.date("%Y%m%d-%H%M%S", base_info.launch_time),
+    os.date("%Y%m%d-%H%M%S", up_time)))
 end
 
 --可热更模块加载
@@ -94,11 +97,10 @@ end
 --热更
 function M.hotfix(hotfixmods)
     local base_info = module_info.get_base_info()
-    g_patch = g_patch + 1
-
     local patch_dir
+    local cur_time = time_util.time()
     if skynet.is_record_handle() then              --说明是播放录像
-        patch_dir = get_patch_dir()
+        patch_dir = get_patch_dir(cur_time)
     end
 
     local hot_ret = {}
@@ -207,7 +209,7 @@ function M.hotfix(hotfixmods)
     end
 
     if skynet.is_write_record() and base_info.index == 1 then --第一个启动记录下就行
-        local patch_dir = get_patch_dir()
+        local patch_dir = get_patch_dir(cur_time)
         local copy_file_obj = file_util.new_copy_file()
         local dir_path_map = {}
         for i, info in ipairs(sort_list) do

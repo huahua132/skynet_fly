@@ -18,7 +18,7 @@ assert(MODULE_NAME)
 local new_loaded = _loaded
 
 if IS_RECORD_ON == 1 then
-	skynet.start_record(ARGV)
+	skynet.start_record(ARGV, MODULE_NAME .. '-' .. INDEX .. '-' .. VERSION .. '-' .. os.date('%Y%m%d-%H%M%S', LAUNCH_TIME))
 end
 
 local CMD = {}
@@ -160,6 +160,7 @@ local function check_exit()
 				log.warn("warning " .. MODULE_NAME .. ' can`t exit')
 			end
 			g_check_timer:cancel()
+			skynet.close_record()
 		end
 	end
 end
@@ -257,6 +258,6 @@ end)
 
 if IS_RECORD_ON == 1 then
 	skynet_util.reg_shutdown_func(function()
-		skynet.recordoff()
-	end)
+		skynet.close_record()
+	end, -1) -- -1 最后执行
 end

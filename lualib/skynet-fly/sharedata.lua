@@ -7,6 +7,7 @@ local timer = require "skynet-fly.timer"
 local module_info = require "skynet-fly.etc.module_info"
 local log = require "skynet-fly.log"
 local file_util = require "skynet-fly.utils.file_util"
+local string_util = require "skynet-fly.utils.string_util"
 
 local sinterface = service_watch_interface:new(".sharedata_service")
 
@@ -20,13 +21,13 @@ local type = type
 local string = string
 local os = os
 local loadfile = loadfile
+local tonumber = tonumber
 
 local g_recordpath = skynet.getenv("recordpath")
 
 local g_mode_map = {}
 local g_data_map = {}
 local g_version_map = {}
-local g_patch_map = {}          --热更的patch编号
 local g_flush_time_obj = nil
 
 local M = {
@@ -57,15 +58,12 @@ local function get_patch_file_path(file_path, patch_dir)
     return string.gsub(file_path, pat, path, 1)
 end
 
-local function add_patch(file_path)
+local function add_patch(file_path, up_time)
     local function get_patch_dir()
-        if not g_patch_map[file_path] then
-            g_patch_map[file_path] = 0
-        end
-        g_patch_map[file_path] = g_patch_map[file_path] + 1
-        local patch = g_patch_map[file_path]
         local base_info = module_info.get_base_info()
-        return file_util.path_join(g_recordpath, string.format("sharedata_%s/patch_%s/", base_info.module_name, patch))
+        return file_util.path_join(g_recordpath, string.format("sharedata_%s-%s-%s/patch_%s/",
+        base_info.module_name, base_info.version, os.date("%Y%m%d-%H%M%S", base_info.launch_time),
+        os.date("%Y%m%d-%H%M%S", up_time)))
     end
 
     if skynet.is_write_record() then        --如果写录像
@@ -130,13 +128,16 @@ end})
 
 local function watch_update(watchcli, file_path)
     while watchcli:is_watch(file_path) do
-        local new_version = watchcli:await_update(file_path)
+        local str = watchcli:await_update(file_path)
+        local spstr = string_util.split(str, '-')
+        local new_version = tonumber(spstr[1])
+        local up_time = tonumber(spstr[2])
         local old_version = g_version_map[file_path]
         if new_version ~= old_version then
             local mode = g_mode_map[file_path]
             local mode_func = g_mode_funcs[mode]
             g_data_map[file_path] = mode_func.update(file_path)
-            add_patch(file_path)
+            add_patch(file_path, up_time)
             g_version_map[file_path] = new_version
         end
     end
@@ -145,7 +146,9 @@ end
 setmetatable(g_version_map, {__index = function(t, k) 
     local cli = watch_syn.new_client(sinterface)
     cli:watch(k)
-    local version = cli:await_get(k)
+    local str = cli:await_get(k)
+    local spstr = string_util.split(str, '-')
+    local version = tonumber(spstr[1])
     t[k] = version
 
     skynet.fork(watch_update, cli, k)
