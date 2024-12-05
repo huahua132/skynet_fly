@@ -9,6 +9,7 @@ local ipairs = ipairs
 local type = type
 local tostring = tostring
 local tinsert = table.insert
+local collectgarbage = collectgarbage
 
 local M = {}
 local meta = {__index = M}
@@ -32,6 +33,8 @@ local g_queryed_map = {}      --查询到地址的回调列表
 local g_querycbed_map = {}	  --查询到地址已执行回调列表
 local g_updated_map = {}      --更新地址的回调列表
 local g_always_swtich_map = {}--总能切换的modulename服务，不受is_close_swtich限制
+local g_pre_gc_time = 0	 	  --上次调用gc的时间
+
 local SERVICE_NAME = SERVICE_NAME
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
@@ -286,6 +289,13 @@ function M:get_week_visitor_map()
 end
 --是否不再需要访问
 function M:is_not_need_visitor(module_name, source)
+	local cur_time = skynet.now()
+	--大于10分钟调用一次gc，避免因本服务长时间不gc，弱引用没释放，导致其他旧服务也长时间不退出
+	if cur_time - g_pre_gc_time > 60000 then
+		g_pre_gc_time = cur_time
+		collectgarbage("collect")
+	end
+
 	if not g_id_list_map[module_name] then
 		return true
 	end
