@@ -211,7 +211,7 @@ end
 --递归删除文件夹
 function M.rmdir(dir_path)
 	if M.is_window() then
-		return os.execute("rmdir /S /Q " .. dir_path)
+		return os.execute(string.format('rmdir /s /q "%s"', dir_path))
 	else
 		return os.execute("rm -rf " .. dir_path)
 	end
