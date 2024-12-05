@@ -59,6 +59,7 @@ local function launch_new_module(module_name, config)
 	local launch_num = config.launch_num
 	local is_record_on = config.is_record_on		--是否写录像
 	local auto_reload = config.auto_reload		 	--自动热更机制
+	local record_backup = config.record_backup      --录像文件整理
 	local mod_args = config.mod_args or {}
 	local default_arg = config.default_arg or {}
 
@@ -81,7 +82,7 @@ local function launch_new_module(module_name, config)
 		local server_id = skynet.newservice('hot_container',module_name,i,cur_date,cur_time,version,is_record_on)
 		local args = mod_args[i] or default_arg
 
-		local isok,ret = pcall(skynet_call, server_id, 'lua', 'start', args, auto_reload)
+		local isok,ret = pcall(skynet_call, server_id, 'lua', 'start', args, auto_reload, record_backup)
 		if not isok or not ret then
 			log.fatal("launch_new_module err ",module_name,args)
 			is_ok = false
