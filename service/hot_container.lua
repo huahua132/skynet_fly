@@ -28,6 +28,15 @@ skynet_util.set_cmd_table(CMD)
 
 local MODULE_NAME = MODULE_NAME
 local module_info = require "skynet-fly.etc.module_info"
+module_info.set_base_info {
+	module_name = MODULE_NAME,
+	index = INDEX,
+	launch_date = LAUNCH_DATE,
+	launch_time = LAUNCH_TIME,
+	version = VERSION,
+	is_record_on = IS_RECORD_ON,
+}
+
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local table_util = require "skynet-fly.utils.table_util"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
@@ -45,17 +54,10 @@ if g_breakpoint_debug_module_name == MODULE_NAME and INDEX == g_breakpoint_debug
 	g_breakpoint_debug_port = tonumber(skynet.getenv("breakpoint_debug_port"))
 end
 
-module_info.set_base_info {
-	module_name = MODULE_NAME,
-	index = INDEX,
-	launch_date = LAUNCH_DATE,
-	launch_time = LAUNCH_TIME,
-	version = VERSION,
-	is_record_on = IS_RECORD_ON,
-}
-
 local SERVER_STATE = SERVER_STATE_TYPE.loading
 local IS_CLOSE_HOT_RELOAD = false
+
+local g_time_point_obj = nil
 
 --启动成功之后回调列表
 local g_start_after_cb = {}
@@ -165,7 +167,7 @@ local function check_exit()
 	end
 end
 
-function CMD.start(cfg)
+function CMD.start(cfg, auto_reload)
 	if g_breakpoint_debug_host and g_breakpoint_debug_port then
 		log.warn_fmt("start breakpoint module_name[%s] index[%s] host[%s] port[%s]", MODULE_NAME, INDEX, g_breakpoint_debug_host, g_breakpoint_debug_port)
 		require("skynet-fly.LuaPanda").start(g_breakpoint_debug_host, g_breakpoint_debug_port);
@@ -187,6 +189,29 @@ function CMD.start(cfg)
 		end
 		contriner_client:open_ready()
 		SERVER_STATE = SERVER_STATE_TYPE.starting
+
+		if auto_reload and INDEX == 1 then
+			local timer_point = require "skynet-fly.time_extend.timer_point"
+			g_time_point_obj = timer_point:new(auto_reload.type)
+
+			local function set_time_point_opt(opt)
+				if auto_reload[opt] then
+					local set_func = assert(g_time_point_obj['set_' .. opt], "opt func not exists: " .. opt)
+					g_time_point_obj = set_func(g_time_point_obj, auto_reload[opt])
+				end
+			end
+			set_time_point_opt('month')
+			set_time_point_opt('day')
+			set_time_point_opt('hour')
+			set_time_point_opt('min')
+			set_time_point_opt('sec')
+			set_time_point_opt('wday')
+			set_time_point_opt('yday')
+			g_time_point_obj = g_time_point_obj:builder(function()
+				log.info("auto reload >>>>>>>>>> ", MODULE_NAME)
+				skynet.send('.contriner_mgr','lua','load_modules', skynet.self(), MODULE_NAME)
+			end)
+		end
 	else
 		SERVER_STATE = SERVER_STATE_TYPE.start_failed
 	end
@@ -208,6 +233,10 @@ function CMD.close()
 		skynet.fork(func)
 	end
 	SERVER_STATE = SERVER_STATE_TYPE.fix_exited
+
+	if g_time_point_obj then
+		g_time_point_obj:cancel()
+	end
 end
 
 --退出之前
