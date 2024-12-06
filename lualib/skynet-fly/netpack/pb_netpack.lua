@@ -8,6 +8,7 @@ local pcall = pcall
 local assert = assert
 local tostring = tostring
 local setmetatable = setmetatable
+local pairs = pairs
 
 local g_instance_map = {}
 
@@ -17,7 +18,7 @@ function M.new(name)
 	local m_name = name or ""
 	local m_loaded = {}
 	local m_pack_id_name = {}
-	
+	local m_p = protoc:new()
 	local ret_M = {}
 	--------------------------------------------------------------------------
 	--加载指定路径pb文件
@@ -25,18 +26,26 @@ function M.new(name)
 	function ret_M.load(rootpath)
 		for file_name,file_path,file_info in file_util.diripairs(rootpath) do
 			if string.find(file_name,".proto",nil,true) then
-				protoc:loadfile(file_path)
+				m_p:loadfile(file_path)
 			end
 		end
 	
 		--记录加载过的message名称
-		for name,basename,type in pb.types() do
-			if not string.find(name,".google.protobuf",nil,true) then
-				m_loaded[name] = true
+		for file_path, info in pairs(m_p.loaded) do
+			if info.message_type then
+				local package = info.package
+				for i = 1, #info.message_type do
+					local message = info.message_type[i]
+					m_loaded['.' .. package .. '.' .. message.name] = true
+				end
 			end
 		end
-	
+
 		return m_loaded
+	end
+
+	function ret_M.get_loaded()
+		return m_p.loaded
 	end
 	--------------------------------------------------------------------------
 	--按包名方式编码
