@@ -13,7 +13,6 @@ local M = {}
 local mata = {__index = M}
 
 function M:new(time_out)
-    assert(time_out > 0, "time_out err")
     local t = {
         map = {},
         list = {},
@@ -34,11 +33,16 @@ function M:wait(k)
     end
 
     local co = coroutine.running()
-    local ti = timer:new(self.time_out, 1, skynet.wakeup, co)
+    local ti = nil
+    if self.time_out then
+       ti = timer:new(self.time_out, 1, skynet.wakeup, co)
+    end
     map[k][co] = true
     tinsert(list[k], co)
     skynet.wait(co)
-    ti:cancel()
+    if ti then
+        ti:cancel()
+    end
     map[k][co] = nil
     local ls = list[k]
     for i = 1,#ls do

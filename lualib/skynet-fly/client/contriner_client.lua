@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local table_util = require "skynet-fly.utils.table_util"
+local wait = require "skynet-fly.time_extend.wait"
 local setmetatable = setmetatable
 local assert = assert
 local pairs = pairs
@@ -34,6 +35,7 @@ local g_querycbed_map = {}	  --查询到地址已执行回调列表
 local g_updated_map = {}      --更新地址的回调列表
 local g_always_swtich_map = {}--总能切换的modulename服务，不受is_close_swtich限制
 local g_pre_gc_time = 0	 	  --上次调用gc的时间
+local g_wait = wait:new()
 
 local SERVICE_NAME = SERVICE_NAME
 --弱引用原表
@@ -106,6 +108,7 @@ local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		local id_list,name_id_list,version = skynet.call(get_contriner_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
+		skynet.error("monitor ", key)
 		if not is_close_swtich or g_always_swtich_map[key] then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
@@ -117,6 +120,9 @@ local function monitor(t,key)
 			if updated then
 				skynet.fork(call_back_updated, updated)
 			end
+		else
+			--等待开放swtich
+			g_wait:wait("open_swtich")
 		end
 	end
 end
@@ -225,6 +231,7 @@ end
 --开启服务切换
 function M:open_switch()
 	is_close_swtich = false
+	g_wait:wakeup("open_switch")
 end
 
 skynet.init(function()
