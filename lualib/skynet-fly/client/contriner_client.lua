@@ -38,6 +38,9 @@ local g_pre_gc_time = 0	 	  --上次调用gc的时间
 local g_wait = wait:new()
 
 local SERVICE_NAME = SERVICE_NAME
+if MODULE_NAME then
+	g_week_visitor_map[MODULE_NAME] = true		--自己标记为弱访问者
+end
 --弱引用原表
 local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
@@ -108,7 +111,6 @@ local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
 		local id_list,name_id_list,version = skynet.call(get_contriner_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
-		skynet.error("monitor ", key)
 		if not is_close_swtich or g_always_swtich_map[key] then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
