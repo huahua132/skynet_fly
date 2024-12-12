@@ -19,10 +19,10 @@ function M:new(ormtab, entry_data)
 end
 
 --新增无效条目数据 用于防止缓存穿透
-function M:new_invaild(entry_data)
+function M:new_invalid(entry_data)
     local t = {
         _entry_data = entry_data,
-        _invaild = true,
+        _invalid = true,
     }
     
     setmetatable(t, mata)
@@ -65,8 +65,8 @@ function M:clear_change()
 end
 
 --是否无效条目
-function M:is_invaild()
-    return self._invaild
+function M:is_invalid()
+    return self._invalid
 end
 
 return M

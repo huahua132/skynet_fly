@@ -44,7 +44,7 @@ local FIELD_TYPE = {
     table        = 53,
 }
 
-local INVAILD_POINT = {count = 0, total_count = 0}  --无效叶点
+local INVALID_POINT = {count = 0, total_count = 0}  --无效叶点
 local VAILD_POINT = {count = 1, total_count = 1}    --有效叶点
 
 local FIELD_LUA_DEFAULT = {
@@ -116,8 +116,8 @@ local function check_one_field(t, field_name, field_value)
     local field_type = assert(t._field_map[field_name], "not exists field_name = " .. field_name)
     local check_func = assert(FIELD_TYPE_CHECK_FUNC[field_type], "not check func : ".. field_type)
     local ktype = type(field_name)
-    assert(ktype == "string", sformat("tab_name[%s] set invaild field_name type field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))                       --字段名必须是string
-    assert(check_func(field_value),sformat("tab_name[%s] set invaild value field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))
+    assert(ktype == "string", sformat("tab_name[%s] set invalid field_name type field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))                       --字段名必须是string
+    assert(check_func(field_value),sformat("tab_name[%s] set invalid value field_name[%s] value[%s] field_type[%s]", t._tab_name, field_name, field_value, field_type))
 end
 
 -- 检查数据表的合法性
@@ -151,7 +151,7 @@ local function add_key_select(t, entry, is_add)
     local key_list = t._keylist
 
     local res_entry = entry
-    local invaild = entry:is_invaild()
+    local invalid = entry:is_invalid()
     local select_list = {}
     local len = #key_list
     for i = 1,len do
@@ -173,8 +173,8 @@ local function add_key_select(t, entry, is_add)
                 if t._cache_map then
                     t._cache_map:set_cache(entry,t)
                 end
-                if invaild then
-                    key_cache_num_map[field_value] = INVAILD_POINT
+                if invalid then
+                    key_cache_num_map[field_value] = INVALID_POINT
                 else
                     key_cache_num_map[field_value] = VAILD_POINT
                 end
@@ -182,29 +182,29 @@ local function add_key_select(t, entry, is_add)
                 key_select_map[field_value] = entry
                 for i = #select_list, 1, -1 do
                     local one_select = select_list[i]
-                    if not invaild then
+                    if not invalid then
                         one_select.pc[one_select.k].count = one_select.pc[one_select.k].count + 1
                     end
 
-                    if is_add and not invaild then
+                    if is_add and not invalid then
                         --是添加跟着count 一起加一就行
                         if one_select.pc[one_select.k].total_count then
                             one_select.pc[one_select.k].total_count = one_select.pc[one_select.k].total_count + 1
                         end
                     end
                 end
-                if not invaild then
+                if not invalid then
                     t._key_cache_count = t._key_cache_count + 1
                 end
 
-                if is_add and not invaild then
+                if is_add and not invalid then
                     if t._key_cache_total_count then
                         t._key_cache_total_count = t._key_cache_total_count + 1
                     end
                 end
             else
                 res_entry = key_select_map[field_value]
-                if is_add and not invaild and res_entry:is_invaild() then   --是添加并且是无效条目，替换掉
+                if is_add and not invalid and res_entry:is_invalid() then   --是添加并且是无效条目，替换掉
                     del_key_select(t, res_entry, true)
                     add_key_select(t, entry, true)
                     res_entry = entry
@@ -217,7 +217,7 @@ local function add_key_select(t, entry, is_add)
         end
     end
 
-    --log.info("add_key_select:", invaild, is_add, t._key_cache_num_map, tostring(res_entry))
+    --log.info("add_key_select:", invalid, is_add, t._key_cache_num_map, tostring(res_entry))
     return res_entry
 end
 
@@ -279,7 +279,7 @@ del_key_select = function(t, entry, is_del)
     local key_cache_num_map = t._key_cache_num_map                      --缓存数量
     local key_list = t._keylist
     local select_list = {}
-    local invaild = entry:is_invaild()
+    local invalid = entry:is_invalid()
     local len = #key_list
     for i = 1,len do
         local field_name = key_list[i]
@@ -299,11 +299,11 @@ del_key_select = function(t, entry, is_del)
             if entry ~= key_select_map[field_value] then break end
             key_select_map[field_value] = nil
             key_cache_num_map[field_value] = nil
-            if not invaild then
+            if not invalid then
                 t._key_cache_count = t._key_cache_count - 1
             end
             if is_del then
-                if not invaild and t._key_cache_total_count then
+                if not invalid and t._key_cache_total_count then
                     t._key_cache_total_count = t._key_cache_total_count - 1
                 end
             else
@@ -313,12 +313,12 @@ del_key_select = function(t, entry, is_del)
             local rm_k = nil
             for i = #select_list, 1, -1 do
                 local one_select = select_list[i]
-                if not invaild then
+                if not invalid then
                     one_select.pc[one_select.k].count = one_select.pc[one_select.k].count - 1
                 end
                 if is_del then
                     --是删除跟着count 一起减一就行
-                    if not invaild and one_select.pc[one_select.k].total_count then
+                    if not invalid and one_select.pc[one_select.k].total_count then
                         one_select.pc[one_select.k].total_count = one_select.pc[one_select.k].total_count - 1
                     end
                 else
@@ -339,7 +339,7 @@ del_key_select = function(t, entry, is_del)
     if t._cache_map then
         t._cache_map:del_cache(entry)
     end
-    --log.info("del_key_select:", invaild, is_del, t._key_cache_num_map)
+    --log.info("del_key_select:", invalid, is_del, t._key_cache_num_map)
 end
 
 local function init_entry_data(t, entry_data, is_old)
@@ -491,7 +491,7 @@ local function excute_time_out(t, entry)
         t._cache_map:set_cache(entry, t)   --重新设置缓存
         skynet.fork(inval_time_out, t._week_t)
     else
-        if entry:is_invaild() then
+        if entry:is_invalid() then
             del_key_select(t, entry, true)
         else
             del_key_select(t, entry)
@@ -525,7 +525,7 @@ local function check_key_values(t, key_values)
 end
 
 -- 生成无效数据
-local function create_invaild_entry(t, key_values)
+local function create_invalid_entry(t, key_values)
     --无效数据，只需要添加key的数据就行
     local keylist = t._keylist
     local field_map = t._field_map
@@ -537,7 +537,7 @@ local function create_invaild_entry(t, key_values)
         data[field_name] = field_value
     end
 
-    return ormentry:new_invaild(data)
+    return ormentry:new_invalid(data)
 end
 
 local week_mata = {__mode = "kv"}
@@ -662,8 +662,8 @@ get_entry = function(t, key_values, is_init_get_all)
             local entry_data_list = t._adapterinterface:get_entry(key_values)
             if not is_init_get_all and(not entry_data_list or not next(entry_data_list)) then
                 --添加无效条目站位，防止缓存穿透
-                local invaild_entry = create_invaild_entry(t, key_values)
-                add_key_select(t, invaild_entry)
+                local invalid_entry = create_invalid_entry(t, key_values)
+                add_key_select(t, invalid_entry)
                 set_total_count(t, key_values, 0)
                 return entry_list, false
             else
@@ -692,7 +692,7 @@ get_entry = function(t, key_values, is_init_get_all)
         --剔除无效条目
         for i = #entry_list, 1, -1 do
             local entry = entry_list[i]
-            if entry:is_invaild() then
+            if entry:is_invalid() then
                 tremote(entry_list, i)
             end
         end
@@ -710,8 +710,8 @@ local function get_one_entry(t, key_values)
             local entry_data = t._adapterinterface:get_one_entry(key_values)
             if not entry_data then
                 --添加无效条目站位，防止缓存穿透
-                local invaild_entry = create_invaild_entry(t, key_values)
-                add_key_select(t, invaild_entry)
+                local invalid_entry = create_invalid_entry(t, key_values)
+                add_key_select(t, invalid_entry)
                 return nil, false
             else
                 entry = ormentry:new(t, init_entry_data(t, entry_data), true)
@@ -724,7 +724,7 @@ local function get_one_entry(t, key_values)
         t._cache_map:update_cache(entry, t)
     end
 
-    if entry and entry:is_invaild() then
+    if entry and entry:is_invalid() then
         entry = nil
     end
     return entry, true
@@ -757,7 +757,7 @@ local function get_entry_by_in(t, in_values, key_values)
             --剔除无效条目
             for i = #entry_list, 1, -1 do
                 local entry = entry_list[i]
-                if not entry:is_invaild() then
+                if not entry:is_invalid() then
                    tinsert(res_entry_list, entry) 
                 end
             end
@@ -797,8 +797,8 @@ local function get_entry_by_in(t, in_values, key_values)
                     local v = in_values[i]
                     if not in_v_count_map[v] then
                         key_values[kv_len + 1] = v
-                        local invaild_entry = create_invaild_entry(t, key_values)
-                        add_key_select(t, invaild_entry)
+                        local invalid_entry = create_invalid_entry(t, key_values)
+                        add_key_select(t, invalid_entry)
                         set_total_count(t, key_values, 0)
                     end
                 end
