@@ -10,7 +10,6 @@ local function snowflake_service()
     local assert = assert
     local os = os
     local tostring = tostring
-    local fmt = string.format
 
     local MACHINE_ID_BIT = 13             --机器号位数  最大支持配置       8191
     local TIME_BIT       = 32             --时间位数    最大到时间         21060207 14:28:15
@@ -31,9 +30,9 @@ local function snowflake_service()
 
     function CMD.new_guid()
         local cur_time = os.time()
-        assert(cur_time <= TIME_BIT_MAX, "invild time")
+        assert(cur_time <= TIME_BIT_MAX, "invalid time")
         if g_pre_time == cur_time then
-            assert(g_incr_num < INCR_BIT_MAX, "inval incr")
+            assert(g_incr_num < INCR_BIT_MAX, "invalid incr")
             g_incr_num = g_incr_num + 1
         else
             g_pre_time = cur_time
@@ -47,11 +46,11 @@ local function snowflake_service()
         skynet_util.lua_dispatch(CMD)
         MACHINE_ID = tonumber(skynet.getenv("machine_id"))
         --检查机器ID
-        assert(MACHINE_ID and MACHINE_ID <= MACHINE_ID_BIT_MAX, "invild machine_id = " .. tostring(MACHINE_ID))
+        assert(MACHINE_ID and MACHINE_ID <= MACHINE_ID_BIT_MAX, "invalid machine_id = " .. tostring(MACHINE_ID))
         
         local cur_time = os.time()
         --检查时间还有效没
-        assert(cur_time <= TIME_BIT_MAX, "invild time")
+        assert(cur_time <= TIME_BIT_MAX, "invalid time")
 
         log.info_fmt("snowflake_m cur_time[%s] max_time[%s] max_machine_id[%s] max_incr[%s] cur_matchineid[%s]",
         os.date("%Y%m%d %H:%M:%S", cur_time), os.date("%Y%m%d %H:%M:%S", TIME_BIT_MAX), MACHINE_ID_BIT_MAX, INCR_BIT_MAX, MACHINE_ID)
