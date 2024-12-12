@@ -73,3 +73,4 @@ jobs:
 
 permissions:
   contents: write  # 保证GITHUB_TOKEN有足够的权限
+  packages: write
