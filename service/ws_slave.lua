@@ -202,7 +202,7 @@ function CMD.play(source, fd)
 		local agent = c.agent
 		for i = 1, #msg_que do
 			if agent then
-				skynet.redirect(agent, c.client, "client", fd, msg_que[i])
+				skynet.redirect(agent, 0, "client", fd, msg_que[i])
 			else
 				skynet.send(g_watchdog, "lua", "socket", "data", fd, msg_que[i])
 			end
