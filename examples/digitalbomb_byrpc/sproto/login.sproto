@@ -1,0 +1,40 @@
+
+.LoginReq {
+	account 0 : string
+	password 1 : string
+	player_id 2 : integer
+	nickname 3 : integer
+}
+
+.LoginRes {
+	player_id 0 : integer
+}
+
+.LoginOutReq {
+	player_id 0 : integer
+}
+
+.LoginOutRes {
+	player_id 0 : integer
+}
+
+#匹配
+.matchReq {
+	table_name 0 : string
+}
+
+.matchRes {
+	table_id 0 : string
+}
+
+.serverInfoReq {
+	player_id 0 : integer
+}
+
+.serverInfoRes {
+	player_id 0 : integer
+	hall_server_id 1 : integer
+	alloc_server_id 2 : integer
+	table_server_id 3 : integer
+	table_id 4 : string
+}

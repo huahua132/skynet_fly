@@ -9,10 +9,10 @@ function M.new(name, pack_obj)
 
     pack_obj = pack_obj or sp_netpack.new(name)
 
-    --给fd发送socket binary消息
+    --单发
     ret_M.send = util_net_base.create_ws_gate_send_binary(pack_obj.pack_by_id)
 
-    --给fd_list发送socket消息
+    --群发
     ret_M.broadcast = util_net_base.create_ws_gate_broadcast_binary(pack_obj.pack_by_id)
 
     --解包

@@ -19,7 +19,7 @@ local assert = assert
 local g_table_conf = module_cfg.table_conf
 local g_interface_mgr = nil
 
-local test_proto = 'sp'
+local test_proto = skynet.getenv("test_proto")
 
 --======================enum=================================
 local MINE_MIN = 1

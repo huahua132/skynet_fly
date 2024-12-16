@@ -13,7 +13,8 @@ contriner_client:register("share_config_m")
 
 local net_util = nil
 
-local test_proto = 'sp'
+local skynet = require "skynet"
+local test_proto = skynet.getenv("test_proto")
 
 local CMD = {}
 

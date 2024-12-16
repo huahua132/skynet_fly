@@ -123,28 +123,30 @@ local function leave(agent, reason)
 	return true
 end
 
-local function handle_msg(agent, header, body)
+local function handle_msg(agent, header, body, rsp_session)
 	local func = g_handle_map[header]
 	if not func then
 		local table_server_id = agent.table_server_id
 		local table_id = agent.table_id
 		if not table_server_id then
-			log.info("dorp package ",header,body)
+			log.info("dorp package ", header, body, rsp_session)
 		else
-			skynet.send(table_server_id, 'lua', 'request', table_id, agent.player_id, header, body)
+			skynet.send(table_server_id, 'lua', 'request', table_id, agent.player_id, header, body, rsp_session)
 		end
 	else
 		
 		if hall_plug.handle_before then
-			if not hall_plug.handle_before(agent.player_id, header, body) then
+			if not hall_plug.handle_before(agent.player_id, header, body, rsp_session) then
 				return
 			end
 		end
-
-		if hall_plug.handle_end then
-			hall_plug.handle_end(agent.player_id, header, body, func(agent.player_id,header,body))
+		if hall_plug.handle_end_rpc then --增加目的是考虑到 handle_end的兼容性
+			local handle_res = {func(agent.player_id, header, body, rsp_session)}
+			hall_plug.handle_end_rpc(agent.player_id, header, body, rsp_session, handle_res)
+		elseif hall_plug.handle_end then
+			hall_plug.handle_end(agent.player_id, header, body, func(agent.player_id, header, body, rsp_session))
 		else
-			func(agent.player_id, header, body)
+			func(agent.player_id, header, body, rsp_session)
 		end
 	end
 end
@@ -168,8 +170,17 @@ local function dispatch(fd, source, msg, sz)
 		log.error("unpack err ",header, body)
 		return
 	end
+
+	local rsp_session = nil
+	if hall_plug.rpc_pack then
+		local pre_header = header
+		header, body, rsp_session = hall_plug.rpc_pack.handle_msg(header, body)
+		if not header then
+			log.error("rpc_pack handle_msg err ", pre_header, body)
+		end
+	end
 	
-	agent.queue(handle_msg, agent, header, body)
+	agent.queue(handle_msg, agent, header, body, rsp_session)
 end
 --连接大厅
 local function connect(agent, is_reconnect, is_jump_join)
@@ -214,6 +225,14 @@ local CMD = {}
 ----------------------------------------------------------------------------------
 --interface
 ----------------------------------------------------------------------------------
+local function send_msg(agent, header, body)
+	if agent.is_ws then
+		hall_plug.ws_send(agent.gate, agent.fd, header, body)
+	else
+		hall_plug.send(agent.gate, agent.fd, header, body)
+	end
+end
+
 local interface = {}
 --创建进入房间
 function interface:create_join_table(player_id, table_name, ...)
@@ -334,11 +353,7 @@ function interface:send_msg(player_id, header, body)
 		return
 	end
 	local agent = g_player_map[player_id]
-	if agent.is_ws then
-		hall_plug.ws_send(agent.gate, agent.fd, header, body)
-	else
-		hall_plug.send(agent.gate, agent.fd, header, body)
-	end
+	send_msg(agent, header, body)
 end
 
 --发送消息给部分玩家
@@ -475,6 +490,113 @@ function interface:get_addr(player_id)
 	end
 
 	return agent.addr
+end
+
+--rpc回复消息
+function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
+	if not interface:is_online(player_id) then
+		log.info("rpc_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+
+	local body = hall_plug.rpc_pack.pack_rsp(msgbody, rsp_session)
+	send_msg(agent, header, body)
+end
+
+--rpc回复error消息
+function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
+	if not interface:is_online(player_id) then
+		log.info("error_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+
+	local body = hall_plug.rpc_pack.pack_error(msgbody, rsp_session)
+	send_msg(agent, header, body)
+end
+
+--rpc推送消息
+function interface:rpc_push_msg(player_id, header, msgbody)
+	if not interface:is_online(player_id) then
+		log.info("error_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	send_msg(agent, header, body)
+end
+
+--rpc推送消息给部分玩家
+function interface:rpc_push_by_player_list(player_list, header, msgbody)
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
+	for i = 1, #player_list do
+		local player_id = player_list[i]
+		local agent = g_player_map[player_id]
+		if not agent then
+			log.info("rpc_push_by_player_list not exists ",player_id)
+		else
+			if agent.fd > 0 then
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
+			else
+				log.info("rpc_push_by_player_list not online ",player_id)
+			end
+		end
+	end
+	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	if #gate_list > 0 then
+		hall_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		hall_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
+end
+
+--rpc推送消息给全部玩家
+function interface:rpc_push_broad_cast(header, msgbody, filter_map)
+	filter_map = filter_map or EMPTY
+
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
+	for player_id,agent in pairs(g_player_map) do
+		if not filter_map[player_id] then
+			if agent.fd > 0 then
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
+			else
+				log.info("broad_cast_msg not online ",player_id)
+			end
+		end
+	end
+	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	if #gate_list > 0 then
+		hall_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		hall_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 ----------------------------------------------------------------------------------
 --CMD

@@ -25,7 +25,7 @@ message matchReq {
 }
 
 message matchRes {
-	optional int32 table_id = 1;
+	optional string table_id = 1;
 }
 
 message serverInfoReq {

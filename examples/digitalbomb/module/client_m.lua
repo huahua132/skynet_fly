@@ -9,7 +9,7 @@ local table_util = require "skynet-fly.utils.table_util"
 local contriner_client = require "skynet-fly.client.contriner_client"
 contriner_client:register("share_config_m")
 
-local test_proto = 'sp'
+local test_proto = skynet.getenv("test_proto")
 
 local CMD = {}
 
@@ -46,13 +46,6 @@ local function connnect(handle)
 
 	net_util.recv(fd,handle or dispatch)
 
-	local msg = "sdfuishfsdfgf"
-	local send_buffer = string.pack(">I2",msg:len()) .. msg
-	if g_config.protocol == 'websocket' then
-		websocket.write(fd, send_buffer)
-	else
-		socket.write(fd, send_buffer)
-	end
 	if test_proto == 'pb' then
 		net_util.send(nil,fd,'.login.LoginReq',login_req)
 	else

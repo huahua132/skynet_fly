@@ -20,7 +20,7 @@ local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local g_interface_mgr = nil
 
-local test_proto = 'sp'
+local test_proto = skynet.getenv("test_proto")
 
 local M = {}
 
@@ -58,7 +58,7 @@ end
 local function match_req(player_id,packname,pack_body)
 	local ok,errorcode,errormsg = g_interface_mgr:match_join_table(player_id,pack_body.table_name)
 	if ok then
-		login_msg:match_res(player_id,{table_id = errorcode})
+		login_msg:match_res(player_id,{table_id = ok})
 	end
 	return ok,errorcode,errormsg
 end

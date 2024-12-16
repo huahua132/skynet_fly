@@ -1,6 +1,6 @@
 local setmetatable = setmetatable
-
-local test_proto = 'sp'
+local skynet = require "skynet"
+local test_proto = skynet.getenv("test_proto")
 
 local M = {}
 local meta = {__index = M}

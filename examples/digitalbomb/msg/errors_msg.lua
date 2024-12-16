@@ -1,6 +1,6 @@
 local errorcode = require "enum.errorcode"
-
-local test_proto = 'sp'
+local skynet = require "skynet"
+local test_proto = skynet.getenv("test_proto")
 
 local setmetatable = setmetatable 
 

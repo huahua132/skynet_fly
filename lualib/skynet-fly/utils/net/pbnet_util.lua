@@ -16,7 +16,7 @@ function M.new(name, pack_obj)
     --给fd发送socket消息
     ret_M.send = util_net_base.create_gate_send(pack_obj.pack)
 
-    --给fd_list发送socket消息
+    --群发
     ret_M.broadcast = util_net_base.create_gate_broadcast(pack_obj.pack)
 
     --解包

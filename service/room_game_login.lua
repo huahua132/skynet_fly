@@ -99,13 +99,13 @@ local function close_fd(fd)
 	skynet.send(agent.gate,'lua','kick',fd)
 end
 
-local function connect_hall(gate, fd, is_ws, addr, player_id)
+local function connect_hall(gate, fd, is_ws, addr, player_id, header, rsp_session)
 	local old_agent = g_player_map[player_id]
 	local hall_client = nil
 	if old_agent then
 		hall_client = old_agent.hall_client
 		if interface:is_online(player_id) then
-			login_plug.repeat_login(player_id)
+			login_plug.repeat_login(player_id, header, rsp_session)
 		end
 		close_fd(old_agent.fd)
 	else
@@ -115,7 +115,7 @@ local function connect_hall(gate, fd, is_ws, addr, player_id)
 	
 	local ret,errcode,errmsg = hall_client:mod_call("connect",gate, fd, is_ws, addr, player_id, SELF_ADDRESS)
 	if not ret then
-		login_plug.login_failed(player_id,errcode,errmsg)
+		login_plug.login_failed(player_id, errcode, errmsg, header, rsp_session)
 		return
 	end
 
@@ -137,12 +137,12 @@ local function connect_hall(gate, fd, is_ws, addr, player_id)
 		}
 	end
 
-	login_plug.login_succ(player_id,ret)
+	login_plug.login_succ(player_id, ret, header, rsp_session)
 	return true
 end
 
-local function check_func(gate, fd, is_ws, addr, ...)
-	local player_id,errcode,errmsg = login_plug.check(...)
+local function check_func(gate, fd, is_ws, addr, header, body, rsp_session)
+	local player_id,errcode,errmsg = login_plug.check(header, body, rsp_session)
 	if player_id == continue then
 		return continue
 	end
@@ -159,10 +159,10 @@ local function check_func(gate, fd, is_ws, addr, ...)
 	end
 	
 	g_login_lock_map[player_id] = true
-	local isok,err = x_pcall(connect_hall, gate, fd, is_ws, addr, player_id)
+	local isok,err = x_pcall(connect_hall, gate, fd, is_ws, addr, player_id, header, rsp_session)
 	g_login_lock_map[player_id] = nil
 	if not isok then
-		log.error("connect_hall failed ",err)
+		log.error("connect_hall failed ", gate, fd, is_ws, addr, player_id, header, rsp_session, err)
 		return
 	end
 	
@@ -172,6 +172,13 @@ end
 ----------------------------------------------------------------------------------
 --interface
 ----------------------------------------------------------------------------------
+local function send_msg(agent, header, body)
+	if agent.is_ws then
+		login_plug.ws_send(agent.gate, agent.fd, header, body)
+	else
+		login_plug.send(agent.gate, agent.fd, header, body)
+	end
+end
 
 function interface:is_online(player_id)
 	local agent = g_player_map[player_id]
@@ -183,22 +190,17 @@ function interface:is_online(player_id)
 end
 
 --发送消息
-function interface:send_msg(player_id,header,body)
+function interface:send_msg(player_id, header, body)
 	if not interface:is_online(player_id) then
-		log.info("send msg not online ",player_id)
+		log.info("send msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
-	
-	if agent.is_ws then
-		login_plug.ws_send(agent.gate, agent.fd, header, body)
-	else
-		login_plug.send(agent.gate, agent.fd, header, body)
-	end
+	send_msg(agent, header, body)
 end
 
 --发送消息给部分玩家
-function interface:send_msg_by_player_list(player_list,header,body)
+function interface:send_msg_by_player_list(player_list, header, body)
 	local gate_list = {}
 	local fd_list = {}
 
@@ -282,6 +284,113 @@ function interface:get_addr(player_id)
 	end
 
 	return agent.addr
+end
+
+--rpc回复消息
+function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
+	if not interface:is_online(player_id) then
+		log.info("rpc_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+
+	local body = login_plug.rpc_pack.pack_rsp(msgbody, rsp_session)
+	send_msg(agent, header, body)
+end
+
+--rpc回复error消息
+function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
+	if not interface:is_online(player_id) then
+		log.info("error_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+
+	local body = login_plug.rpc_pack.pack_error(msgbody, rsp_session)
+	send_msg(agent, header, body)
+end
+
+--rpc推送消息
+function interface:rpc_push_msg(player_id, header, msgbody)
+	if not interface:is_online(player_id) then
+		log.info("error_msg not online ", player_id, header)
+		return
+	end
+	local agent = g_player_map[player_id]
+	local body = login_plug.rpc_pack.pack_push(msgbody)
+	send_msg(agent, header, body)
+end
+
+--rpc推送消息给部分玩家
+function interface:rpc_push_by_player_list(player_list, header, msgbody)
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
+	for i = 1, #player_list do
+		local player_id = player_list[i]
+		local agent = g_player_map[player_id]
+		if not agent then
+			log.info("rpc_push_by_player_list not exists ",player_id)
+		else
+			if agent.fd > 0 then
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
+			else
+				log.info("rpc_push_by_player_list not online ",player_id)
+			end
+		end
+	end
+	local body = login_plug.rpc_pack.pack_push(msgbody)
+	if #gate_list > 0 then
+		login_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		login_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
+end
+
+--rpc推送消息给全部玩家
+function interface:rpc_push_broad_cast(header, msgbody, filter_map)
+	filter_map = filter_map or EMPTY
+
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
+	for player_id,agent in pairs(g_player_map) do
+		if not filter_map[player_id] then
+			if agent.fd > 0 then
+				if agent.is_ws then
+					tinsert(ws_gate_list, agent.gate)
+					tinsert(ws_fd_list, agent.fd)
+				else
+					tinsert(gate_list, agent.gate)
+					tinsert(fd_list, agent.fd)
+				end
+			else
+				log.info("broad_cast_msg not online ",player_id)
+			end
+		end
+	end
+	local body = login_plug.rpc_pack.pack_push(msgbody)
+	if #gate_list > 0 then
+		login_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		login_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
 end
 ----------------------------------------------------------------------------------
 --CMD
@@ -425,6 +534,8 @@ skynet.start(function()
 	login_plug.is_jump_new = login_plug.is_jump_new or false 	   --是否跳转到新服务
 	login_plug.jump_inval_time = login_plug.jump_inval_time or 60  --跳转尝试间隔时间
 	login_plug.jump_once_cnt = login_plug.jump_once_cnt or 10	   --单次尝试跳转人数
+
+	local rpc_pack = login_plug.rpc_pack				   		   --rpc包处理工具
 	
 	if login_plug.register_cmd then
 		for name,func in pairs(login_plug.register_cmd) do
@@ -462,11 +573,20 @@ skynet.start(function()
 
 			local header, body = unpack(msg, sz)
 			if not header then
-				log.error("unpack err ", fd, agent.addr, agent.is_ws, sz)
+				log.error("unpack err ", fd, agent.addr, agent.is_ws, sz, header, body)
 				return
 			end
-			
-			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, agent.addr, header, body)
+
+			local rsp_session = nil
+			if rpc_pack then
+				local pre_header = header
+				header, body, rsp_session = rpc_pack.handle_msg(header, body)
+				if not header then
+					log.error("rpc_pack handle_msg err ", pre_header, body)
+				end
+			end
+
+			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, agent.addr, header, body, rsp_session)
 			if not player_id then
 				close_fd(fd)
 			elseif player_id == continue then

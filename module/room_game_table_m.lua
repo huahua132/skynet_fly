@@ -16,6 +16,7 @@ local tinsert = table.insert
 local g_table_map = {}
 local g_config = nil
 local table_plug = nil
+local EMPTY = {}
 -------------------------------------------------------------------------------
 --private
 -------------------------------------------------------------------------------
@@ -152,7 +153,7 @@ local function broad_cast_msg(table_id, header, body, filter_map)
 		log.warn("broad_cast_msg not exists table_id = ",table_id)
 		return
 	end
-	filter_map = filter_map or {}
+	filter_map = filter_map or EMPTY
 
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -174,10 +175,117 @@ local function broad_cast_msg(table_id, header, body, filter_map)
 					tinsert(fd_list, player.fd)
 				end
 			else
-				log.info("send_msg_by_player_list not online ",player_id)
+				log.info("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
+
+	if #gate_list > 0 then
+		table_plug.broadcast(gate_list, fd_list, header, body)
+	end
+
+	if #ws_gate_list > 0 then
+		table_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
+end
+
+--rpc回复消息
+local function rpc_rsp_msg(table_id, player_id, header, msgbody, rsp_session)
+	local body = table_plug.rpc_pack.pack_rsp(msgbody, rsp_session)
+	send_msg(table_id, player_id, header, body)
+end
+
+--rpc error消息
+local function rpc_error_msg(table_id, player_id, header, msgbody, rsp_session)
+	local body = table_plug.rpc_pack.pack_error(msgbody, rsp_session)
+	send_msg(table_id, player_id, header, body)
+end
+
+--rpc push消息
+local function rpc_push_msg(table_id, player_id, header, msgbody)
+	local body = table_plug.rpc_pack.pack_push(msgbody)
+	send_msg(table_id, player_id, header, body)
+end
+
+--rpc推送消息给部分玩家
+local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
+	local t_info = get_table_info(table_id)
+	if not t_info then
+		log.warn("rpc_push_by_player_list not exists table_id = ",table_id, header)
+		return
+	end
+	
+	local player_map = t_info.player_map
+
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+	for i = 1,#player_list do
+		local player_id = player_list[i]
+		local player = player_map[player_id]
+		if not player then
+			log.info("rpc_push_by_player_list not exists ",player_id)
+		else
+			if player.fd > 0 then
+				if player.is_ws then
+					tinsert(ws_gate_list, player.gate)
+					tinsert(ws_fd_list, player.fd)
+				else
+					tinsert(gate_list, player.gate)
+					tinsert(fd_list, player.fd)
+				end
+			else
+				log.info("rpc_push_by_player_list not online ",player_id)
+			end
+		end
+	end
+
+	local body = table_plug.rpc_pack.pack_push(msgbody)
+
+	if #gate_list > 0 then
+		table_plug.broadcast(gate_list, fd_list, header, body)
+	end
+	
+	if #ws_gate_list > 0 then
+		table_plug.ws_broadcast(ws_gate_list, ws_fd_list, header, body)
+	end
+end
+
+local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
+	if not g_table_map[table_id] then
+		log.warn("rpc_push_broad_cast not exists table_id = ",table_id)
+		return
+	end
+	filter_map = filter_map or EMPTY
+
+	local t_info = g_table_map[table_id]
+	local player_map = t_info.player_map
+
+	local gate_list = {}
+	local fd_list = {}
+
+	local ws_gate_list = {}
+	local ws_fd_list = {}
+
+	for player_id,player in pairs(player_map) do
+		if not filter_map[player_id] then
+			if player.fd > 0 then
+				if player.is_ws then
+					tinsert(ws_gate_list, player.gate)
+					tinsert(ws_fd_list, player.fd)
+				else
+					tinsert(gate_list, player.gate)
+					tinsert(fd_list, player.fd)
+				end
+			else
+				log.info("rpc_push_broad_cast not online ",player_id)
+			end
+		end
+	end
+
+	local body = table_plug.rpc_pack.pack_push(msgbody)
 
 	if #gate_list > 0 then
 		table_plug.broadcast(gate_list, fd_list, header, body)
@@ -199,6 +307,10 @@ function interface:new(table_id)
     }
     setmetatable(t,meta)
     return t
+end
+--是否在线
+function interface:is_online(player_id)
+	return is_online(self.table_id, player_id)
 end
 --踢出该桌子所有玩家
 function interface:kick_out_all(reason)
@@ -272,6 +384,31 @@ function interface:get_addr(player_id)
 	end
 
 	return player.addr
+end
+
+--rpc回复消息
+function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
+	rpc_rsp_msg(self.table_id, player_id, header, msgbody, rsp_session)
+end
+
+--rpc回复error消息
+function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
+	rpc_error_msg(self.table_id, player_id, header, msgbody, rsp_session)
+end
+
+--rpc推送消息
+function interface:rpc_push_msg(player_id, header, msgbody)
+	rpc_push_msg(self.table_id, player_id, header, msgbody)
+end
+
+--rpc推送消息给部分玩家
+function interface:rpc_push_by_player_list(player_list, header, msgbody)
+	rpc_push_by_player_list(self.table_id, player_list, header, msgbody)
+end
+
+--rpc推送消息给全部玩家
+function interface:rpc_push_broad_cast(header, msgbody, filter_map)
+	rpc_push_broad_cast(self.table_id, header, msgbody, filter_map)
 end
 -------------------------------------------------------------------------------
 --CMD
@@ -381,7 +518,7 @@ function CMD.reconnect(gate, fd, is_ws, addr, table_id, player_id)
 end
 
 --协议消息请求，由hall大厅服转发过来
-function CMD.request(table_id,player_id,header,body)
+function CMD.request(table_id, player_id, header, body, rsp_session)
 	assert(g_table_map[table_id])
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
@@ -389,18 +526,21 @@ function CMD.request(table_id,player_id,header,body)
 
     local func = t_info.game_table.handle[header]
     if not func then
-        log.info("dorp package ",header,body)
+        log.info("dorp package ", header, body)
     else
 		if t_info.game_table.handle_before then
-			if not t_info.game_table.handle_before(player_id, header, body) then
+			if not t_info.game_table.handle_before(player_id, header, body, rsp_session) then
 				return
 			end
 		end
-
-		if t_info.game_table.handle_end then
-			t_info.game_table.handle_end(player_id,header,body,func(player_id,header,body))
+		
+		if t_info.game_table.handle_end_rpc then --增加目的是考虑到 handle_end的兼容性
+			local handle_res = {func(player_id, header, body, rsp_session)}
+			t_info.game_table.handle_end_rpc(player_id, header, body, rsp_session, handle_res)
+		elseif t_info.game_table.handle_end then
+			t_info.game_table.handle_end(player_id, header, body, func(player_id, header, body, rsp_session))
 		else
-			func(player_id,header,body)
+			func(player_id, header, body, rsp_session)
 		end
     end
 	return true

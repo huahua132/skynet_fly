@@ -9,6 +9,7 @@ local string = string
 local assert = assert
 local tinsert = table.insert
 local pairs = pairs
+local type = type
 
 local M = {}
 
@@ -26,8 +27,14 @@ function M.create_gate_send(pack)
 			log.error("util_net_base.pack err ",header,body,err)
 			return
 		end
-	
-		return socket.write(fd,netpack.pack(msg))
+		
+		if type(msg) == 'string' then
+			return socket.write(fd,netpack.pack(msg))
+		else
+			for i = 1, #msg do
+				socket.lwrite(fd, netpack.pack(msg[i]))
+			end
+		end
 	end
 end
 
@@ -46,9 +53,18 @@ function M.create_gate_broadcast(pack)
 			return
 		end
 
+		local is_str_msg = type(msg) == 'string'
+		
 		for i = 1,#fd_list do
 			--netpack.pack会分配内存，write会释放内存，所以必须一个write一个包
-			socket.write(fd_list[i], netpack.pack(msg))
+			if is_str_msg then
+				--广播全部用低权重通道吧
+				socket.lwrite(fd_list[i], netpack.pack(msg))
+			else
+				for i = 1, #msg do
+					socket.lwrite(fd_list[i], netpack.pack(msg[i]))
+				end
+			end
 		end
 	end
 end
@@ -71,7 +87,7 @@ function M.create_gate_unpack(unpack)
 			log.error("unpack err ",body)
 			return
 		end
-	
+
 		return header,body
 	end
 end
@@ -130,8 +146,8 @@ end
 --------------------------------------------------------
 --基于skynet ws_gate 的消息发送
 --------------------------------------------------------
-local function create_ws_gate_send(type)
-	local send_type = 'send_' .. type
+local function create_ws_gate_send(m_type)
+	local send_type = 'send_' .. m_type
 	return function(pack)
 		return function(gate,fd,header,body)
 			assert(fd)
@@ -144,24 +160,33 @@ local function create_ws_gate_send(type)
 				return
 			end
 		
-			--大端2字节表示包长度
-			local send_buffer = string.pack(">I2",msg:len()) .. msg
-		
 			if not gate then
 				if websocket.is_close(fd) then
 					log.warn("send not exists fd ",fd)
 				else
-					websocket.write(fd,send_buffer,type)
+					if type(msg) == 'string' then
+						websocket.write(fd,string.pack(">I2",msg:len()) .. msg, m_type)
+					else
+						for i = 1, #msg do
+							websocket.write(fd,string.pack(">I2",msg[i]:len()) .. msg[i], m_type)
+						end
+					end
 				end
 			else
-				skynet.send(gate,'lua',send_type,fd,send_buffer)
+				if type(msg) == 'string' then
+					skynet.send(gate,'lua',send_type,fd,string.pack(">I2",msg:len()) .. msg)
+				else
+					for i = 1, #msg do
+						skynet.send(gate,'lua',send_type,fd,string.pack(">I2",msg[i]:len()) .. msg[i])
+					end
+				end
 			end
 		end
 	end
 end
 
-local function create_ws_gate_broadcast(type)
-	local send_type = 'broadcast_' .. type
+local function create_ws_gate_broadcast(m_type)
+	local send_type = 'broadcast_' .. m_type
 	return function(pack)
 		return function(gate_list,fd_list,header,body)
 			assert(gate_list and #gate_list > 0)
@@ -175,9 +200,6 @@ local function create_ws_gate_broadcast(type)
 				return
 			end
 
-			--大端2字节表示包长度
-			local send_buffer = string.pack(">I2",msg:len()) .. msg
-
 			local gate_fd_list = {}
 			for i = 1,#fd_list do
 				local fd = fd_list[i]
@@ -188,8 +210,25 @@ local function create_ws_gate_broadcast(type)
 				tinsert(gate_fd_list[gate], fd)
 			end
 
+			--大端2字节表示包长度
+			local is_str_msg = false
+			if type(msg) == 'string' then
+				msg = string.pack(">I2",msg:len()) .. msg
+				is_str_msg = true
+			else
+				for i = 1, msg do
+					msg[i] = string.pack(">I2",msg[i]:len()) .. msg[i]
+				end
+			end
+
 			for gate, fd_list in pairs(gate_fd_list) do
-				skynet.send(gate,'lua', send_type, fd_list, send_buffer)
+				if is_str_msg then
+					skynet.send(gate,'lua', send_type, fd_list, msg)
+				else
+					for i = 1, msg do
+						skynet.send(gate,'lua', send_type, fd_list, msg[i])
+					end
+				end
 			end
 		end
 	end

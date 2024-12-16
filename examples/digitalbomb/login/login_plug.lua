@@ -15,7 +15,7 @@ local ws_spnet_util = require "skynet-fly.utils.net.ws_spnet_util"
 
 local assert = assert
 
-local test_proto = 'sp'
+local test_proto = skynet.getenv("test_proto")
 
 local g_interface_mgr = nil
 

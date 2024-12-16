@@ -66,7 +66,7 @@ function M.new(name)
 		assert(name)
 		assert(pstr)
 		if not m_loaded[name] then
-			return nil, m_name .. "decode not exists " .. name
+			return nil, m_name .. " decode not exists " .. name
 		end
 
 		return pcall(pb.decode,name,pstr)
@@ -76,12 +76,11 @@ function M.new(name)
 	--按包名方式打包
 	--------------------------------------------------------------------------
 	ret_M.pack = netpack_base.create_pack(ret_M.encode)
-
 	--------------------------------------------------------------------------
 	--按包名方式解包
 	--------------------------------------------------------------------------
 	ret_M.unpack = netpack_base.create_unpack(ret_M.decode)
-
+	--------------------------------------------------------------------------
 	--------------------------------------------------------------------------
 	--设置协议号包名映射
 	--------------------------------------------------------------------------
@@ -136,6 +135,14 @@ function M.new(name)
 	--按协议号方式解包
 	--------------------------------------------------------------------------
 	ret_M.unpack_by_id = netpack_base.create_unpack_by_id(ret_M.decode_by_id)
+	--------------------------------------------------------------------------
+	--按rpc方式打包
+	--------------------------------------------------------------------------
+	ret_M.pack_by_rpc = netpack_base.create_pack_by_rpc(ret_M.encode_by_id)
+	--------------------------------------------------------------------------
+	--按rpc方式解包
+	--------------------------------------------------------------------------
+	ret_M.unpack_by_rpc = netpack_base.create_unpack_by_rpc(ret_M.decode_by_id)
 
 	return ret_M
 end
