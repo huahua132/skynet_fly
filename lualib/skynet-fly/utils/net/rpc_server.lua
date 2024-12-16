@@ -3,30 +3,57 @@ local netpack_base = require "skynet-fly.netpack.netpack_base"
 local math_util = require "skynet-fly.utils.math_util"
 local service = require "skynet.service"
 local skynet = require "skynet"
+local wait = require "skynet-fly.time_extend.wait":new()
 
 local setmetatable = setmetatable
 local sfmt = string.format
+local assert = assert
 
 local function alloc_push_session()
     local skynet = require "skynet"
     local skynet_util = require "skynet-fly.utils.skynet_util"
     local math_util = require "skynet-fly.utils.math_util"
 
+    local one_alloc_num = 10000    --1次分配1万 不建议把这个值改的特别大，数越大，使用的服务越多，越快回绕，越容易造成session的冲突，正常42亿 一个分包推送的消息不可能回绕了还没发送-接收完
     local cur_session = 1
 
     local CMD = {}
     function CMD.new_session()
-        local session = cur_session
-        cur_session = cur_session + 1
-        if cur_session > math_util.uint32max then
+        local e = cur_session + one_alloc_num - 1
+        if e > math_util.uint32max then
             cur_session = 1
+            e = cur_session + one_alloc_num - 1
         end
-        return session
+
+        local s = cur_session
+        cur_session = e + 1
+        return s, e
     end
 
     skynet.start(function()
         skynet_util.lua_dispatch(CMD)
     end)
+end
+
+local g_cur, g_end = nil, nil
+local g_allocing = false
+local function new_session()
+    while g_allocing do       --避免并发多次分配
+        wait:wait("alloc")
+    end                 
+
+    if not g_cur or g_cur > g_end then
+        g_allocing = true
+        local session_service = service.new("session_service", alloc_push_session)
+        g_cur, g_end = skynet.call(session_service, 'lua', 'new_session')
+        g_allocing = false
+        wait:wakeup("alloc")
+    end
+
+    local session = g_cur
+    g_cur = g_cur + 1
+
+    return session
 end
 
 local M = {}
@@ -89,12 +116,10 @@ end
 
 --打包推送消息
 function M.pack_push(msgbody)
-    local session_service = service.new("session_service", alloc_push_session)
-    local new_session = skynet.call(session_service, 'lua', 'new_session')
     local body = {
         msgtype = netpack_base.MSG_TYPE.SERVER_PUSH,
         msgbody = msgbody,
-        session = new_session,
+        session = new_session(),
     }
 
     return body
