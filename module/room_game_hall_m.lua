@@ -495,7 +495,7 @@ end
 --rpc回复消息
 function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("rpc_msg not online ", player_id, header)
+		log.info("rpc_rsp_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -507,7 +507,7 @@ end
 --rpc回复error消息
 function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("error_msg not online ", player_id, header)
+		log.info("rpc_error_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -519,7 +519,7 @@ end
 --rpc推送消息
 function interface:rpc_push_msg(player_id, header, msgbody)
 	if not interface:is_online(player_id) then
-		log.info("error_msg not online ", player_id, header)
+		log.info("rpc_push_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -585,7 +585,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("broad_cast_msg not online ",player_id)
+				log.info("rpc_push_broad_cast not online ",player_id)
 			end
 		end
 	end
