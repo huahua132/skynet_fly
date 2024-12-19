@@ -61,7 +61,8 @@ function HANDLER.connect(fd)
 		addr = addr,
 	}
 
-	skynet.send(g_watchdog,'lua', 'socket', 'open', fd, addr, SELF_ADDRESS, true)
+	--这里必须使用call，避免没有设置好转发就开始处理消息了
+	skynet.call(g_watchdog,'lua', 'socket', 'open', fd, addr, SELF_ADDRESS, true)
 end
 
 function HANDLER.handshake(fd,header,url)
