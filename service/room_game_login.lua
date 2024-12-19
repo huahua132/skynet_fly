@@ -630,6 +630,7 @@ skynet.start(function()
 				header, body, rsp_session = rpc_pack.handle_msg(header, body)
 				if not header then
 					log.error("rpc_pack handle_msg err ", pre_header, body)
+					return
 				end
 			end
 

@@ -53,8 +53,9 @@ local use_level = level_map[loglevel] or 0
 local function create_log_func(level_name,is_format)
 	local level = level_map[level_name]
 	return function (...)
+		if level < use_level then return end
 		local msgs = tpack(...)
-		if level < use_level or #msgs < 1 then return end
+		if #msgs < 1 then return end
 
 		local info = debug_getinfo(2,"Sl")
 		local lineinfo = info.short_src .. ":" .. info.currentline

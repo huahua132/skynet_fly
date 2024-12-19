@@ -177,6 +177,7 @@ local function dispatch(fd, source, msg, sz)
 		header, body, rsp_session = hall_plug.rpc_pack.handle_msg(header, body)
 		if not header then
 			log.error("rpc_pack handle_msg err ", pre_header, body)
+			return
 		end
 	end
 	
