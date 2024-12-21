@@ -72,7 +72,7 @@ QQ群号：102993581
 
 ## 快速开始 简单可热更服务 (运行examples/AB_question)
 * **构建服务**
-	- `cd examples/digitalbomb/`
+	- `cd examples/AB_question/`
 	- `sh ../../binshell/make_server.sh ../../`
 
 * **运行服务**
