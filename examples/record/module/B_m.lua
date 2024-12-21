@@ -129,6 +129,38 @@ local function test_ostime()
     end
 end
 
+--测试 pairs遍历
+local function test_pairs()
+    --测试 string key   播放时可以保证顺序
+    local t = {}
+    for i = 1, 10 do
+        t['i' .. i] = i
+    end
+    for k, v in pairs(t) do
+        log.info("string pairs:", k, v)
+    end
+
+    --测试number key    播放时可以保证顺序
+    local num_t = {}
+    for i = 1, 10 do
+        local num = math.random(1, 10000)
+        num_t[num] = i
+    end
+
+    for k,v in pairs(num_t) do
+        log.info("number pairs:", k, v)
+    end
+
+    --测试table key    播放时不能保证顺序
+    local table_t = {}
+    for i = 1, 10 do
+        table_t[{}] = i
+    end
+    for k,v in pairs(table_t) do
+        log.info("table pairs:", k, v)
+    end
+end
+
 --测试热更
 local function test_hotfix()
     timer:new(timer.second * 5, 0, function()
@@ -164,6 +196,7 @@ function CMD.start()
         pcall(test_utp)
         pcall(test_math_rand)
         pcall(test_ostime)
+        pcall(test_pairs)
         pcall(test_hotfix)
         pcall(test_share_data)
     end)
