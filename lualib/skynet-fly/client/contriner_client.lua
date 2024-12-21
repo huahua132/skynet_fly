@@ -1,7 +1,6 @@
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local table_util = require "skynet-fly.utils.table_util"
 local wait = require "skynet-fly.time_extend.wait"
 local setmetatable = setmetatable
 local assert = assert
@@ -90,12 +89,12 @@ end
 
 --切换常驻实例的地址引用
 local function switch_all_intance()
-	for _,v in table_util.sort_ipairs_byk(g_instance_map) do
+	for _,v in pairs(g_instance_map) do
 		if v.obj then
 			switch_svr(v.obj)
 		end
 
-		for _,vv in table_util.sort_ipairs_byk(v.name_map) do
+		for _,vv in pairs(v.name_map) do
 			switch_svr(vv)
 		end
 	end
@@ -159,7 +158,7 @@ local function monitor_all()
 		local mod_version_map = nil
 		while not IS_CLOSE do
 			mod_version_map = skynet.call(get_contriner_mgr_addr(),'lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
-			for mod_name,_ in table_util.sort_ipairs_byk(mod_version_map) do
+			for mod_name,_ in pairs(mod_version_map) do
 				g_register_map[mod_name] = true
 				local _ = g_mod_svr_ids_map[mod_name]
 			end
@@ -246,7 +245,7 @@ end)
 --模块必须全部启动好了才能查询访问其他服务
 function M:open_ready()
 	skynet.fork(function()
-		for mod_name,_ in table_util.sort_ipairs_byk(g_register_map) do
+		for mod_name,_ in pairs(g_register_map) do
 			local _ = g_mod_svr_ids_map[mod_name]
 		end
 	end)

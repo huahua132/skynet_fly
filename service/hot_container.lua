@@ -145,7 +145,7 @@ local function check_exit()
 	end
 	log.info("check_exit:",is_fix_check_exit,g_source_map)
 	if is_fix_check_exit then
-		for source,_ in table_util.sort_ipairs_byk(g_source_map) do
+		for source,_ in pairs(g_source_map) do
 			--问对方是否还需要访问自己
 			if skynet.call(source, 'lua', 'is_not_need_visitor', SELF_ADDRESS, MODULE_NAME) then
 				g_source_map[source] = nil

@@ -5,7 +5,6 @@ local skynet_util = require "skynet-fly.utils.skynet_util"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
-local table_util = require "skynet-fly.utils.table_util"
 
 local next = next
 local assert = assert
@@ -15,6 +14,7 @@ local tpack = table.pack
 local tunpack = table.unpack
 local tremove = table.remove
 local x_pcall = x_pcall
+local pairs = pairs
 
 local M = {}
 
@@ -165,14 +165,14 @@ end
 local function up_cluster_server(svr_name, svr_id)
     local watch_channel_map = g_watch_channel_name_map[svr_name]
     if watch_channel_map then
-        for channel_name in table_util.sort_ipairs_byk(watch_channel_map) do
+        for channel_name in pairs(watch_channel_map) do
             watch_channel_name(svr_name, svr_id, channel_name)
         end
     end
 
     if g_watch_channel_svr_id_map[svr_name] and g_watch_channel_svr_id_map[svr_name][svr_id] then
         local watch_svr_map = g_watch_channel_svr_id_map[svr_name][svr_id]
-        for channel_name in table_util.sort_ipairs_byk(watch_svr_map) do
+        for channel_name in pairs(watch_svr_map) do
             watch_channel_name(svr_name, svr_id, channel_name)
         end
     end

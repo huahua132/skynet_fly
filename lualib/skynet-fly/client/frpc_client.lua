@@ -3,7 +3,6 @@ local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local watch_syn = require "skynet-fly.watch.watch_syn"
-local table_util = require "skynet-fly.utils.table_util"
 local watch_interface = require "skynet-fly.watch.interface.contriner_watch_interface"
 local frpcpack = require "frpcpack.core"
 local log = require "skynet-fly.log"
@@ -34,8 +33,8 @@ local function syn_active_map()
 	g_watch_client:watch("active")
 	while g_watch_client:is_watch("active") do
 		local new_active_map = g_watch_client:await_update("active")
-		for svr_name, map in table_util.sort_ipairs_byk(new_active_map) do
-			for svr_id, id in table_util.sort_ipairs_byk(map) do
+		for svr_name, map in pairs(new_active_map) do
+			for svr_id, id in pairs(map) do
 				local old_id = nil
 				if g_active_map[svr_name] and g_active_map[svr_name][svr_id] then
 					old_id = g_active_map[svr_name][svr_id]

@@ -53,7 +53,7 @@ local function kick_out_all(table_id, reason)
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 
-	for player_id,player in table_util.sort_ipairs_byk(player_map) do
+	for player_id,player in pairs(player_map) do
 		if player_map[player_id] then
 			local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id, reason)
 			if not isok then
@@ -590,7 +590,7 @@ end
 
 function CMD.check_exit()
 	local is_check_ok = true
-	for k,t_info in table_util.sort_ipairs_byk(g_table_map) do
+	for k,t_info in pairs(g_table_map) do
 		if g_table_map[k] and t_info.game_table.check_exit then
 			is_check_ok = t_info.game_table.check_exit()
 			if not is_check_ok then return false end
@@ -608,7 +608,7 @@ end
 
 --预告退出
 function CMD.herald_exit()
-	for k,t_info in table_util.sort_ipairs_byk(g_table_map) do
+	for k,t_info in pairs(g_table_map) do
 		if g_table_map[k] and t_info.game_table.herald_exit then
 			t_info.game_table.herald_exit()
 		end
@@ -617,7 +617,7 @@ end
 
 --取消退出
 function CMD.cancel_exit()
-	for k,t_info in table_util.sort_ipairs_byk(g_table_map) do
+	for k,t_info in pairs(g_table_map) do
 		if g_table_map[k] and t_info.game_table.cancel_exit then
 			t_info.game_table.cancel_exit()
 		end
@@ -627,7 +627,7 @@ end
 
 --确认退出
 function CMD.fix_exit()
-	for k,t_info in table_util.sort_ipairs_byk(g_table_map) do
+	for k,t_info in pairs(g_table_map) do
 		if g_table_map[k] and t_info.game_table.fix_exit then
 			t_info.game_table.fix_exit()
 		end
@@ -637,7 +637,7 @@ end
 --退出
 function CMD.exit()
 	local is_exit = true
-	for k,t_info in table_util.sort_ipairs_byk(g_table_map) do
+	for k,t_info in pairs(g_table_map) do
 		if g_table_map[k] and t_info.game_table.exit then
 			is_exit = t_info.game_table.exit()
 			if not is_exit then return false end

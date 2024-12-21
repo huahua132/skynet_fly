@@ -6,7 +6,6 @@ local queue = require "skynet.queue"()
 local timer = require "skynet-fly.timer"
 local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local table_util = require "skynet-fly.utils.table_util"
 
 contriner_client:register("room_game_table_m")
 
@@ -223,7 +222,7 @@ end
 
 local function check_dismisstable()
 	local cur_time = time_util.time()
-	for table_id,empty_time in table_util.sort_ipairs_byk(g_empty_map) do
+	for table_id,empty_time in pairs(g_empty_map) do
 		local sub_time = cur_time - empty_time
 		local t_info = g_table_map[table_id]
 		if t_info and sub_time >= g_max_empty_time then

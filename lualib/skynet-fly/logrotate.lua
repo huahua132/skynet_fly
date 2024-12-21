@@ -1,7 +1,6 @@
 local contriner_client = require "skynet-fly.client.contriner_client"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
-local table_util = require "skynet-fly.utils.table_util"
 local skynet = require "skynet"
 
 local setmetatable = setmetatable
@@ -22,7 +21,7 @@ contriner_client:register("logrotate_m")
 
 --logrotate的服务更新之后需要重新发送切割任务
 contriner_client:add_updated_cb("logrotate_m", function()
-    for id, obj in table_util.sort_ipairs_byk(g_rotate_map) do
+    for id, obj in pairs(g_rotate_map) do
         obj.is_builder = false
         obj:builder()
     end
