@@ -20,10 +20,13 @@ function M.create_pack(encode)
 	
 		local ok,str = encode(name,body)   --消息体打包
 		if not ok then
-			return nil,str
+			return nil, str
 		end
 		--结构【大端无符号2字节记录包名长度 + 包名 + 消息体】
 		local msgbuff = spack(">I2",name:len()) .. name .. str
+		if msgbuff:len() > math_util.uint16max then
+			return nil, "the package size cannot exceed " .. math_util.uint16max
+		end
 		return msgbuff
 	end
 end
@@ -35,7 +38,7 @@ function M.create_unpack(decode)
 	return function(msgbuff)
 		assert(msgbuff)
 		local name_sz = (msgbuff:byte(1) << 8) + msgbuff:byte(2) --大端无符号2字节记录包名长度
-		local name = msgbuff:sub(3,3 + name_sz - 1)			 --包名
+		local name = msgbuff:sub(3,3 + name_sz - 1)			     --包名
 		local pack_str = msgbuff:sub(3 + name_sz)			     --消息体
 		local ok,body = decode(name,pack_str)				 --消息体解包
 		if not ok then
@@ -60,6 +63,9 @@ function M.create_pack_by_id(encode)
 		end
 		--结构【大端无符号2字节记录协议号 + 消息体】
 		local msgbuff = spack(">I2",packid) .. str
+		if msgbuff:len() > math_util.uint16max then
+			return nil, "the package size cannot exceed " .. math_util.uint16max
+		end
 		return msgbuff
 	end
 end
