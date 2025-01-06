@@ -40,7 +40,7 @@ local week_mt = {__mode = "kv"}
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','mysql')
-	assert(conf_map and conf_map[db_name],"not mysql conf")
+	assert(conf_map and conf_map[db_name],"not mysql conf:" .. db_name)
 
 	local conf = conf_map[db_name]
 	local database = conf.database

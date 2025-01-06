@@ -12,7 +12,7 @@ local M = {}
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','mongo')
-	assert(conf_map and conf_map[db_name],"not mongo conf")
+	assert(conf_map and conf_map[db_name],"not mongo conf:" .. db_name)
 
 	local conf = conf_map[db_name]
 	local authdb = conf.authdb
