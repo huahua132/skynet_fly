@@ -310,7 +310,7 @@ function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
 end
 
 --rpc回复消息
-function interface:rpc_rsp_msg_byfd(fd, player_id, header, msgbody, rsp_session)
+function interface:rpc_rsp_msg_byfd(fd, header, msgbody, rsp_session)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
 		log.info("rpc_rsp_msg_byfd fd not exists ", fd, header)
