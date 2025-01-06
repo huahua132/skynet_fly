@@ -105,8 +105,8 @@ function M.string_to_date(str, split1, split2)
 	return date
 end
 
---适配当月最后一天
-function M.month_last_day(date, day)
+--适配当月某一天
+function M.month_day(date, day)
 	local year = date.year
 	local month = date.month
 	date.day = day
@@ -225,13 +225,13 @@ function M.every_month(day,hour,min,sec)
 	cur_date.min = min
 	cur_date.sec = sec
 	
-	M.month_last_day(cur_date, day)
+	M.month_day(cur_date, day)
 	local next_time = os.time(cur_date)
 	if next_time > cur_time then
 		return next_time
 	else
 		cur_date.month = cur_date.month + 1
-		M.month_last_day(cur_date, day)
+		M.month_day(cur_date, day)
 		return os.time(cur_date)
 	end
 end
@@ -252,14 +252,14 @@ function M.every_year(month,day,hour,min,sec)
 	cur_date.min = min
 	cur_date.sec = sec
 
-	M.month_last_day(cur_date, day)
+	M.month_day(cur_date, day)
 	local next_time = os.time(cur_date)
 
 	if next_time > cur_time then
 		return next_time
 	else
 		cur_date.year = cur_date.year + 1
-		M.month_last_day(cur_date, day)
+		M.month_day(cur_date, day)
 		return os.time(cur_date)
 	end
 end
