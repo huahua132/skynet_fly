@@ -8,8 +8,16 @@ local module_info = require "skynet-fly.etc.module_info"
 local log = require "skynet-fly.log"
 local file_util = require "skynet-fly.utils.file_util"
 local string_util = require "skynet-fly.utils.string_util"
+local table_util = require "skynet-fly.utils.table_util"
 
 local sinterface = service_watch_interface:new(".sharedata_service")
+
+----------------------------------------------
+-- 使用注意点
+-- 对于使用sharedata配置，被其他外部引用的表会被更新到，sharetable不会，所以如果想拿到最新的配置就必须用这个文件的`get_map,get_map_list,get_data_table`拿取
+-- 对于不想更新到的表sharedata需要做个深拷贝
+-- 直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
+----------------------------------------------
 
 local next = next
 local assert = assert
@@ -339,6 +347,17 @@ function M:builder()
         end
     end
     return self
+end
+
+--[[
+local cfg = {
+    items = {{id = 1, count = 2000}}
+}
+    比如pb需要items,就只需要 M:copy_table(cfg.items)即可
+]]
+--copy 配置表  直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
+function M:copy_table(tab)
+    return table_util.copy(tab)
 end
 
 --获取数据表

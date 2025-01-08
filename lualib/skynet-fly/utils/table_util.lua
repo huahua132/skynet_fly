@@ -455,6 +455,19 @@ function M.deep_copy(orig)
     return copy_recursive(orig)
 end
 
+-- copy简单copy
+function M.copy(tab)
+	local t = {}
+	for k, v in pairs(tab) do
+		if "table" ~= type(v) then
+			t[k] = v
+		else
+			t[k] = M.copy(v)
+		end
+	end
+	return t
+end
+
 -- 按深度元素转成list
 function M.depth_to_list(tab, depth)
 	assert(depth > 0)
