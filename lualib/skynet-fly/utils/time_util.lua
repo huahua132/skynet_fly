@@ -1,6 +1,7 @@
 local string_util = require "skynet-fly.utils.string_util"
 local skynet
 local tonumber = tonumber
+local tostring = tostring
 local math = math
 local assert = assert
 local os = os
@@ -287,14 +288,45 @@ function M.every_year_day(yday,hour,min,sec)
 	return next_time
 end
 
---是否跨天
-function M.is_cross_day(pre_time)
-	local next_time = M.day_time(1, 0, 0, 0, pre_time) --传入时间的明天
-	local cur_time = M.time()
-	if cur_time >= next_time then
+--@desc 是否跨天
+--@param number pre_time 之前记录的时间
+--@param number cur_time 当前时间(可选 默认当前时间)
+--@param number hour 几点算一天的开始(可选 默认零点)
+--@return bool 是否跨天
+function M.is_cross_day(pre_time, cur_time, hour)
+	hour = hour or 0
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	
+	local pre_cross_time = M.day_time(0, hour, 0, 0, pre_time) --之前的跨天时间点
+	if pre_cross_time <= pre_time then					       --大于当天跨天点，用下一天跨天点
+		pre_cross_time = pre_cross_time + 86400				      
+	end
+	local cur_time = cur_time or M.time()
+	if cur_time >= pre_cross_time then
 		return true
 	end
 	return false
+end
+
+--@desc 计算pre_time(更小) cur_time(更大) 相差几天
+--@param number pre_time 之前记录的时间
+--@param number cur_time 当前时间(可选 默认当前时间)
+--@param number hour 几点算一天的开始(可选 默认零点)
+--@return number 相差几天
+function M.diff_day(pre_time, cur_time, hour)
+	hour = hour or 0
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	local cur_time = cur_time or M.time()
+	local pre_cross_time = M.day_time(0, hour, 0, 0, pre_time) --之前的跨天时间点
+	if pre_cross_time <= pre_time then					       --大于当天跨天点，用下一天跨天点
+		pre_cross_time = pre_cross_time + 86400				      
+	end
+	local cur_cross_time = M.day_time(0, hour, 0, 0, cur_time) --现在的跨天时间点
+	if cur_cross_time <= cur_time then						   --大于当天跨天点，用下一天跨天点
+		cur_cross_time = cur_cross_time + 86400
+	end
+	local sub_day = math.floor((cur_cross_time - pre_cross_time) / 86400)
+	return sub_day
 end
 
 return M

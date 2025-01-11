@@ -5,13 +5,12 @@ local timer_point = require "skynet-fly.time_extend.timer_point"
 local time_util = require "skynet-fly.utils.time_util"
 
 local CMD = {}
-
 local function time_out(...)
 	log.info("time_out",os.date("%H:%M:%S"),...)
 end
-
-function CMD.start(config)
-	local ti = timer:new(100,5,time_out,"test 1")
+--定时器测试
+local function timer_test()
+	local _ = timer:new(100,5,time_out,"test 1")
 
 	local ti_2 = timer:new(100,5,time_out,"test 2")
 	ti_2:cancel()
@@ -24,7 +23,7 @@ function CMD.start(config)
 	skynet.sleep(100)
 	ti_4:cancel()
 
-	local ti_5 = timer:new(timer.minute * 2,2,time_out,"test 5")
+	local _ = timer:new(timer.minute * 2,2,time_out,"test 5")
 
 	log.info("test 6 start ",os.date("%H:%M:%S"))
 	local ti_6 = timer:new(timer.second * 5,2,time_out,"test 6")
@@ -47,7 +46,7 @@ function CMD.start(config)
 	log.info("extend",ti_9:extend(timer.second * 5))
 
 	log.info("test 10 start ",os.date("%H:%M:%S"))
-	local ti_10 = timer:new(timer.second * 10,2,function(test_name)
+	local _ = timer:new(timer.second * 10,2,function(test_name)
 		time_out(test_name)
 		skynet.sleep(timer.second * 3)
 	end, "test 10")
@@ -59,7 +58,10 @@ function CMD.start(config)
 	end, "test 11")
 
 	ti_11:after_next()
+end
 
+--整点报时测试
+local function time_point_test()
 	local _ = timer_point:new(timer_point.EVERY_MINUTE):set_sec(10):builder(function()
 		log.error("每分钟:",os.date("%Y%m%d-%H:%M:%S",time_util.time()))
 	end)
@@ -89,7 +91,22 @@ function CMD.start(config)
 	end)
 
 	log.info("string_to_date:",time_util.string_to_date("2023:10:27 0:0:0"))
+end
 
+--时间工具函数测试
+local function time_utils_test()
+	local pre_time = os.time({year=2025, month=1, day=11, hour=4, min=59, sec=59})
+	local cur_time = os.time({year=2025, month=1, day=12, hour=5, min=0, sec=0})
+	assert(time_util.diff_day(pre_time, cur_time, 5) == 2)
+	assert(time_util.diff_day(cur_time, pre_time, 5) == -2)
+	assert(time_util.diff_day(pre_time, cur_time, 0) == 1)
+	assert(time_util.diff_day(cur_time, pre_time, 0) == -1)
+end
+
+function CMD.start(config)
+	--timer_test()
+	--time_point_test()
+	time_utils_test()
 	return true
 end
 
