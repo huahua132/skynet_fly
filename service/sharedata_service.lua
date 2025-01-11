@@ -21,6 +21,11 @@ local ENUM = {
     sharetable = 2,
 }
 
+local MODE_NAME = {
+    [1] = "sharedata",
+    [2] = "sharetable",
+}
+
 local g_watch_server = nil
 local g_file_changetime_map = {}
 local g_load_dir_map = {}
@@ -58,6 +63,7 @@ local function load_new_file(file_path, file_info, cur_time, mode)
     log.info("sharedata load loadfile:", file_path)
 end
 
+--加载目录下的配置
 function CMD.load(dir_list, mode)
     assert(g_modes[mode], "not exists mode:" .. tostring(mode))
     local cur_time = time_util.time()
@@ -73,6 +79,7 @@ function CMD.load(dir_list, mode)
     end
 end
 
+--检查热更目录下的配置
 function CMD.check_reload()
     local reload_list = {}
     local cur_time = time_util.time()
@@ -106,6 +113,20 @@ function CMD.check_reload()
     end
     
     return json.encode(reload_list)
+end
+
+--检查路径是否有效
+function CMD.is_vaild_file_path(file_path, mode)
+    if not g_file_changetime_map[file_path] then
+        return false, string.format("not exists file_path[%s]", file_path)
+    end
+
+    local info = g_file_changetime_map[file_path]
+    if info.mode ~= mode then
+        return false, string.format("mode not match load mode[%s] use mode[%s]", MODE_NAME[info.mode], MODE_NAME[mode])
+    end
+
+    return true
 end
 
 g_watch_server = watch_syn.new_server(CMD)

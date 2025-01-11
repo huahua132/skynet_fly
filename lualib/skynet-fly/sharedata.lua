@@ -166,7 +166,7 @@ end})
 
 --加载指定路径列表下配置， mode = sharedata or sharetable
 function M.load(dir_list, mode)
-    assert(mode == M.enum.sharedata or mode == M.enum.sharetable)
+    assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
     local sd = skynet.uniqueservice("sharedata_service")
     skynet.call(sd, 'lua', 'load', dir_list, mode)
 end
@@ -189,7 +189,9 @@ end
 
 --访问代理
 function M:new(file_path, mode)
-    assert(mode == M.enum.sharedata or mode == M.enum.sharetable)
+    assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
+    local sd = skynet.uniqueservice("sharedata_service")
+    assert(skynet.call(sd, 'lua', 'is_vaild_file_path', file_path, mode))
     local t = {
         mode = mode,
         file_path = file_path,
@@ -203,6 +205,7 @@ function M:new(file_path, mode)
         map_map = {},               --map映射表
         map_map_fields = {},        --map映射表key字段列表
     }
+    
     g_mode_map[file_path] = mode
     t.data_table = g_data_map[file_path]
     t.version = g_version_map[file_path]
