@@ -1,3 +1,12 @@
+--@API
+--@content ---
+--@content title: time_util 时间相关
+--@content date: 2024-06-29 22:00:00
+--@content categories: ["skynet_fly API 文档","工具函数"]
+--@content category_bar: true
+--@content tags: [skynet_fly_api]
+--@content ---
+--@content [time_util](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/utils/time_util.lua)
 local string_util = require "skynet-fly.utils.string_util"
 local skynet
 local tonumber = tonumber
@@ -16,7 +25,8 @@ local M = {
 }
 
 local starttime
---整型的skynet_time 
+--@desc 获取当前时间戳
+--@return number 时间戳(秒*100)
 function M.skynet_int_time()
 	skynet = skynet or require "skynet"
 	if not starttime then
@@ -25,18 +35,24 @@ function M.skynet_int_time()
 	return skynet.now() + starttime
 end
 
---秒时间戳
+--@desc 获取当前时间戳
+--@return number 时间戳(秒)
 function M.time()
 	return math.floor(M.skynet_int_time() / 100)
 end
 
---当前日期
+--@desc 获取当前日期
+--@return table 日期格式的table{year=2025,month=1,day=11,hour=18,min=12,sec=50}
 function M.date(time)
 	time = time or M.time()
 	return os.date("*t",M.time())
 end
 
---string格式的时间转换成date日期table 2023:10:26 19:22:50
+--@desc string格式的时间转换成date日期table 2023:10:26 19:22:50
+--@param string str 被分割的时间格式字符串
+--@param string split1 分割符1 默认" "
+--@param string split2 分割符2 默认 ":"
+--@return table 分割后的内容
 function M.string_to_date(str, split1, split2)
 	split1 = split1 or " "
 	split2 = split2 or ":"
@@ -107,7 +123,11 @@ function M.string_to_date(str, split1, split2)
 end
 
 --适配当月某一天
+--@desc 适配当月到某一天，不存在，适配到最后一天，比如2月只有28或者29，当输入30或者31将适配到28或者29天
+--@param table date[os.date] 日期
+--@param number day[1,31] 当月哪天
 function M.month_day(date, day)
+	assert(day >= 1 and day <= 31, "Must be within this range[1,31] day=" .. tostring(day))
 	local year = date.year
 	local month = date.month
 	date.day = day
@@ -121,14 +141,17 @@ function M.month_day(date, day)
 	end
 end
 
---获取某天某个时间点的时间戳
---比如昨天 8点12分50 参数就是 -1,8,12,50
---明天 0点0分0秒 就是 1，0，0，0
-function M.day_time(day,hour,min,sec,curtime)
-	assert(day)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取某天某个时间点的时间戳 比如昨天 8点12分50 参数就是 -1,8,12,50 明天 0点0分0秒 就是 1，0，0，0
+--@param number day 相差几天
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.day_time(day, hour, min, sec, curtime)
+	assert(day, "not day param")
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
   
 	local sub_day_time = day * 86400
 	curtime = curtime or M.time()
@@ -139,9 +162,11 @@ function M.day_time(day,hour,min,sec,curtime)
 	return os.time(date)
 end
 
---每一分钟的第几秒时间戳
+--@desc 获取下一个每分的几秒时间戳
+--@param number sec[0,59] 几秒
+--@return number 时间戳
 function M.every_min(sec)
-	assert(sec >= 0 and sec <= 59)
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.sec = sec
@@ -155,10 +180,13 @@ function M.every_min(sec)
 	end
 end
 
---每一小时的第几分钟第几秒
-function M.every_hour(min,sec)
-	assert(sec >= 0 and sec <= 59)
-	assert(min >= 0 and min <= 59)
+--@desc 获取下一个每时的几分几秒时间戳
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_hour(min, sec)
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.sec = sec
@@ -171,11 +199,15 @@ function M.every_hour(min,sec)
 	end
 end
 
---每一天的几点几分几秒
-function M.every_day(hour,min,sec)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取下一个每天的几点几分几秒时间戳
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_day(hour, min, sec)
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.sec = sec
@@ -189,12 +221,17 @@ function M.every_day(hour,min,sec)
 	end
 end
 
---每一周的周几几点几分几秒
-function M.every_week(wday,hour,min,sec)
-	assert(wday >= 1 and wday <= 7)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取下一个周几几点几分几秒的时间戳
+--@param number wday[1,7] 周几
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_week(wday, hour, min, sec)
+	assert(wday >= 1 and wday <= 7, "Must be within this range[1,7] wday=" .. tostring(wday))
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.sec = sec
@@ -212,13 +249,17 @@ function M.every_week(wday,hour,min,sec)
 	return next_time
 end
 
---每个月的第几天几时几分几秒
---如果单月没有该天，适配到最后一天
-function M.every_month(day,hour,min,sec)
-	assert(day >= 1 and day <= 31)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取下一个每月的第几天几时几分几秒的时间戳，如果单月没有该天，适配到最后一天
+--@param number day[1,31] 第几天
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_month(day, hour, min, sec)
+	assert(day >= 1 and day <= 31, "Must be within this range[1,31] day=" .. tostring(day))
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.day = day
@@ -237,14 +278,19 @@ function M.every_month(day,hour,min,sec)
 	end
 end
 
---每一年的第几月第几天几时几分几秒
---如果单月没有该天，适配到最后一天
-function M.every_year(month,day,hour,min,sec)
-	assert(month >= 1 and month <= 12)
-	assert(day >= 1 and day <= 31)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取下一个每年的第几月第几天几时几分几秒的时间戳，如果单月没有该天，适配到最后一天
+--@param number month[1,12] 第几月
+--@param number day[1,31] 第几天
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_year(month, day, hour, min, sec)
+	assert(month >= 1 and month <= 12, "Must be within this range[1,12] month=" .. tostring(month))
+	assert(day >= 1 and day <= 31, "Must be within this range[1,31] day=" .. tostring(day))
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.month = month
@@ -265,12 +311,17 @@ function M.every_year(month,day,hour,min,sec)
 	end
 end
 
---每一年的第几天几时几分几秒
-function M.every_year_day(yday,hour,min,sec)
-	assert(yday >= 1 and yday <= 366)
-	assert(hour >= 0 and hour <= 23,hour)
-	assert(min >= 0 and min <= 59,min)
-	assert(sec >= 0 and sec <= 59,sec)
+--@desc 获取下一个每年的第几天几时几分几秒的时间戳
+--@param number yday[1,366] 第几天
+--@param number hour[0,23] 几时
+--@param number min[0,59] 几分
+--@param number sec[0,59] 几秒
+--@return number 时间戳
+function M.every_year_day(yday, hour, min, sec)
+	assert(yday >= 1 and yday <= 366, "Must be within this range[1,366] yday=" .. tostring(yday))
+	assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
+	assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
+	assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
 	local cur_time = M.time()
 	local cur_date = M.date(cur_time)
 	cur_date.hour = hour
@@ -291,7 +342,7 @@ end
 --@desc 是否跨天
 --@param number pre_time 之前记录的时间
 --@param number cur_time 当前时间(可选 默认当前时间)
---@param number hour 几点算一天的开始(可选 默认零点)
+--@param number hour[0,23] 几点算一天的开始(可选 默认零点)
 --@return bool 是否跨天
 function M.is_cross_day(pre_time, cur_time, hour)
 	hour = hour or 0
@@ -311,7 +362,7 @@ end
 --@desc 计算pre_time(更小) cur_time(更大) 相差几天
 --@param number pre_time 之前记录的时间
 --@param number cur_time 当前时间(可选 默认当前时间)
---@param number hour 几点算一天的开始(可选 默认零点)
+--@param number hour[0,23] 几点算一天的开始(可选 默认零点)
 --@return number 相差几天
 function M.diff_day(pre_time, cur_time, hour)
 	hour = hour or 0
