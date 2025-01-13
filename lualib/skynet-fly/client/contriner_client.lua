@@ -148,7 +148,7 @@ g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
 		g_querycbed_map[key] = true
 		skynet.fork(call_back_queryed, queryed)
 	end
-	return t[key],g_mod_svr_version_map[key]
+	return t[key]
 end})
 
 local function monitor_all()
@@ -166,6 +166,7 @@ local function monitor_all()
 	end)
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 skynet.exit = function()
 	IS_CLOSE = true
 	for mod_name in pairs(g_mod_svr_ids_map) do

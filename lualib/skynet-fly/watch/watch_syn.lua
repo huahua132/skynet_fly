@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-set-field
 local skynet = require "skynet"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local log = require "skynet-fly.log"

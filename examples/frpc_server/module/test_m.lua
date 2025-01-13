@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field, need-check-nil
 local log = require "skynet-fly.log"
 local skynet = require "skynet.manager"
 local contriner_client = require "skynet-fly.client.contriner_client"

@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field, need-check-nil
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
 local log = require "skynet-fly.log"
@@ -70,7 +71,7 @@ function CMD.query(sql_str)
 end
 
 function CMD.max_packet_size()
-	return g_db_conf.max_packet_size or 1024 * 1024
+	return g_db_conf.max_packet_size or (1024 * 1024)
 end
 
 function CMD.check_exit()

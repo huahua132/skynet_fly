@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field, need-check-nil
 --桌子分配
 local log = require "skynet-fly.log"
 local contriner_client = require "skynet-fly.client.contriner_client"
@@ -6,6 +7,7 @@ local queue = require "skynet.queue"()
 local timer = require "skynet-fly.timer"
 local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
+local table_util = require "skynet-fly.utils.table_util"
 
 contriner_client:register("room_game_table_m")
 

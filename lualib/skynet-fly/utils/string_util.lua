@@ -21,12 +21,13 @@ local sfind = string.find
 ---#desc 字符串分割，可以嵌套分割 例如：split('1:2_3:4','_',':') res = {{1,2},{3,4}}
 ---@param inputstr string 被分割字符串
 ---@param ... string 分隔符列表
----@return table|string 分割结果
+---@return table 分割结果
 function M.split(inputstr, ...)
     local seps = {...}
     local sep = tremove(seps,1)
 
     if sep == nil then
+---@diagnostic disable-next-line: return-type-mismatch
         return inputstr
     end
     local result={}

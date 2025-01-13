@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field, need-check-nil
 
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
@@ -187,6 +188,7 @@ end
 
 local function unpack_broadcast(rsp, secret)
 	local ret_map = unpack_rsp(rsp, secret)
+---@diagnostic disable-next-line: param-type-mismatch
 	for sid, luastr in pairs(ret_map) do
 		ret_map[sid] = {skynet.unpack(luastr)}
 	end

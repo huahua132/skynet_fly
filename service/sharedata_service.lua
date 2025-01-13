@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil, undefined-field
 local skynet = require "skynet.manager"
 local sharedata = require "skynet.sharedata"
 local sharetable = require "skynet.sharetable"

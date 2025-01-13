@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-set-field, undefined-field, need-check-nil
 local skynet = require "skynet"
 local assert = assert
 local tonumber = tonumber

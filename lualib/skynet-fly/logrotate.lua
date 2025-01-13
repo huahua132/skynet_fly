@@ -45,7 +45,7 @@ end
 local M = {}
 local mt = {__index = M}
 ---#desc 新建对象
----@param filename string 文件名
+---@param filename string? 文件名
 ---@return table 对象
 function M:new(filename)
     local t = {

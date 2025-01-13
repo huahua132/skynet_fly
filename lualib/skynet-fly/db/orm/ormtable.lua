@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil, assign-type-mismatch, param-type-mismatch
 local ormentry = require "skynet-fly.db.orm.ormentry"
 local table_util = require "skynet-fly.utils.table_util"
 local math_util = require "skynet-fly.utils.math_util"
@@ -714,7 +715,7 @@ local function get_one_entry(t, key_values)
                 add_key_select(t, invalid_entry)
                 return nil, false
             else
-                entry = ormentry:new(t, init_entry_data(t, entry_data), true)
+                entry = ormentry:new(t, init_entry_data(t, entry_data, true))
                 return add_key_select(t, entry)
             end
         end
@@ -839,7 +840,7 @@ local function get_entry_by_limit(t, cursor, limit, sort, key_values)
         local cursor, entry_data_list, count = t._adapterinterface:get_entry_by_limit(cursor, limit, sort, key_values)
         for i = 1, #entry_data_list do
             local entry_data = entry_data_list[i]
-            local entry = ormentry:new(t, init_entry_data(t, entry_data), true)
+            local entry = ormentry:new(t, init_entry_data(t, entry_data, true))
             entry_data_list[i] = entry
         end
 

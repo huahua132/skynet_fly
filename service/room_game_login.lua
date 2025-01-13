@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil, undefined-field
 local skynet = require "skynet.manager"
 local timer = require "skynet-fly.timer"
 local log = require "skynet-fly.log"
