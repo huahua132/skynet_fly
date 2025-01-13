@@ -18,7 +18,7 @@ local pairs = pairs
 local strgsub = string.gsub
 local sfind = string.find
 
----#desc 字符串分割，可以嵌套分割 例如：split('1:2_3:4','_',':') res = {{1,2},{3,4}}
+---#desc 字符串分割，可以嵌套分割 例如：`split('1:2_3:4','_',':') res = {{1,2},{3,4}}`
 ---@param inputstr string 被分割字符串
 ---@param ... string 分隔符列表
 ---@return table 分割结果
