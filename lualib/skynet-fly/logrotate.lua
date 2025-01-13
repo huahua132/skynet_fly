@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: 日志轮换
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","日志轮换"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [logrotate](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/logrotate.lua)
 local contriner_client = require "skynet-fly.client.contriner_client"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
@@ -35,7 +44,9 @@ end
 
 local M = {}
 local mt = {__index = M}
-
+---#desc 新建对象
+---@param filename string 文件名
+---@return table 对象
 function M:new(filename)
     local t = {
         cfg = {
@@ -47,7 +58,9 @@ function M:new(filename)
     return t
 end
 
---重命名文件格式
+---#desc 重命名文件格式
+---@param rename_format string
+---@return table 对象
 function M:set_rename_format(rename_format)
     assert(not self.is_builder, "builded can`t use set_rename_format")
     assert(type(rename_format) == 'string', "rename_format not string")
@@ -56,7 +69,9 @@ function M:set_rename_format(rename_format)
     return self
 end
 
---设置文件路径
+---#desc 设置文件路径
+---@param file_path string 文件路径
+---@return table 对象
 function M:set_file_path(file_path)
     assert(not self.is_builder, "builded can`t use set_file_path")
     assert(type(file_path) == 'string', "file_path not string")
@@ -65,7 +80,9 @@ function M:set_file_path(file_path)
     return self
 end
 
---设置至少多大才会切割
+---#desc 设置至少多大才会切割
+---@param limit_size number 至少多大
+---@return table 对象
 function M:set_limit_size(limit_size)
     assert(not self.is_builder, "builded can`t use set_limit_size")
     assert(type(limit_size) == 'number', "limit_size not number")
@@ -75,7 +92,9 @@ function M:set_limit_size(limit_size)
     return self
 end
 
---设置最大保留天数
+---#desc 设置最大保留天数
+---@param max_age number 保留天数
+---@return table 对象
 function M:set_max_age(max_age)
     assert(not self.is_builder, "builded can`t use set_max_age")
     assert(type(max_age) == 'number', "max_age not number")
@@ -85,7 +104,9 @@ function M:set_max_age(max_age)
     return self
 end
 
---设置最大保留文件数
+---#desc 设置最大保留文件数
+---@param max_backups number 保留文件数
+---@return table 对象
 function M:set_max_backups(max_backups)
     assert(not self.is_builder, "builded can`t use set_max_backups")
     assert(type(max_backups) == 'number', "max_backups not number")
@@ -95,7 +116,9 @@ function M:set_max_backups(max_backups)
     return self
 end
 
---设置轮转时调用系统命令
+---#desc 设置轮转时调用系统命令
+---@param sys_cmd string 系统命令
+---@return table 对象
 function M:set_sys_cmd(sys_cmd)
     assert(not self.is_builder, "builded can`t use set_sys_cmd")
     assert(type(sys_cmd == 'string'), "sys_cmd not number")
@@ -104,7 +127,9 @@ function M:set_sys_cmd(sys_cmd)
     return self
 end
 
---设置整点报时类型
+---#desc 设置整点报时类型
+---@param point_type number 报时类型
+---@return table 对象
 function M:set_point_type(point_type)
     assert(not self.is_builder, "builded can`t use set_point_type")
     assert(type(point_type == 'number'), "point_type not number")
@@ -112,85 +137,65 @@ function M:set_point_type(point_type)
     cfg.point_type = point_type
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_month
-	描述:  指定几月
-	参数:
-		- month (number): 月份 1-12
-    
-]]
+
+---#desc 指定几月
+---@param month number 几月[1,12]
+---@return table 对象
 function M:set_month(month)
     assert(not self.is_builder, "builded can`t use set_month")
-    assert(month >= 1 and month <= 12)
+    assert(month >= 1 and month <= 12, "Must be within this range[1,12] month=" .. tostring(month))
     local cfg = self.cfg
     cfg.month = month
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_day
-	描述:  每月第几天,超过适配到最后一天
-	参数:
-		- day (number): 天数 1-31
-]]
+
+---#desc 指定月第几天
+---@param day number 月第几天[1,31]
+---@return table 对象
 function M:set_day(day)
     assert(not self.is_builder, "builded can`t use set_day")
-    assert(day >= 1 and day <= 31)
+    assert(day >= 1 and day <= 31, "Must be within this range[1,31] day=" .. tostring(day))
     local cfg = self.cfg
     cfg.day = day
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_hour
-	描述:  几时
-	参数:
-		- hour (number): 几时 0-23
-]]
+
+---#desc 几时
+---@param hour number 几时[0,23]
+---@return table 对象
 function M:set_hour(hour)
     assert(not self.is_builder, "builded can`t use set_hour")
-    assert(hour >= 0 and hour <= 23)
+    assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
     local cfg = self.cfg
     cfg.hour = hour
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_min
-	描述:  几分
-	参数:
-		- min (number): 几分 0-59
-]]
+
+---#desc 几分
+---@param min number 几分[0,59]
+---@return table 对象
 function M:set_min(min)
     assert(not self.is_builder, "builded can`t use set_min")
-    assert(min >= 0 and min <= 59)
+    assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
     local cfg = self.cfg
     cfg.min = min
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_sec
-	描述:  几秒
-	参数:
-		- sec (number): 几秒 0-59
-]]
+
+---#desc 几秒
+---@param sec number 几秒[0,59]
+---@return table 对象
 function M:set_sec(sec)
     assert(not self.is_builder, "builded can`t use set_sec")
-    assert(sec >= 0 and sec <= 59)
+    assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
     local cfg = self.cfg
     cfg.sec = sec
     return self
 end
 
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_wday
-	描述:  周几（仅仅设置每周有效）
-	参数:
-		- wday (number): 周几 1-7 星期天为 1
-]]
+---#desc 周几（仅仅设置每周有效）
+---@param wday number 周几[1,7]
+---@return table 对象
 function M:set_wday(wday)
     assert(not self.is_builder, "builded can`t use set_wday")
     assert(wday >= 1 and wday <= 7)
@@ -199,13 +204,9 @@ function M:set_wday(wday)
     return self
 end
 
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_yday
-	描述:  一年第几天（仅仅设置每年第几天有效）
-	参数:
-		- yday (number): 第几天 1-366 超过适配到最后一天。
-]]
+---#desc 一年第几天（仅仅设置每年第几天有效）
+---@param yday number 周几[1,366]
+---@return table 对象
 function M:set_yday(yday)
     assert(not self.is_builder, "builded can`t use set_yday")
     assert(yday >= 1 and yday <= 366)
@@ -214,7 +215,9 @@ function M:set_yday(yday)
     return self
 end
 
---设置保留文件整理匹配表达式
+---#desc 设置保留文件整理匹配表达式
+---@param back_pattern string find表达式
+---@return table 对象
 function M:set_back_pattern(back_pattern)
     assert(not self.is_builder, "builded can`t use set_back_pattern")
     assert(type(back_pattern) == 'string', "back_pattern not string")
@@ -223,7 +226,8 @@ function M:set_back_pattern(back_pattern)
     return self
 end
 
---构建轮转
+---#desc 构建轮转
+---@return table 对象
 function M:builder()
     assert(not self.is_builder, "builded can`t use builder")
     self.is_builder = true
@@ -234,7 +238,8 @@ function M:builder()
     return self
 end
 
---取消轮转
+---#desc 取消轮转
+---@return table 对象
 function M:cancel()
     assert(self.is_builder, "not builder can`t use cancel")
     contriner_client:instance("logrotate_m"):mod_call("cancel", skynet.self(), self.id)

@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: env_util env相关
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","工具函数"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [env_util](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/utils/env_util.lua)
 local skynet = require "skynet"
 local assert = assert
 local loadfile = loadfile
@@ -8,7 +17,8 @@ local g_svr_name = skynet.getenv('svr_name')
 
 local M = {}
 
---添加服务启动之前加载的文件
+---#desc 添加服务启动之前加载的lua文件
+---@param path string 路径
 function M.add_pre_load(path)
 	assert(loadfile(path),"can`t loadfile :" ..tostring(path))
 	local pre_load = M.get_pre_load()
@@ -24,7 +34,8 @@ function M.get_pre_load()
 	return skynet.getenv("preload")
 end
 
---添加服务启动之后加载的文件
+---#desc 添加服务启动之后加载的lua文件
+---@param path string 路径
 function M.add_after_load(path)
 	assert(loadfile(path),"can`t loadfile :" ..tostring(path))
 	local old_after_load = M.get_after_load()
@@ -40,12 +51,12 @@ function M.get_after_load()
 	return skynet.getenv('afterload')
 end
 
---获取cluster svr_id
+---#desc 获取cluster svr_id
 function M.get_svr_id()
 	return g_svr_id
 end
 
---获取cluster svrname
+---#desc 获取cluster svrname
 function M.get_svr_name()
 	return g_svr_name
 end

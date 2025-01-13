@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: table_util table相关
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","工具函数"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [table_util](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/utils/table_util.lua)
 local json = require "cjson"
 
 local tinsert = table.insert
@@ -15,14 +24,12 @@ local getmetatable = getmetatable
 
 local M = {}
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: is_loop_table
-	描述:检测表是否有环引用
-	参数:
-		- check_table (table): 目标表
-		- is_route (boolean) ：是否需要返回环路径
-]]
+---#desc 检测表是否有环引用
+---@param check_table table 目标表
+---@param is_route boolean 是否需要返回环路径
+---@return boolean 是否出现环引用
+---@return string|nil 环路径
+---@return string|nil 环路径
 function M.is_loop_table(check_table,is_route)
 	assert(type(check_table) == 'table')
 	local src_dest = {}
@@ -77,13 +84,9 @@ function M.is_loop_table(check_table,is_route)
 	return false
 end
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: dump
-	描述:不会死循环的表dump
-	参数:
-		- tab (table): 目标表
-]]
+---#desc 不会死循环的表dump
+---@param tab table 目标表
+---@return string dump后的内容
 function M.dump(tab)
 	local filter = {}
 
@@ -142,19 +145,10 @@ function M.dump(tab)
 	return dp(nil,tab,0)
 end
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: check_def_table
-	描述: 检测2张表有什么同
-		共有4种不同
-		类型不同：typedef
-		相对于old_t有新增: add
-		相对于old_t有删除: reduce
-		值不同：valuedef
-	参数:
-		- new_t (table): 新表
-		- old_t (table): 旧表
-]]
+---#desc 检测2张表有什么同  共有4种不同 类型不同：typedef 相对于old_t有新增: add 相对于old_t有删除: reduce 值不同：valuedef
+---@param new_t table 新表
+---@param old_t table 旧表
+---@return table 不同的描述信息
 function M.check_def_table(new_t,old_t)
 	assert(type(new_t) == 'table' and type(old_t) == 'table')
 
@@ -198,13 +192,9 @@ function M.check_def_table(new_t,old_t)
 	return check_func(new_t,old_t)
 end
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: def_tostring
-	描述:把check_def_table返回值转换成string
-	参数:
-		- def (table): check_def_table返回值
-]]
+---#desc 把check_def_table返回值转换成string
+---@param def table check_def_table返回值
+---@return string string格式
 function M.def_tostring(def)
 	assert(type(def) == 'table')
 	local function tstring(dk,dt)
@@ -240,15 +230,11 @@ function M.def_tostring(def)
 	return tstring(nil,def)
 end
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: update_tab_by_def
-	描述:根据check_def_table的结果去更新旧值，change_flags表面哪些flag需要更新成新值
-	参数:
-		- def (table): check_def_table返回值
-		- old_t(table)：旧表
-		- change_flags(table)：需要更新的flags  可选 typedef add reduce valuedef
-]]
+---#desc 根据check_def_table的结果去更新旧值，change_flags表面哪些flag需要更新成新值
+---@param def table check_def_table返回值
+---@param old_t table 旧表
+---@param change_flags table 需要更新的flags  可选 typedef add reduce valuedef
+---@return table 更新后的表
 function M.update_tab_by_def(def,old_t,change_flags)
 	assert(type(def) == 'table')
 	assert(type(old_t) == 'table')
@@ -280,7 +266,10 @@ function M.update_tab_by_def(def,old_t,change_flags)
 	return update(def,old_t)
 end
 
---通用的排序后遍历
+---#desc 通用的排序后遍历 对比v
+---@param t table 需要排序的表
+---@param comp function|nil 比较函数
+---@return function 遍历函数
 function M.sort_ipairs(t,comp)
 	assert(t)
 	assert(not comp or type(comp) == 'function')
@@ -307,7 +296,10 @@ function M.sort_ipairs(t,comp)
 	end
 end
 
---通用的排序后遍历 对比k
+---#desc 通用的排序后遍历 对比k
+---@param t table 需要排序的表
+---@param comp function|nil 比较函数
+---@return function 遍历函数
 function M.sort_ipairs_byk(t,comp)
 	assert(t)
 	assert(not comp or type(comp) == 'function')
@@ -332,7 +324,9 @@ function M.sort_ipairs_byk(t,comp)
 	end
 end
 
---写luafile mode = G M
+---#desc table转成lua文件格式的string
+---@param mode string G表示全局模式 M表示模块模式
+---@return string 转换后的string
 function M.table_to_luafile(mode,tab)
 	local ret_str = ""
 	local function to_file_str(pre_k,pre_v,level)
@@ -402,7 +396,9 @@ function M.table_to_luafile(mode,tab)
 	return ret_str
 end
 
---map按 字符编码顺序排序后遍历
+---#desc map按 字符编码顺序排序后遍历
+---@param map table 遍历的表
+---@return function 遍历函数
 function M.kvsortipairs(map)
 	local list = {}
 	local k_type_map = {}
@@ -430,7 +426,9 @@ function M.kvsortipairs(map)
 	end
 end
 
--- 深拷贝
+---#desc 深拷贝(考虑原表情况)
+---@param orig table
+---@return table 拷贝后的表
 function M.deep_copy(orig)
     local copies = {}
     local function copy_recursive(orig)
@@ -455,7 +453,9 @@ function M.deep_copy(orig)
     return copy_recursive(orig)
 end
 
--- copy简单copy
+---#desc 拷贝(不考虑原表)
+---@param tab table 表
+---@return table 拷贝后的表
 function M.copy(tab)
 	local t = {}
 	for k, v in pairs(tab) do
@@ -468,7 +468,10 @@ function M.copy(tab)
 	return t
 end
 
--- 按深度元素转成list
+---#desc 按深度元素转成list
+---@param tab table 原数据
+---@param depth number 转换深度
+---@return table 转换结果表
 function M.depth_to_list(tab, depth)
 	assert(depth > 0)
 	local list1 = {tab}
@@ -487,7 +490,10 @@ function M.depth_to_list(tab, depth)
 	return list1
 end
 
---是否在列表中
+---#desc 是否在列表中
+---@param list table 列表
+---@param v any 值
+---@return boolean 结果
 function M.inlist(list, v)
 	for i = 1,#list do
 		local vv = list[i]
@@ -499,7 +505,11 @@ function M.inlist(list, v)
 	return false
 end
 
---查找在表中的位置
+---#desc 查找在表中的位置
+---@param list table 列表
+---@param v any 值
+---@param index number 起始索引
+---@return number|nil 存在返回目标位置，不存在返回nil
 function M.find_index(list, v, index)
 	if index == nil then
 		index = 1
@@ -516,7 +526,9 @@ function M.find_index(list, v, index)
 	return nil
 end
 
---统计长度
+---@desc 统计表长度
+---@param tab table 表
+---@return number 长度
 function M.count(tab)
 	local c = 0
 	for _,_ in pairs(tab) do
@@ -525,7 +537,9 @@ function M.count(tab)
 	return c
 end
 
---合并table
+---#desc 合并table (source合并进入target)
+---@param target table 目标表
+---@param source table 来源表
 function M.merge(target, source)
 	for k,v in pairs(source) do
 		target[k] = v

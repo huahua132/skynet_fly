@@ -1,8 +1,16 @@
---[[
-    这是一个并发，单发互斥的队列
-    并发: key不同不用排队，key相同排队执行，不同key不用排队，有单发执行中，需等待
-    单发: 单发顺序执行需要排队，有并发执行中，需等待
-]]
+---#API
+---#content ---
+---#content title: 并发，单发互斥的队列
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","执行队列"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [mult_queue](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/mult_queue.lua)
+
+---#content这是一个并发，单发互斥的队列
+---#content并发: key不同不用排队，key相同排队执行，不同key不用排队，有单发执行中，需等待
+---#content单发: 单发顺序执行需要排队，有并发执行中，需等待
 
 local skynet = require "skynet"
 local queue = require "skynet.queue"
@@ -38,6 +46,8 @@ local function wakeup(waits)
     end
 end
 
+---#desc 新建队列对象
+---@return table
 function M:new()
     local t = {
         unique_queue = queue(),
@@ -56,6 +66,11 @@ function M:new()
     return t
 end
 
+---#desc 调用并发执行
+---@param key any 不同key可以并发，相同key串行
+---@param func function 调用函数
+---@param ... any 函数参数
+---@return ... 函数返回值
 function M:multi(key, func, ...)
     local co = coroutine.running()
     assert(not self.doing_co[co], "can`t loop call")   --不能嵌套调用
@@ -97,6 +112,10 @@ function M:multi(key, func, ...)
     end
 end
 
+---#desc 调用单发执行，执行单发时，并发都暂时等待
+---@param func function 调用函数
+---@param ... any 函数参数
+---@return ... 函数返回值
 function M:unique(func, ...)
     -- 直接锁住
     self.is_lock = true

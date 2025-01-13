@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: 共享配置数据
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","共享配置数据"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [sharedata](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/sharedata.lua)
+
 local skynet = require "skynet"
 local sharedata = require "skynet.sharedata"
 local sharetable = require "skynet.sharetable"
@@ -13,10 +23,10 @@ local table_util = require "skynet-fly.utils.table_util"
 local sinterface = service_watch_interface:new(".sharedata_service")
 
 ----------------------------------------------
--- 使用注意点
--- 对于使用sharedata配置，被其他外部引用的表会被更新到，sharetable不会，所以如果想拿到最新的配置就必须用这个文件的`get_map,get_map_list,get_data_table`拿取
--- 对于不想更新到的表sharedata需要做个深拷贝
--- 直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
+---#content 使用注意点
+---#content 对于使用sharedata配置，被其他外部引用的表会被更新到，sharetable不会，所以如果想拿到最新的配置就必须用这个文件的`get_map,get_map_list,get_data_table`拿取
+---#content 对于不想更新到的表sharedata需要做个深拷贝
+---#content 直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
 ----------------------------------------------
 
 local next = next
@@ -98,7 +108,7 @@ local function add_patch(file_path, up_time)
         local f = loadfile(path)
         if not f then
             log.error("play record err can`t loadfile ", path)
-            assert(1 == 2)
+            error("play record err can`t loadfile")
         end
         g_data_map[file_path] = f()
     end
@@ -164,7 +174,9 @@ setmetatable(g_version_map, {__index = function(t, k)
     return version
 end})
 
---加载指定路径列表下配置， mode = sharedata or sharetable
+---#desc 加载指定路径列表下配置， 
+---@param dir_list table 路径列表
+---@param mode number 模式 sharedata or sharetable
 function M.load(dir_list, mode)
     assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
     local sd = skynet.uniqueservice("sharedata_service")
@@ -187,7 +199,10 @@ local function check_swtich(t)
     end
 end
 
---访问代理
+---#desc 配置访问代理
+---@param file_path string 配置路径
+---@param mode number 模式 sharedata or sharetable
+---@return table obj 代理对象
 function M:new(file_path, mode)
     assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
     local sd = skynet.uniqueservice("sharedata_service")
@@ -214,14 +229,19 @@ function M:new(file_path, mode)
     return t
 end
 
---设置单个字段检查
+---#desc 设置单个字段检查
+---@param field_name string 字段名
+---@param func function 检查函数
+---@return table obj 代理对象
 function M:set_check_field(field_name, func)
     assert(not self.is_builder, "builded can`t set_check_field")
     self.check_func_map[field_name] = func
     return self
 end
 
---设置一行配置检查
+---#desc 设置一行配置检查
+---@param func function 检查函数
+---@return table obj 代理对象
 function M:set_check_line(func)
     assert(not self.is_builder, "builded can`t set_check_line")
     self.check_line_func = func
@@ -237,7 +257,11 @@ end
         }
     }
 ]]
---设置map映射列表
+
+---#desc 设置map映射列表
+---@param name string 检查函数
+---@param ... string 字段名
+---@return table obj 代理对象
 function M:set_map_list(name, ...)
     assert(not self.is_builder, "builded can`t set_map_list")
     local field_list = {...}
@@ -256,7 +280,11 @@ end
         }
     }
 ]]
---设置纯map映射表
+
+---#desc 设置纯map映射表
+---@param name any
+---@param ... string 字段名
+---@return table
 function M:set_map(name, ...)
     assert(not self.is_builder, "builded can`t set_map")
     local field_list = {...}
@@ -268,7 +296,7 @@ function M:set_map(name, ...)
     return self
 end
 
---构建
+---#desc 构建
 function M:builder()
     assert(not self.is_builder, "builded can`t builder")
     self.is_builder = true
@@ -358,26 +386,34 @@ local cfg = {
 }
     比如pb需要items,就只需要 M:copy_table(cfg.items)即可
 ]]
---copy 配置表  直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
+---#desc copy 配置表  直接用sharedata 的表数据传入pb，该部分数据打包不进去，需要深拷贝后导入
+---@param tab any
+---@return table
 function M:copy_table(tab)
     return table_util.copy(tab)
 end
 
---获取数据表
+---#desc 获取数据表
+---@return table
 function M:get_data_table()
     assert(self.is_builder, "not build can`t get_data_table")
     check_swtich(self)
     return self.data_table
 end
 
---获取maplist
+---#desc 获取maplist
+---@param name string 索引名
+---@return table
 function M:get_map_list(name)
     assert(self.is_builder, "not build can`t get_map_list")
     check_swtich(self)
     return self.map_list_map[name]
 end
 
---获取map表
+--
+---#desc 获取map
+---@param name string 索引名
+---@return table
 function M:get_map(name)
     assert(self.is_builder, "not build can`t get_map")
     check_swtich(self)

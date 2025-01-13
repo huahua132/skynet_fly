@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: file_util file相关
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","工具函数"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [file_util](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/utils/file_util.lua)
 local lfs = require "lfs"
 local string_util = require "skynet-fly.utils.string_util"
 
@@ -10,8 +19,10 @@ local io = io
 
 local M = {}
 
---递归遍历目录
---max_depth 最大遍历深度 nil表示到底
+---#desc 递归遍历目录
+---@param path_url string 路径
+---@param max_depth number|nil 最大深度 nil表示到底
+---@return function 遍历函数
 function M.diripairs(path_url, max_depth)
 	local stack = {}
 	
@@ -54,6 +65,9 @@ function M.diripairs(path_url, max_depth)
 	end
 end
 
+---#desc skynet_fly luapath 的创建函数
+---@param skynet_fly_path string 路径
+---@return string lua_path
 function M.create_luapath(skynet_fly_path)
 	local server_path = './'
 	local skynet_path = M.path_join(skynet_fly_path, '/skynet')
@@ -83,7 +97,9 @@ function M.create_luapath(skynet_fly_path)
 	return lua_path
 end
 
---打开并读取文件
+---#desc 读取整个文件内容 
+---@param file_path string 文件路径
+---@return string content内容
 function M.readallfile(file_path)
 	local file = io.open(file_path,'r')
 	assert(file,"can`t open file_path " .. tostring(file_path))
@@ -92,7 +108,8 @@ function M.readallfile(file_path)
 	return str
 end
 
---获取当前目录文件夹名称
+---#desc 获取当前目录文件夹名称
+---@return string 文件夹名称
 function M.get_cur_dir_name()
 	local curdir = lfs.currentdir()
 	local strsplit = nil
@@ -106,7 +123,10 @@ function M.get_cur_dir_name()
 	return strsplit[#strsplit]
 end
 
---路径拼接
+---#desc 路径拼接 
+---@param a string 路径1
+---@param b string 路径2
+---@return string 拼接后路径
 function M.path_join(a,b)
     if a:sub(-1) == "/" then
         if b:sub(1, 1) == "/" then
@@ -121,13 +141,19 @@ function M.path_join(a,b)
 end
 
 -- converts gin style to openapi style. /users/:name -> /users/{name}
+---#desc gin风格转换成 openapi风格  /users/:name -> /users/{name}
+---@param path string 路径
+---@return string 转换后路径
 function M.convert_path(path)
     path = string.gsub(path, ":([^/]*)", "{%1}")
     path = string.gsub(path, "%*(%w*)", "{*%1}")
     return path
 end
 
---递归创建文件夹
+---#desc 递归创建文件夹
+---@param path string 路径
+---@return boolean|nil 结果
+---@return string? 失败原因
 function M.mkdir(path)
     -- 逐层获取并创建每个文件夹
     local current_path = ""
@@ -148,21 +174,32 @@ function M.mkdir(path)
     return true
 end
 
+---#desc Linux文件夹风格转成windows
+---@param linux_path string 路径
+---@return string 路径
 function M.convert_linux_to_windows_relative(linux_path)
     -- 替换斜杠为反斜杠
     local windows_path = linux_path:gsub("/", "\\")
     return windows_path
 end
 
+---#desc windows文件夹风格转成linux
+---@param window_path string 路径
+---@return string 路径
 function M.convert_windows_to_linux_relative(window_path)
 	local linux_path = window_path:gsub("\\", "/")
     return linux_path
 end
 
+---#desc 是否windows系统
+---@return boolean 结果
 function M.is_window()
 	return package.config:sub(1, 1) == '\\'
 end
 
+---#desc 文件拷贝工具
+---@param is_dir boolean? 是否路径
+---@return table obj set_source_target = function(source, target)设置来源目标  execute = function()执行拷贝
 function M.new_copy_file(is_dir)
 	local cmd = nil
 	--windows
@@ -208,7 +245,11 @@ function M.new_copy_file(is_dir)
 	}
 end
 
---递归删除文件夹
+---#desc 删除文件夹
+---@param dir_path string 路径
+---@return boolean?  suc
+---@return exitcode? exitcode
+---@return integer?  code
 function M.rmdir(dir_path)
 	if M.is_window() then
 		return os.execute(string.format('rmdir /s /q "%s"', dir_path))

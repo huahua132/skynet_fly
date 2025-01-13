@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: 定时器
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","定时器相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [timer](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/timer.lua)
 local skynet = require "skynet"
 local time_util = require "skynet-fly.utils.time_util"
 local log = require "skynet-fly.log"
@@ -69,16 +78,13 @@ end
 
 local M = {}
 local mata = {__index = M}
---[[
-	函数作用域：M 对象的成员函数
-	函数名称：new
-	描述:  创建一个定时器对象
-	参数:
-		- expire (number): 过期时间 100等于1秒
-		- times (number): 次数，0表示循环触发
-		- callback (function): 回调函数
-		- ...  回调参数
-]]
+
+---#desc 创建一个定时器对象
+---@param expire number 过期时间 100等于1秒
+---@param times number 次数，0表示循环触发
+---@param callback function 回调函数
+---@param ... any 回调参数
+---@return table 定时器对象
 function M:new(expire,times,callback,...)
 	assert(expire >= 0)
 	assert(times >= 0)
@@ -101,32 +107,23 @@ function M:new(expire,times,callback,...)
 	return t
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：cancel
-	描述:  取消定时器
-]]
+---#desc 取消定时器
+---@return table 定时器对象
 function M:cancel()
 	self.is_cancel = true
 	return self
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：after_next
-	描述:  之后下一次 ： 回调函数执行完，再注册下一次，默认先注册下一次再执行回调
-]]
+---#desc 回调执行完注册再下一次，默认先注册下一次，再执行回调
+---@return table 定时器对象
 function M:after_next()
 	self.is_after_next = true
 	return self
 end
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：extend
-	描述:  延长定时器
-	参数:
-		- ex_expire (number): 延长时间 100等于1秒
-]]
+
+---#desc 定时器延时
+---@param ex_expire number 延长时间 100等于1秒
+---@return table 定时器对象
 function M:extend(ex_expire)
 	if self.is_cancel or self.is_over then
 		return self
@@ -150,11 +147,8 @@ function M:extend(ex_expire)
 	return nt
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：remain_expire
-	描述:  剩余触发时间
-]]
+---#desc 获取剩余触发时间
+---@return number 剩余触发时间  -1 表示已经触发完了或者被取消了
 function M:remain_expire()
 	if self.is_cancel or self.is_over then
 		return -1     --已经触发完了

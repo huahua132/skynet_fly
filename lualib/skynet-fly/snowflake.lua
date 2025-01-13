@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: 雪花算法生成唯一ID
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","唯一ID生成"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [timer](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/timer.lua)
+---#content 使用注意，多服架构下，请注意`machine_id`环境参数的配置分配。
 local service = require "skynet.service"
 local skynet = require "skynet"
 
@@ -66,19 +76,30 @@ local MACHINE_TIME_MASK = (1 << TIME_SHIFT) - 1 --机器号time 掩码
 
 local M = {}
 
+---#desc 创建全局GUID
+---@return number 全局GUID
 function M.new_guid()
     local snowflake = service.new("snowflake", snowflake_service)
     return skynet.call(snowflake, 'lua', 'new_guid')
 end
 
+---#desc 通过GUID获取机器号
+---@param guid number 全局GUID
+---@return number 机器号
 function M.get_machine_id(guid)
     return guid >> MACHINE_SHIFT
 end
 
+---#desc 通过GUID获取创建时间
+---@param guid number 全局GUID
+---@return number 创建时间
 function M.get_time(guid)
     return (guid & MACHINE_MASK) >> TIME_SHIFT
 end
 
+---#desc 通过GUID获取自增序号
+---@param guid number 全局GUID
+---@return number 创建时间
 function M.get_incr(guid)
     return guid & MACHINE_TIME_MASK
 end

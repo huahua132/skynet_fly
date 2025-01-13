@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
-local time_util = require "skynet-fly.utils.time_util"
 local module_info = require "skynet-fly.etc.module_info"
 local sformat = string.format
 local sdump = table_util.dump
@@ -11,14 +10,10 @@ local pairs = pairs
 local assert = assert
 local tostring = tostring
 local tinsert = table.insert
-local ipairs = ipairs
 local sfind = string.find
 local ssub = string.sub
 local schar = string.char
-local math_floor = math.floor
 local tpack = table.pack
-local tunpack = table.unpack
-local osdate = os.date
 
 local M = {
 	INFO = 0,
@@ -125,8 +120,8 @@ function M.parse(log_str)
 		if schar(log_str:byte(34)) == '[' then
 			local _,type_e = sfind(log_str,"]",38,true)
 			if type_e then
-				log_type = ssub(log_str,35,type_e - 1)
-				log_type = level_map[log_type] or M.UNKNOWN
+				local log_type_str = ssub(log_str,35,type_e - 1)
+				log_type = level_map[log_type_str] or M.UNKNOWN
 
 				local s_n_b = type_e + 2
 				local _,s_n_e = sfind(log_str,"]",s_n_b,true)
