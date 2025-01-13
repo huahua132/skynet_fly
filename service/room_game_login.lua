@@ -523,11 +523,14 @@ end
 --发送到玩家所在大厅服
 function CMD.send_player_hall(player_id, ...)
 	local agent = g_player_map[player_id]
-	if not agent then
-		log.warn("send_player_hall agent not exists ", player_id, ...)
-		return
+
+	--玩家在线就发到所在服
+	if agent then
+		agent.queue(send_player_hall, agent, ...)
+	else
+		--不在线就发到最新的hall服务上
+		contriner_client:instance("room_game_hall_m"):set_mod_num(player_id):mod_send(...)
 	end
-	agent.queue(send_player_hall, agent, ...)
 end
 
 local function call_player_hall(agent, ...)
@@ -538,11 +541,13 @@ end
 --发送到玩家所在大厅服
 function CMD.call_player_hall(player_id, ...)
 	local agent = g_player_map[player_id]
-	if not agent then
-		log.warn("call_player_hall agent not exists ", player_id, ...)
-		return
+	--玩家在线就发到所在服
+	if agent then
+		return agent.queue(call_player_hall, agent, ...)
+	else
+		--不在线就发到最新的hall服务上
+		return contriner_client:instance("room_game_hall_m"):set_mod_num(player_id):mod_call(...)
 	end
-	return agent.queue(call_player_hall, agent, ...)
 end
 
 skynet.start(function()
