@@ -1,3 +1,4 @@
+---@diagnostic disable: discard-returns
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local httpc = require "http.httpc"
