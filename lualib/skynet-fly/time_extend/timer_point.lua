@@ -1,4 +1,13 @@
---整点报时
+---#API
+---#content ---
+---#content title: 整点报时
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","定时器相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [timer_point](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/time_extend/timer_point.lua)
+
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
 local time_util = require "skynet-fly.utils.time_util"
@@ -72,6 +81,7 @@ local TYPE_REMAIN_TIME_FUNC = {
     end
 }
 
+---方便调用timer的取消函数
 local mata = {
     __index = function(tb, k)
         local v = rawget(M,k)
@@ -96,13 +106,10 @@ adapter_loop = function(point_obj,call_back,...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[point_obj.type](point_obj.month,point_obj.day,point_obj.hour,point_obj.min,point_obj.sec,point_obj.wday,point_obj.yday)
     point_obj.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,point_obj,call_back,...)
 end
---[[
-    函数作用域：M 对象的成员函数
-	函数名称：extend
-	描述:  创建整点报时对象
-	参数:
-		- type (number): 时间刻度类型
-]]
+
+---#desc 新建整点报时对象
+---@param type number 报时类型
+---@return table obj
 function M:new(type)
     assert(g_type_map[type], "unknown type ".. tostring(type))
     local t = {
@@ -119,101 +126,73 @@ function M:new(type)
     setmetatable(t,mata)
     return t
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_month
-	描述:  指定几月
-	参数:
-		- month (number): 月份 1-12
-    
-]]
+
+---#desc 指定几月
+---@param month number 几月[1,12]
+---@return table obj
 function M:set_month(month)
-    assert(month >= 1 and month <= 12)
+    assert(month >= 1 and month <= 12, "Must be within this range[1,12] month=" .. tostring(month))
     self.month = month
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_day
-	描述:  每月第几天,超过适配到最后一天
-	参数:
-		- day (number): 天数 1-31
-]]
+
+---#desc 指定月第几天
+---@param day number 哪天[1,31]
+---@return table obj
 function M:set_day(day)
-    assert(day >= 1 and day <= 31)
+    assert(day >= 1 and day <= 31, "Must be within this range[1,31] day=" .. tostring(day))
     self.day = day
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_hour
-	描述:  几时
-	参数:
-		- hour (number): 几时 0-23
-]]
+
+---#desc 几时
+---@param hour number 几时[0,23]
+---@return table obj
 function M:set_hour(hour)
-    assert(hour >= 0 and hour <= 23)
+    assert(hour >= 0 and hour <= 23, "Must be within this range[0,23] hour=" .. tostring(hour))
     self.hour = hour
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_min
-	描述:  几分
-	参数:
-		- min (number): 几分 0-59
-]]
+
+---#desc 几分
+---@param min number 几分[0,59]
+---@return table obj
 function M:set_min(min)
-    assert(min >= 0 and min <= 59)
+    assert(min >= 0 and min <= 59, "Must be within this range[0,59] min=" .. tostring(min))
     self.min = min
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_sec
-	描述:  几秒
-	参数:
-		- sec (number): 几秒 0-59
-]]
+
+---#desc 几秒
+---@param sec number 几分[0,59]
+---@return table obj
 function M:set_sec(sec)
-    assert(sec >= 0 and sec <= 59)
+    assert(sec >= 0 and sec <= 59, "Must be within this range[0,59] sec=" .. tostring(sec))
     self.sec = sec
     return self
 end
 
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_wday
-	描述:  周几（仅仅设置每周有效）
-	参数:
-		- wday (number): 周几 1-7 星期天为 1
-]]
+---#desc 周几（仅仅设置每周有效）
+---@param wday number 周几[1,7]
+---@return table 对象
 function M:set_wday(wday)
-    assert(wday >= 1 and wday <= 7)
+    assert(wday >= 1 and wday <= 7, "Must be within this range[1,7] sec=" .. tostring(wday))
     self.wday = wday
     return self
 end
 
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：set_yday
-	描述:  一年第几天（仅仅设置每年第几天有效）
-	参数:
-		- yday (number): 第几天 1-366 超过适配到最后一天。
-]]
+---#desc 一年第几天（仅仅设置每年第几天有效）
+---@param yday number 周几[1,366]
+---@return table 对象
 function M:set_yday(yday)
-    assert(yday >= 1 and yday <= 366)
+    assert(yday >= 1 and yday <= 366, "Must be within this range[1,366] sec=" .. tostring(yday))
     self.yday = yday
     return self
 end
---[[
-    函数作用域：M:new 对象的成员函数
-	函数名称：builder
-	描述:  构建。
-	参数:
-		- callback (function): 回调函数。
-        - ... (any): 回调参数。
-]]
+
+---#desc 构建
+---@param call_back function 回调函数
+---@return table 对象
 function M:builder(call_back, ...)
     local remain_time = TYPE_REMAIN_TIME_FUNC[self.type](self.month,self.day,self.hour,self.min,self.sec,self.wday,self.yday)
     self.time_obj = timer:new(remain_time * timer.second,1,adapter_loop,self,call_back,...)

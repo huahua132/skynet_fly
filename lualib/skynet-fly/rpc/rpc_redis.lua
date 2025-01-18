@@ -5,7 +5,6 @@ local setmetatable = setmetatable
 local assert = assert
 local string = string
 local tonumber = tonumber
-local next = next
 
 local M = {}
 local meta = {__index = M}

@@ -1,3 +1,12 @@
+---#API
+---#content ---
+---#content title: 进程内的订阅同步
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","订阅发布，订阅同步"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [watch_syn](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/watch/watch_syn.lua)
 ---@diagnostic disable: duplicate-set-field
 local skynet = require "skynet"
 local skynet_util = require "skynet-fly.utils.skynet_util"
@@ -32,7 +41,9 @@ local server_mt = {__index = server}
 ------------------------------------------------------------------------------------------
 --server
 ------------------------------------------------------------------------------------------
-
+---#desc 新建发布端对象
+---@param CMD table lua CMD消息表
+---@return table obj
 function M.new_server(CMD)
     assert(not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
     assert(not CMD[watch_cmd], "exists _watch cmd")
@@ -117,7 +128,10 @@ function M.new_server(CMD)
     return t
 end
 
---注册
+---#desc 注册
+---@param name string 名称
+---@param init_v number|string|table|nil 初始值
+---@return table obj
 function server:register(name, init_v)
     local watch_map = self.watch_map
     assert(not watch_map[name], "repeat register " .. name)  --重复注册
@@ -132,7 +146,10 @@ function server:register(name, init_v)
     return self
 end
 
---发布新值
+---#desc 发布新值
+---@param name string 名称
+---@param new_value number|string|table|nil 初始值
+---@return table obj
 function server:publish(name, new_value)
     return self._event(name, new_value, EVENT_TYPE.update)
 end
@@ -142,6 +159,12 @@ end
 ------------------------------------------------------------------------------------------
 local client = {}
 local client_mt = {__index = client}
+
+---#content 注意，目前实现上，(同一lua skynet服务下)订阅端不能同时存在2个及以上订阅对象去订阅同一个服务(lua skynet服务)
+
+---#desc 新建订阅端对象
+---@param rpc_interface table 交互的接口
+---@return table obj
 function M.new_client(rpc_interface)
     assert(rpc_interface, "not rpc_interface")
     assert(rpc_interface.send, "rpc_interface not send func")
@@ -196,7 +219,9 @@ function M.new_client(rpc_interface)
     return t
 end
 
---监听
+---#desc 监听订阅
+---@param name string 名称
+---@return boolean
 function client:watch(name)
     local is_watch_map = self.is_watch_map
     assert(not is_watch_map[name], "repeat watch name " .. name)
@@ -240,12 +265,15 @@ function client:watch(name)
     return true
 end
 
---是否监听
+---desc 是否监听
+---@param name string 名称
+---@return boolean|nil
 function client:is_watch(name)
     return self.is_watch_map[name]
 end
 
---取消监听
+---desc 取消监听
+---@param name string 名称
 function client:unwatch(name)
     local is_watch_map = self.is_watch_map
     assert(is_watch_map[name], "not watch name " .. name)
@@ -253,14 +281,18 @@ function client:unwatch(name)
     self._send(unwatch_cmd, name)
 end
 
---直接获取
+---desc 直接获取值
+---@param name string 名称
+---@return number|string|table|nil
 function client:get(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
     local value_map = self.value_map
     return value_map[name]
 end
 
---获取(至少第一次结果已经返回)
+---desc 获取值(至少第一同步已经完成，没有即等待，有就立即返回目前缓存值)
+---@param name string 名称
+---@return number|string|table|nil
 function client:await_get(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
     local version = self.version_map[name]
@@ -272,7 +304,9 @@ function client:await_get(name)
     return value_map[name]
 end
 
---等待更新
+---desc 等待更新(下一次发布值)
+---@param name string 名称
+---@return number|string|table|nil
 function client:await_update(name)
     assert(self.is_watch_map[name], "not watch name " .. name)
     self._add_wait(name)

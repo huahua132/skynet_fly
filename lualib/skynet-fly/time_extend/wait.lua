@@ -1,4 +1,13 @@
---支持超时的wait
+---#API
+---#content ---
+---#content title: 执行流挂起等待
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","定时器相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [wait](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/time_extend/wait.lua)
+
 local timer = require "skynet-fly.timer"
 local skynet = require "skynet"
 
@@ -12,6 +21,9 @@ local tremove = table.remove
 local M = {}
 local mata = {__index = M}
 
+---#desc 新建发布端对象
+---@param time_out number|nil 超时时间，不填永久等待唤醒
+---@return table obj
 function M:new(time_out)
     local t = {
         map = {},
@@ -23,6 +35,8 @@ function M:new(time_out)
     return t
 end
 
+---#desc 等待
+---@param k any 等待关联的k
 function M:wait(k)
     assert(k, "not k")
     local map = self.map
@@ -58,6 +72,8 @@ function M:wait(k)
     end
 end
 
+---#desc 唤醒
+---@param k any 唤醒关联的key
 function M:wakeup(k)
     assert(k, "not k")
     local list = self.list

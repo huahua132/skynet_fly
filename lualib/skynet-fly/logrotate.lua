@@ -198,7 +198,7 @@ end
 ---@return table 对象
 function M:set_wday(wday)
     assert(not self.is_builder, "builded can`t use set_wday")
-    assert(wday >= 1 and wday <= 7)
+    assert(wday >= 1 and wday <= 7, "Must be within this range[1,7] sec=" .. tostring(wday))
     local cfg = self.cfg
     cfg.wday = wday
     return self
@@ -209,7 +209,7 @@ end
 ---@return table 对象
 function M:set_yday(yday)
     assert(not self.is_builder, "builded can`t use set_yday")
-    assert(yday >= 1 and yday <= 366)
+    assert(yday >= 1 and yday <= 366, "Must be within this range[1,366] sec=" .. tostring(yday))
     local cfg = self.cfg
     cfg.yday = yday
     return self
