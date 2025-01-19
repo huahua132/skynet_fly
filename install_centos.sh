@@ -8,7 +8,7 @@ install_dependencies() {
 
 # 安装Perl
 install_perl() {
-	chmod 744 "3rd/perl/Configure"
+	chmod +x 3rd/perl/Configure
 	cd "3rd/perl" || exit
 	(
 		source /opt/rh/devtoolset-9/enable
@@ -43,7 +43,8 @@ install_openssl() {
 	# 获取脚本当前目录
 	CURRENT_DIR="$(dirname "$BASH_SOURCE")"
 	ABSOLUTE_PATH="$(realpath "$CURRENT_DIR/3rd/openssl")"
-	#chmod -R 744 "3rd/openssl"
+	chmod  744 "3rd/openssl/config"
+	chmod  744 "3rd/openssl/Configure"
 	cd "3rd/openssl" || exit
 	(
 		rm -f *.a
@@ -72,7 +73,7 @@ install_openssl() {
 
 # 编译zlib-1.3.1
 install_zlib() {
-	#chmod -R 744 "3rd/zlib"
+	chmod  744 "3rd/zlib/configure"
 	cd "3rd/zlib" || exit
 	(
 		rm -f *.o libz.*
