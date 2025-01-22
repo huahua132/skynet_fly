@@ -167,9 +167,9 @@ local function hand_shake(fd, session_id, msg, sz)
 		return
 	end
 	
-	local cluster_name, cluster_svr_id = info.cluster_name, info.cluster_svr_id
-    if not cluster_name or not cluster_svr_id then
-        log.warn("hand_shake err not cluster_name and cluster_svr_id ", cluster_name, cluster_svr_id, agent.addr, fd)
+	local svr_name, svr_id = info.svr_name, info.svr_id
+    if not svr_name or not svr_id then
+        log.warn("hand_shake err not svr_name and svr_id ", svr_name, svr_id, agent.addr, fd)
         return
     end
 
@@ -177,7 +177,7 @@ local function hand_shake(fd, session_id, msg, sz)
 	if g_secret_key	then
 		local secret_key = info.secret_key
 		if not secret_key or secret_key ~= g_secret_key then
-			log.warn("hand_shake err secret_key err ", cluster_name, cluster_svr_id, agent.addr, fd)
+			log.warn("hand_shake err secret_key err ", svr_name, svr_id, agent.addr, fd)
 			response(fd, session_id, true, skynet.packstring("secret_key err"))
 			return
 		end
@@ -185,12 +185,12 @@ local function hand_shake(fd, session_id, msg, sz)
 
 	local is_watch = info.is_watch
 
-    local name = cluster_name .. ':' .. cluster_svr_id
+    local cluster_name = svr_name .. ':' .. svr_id
 	agent.login_time_out:cancel()
     agent.is_hand_shake = true
-    agent.cluster_name = cluster_name
-    agent.cluster_svr_id = cluster_svr_id
-	agent.name = name
+    agent.svr_name = svr_name
+    agent.svr_id = svr_id
+	agent.cluster_name = cluster_name
 	agent.is_watch = is_watch								--是否是订阅连接
 	if is_watch then
 		agent.sub_map = {}									--订阅列表
@@ -227,7 +227,7 @@ local function create_handle(func, is_check_module_name, is_check_instance_name)
 		end
 		if not isok then
 			skynet.trash(msg, sz)
-			log.warn("frpc module_name not exists ",module_name, instance_name, agent.name, err)
+			log.warn("frpc module_name not exists ",module_name, instance_name, agent.cluster_name, err)
 			if iscall then
 				response(fd, session_id, false, " module_name not exists :" .. tostring(module_name))
 			end
@@ -475,7 +475,7 @@ local function handle_dispatch(fd, pack_id, module_name, instance_name, session_
 		end
 
 		if not msg and iscall then
-			response(fd, session_id, false, "Invalid large req from " .. agent.name)
+			response(fd, session_id, false, "Invalid large req from " .. agent.cluster_name)
 			return
 		end
 	end
@@ -483,9 +483,9 @@ local function handle_dispatch(fd, pack_id, module_name, instance_name, session_
     local func = HANDLE[pack_id]
     if not func then
 		skynet.trash(msg, sz)
-        log.error("unknown pack_id ", pack_id, agent.name)
+        log.error("unknown pack_id ", pack_id, agent.cluster_name)
 		if iscall then
-			response(fd, session_id, false, "unknown pack_id = " .. pack_id .. ' name = ' .. agent.name)
+			response(fd, session_id, false, "unknown pack_id = " .. pack_id .. ' cluster_name = ' .. agent.cluster_name)
 		end
         return
     end
@@ -496,9 +496,9 @@ local function handle_dispatch(fd, pack_id, module_name, instance_name, session_
 		local isok
 		isok, msg = pcall(crypt.desdecode, agent.msg_secret, info)
 		if not isok then
-			log.error("desdecode err ", agent.name)
+			log.error("desdecode err ", agent.cluster_name)
 			if iscall then
-				response(fd, session_id, false, "desdecode err name = " .. agent.name)
+				response(fd, session_id, false, "desdecode err cluster_name = " .. agent.cluster_name)
 				return
 			end
 		end
@@ -524,9 +524,9 @@ function SOCKET.open(fd, addr, gate)
 		gate = gate,
 		login_time_out = timer:new(timer.second * 10, 1, close_fd, fd),
         is_hand_shake = nil,                                            --是否握手了
-        cluster_name  = nil,                                            --连接的集群服务名
-        cluster_svr_id = nil,                                           --连接的集群服务ID
-
+        svr_name = nil,                                            		--连接的集群服务名
+        svr_id = nil,                                           		--连接的集群服务ID
+		cluster_name = nil,												--集群名 svr_name:svr_id 组成
 		large_request = {},
 	}
 	g_fd_agent_map[fd] = agent

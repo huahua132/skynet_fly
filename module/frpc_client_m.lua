@@ -192,8 +192,8 @@ local function do_hand_shake_channel(channel, secret_key, is_encrypt, is_watch)
 	end
 
 	local info = {
-		cluster_name = g_svr_name,
-		cluster_svr_id = g_svr_id,
+		svr_name = g_svr_name,
+		svr_id = g_svr_id,
 		secret_key = secret_key,
 		is_watch = is_watch,
 	}
@@ -939,20 +939,20 @@ function CMD.start(config)
 			--redis服务发现方式
 			local rpccli = rpc_redis:new()
 			for svr_name,node in pairs(node_map) do
-				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name, function(event, name, id, host, secret_key, is_encrypt)
+				g_redis_watch_cancel_map[svr_name] = rpccli:watch(svr_name, function(event, svr_name, svr_id, host, secret_key, is_encrypt)
 					if event == 'set' then            --设置
-						local old_host = get_node_host(name, id)
+						local old_host = get_node_host(svr_name, svr_id)
 						if old_host ~= host then
-							del_node(name, id)
-							add_node(name, id, host, secret_key, is_encrypt)
-							log.info("change cluster node :",name, id, old_host, host, secret_key, is_encrypt)
+							del_node(svr_name, svr_id)
+							add_node(svr_name, svr_id, host, secret_key, is_encrypt)
+							log.info("change cluster node :", svr_name, svr_id, old_host, host, secret_key, is_encrypt)
 						end
 					elseif event == 'expired' then    --过期
-						del_node(name,id)
-						log.info("down cluster node :",name,id)
+						del_node(svr_name, svr_id)
+						log.info("down cluster node :", svr_name, svr_id)
 					elseif event == 'get_failed' then --拿不到配置，通常是因为redis挂了，或者key被意外删除，或者redis出现性能瓶颈了
-						del_node(name,id)
-						log.error("get_failed cluster node :",name,id)
+						del_node(svr_name, svr_id)
+						log.error("get_failed cluster node :", svr_name, svr_id)
 					end
 				end)
 			end
