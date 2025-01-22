@@ -421,7 +421,7 @@ end
 ---#desc 设置字段 FIELD_TYPE对应字段类型 有 int8|int16|int32|int64|uint8|uint16|uint32|string32|string64|string128|string256|string512|string1024|string2048|string4096|string8192|text|blob|table
 ---@param field_name string 字段名
 ---@return table obj
-function M:FIELD_TYPE(field_name)
+function M:___FIELD_TYPE(field_name)
     --这个函数只是用于写文档的
     error("call invalid func")
 end
