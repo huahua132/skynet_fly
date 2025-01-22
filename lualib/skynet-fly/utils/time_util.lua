@@ -151,6 +151,7 @@ end
 ---@param hour number 几时[0,23]
 ---@param min number 几分[0,59]
 ---@param sec number 几秒[0,59]
+---@param curtime? number|nil 当前时间(可选 默认当前时间)
 ---@return number 时间戳
 function M.day_time(day, hour, min, sec, curtime)
 	assert(day, "not day param")
@@ -346,8 +347,8 @@ end
 
 ---#desc 是否跨天
 ---@param pre_time number 之前记录的时间
----@param cur_time number 当前时间(可选 默认当前时间)
----@param hour number 几点[0,23]算一天的开始(可选 默认零点)
+---@param cur_time? number|nil 当前时间(可选 默认当前时间)
+---@param hour? number|nil 几点[0,23]算一天的开始(可选 默认零点)
 ---@return boolean 是否跨天
 function M.is_cross_day(pre_time, cur_time, hour)
 	hour = hour or 0
@@ -366,8 +367,8 @@ end
 
 ---#desc 计算pre_time(更小) cur_time(更大) 相差几天
 ---@param pre_time number 之前记录的时间
----@param cur_time number 当前时间(可选 默认当前时间)
----@param hour number 几点[0,23]算一天的开始(可选 默认零点)
+---@param cur_time? number|nil 当前时间(可选 默认当前时间)
+---@param hour? number|nil 几点[0,23]算一天的开始(可选 默认零点)
 ---@return number 相差几天
 function M.diff_day(pre_time, cur_time, hour)
 	hour = hour or 0
