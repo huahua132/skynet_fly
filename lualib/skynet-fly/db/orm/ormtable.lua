@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: orm表
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","数据库相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [ormtable](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/orm/ormtable.lua)
+
 ---@diagnostic disable: need-check-nil, assign-type-mismatch, param-type-mismatch
 local ormentry = require "skynet-fly.db.orm.ormentry"
 local table_util = require "skynet-fly.utils.table_util"
@@ -379,7 +389,9 @@ local mata = {__index = M, __gc = function(t)
     end
 end}
 
--- 新建表
+---#desc 新建表对象
+---@param tab_name string 作用与数据库的表名
+---@return table obj
 function M:new(tab_name)
     local t = {
         _queue = mult_queue:new(),                           --操作队列
@@ -406,6 +418,14 @@ function M:new(tab_name)
     return t
 end
 
+---#desc 设置字段 FIELD_TYPE对应字段类型 有 int8|int16|int32|int64|uint8|uint16|uint32|string32|string64|string128|string256|string512|string1024|string2048|string4096|string8192|text|blob|table
+---@param field_name string 字段名
+---@return table obj
+function M:FIELD_TYPE(field_name)
+    --这个函数只是用于写文档的
+    error("call invalid func")
+end
+
 do
     for type_name,type_enum in pairs(FIELD_TYPE) do
         M[type_name] = function(self, field_name)
@@ -415,7 +435,9 @@ do
     end
 end
 
--- 设置主键
+---#desc 设置主键
+---@param ... string 字段名列表 填入遵从最左前缀原则
+---@return table obj
 function M:set_keys(...)
     assert(not self._is_builder, "builded can`t set_keys")
     local list = {...}
@@ -542,7 +564,11 @@ local function create_invalid_entry(t, key_values)
 end
 
 local week_mata = {__mode = "kv"}
--- 设置缓存时间
+---#desc 设置缓存时间
+---@param expire number 过期时间 100表示1秒 get_*相关接口会重置对应被获取的entry的过期时间
+---@param inval number 被修改后的保存检查间隔 调用了entry:set 
+---@param cache_limit number 缓存总量限制，超出会优先释放快到期的缓存
+---@return table obj
 function M:set_cache(expire, inval, cache_limit)
     if cache_limit then
         assert(cache_limit > 0, "err cache_limit " .. tostring(cache_limit))
@@ -580,9 +606,11 @@ local function builder(t, adapterinterface)
     return t
 end
 
--- 构建表
+---#desc 构建表
+---@param adapterinterface number 数据库适配接口
+---@return table obj
 function M:builder(adapterinterface)
-    assert(#self._keylist > 0, "not set keys")
+    assert(#self._keylist > 0, "not set keys")      --没有设置主键
     if self._cache_time ~= 0 then
         return queue_doing(self, nil, builder, self, adapterinterface)
     else
@@ -1012,13 +1040,18 @@ local function delete_entry_by_in(t, in_values, key_values)
 
     return res
 end
--- 批量创建新数据
+
+---#desc 批量创建新数据
+---@param entry_data_list table 数据列表
+---@return table obj
 function M:create_entry(entry_data_list)
     assert(self._is_builder, "not builder can`t create_entry")
     return queue_doing(self, nil, create_entry, self, entry_data_list)
 end
 
--- 创建一条数据
+---#desc 创建一条数据
+---@param entry_data table 一条数据表
+---@return table obj
 function M:create_one_entry(entry_data)
     assert(self._is_builder, "not builder can`t create_one_entry")
     check_fields(self, entry_data)
@@ -1026,7 +1059,9 @@ function M:create_one_entry(entry_data)
     return queue_doing(self, key1value, create_one_entry, self, entry_data)
 end
 
--- 查询多条数据
+---#desc 查询多条数据
+---@param ... string[] 最左前缀的 key 列表
+---@return table obj[](ormentry)
 function M:get_entry(...)
     assert(self._is_builder, "not builder can`t get_entry")
     local key_values = {...}
@@ -1036,7 +1071,9 @@ function M:get_entry(...)
     return queue_doing(self, key1value, get_entry, self, key_values)
 end
 
--- 查询一条数据
+---#desc 查询一条数据
+---@param ... string[] 最左前缀的 key 列表
+---@return table obj(ormentry)
 function M:get_one_entry(...)
     assert(self._is_builder, "not builder can`t get_one_entry")
     local key_values = {...}
@@ -1047,7 +1084,9 @@ function M:get_one_entry(...)
     return queue_doing(self, key1value, get_one_entry, self, key_values)
 end
 
--- 立即保存数据
+---#desc 立即保存数据
+---@param entry_list table ormentry对象列表
+---@return table 保存结果索引对应值 成功true失败false
 function M:save_entry(entry_list)
     assert(self._is_builder, "not builder can`t save_entry")
     if not next(entry_list) then return entry_list end
@@ -1055,7 +1094,9 @@ function M:save_entry(entry_list)
     return queue_doing(self, nil, save_entry, self, entry_list)
 end
 
--- 立即保存一条数据
+---#desc 立即保存一条数据
+---@param entry table ormentry对象
+---@return boolean 成功true失败false
 function M:save_one_entry(entry)
     assert(self._is_builder, "not builder can`t save_one_entry")
     assert(entry,"not entry")
@@ -1063,7 +1104,9 @@ function M:save_one_entry(entry)
     return queue_doing(self, key1value, save_one_entry, self, entry)
 end
 
--- 删除数据
+---#desc 删除数据
+---@param ... string[] 最左前缀的 key 列表
+---@return boolean 成功true失败false
 function M:delete_entry(...)
     assert(self._is_builder, "not builder can`t delete_entry")
     local key_values = {...}
@@ -1073,19 +1116,21 @@ function M:delete_entry(...)
     return queue_doing(self, key1value, delete_entry, self, key_values)
 end
 
--- 查询所有数据
+---#desc 查询所有数据
+---@return table obj[](ormentry)
 function M:get_all_entry()
     assert(self._is_builder, "not builder can`t get_all_entry")
     return queue_doing(self, nil, get_entry, self, {})
 end
 
--- 删除所有数据
+---#desc 删除所有数据
+---@return boolean 成功true失败false
 function M:delete_all_entry()
     assert(self._is_builder, "not builder can`t delete_all_entry")
     return queue_doing(self, nil, delete_entry, self, {})
 end
 
--- 立即保存所有修改
+---#desc 立即保存所有修改，直到成功为止
 function M:save_change_now()
     assert(self._is_builder, "not builder can`t save_change_now")
     if not self._week_t then
@@ -1095,7 +1140,9 @@ function M:save_change_now()
     return queue_doing(self, nil, inval_time_out, self._week_t, true)
 end
 
--- 通过数据获得entry
+---#desc 通过数据获得entry
+---@param entry_data table 数据表
+---@return table obj(ormentry)
 function M:get_entry_by_data(entry_data)
     assert(self._is_builder, "not builder can`t get_entry_by_data")
     local key_list = self._keylist
@@ -1111,12 +1158,18 @@ function M:get_entry_by_data(entry_data)
     return queue_doing(self, key1value, get_one_entry, self, key_values)
 end
 
--- 是否启动了间隔保存
+---#desc 是否启用了间隔保存
+---@return boolean
 function M:is_inval_save()
     return self._time_obj ~= nil
 end
 
--- 分页查询
+---#desc 分页查询
+---@param cursor number|string 游标
+---@param limit number 数量限制
+---@param sort number 1升序  -1降序
+---@param ... string[] 最左前缀主键列表
+---@return table obj[](ormentry)
 function M:get_entry_by_limit(cursor, limit, sort, ...)
     assert(self._is_builder, "not builder can`t get_entry_by_limit")
     local key_list = self._keylist
@@ -1132,7 +1185,10 @@ function M:get_entry_by_limit(cursor, limit, sort, ...)
     return queue_doing(self, key1value, get_entry_by_limit, self, cursor, limit, sort, key_values)
 end
 
--- IN 查询
+---#desc IN 查询
+---@param in_values table in对应的值列表 select * from xxx where key1 = xxx and key2 = xxx and key3 in (xxx,xxx,xxx)
+---@param ... string[] 最左前缀主键列表 无需填入in_values的key
+---@return table obj[](ormentry)
 function M:get_entry_by_in(in_values, ...)
     assert(self._is_builder, "not builder can`t get_entry_by_in")
     local key_list = self._keylist
@@ -1160,6 +1216,12 @@ end
 -- [left, right] 范围删除  >= left <= right
 -- [left, nil] 删除 >= left
 -- [nil, right] 删除 <= right
+
+---#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除  >= left <= right  [left, nil] 删除 >= left [nil, right] 删除 <= right
+---@param left string|number 左值
+---@param right string|number 右值
+---@param ... string[] 最左前缀主键列表 无需填入left right值 对应的key
+---@return boolean
 function M:delete_entry_by_range(left, right, ...)
     assert(self._is_builder, "not builder can`t delete_entry_by_range")
     assert(left or right, "not left or right")
@@ -1185,7 +1247,10 @@ function M:delete_entry_by_range(left, right, ...)
     return queue_doing(self, key1value, delete_entry_by_range, self, left, right, key_values)
 end
 
--- in 删除
+---#desc IN 删除
+---@param in_values table in对应的值列表 delete from xxx where key1 = xxx and key2 = xxx and key3 in (xxx,xxx,xxx)
+---@param ... string[] 最左前缀主键列表 无需填入in_values的key
+---@return boolean
 function M:delete_entry_by_in(in_values, ...)
     assert(self._is_builder, "not builder can`t delete_entry_by_in")
     local key_list = self._keylist

@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: 远程订阅-订阅端
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","订阅发布，订阅同步"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [watch_client](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/rpc/watch_client.lua)
+
 local skynet = require "skynet"
 local frpc_client = require "skynet-fly.client.frpc_client"
 local log = require "skynet-fly.log"
@@ -206,7 +216,11 @@ local function watch(svr_name, channel_name, handle_name, handler)
     end
 end
 
---watch监听 svr_name 的所有结点
+---#desc watch监听 svr_name 的所有结点
+---@param svr_name string 远程结点名称
+---@param channel_name string 通道名
+---@param handle_name string 绑定的处理名
+---@param handler function 回调处理函数
 function M.watch(svr_name, channel_name, handle_name, handler)
     assert(svr_name, "not svr_name")
     assert(channel_name, "not channel_name")
@@ -248,7 +262,10 @@ local function unwatch(svr_name, channel_name, handle_name)
     g_watch_channel_handlers_map[svr_name] = nil
 end 
 
---取消监听 svr_name 的所有结点
+---#desc 取消监听 svr_name 的所有结点
+---@param svr_name string 远程结点名称
+---@param channel_name string 通道名
+---@param handle_name string 绑定的处理名
 function M.unwatch(svr_name, channel_name, handle_name)
     assert(svr_name, "not svr_name")
     assert(channel_name, "not channel_name")
@@ -284,7 +301,12 @@ local function watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
         watch_channel_name(svr_name, svr_id, channel_name)
     end
 end
---指定svr_id监听
+
+---#desc 指定svr_id监听
+---@param svr_name string 远程结点名称
+---@param svr_id string 远程结点名称
+---@param channel_name string 通道名
+---@param handle_name string 绑定的处理名
 function M.watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
     assert(svr_name, "not svr_name")
     assert(svr_id, "not svr_id")
@@ -329,7 +351,11 @@ local function unwatch_byid(svr_name, svr_id, channel_name, handle_name)
     g_watch_channel_svr_id_map[svr_name] = nil
     g_watch_channel_svr_id_handlers_map[svr_name] = nil
 end
---指定svr_id取消监听
+
+---#desc 指定svr_id取消监听
+---@param svr_name string 远程结点名称
+---@param svr_id string 远程结点名称
+---@param channel_name string 通道名
 function M.unwatch_byid(svr_name, svr_id, channel_name, handle_name)
     assert(svr_name, "not svr_name")
     assert(svr_id, "not svr_id")

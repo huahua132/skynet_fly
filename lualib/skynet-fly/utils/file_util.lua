@@ -21,7 +21,7 @@ local M = {}
 
 ---#desc 递归遍历目录
 ---@param path_url string 路径
----@param max_depth number|nil 最大深度 nil表示到底
+---@param max_depth? number|nil 最大深度 nil表示到底
 ---@return function 遍历函数
 function M.diripairs(path_url, max_depth)
 	local stack = {}
@@ -198,7 +198,7 @@ function M.is_window()
 end
 
 ---#desc 文件拷贝工具
----@param is_dir boolean? 是否路径
+---@param is_dir? boolean 是否路径
 ---@return table obj set_source_target = function(source, target)设置来源目标  execute = function()执行拷贝
 function M.new_copy_file(is_dir)
 	local cmd = nil

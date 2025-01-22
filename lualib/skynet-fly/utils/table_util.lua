@@ -298,7 +298,7 @@ end
 
 ---#desc 通用的排序后遍历 对比k
 ---@param t table 需要排序的表
----@param comp function|nil 比较函数
+---@param comp? function|nil 比较函数
 ---@return function 遍历函数
 function M.sort_ipairs_byk(t,comp)
 	assert(t)

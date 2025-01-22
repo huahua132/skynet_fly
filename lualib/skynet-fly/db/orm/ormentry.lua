@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: orm条目
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","数据库相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [ormentry](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/orm/ormentry.lua)
+
 local setmetatable = setmetatable
 local pairs = pairs
 
@@ -29,12 +39,16 @@ function M:new_invalid(entry_data)
     return t
 end
 
--- 获取条目数据的值
+---#desc 获取条目数据的值
+---@param field_name string 字段名
+---@return any 字段值
 function M:get(field_name)
     return self._entry_data[field_name]
 end
 
--- 修改条目数据的值
+---#desc 修改条目数据的值
+---@param field_name string 字段名
+---@param field_value any 字段值
 function M:set(field_name, field_value)
     local ormtab = self._ormtab
     if field_value == self._entry_data[field_name] and not ormtab:is_table_field(field_name) then return end
@@ -45,7 +59,8 @@ function M:set(field_name, field_value)
     ormtab:set_change_entry(self)
 end
 
--- 获取数据表
+---#desc 获取整个数据表
+---@return table
 function M:get_entry_data()
     return self._entry_data
 end

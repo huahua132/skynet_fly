@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: 启动函数
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","可热更服务模块"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [contriner_launcher](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/contriner/contriner_launcher.lua)
+
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
 require "skynet.manager"
@@ -18,6 +28,8 @@ end
 
 local M = {}
 
+---#desc 这是启动函数通常在main.lua中调用
+---@return function 返回需要延迟启动的可热更模块
 function M.run()
     skynet.monitor('monitor_exit')
     local cmgr = skynet.uniqueservice('contriner_mgr')

@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: 访问对象[内部rpc]
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","可热更服务模块"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [contriner_client](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/client/contriner_client.lua)
+
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
 local skynet_util = require "skynet-fly.utils.skynet_util"
@@ -257,7 +267,8 @@ function M:close_ready()
 	is_ready = false
 end
 
---注册
+---#desc 注册访问，想要访问一个可热更访问，首先需要在load阶段注册访问
+---@param ... string[] 可热更访问模块名 列表
 function M:register(...)
 	local module_base = module_info.get_base_info()
 	local mod_name_list = {...}
@@ -271,7 +282,8 @@ function M:register(...)
 	end
 end
 
---设置弱访问者
+---#desc 设置弱访问者 如果2个可热更模块相互访问，需要有一方去标记另一方为弱访问者，这样才不会因环访问导致双方旧服务无法退出
+---@param ... string[] 可热更访问模块名 列表
 function M:set_week_visitor(...)
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
@@ -279,7 +291,8 @@ function M:set_week_visitor(...)
 	end
 end
 
---设置总能切换到新服务
+---#desc 设置总能切换访问到新服务，如果不想因自身为旧服务，就只能访问对方旧服务，就可以调用此接口
+---@param ... string[] 可热更访问模块名 列表
 function M:set_always_swtich(...)
 	local mod_name_list = {...}
 	for _,mod_name in ipairs(mod_name_list) do
@@ -287,12 +300,15 @@ function M:set_always_swtich(...)
 	end
 end
 
---是否弱访问者
+---#desc 是否弱访问者
+---@param module_name string 可热更模块名
+---@return boolean
 function M:is_week_visitor(module_name)
 	return g_week_visitor_map[module_name]
 end
 
---弱访问者
+---#desc 获取弱访问者列表
+---@return table
 function M:get_week_visitor_map()
 	return g_week_visitor_map
 end
@@ -321,12 +337,15 @@ function M:is_not_need_visitor(module_name, source)
 	return true
 end
 
---访问列表
+---#desc 获取访问列表
+---@return table
 function M:get_need_visitor_map()
 	return g_id_list_map
 end
 
--- 添加查询到某服务地址的回调
+---#desc 添加查询到某服务地址的回调
+---@param module_name string 模块名
+---@param func function 回调函数
 function M:add_queryed_cb(module_name, func)
 	assert(type(func) == 'function', "not is func")
 	if not g_queryed_map[module_name] then
@@ -336,7 +355,9 @@ function M:add_queryed_cb(module_name, func)
 	tinsert(g_queryed_map[module_name], func)
 end
 
---添加更新某服务地址的回调
+---#desc 添加更新某服务地址的回调
+---@param module_name string 模块名
+---@param func function 回调函数
 function M:add_updated_cb(module_name, func)
 	assert(type(func) == 'function', "not is func")
 	if not g_updated_map[module_name] then
@@ -345,7 +366,7 @@ function M:add_updated_cb(module_name, func)
 	tinsert(g_updated_map[module_name], func)
 end
 
---监听所有服务地址
+---#desc 监听所有服务地址
 function M:monitor_all()
 	assert(not is_monitor_all,"repeat monitor_all")
 	assert(not is_ready, "ready can`t monitor_all")
@@ -369,15 +390,12 @@ function M:is_visitor_old()
 
 	return false
 end
---[[
-	函数作用域：M 的成员函数
-	函数名称: new
-	描述:创建一个skynet内部rpc调用对象
-	参数:
-		- module_name (string): 模块名称，需要send或者call通信的模块名称
-		- instance_name (string): 实例名称，它是模块的二级分类
-		- can_switch_func (function): 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服
-]]
+
+---#desc 创建一个skynet内部rpc调用对象
+---@param module_name string 模块名
+---@param instance_name string 实例名称，它是模块的二级分类
+---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
+---@return table obj
 function M:new(module_name,instance_name,can_switch_func)
 	assert(g_register_map[module_name],tostring(module_name) .. " not register")
 	assert(is_ready,"not is ready")
@@ -402,15 +420,11 @@ function M:new(module_name,instance_name,can_switch_func)
     return t
 end
 
---[[
-	函数作用域：M 的成员函数
-	函数名称: new_raw
-	描述:创建一个skynet内部rpc调用对象， send,call 使用 rawsend rawcall
-	参数:
-		- module_name (string): 模块名称，需要send或者call通信的模块名称
-		- instance_name (string): 实例名称，它是模块的二级分类
-		- can_switch_func (function): 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服
-]]
+---#desc 创建一个skynet内部rpc调用对象, send,call 使用 rawsend rawcall方式(注：一般做转发才用这个，请清楚了解 rawsend和send的区别再考虑使用，否则处理不好，会造成内存泄漏)
+---@param module_name string 模块名
+---@param instance_name string 实例名称，它是模块的二级分类
+---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
+---@return table obj
 function M:new_raw(module_name,instance_name,can_switch_func)
 	local t = M:new(module_name,instance_name,can_switch_func)
 	t.send = skynet.rawsend
@@ -419,7 +433,10 @@ function M:new_raw(module_name,instance_name,can_switch_func)
 	return t
 end
 
---有时候不想创建实例
+---#desc 常驻new对象 默认切服
+---@param module_name string 模块名
+---@param instance_name string 实例名称，它是模块的二级分类
+---@return table obj
 function M:instance(module_name,instance_name)
 	assert(module_name)
 	if not g_instance_map[module_name] then
@@ -441,13 +458,10 @@ function M:instance(module_name,instance_name)
 		return g_instance_map[module_name].obj
 	end
 end
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：set_mod_num
-	描述：设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
-	参数：
-		- num (number): 设置所有用mod发消息的模除以模块服务的数量作为下标映射，没有设置的情况下，默认 用自身服务id
-]]
+
+---#desc 设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
+---@param num number 模块名
+---@return table obj
 function M:set_mod_num(num)
 	assert(type(num) == 'number')
 	self.mod_num = num
@@ -460,6 +474,10 @@ end
 	参数：
 		- name (string): 
 ]]
+
+---#desc 设置mod映射访问的数字 如果没有设置，mod消息时默认使用 自身服务id % 服务数量
+---@param num number 模块名
+---@return table obj
 function M:set_instance_name(name)
 	assert(type(name) == 'string')
 	local cur_name_id_list = self.cur_name_id_list
@@ -467,129 +485,93 @@ function M:set_instance_name(name)
 	self.instance_name = name
 	return self
 end
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：get_mod_server_id
-	描述: 获取通过mod取到的对应服务id
-]]
+
+---#desc 获取通过mod取到的对应服务id
+---@return number
 function M:get_mod_server_id()
 	return get_mod(self)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：get_balance_server_id
-	描述: 获取通过balance取到的对应服务id，balance是简单轮询负载均衡，如果有服务id列表[1,2,3,4]，5次的结果是1,2,3,4,1
-]]
+---#desc 获取通过balance取到的对应服务id，balance是简单轮询负载均衡，如果有服务id列表[1,2,3,4]，5次的结果是1,2,3,4,1
+---@return number
 function M:get_balance_server_id()
 	return get_balance(self)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：get_mod_server_id_by_name
-	描述: 在instance_name二级分类中，获取通过mod取到的对应服务id,mod是简单hash映射
-	如果有服务id列表[1,2,3,4]，设置mod_num等于3，instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 每次调用结果都是2
-]]
+---#desc 在instance_name二级分类中，获取通过mod取到的对应服务id,mod是简单hash映射。如果有服务id列表[1,2,3,4]，设置mod_num等于3，instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 每次调用结果都是2
+---@return number
 function M:get_mod_server_id_by_name()
 	return get_name_mod(self)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：get_balance_server_id_by_name
-	描述: 在instance_name二级分类中，获取通过balance取到的对应服务id,balance是简单轮询负载均衡
-	如果有服务id列表[1,2,3,4]，设置instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 5次的结果是1,2,1,2,1
-]]
+---#desc 在instance_name二级分类中，获取通过balance取到的对应服务id,balance是简单轮询负载均衡。如果有服务id列表[1,2,3,4]，设置instance_name等于game，实例名称对应列表(game)[1,2] (hall)[3,4] 5次的结果是1,2,1,2,1
+---@return number
 function M:get_balance_server_id_by_name()
 	return get_name_balance(self)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：mod_send
-	描述: mod hash映射一个服务id，并send skynet lua消息
-]]
+---#desc mod hash映射一个服务id，并send skynet lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:mod_send(...)
 	switch_svr(self)
 	self.send(get_mod(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：mod_call
-	描述: mod hash在module_name列表中映射一个服务id，并call skynet lua消息
-]]
+---#desc mod hash在module_name列表中映射一个服务id，并call skynet lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return ... any
 function M:mod_call(...)
 	switch_svr(self)
 	return self.call(get_mod(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：balance_send
-	描述:  balance简单负载均衡 skynet send lua消息
-]]
+---#desc balance简单负载均衡 skynet send lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:balance_send(...)
 	switch_svr(self)
 	return self.send(get_balance(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：balance_call
-	描述:  balance简单负载均衡 skynet call lua消息
-]]
+---#desc balance简单负载均衡 skynet call lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return ... any
 function M:balance_call(...)
 	switch_svr(self)
 	return self.call(get_balance(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：mod_send_by_name
-	描述:  mod hash在instance_name服务列表中映射一个服务id skynet send lua消息
-]]
+---#desc mod hash在instance_name服务列表中映射一个服务id skynet send lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:mod_send_by_name(...)
 	switch_svr(self)
 	self.send(get_name_mod(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：mod_call_by_name
-	描述:  mod hash在instance_name服务列表中映射一个服务id skynet call lua消息
-]]
+---#desc mod hash在instance_name服务列表中映射一个服务id skynet call lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return ... any
 function M:mod_call_by_name(...)
 	switch_svr(self)
 	return self.call(get_name_mod(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：balance_send_by_name
-	描述:  简单负载均衡在instance_name服务列表中轮询服务id skynet send lua消息
-]]
+---#desc 简单负载均衡在instance_name服务列表中轮询服务id skynet send lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:balance_send_by_name(...)
 	switch_svr(self)
 	self.send(get_name_balance(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：balance_call_by_name
-	描述:  简单负载均衡在instance_name服务列表中轮询服务id skynet call lua消息
-]]
+---#desc 简单负载均衡在instance_name服务列表中轮询服务id skynet call lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return ... any
 function M:balance_call_by_name(...)
 	switch_svr(self)
 	return self.call(get_name_balance(self),'lua',...)
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：broadcast
-	描述:  广播在module_name服务列表中的服务id skynet send lua消息
-]]
+---#desc 广播在module_name服务列表中的服务id skynet send lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:broadcast(...)
 	switch_svr(self)
 	local id_list = self.cur_id_list
@@ -598,12 +580,9 @@ function M:broadcast(...)
 	end
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：broadcast
-	描述:  广播在module_name服务列表中的服务id skynet call lua消息
-]]
-
+---#desc 广播在module_name服务列表中的服务id skynet call lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return table
 function M:broadcast_call(...)
 	switch_svr(self)
 	local id_list = self.cur_id_list
@@ -620,11 +599,8 @@ function M:broadcast_call(...)
 	return ret_map
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：broadcast_by_name
-	描述:  广播在instance_name服务列表中的服务id skynet send lua消息
-]]
+---#desc 广播在instance_name服务列表中的服务id skynet send lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
 function M:broadcast_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cur_name_id_list = self.cur_name_id_list
@@ -637,12 +613,9 @@ function M:broadcast_by_name(...)
 	end
 end
 
---[[
-	函数作用域：M:new 对象的成员函数
-	函数名称：broadcast_by_name
-	描述:  广播在instance_name服务列表中的服务id skynet call lua消息
-]]
-
+---#desc 广播在instance_name服务列表中的服务id skynet call lua消息
+---@param ... any[] cmd, arg1, arg2, arg3
+---@return table
 function M:broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cur_name_id_list = self.cur_name_id_list

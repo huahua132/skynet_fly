@@ -1,3 +1,13 @@
+---#API
+---#content ---
+---#content title: orm mysql适配器
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","数据库相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [ormadapter_mysql](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/ormadapter/ormadapter_mysql.lua)
+
 local contriner_client = require "skynet-fly.client.contriner_client"
 local table_util = require "skynet-fly.utils.table_util"
 local string_util = require "skynet-fly.utils.string_util"
@@ -91,7 +101,9 @@ end
 local M = {}
 local mata = {__index = M}
 
--- 新建适配对象
+---#desc 新建适配器对象
+---@param db_name string 对应share_config_m 中写的key为mysql表的名为db_name的连接配置
+---@return table obj
 function M:new(db_name)
     local t = {
         _db = mysqli.new_client(db_name),
@@ -110,21 +122,28 @@ function M:new(db_name)
     return t
 end
 
---设置单次整合批量插入的数量
+---#desc 设置单次整合批量插入的数量
+---@param num number 数量 默认10
+---@return table obj
 function M:set_batch_insert_num(num)
     assert(num > 0)
     self.batch_insert_num = num
     return self
 end
 
---设置单次整合批量更新的数量
+---#desc 设置单次整合批量更新的数量
+---@param num number 数量 默认10
+---@return table obj
 function M:set_batch_update_num(num)
     assert(num > 0)
     self.batch_update_num = num
     return self
 end
 
--- 设置table类型的打包解包函数
+---#desc 设置table类型的打包解包函数
+---@param encode function 默认json
+---@param decode function 默认json
+---@return table obj
 function M:set_table_pack(encode, decode)
     self._tab_encode = encode
     self._tab_decode = decode

@@ -1,3 +1,15 @@
+---#API
+---#content ---
+---#content title: redis调用
+---#content date: 2024-06-29 22:00:00
+---#content categories: ["skynet_fly API 文档","数据库相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [redisf](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/redisf.lua)
+
+---#content 调用redis命令的基础封装
+
 local skynet = require "skynet"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local redis = require "skynet.db.redis"
@@ -27,15 +39,10 @@ local cmdfuncs = {}    --命令函数缓存
 
 local g_instance_map = {}  --实例
 
---[[
-	函数作用域：M的成员函数
-	函数名称：script_run
-	描述:运行redis脚本命令
-	参数：
-		- self (redis_conn): new_client返回的连接对象
-		- script_str (string)：redis lua 脚本
-		- ...       脚本传递参数
-]]
+---#desc 运行redis脚本命令
+---@param script_str string 脚本串
+---@param ... number|string|nil 脚本命令参数 arg1为KEY数量然后紧跟KEYS参数，之后是ARGV参数
+---@return number|string|table
 function command:script_run(script_str,...)
 	local conn = self.conn
 	assert(conn,"not connect redis ")
@@ -109,13 +116,9 @@ local mt = {
 	return f
 end}
 
---[[
-	函数作用域：M的成员函数
-	函数名称：new_client
-	描述:新建一个在share_config_m 中写的key为redis表的名为db_name的连接配置
-	参数：
-		- db_name (string): 连接配置名称
-]]
+---#desc 运行redis脚本命令
+---@param db_name string 对应share_config_m 中写的key为redis表的名为db_name的连接配置
+---@return table obj
 function M.new_client(db_name)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
@@ -131,7 +134,9 @@ function M.new_client(db_name)
 	return t_conn
 end
 
--- 有时候并不想创建和管理redis连接,就直接访问实例
+---#desc 有时候并不想创建和管理redis连接,就直接访问常驻实例
+---@param db_name string 对应share_config_m 中写的key为redis表的名为db_name的连接配置
+---@return table obj
 function M.instance(db_name)
 	if not g_instance_map[db_name] then
 		g_instance_map[db_name] = M.new_client(db_name)
@@ -140,32 +145,21 @@ function M.instance(db_name)
 	return g_instance_map[db_name]
 end
 
---[[
-	函数作用域：M的成员函数
-	函数名称：add_command
-	描述:增加自定义command命令
-	参数：
-		- M (table): 定义的函数模块
-]]
+---#desc 增加自定义command命令
+---@param M string 对应commond命令实现
 function M.add_command(M)
 	for k,func in pairs(M) do
 		assert(not command[k],"command is exists " .. k)
 		command[k] = func
 	end
 end
---[[
-	函数作用域：M的成员函数
-	函数名称：new_watch
-	描述:redis订阅
-	参数：
-		- db_name (string): 连接的redis名称
-		- subscribe_list (table): 订阅的固定key
-		- psubscribe_list (table): 订阅的匹配key
-		- call_back (function): 消息回调函数
 
-	返回值
-		- 取消订阅函数
-]]
+---#desc redis订阅
+---@param db_name string 对应share_config_m 中写的key为redis表的名为db_name的连接配置
+---@param subscribe_list string[] 订阅名列表
+---@param psubscribe_list string[] 批量订阅名列表
+---@param call_back function 回调函数
+---@return function 取消订阅函数
 function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
 	local cli = contriner_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')

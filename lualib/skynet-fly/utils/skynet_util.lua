@@ -149,7 +149,7 @@ local g_shutdown_func_map = {}
 
 ---#desc 注册关服处理函数
 ---@param func function 函数
----@param sort_weight number? 排序权重
+---@param sort_weight? number|nil 排序权重
 function M.reg_shutdown_func(func, sort_weight)
     sort_weight = sort_weight or 0
     assert(type(func) == 'function', "not function")
