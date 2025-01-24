@@ -6,6 +6,7 @@ local table = table
 local ipairs = ipairs
 local next = next
 local pairs = pairs
+local string = string
 
 local ARGV = {...}
 MODULE_NAME = ARGV[1]
@@ -19,7 +20,8 @@ assert(MODULE_NAME)
 local new_loaded = _loaded
 
 if IS_RECORD_ON == 1 then
-	skynet.start_record(ARGV, MODULE_NAME .. '-' .. VERSION .. '-' .. INDEX .. '-' .. os.date('%Y%m%d-%H%M%S', LAUNCH_TIME))
+	local record_file_name = string.format("%s-%s-%s-%s-%08x", MODULE_NAME, VERSION, INDEX, os.date('%Y%m%d-%H%M%S', LAUNCH_TIME), skynet.self())
+	skynet.start_record(ARGV, record_file_name)
 end
 
 local CMD = {}
