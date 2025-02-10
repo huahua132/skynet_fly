@@ -15,32 +15,32 @@ local function test_base_msg()
 	cli:set_svr_id(1):byid_balance_send("hello","byid_balance_send")
 	cli:set_svr_id(1):byid_mod_send("hello","byid_mod_send")
 	for i = 1,3 do
-		log.info("balance ping ", i, cli:one_balance_call("ping"))
+		log.info("balance ping ", i, cli:one_balance_call("ping", i))
 	end
 	for i = 1,3 do
-		log.info("mod ping ",i,cli:one_mod_call("ping"))
+		log.info("mod ping ",i,cli:one_mod_call("ping", i))
 	end
 	for i = 1,3 do
-		log.info("byid ping ",i,cli:set_svr_id(2):byid_balance_call("ping"))
+		log.info("byid ping ",i,cli:set_svr_id(2):byid_balance_call("ping", i))
 	end
 	for i = 1,3 do
-		log.info("byid ping ",i,cli:set_svr_id(1):byid_mod_call("ping"))
+		log.info("byid ping ",i,cli:set_svr_id(1):byid_mod_call("ping", i))
 	end
 	
 	cli:all_mod_send("hello","all_mod_send")
-	local ret = cli:all_mod_call("ping")
+	local ret = cli:all_mod_call("ping", "all_mod_call")
 	log.info("all_mod_call: ",ret)
 
 	cli:all_balance_send("hello","all_balance_send")
-	local ret = cli:all_balance_call("ping")
+	local ret = cli:all_balance_call("ping", "all_balance_send")
 	log.info("all_balance_call: ",ret)
 
 	cli:one_broadcast("hello","one_broadcast")
-	log.info("one_broadcast_call:", cli:one_broadcast_call("ping"))
+	log.info("one_broadcast_call:", cli:one_broadcast_call("ping", "one_broadcast_call"))
 	cli:all_broadcast("hello","all_broadcast")
-	log.info("all_broadcast_call:", cli:all_broadcast_call("ping"))
+	log.info("all_broadcast_call:", cli:all_broadcast_call("ping", "all_broadcast_call"))
 	cli:set_svr_id(1):byid_broadcast("hello","byid_broadcast")
-	log.info("byid_broadcast_call:", cli:set_svr_id(1):byid_broadcast_call("ping"))
+	log.info("byid_broadcast_call:", cli:set_svr_id(1):byid_broadcast_call("ping", "byid_broadcast_call"))
 
 	cli:set_instance_name("test_one")
 	cli:set_svr_id(2)
@@ -50,42 +50,42 @@ local function test_base_msg()
 	cli:byid_mod_send_by_name("hello","byid_mod_send_by_name")
 
 	for i = 1,3 do
-		log.info("one_balance_call_by_name ping ",i,cli:one_balance_call_by_name("ping"))
+		log.info("one_balance_call_by_name ping ",i,cli:one_balance_call_by_name("ping", i))
 	end
 	for i = 1,3 do
-		log.info("one_mod_call_by_name ping ",i,cli:one_mod_call_by_name("ping"))
+		log.info("one_mod_call_by_name ping ",i,cli:one_mod_call_by_name("ping", i))
 	end
 	for i = 1,3 do
-		log.info("byid_balance_call_by_name ping ",i,cli:byid_balance_call_by_name("ping"))
+		log.info("byid_balance_call_by_name ping ",i,cli:byid_balance_call_by_name("ping", i))
 	end
 	for i = 1,3 do
-		log.info("byid_mod_call_by_name ping ",i,cli:byid_mod_call_by_name("ping"))
+		log.info("byid_mod_call_by_name ping ",i,cli:byid_mod_call_by_name("ping", i))
 	end
 
 	cli:all_mod_send_by_name("hello","all_mod_send_by_name")
-	local ret = cli:all_mod_call_by_name("ping")
+	local ret = cli:all_mod_call_by_name("ping", "all_mod_call_by_name")
 	log.info("all_mod_call_by_name: ",ret)
 
 	cli:all_balance_send_by_name("hello","all_balance_send_by_name")
-	local ret = cli:all_balance_call_by_name("ping")
+	local ret = cli:all_balance_call_by_name("ping", "all_balance_call_by_name")
 	log.info("all_balance_call_by_name: ",ret)
 
 	cli:one_broadcast_by_name("hello","one_broadcast_by_name")
-	log.info("one_broadcast_call_by_name:", cli:one_broadcast_call_by_name("ping"))
+	log.info("one_broadcast_call_by_name:", cli:one_broadcast_call_by_name("ping", "one_broadcast_call_by_name"))
 	cli:all_broadcast_by_name("hello","all_broadcast_by_name")
-	log.info("all_broadcast_call_by_name:", cli:all_broadcast_call_by_name("ping"))
+	log.info("all_broadcast_call_by_name:", cli:all_broadcast_call_by_name("ping", "all_broadcast_call_by_name"))
 	cli:byid_broadcast_by_name("hello","byid_broadcast_by_name")
-	log.info("byid_broadcast_call_by_name:", cli:byid_broadcast_call_by_name("ping"))
+	log.info("byid_broadcast_call_by_name:", cli:byid_broadcast_call_by_name("ping", "byid_broadcast_call_by_name"))
 
 	--测试通过别名发送
 	local cli = frpc_client:new("frpc_server",".testserver_1")
 	cli:one_send_by_name("hello", "one_send_by_name")
-	log.info("one_call_by_name:", cli:one_call_by_name("ping"))
+	log.info("one_call_by_name:", cli:one_call_by_name("ping", "one_call_by_name"))
 	cli:set_svr_id(2)
 	cli:byid_send_by_name("hello", "byid_send_by_name")
-	log.info("byid_call_by_name:", cli:byid_call_by_name("ping"))
+	log.info("byid_call_by_name:", cli:byid_call_by_name("ping", "byid_call_by_name"))
 	cli:all_send_by_name("hello", "all_send_by_name")
-	log.info("all_send_by_name:", cli:all_call_by_name("ping"))
+	log.info("all_send_by_name:", cli:all_call_by_name("ping", "all_call_by_name"))
 end
 
 --测试大包消息
@@ -237,13 +237,30 @@ local function test_watch_syn()
 	end
 end
 
+--测试错误处理
+local function test_errorcode()
+	local cli = frpc_client:new("frpc_server", "test_m")
+	--等待连接超时
+	cli:set_svr_id(3)--设置不存在的连接 3
+	log.info("test_errorcode 1 >>> ", cli:byid_balance_call("ping", "test_errorcode 1"))
+
+	--对端出错
+	cli:set_svr_id(2)
+	log.info("test_errorcode 2 >>> ", cli:byid_balance_call("call_error_test"))
+
+	--部分对端出错
+	local ret_list, err_list = cli:all_balance_call("call_same_error_test")
+	log.info("test_errorcode 3 >>> ", ret_list, err_list)
+end
+
 function CMD.start()
 	skynet.fork(function()
-		test_base_msg()
+		--test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()
 		--test_watch_syn()
+		test_errorcode()
 	end)
 
 	timer:new(timer.second * 5, 1, function()

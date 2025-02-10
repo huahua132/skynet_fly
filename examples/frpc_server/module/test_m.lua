@@ -4,6 +4,7 @@ local skynet = require "skynet.manager"
 local contriner_client = require "skynet-fly.client.contriner_client"
 local watch_server = require "skynet-fly.rpc.watch_server"
 local module_info = require "skynet-fly.etc.module_info"
+local env_util = require "skynet-fly.utils.env_util"
 
 contriner_client:register("share_config_m")
 local string = string
@@ -28,6 +29,20 @@ end
 
 function CMD.large_msg(list)
 	return list
+end
+
+--测试frpc 对端出错
+function CMD.call_error_test()
+	error("test_one_err")
+end
+
+--测试frpc all 调用部分端出错
+function CMD.call_same_error_test()
+	if env_util.get_svr_id() == 1 then
+		return true
+	end
+
+	error("call_same_error_test")
 end
 
 function CMD.start(config)

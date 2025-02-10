@@ -19,6 +19,7 @@ local SYSCMD = require "skynet-fly.enum.SYSCMD"
 local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
+local FRPC_ERRCODE = require "skynet-fly.enum.FRPC_ERRCODE"
 
 local string = string
 local tonumber = tonumber
@@ -48,7 +49,8 @@ local g_wait_svr_id	= nil			      	  --等待指定svr_id准备好
 local g_wait_watch_svr_id = nil               --等待指定watch svr_id准备好
 
 local g_watch_server = nil
-local g_active_map = {}							  --活跃列表
+local g_active_map = {}						  --活跃列表
+local g_rpc_error_result_map = {}			  --存储rpc对端错误的结果，用于区分是网络错误，还是对端出错
 
 local function get_node_host(svr_name,svr_id)
 	svr_id = tonumber(svr_id)
@@ -67,7 +69,19 @@ end
 local function read_response(sock)
 	local sz = socket.header(sock:read(2))
 	local msg = sock:read(sz)
-	return frpcpack.unpackresponse(msg)	-- session, ok, data, padding
+	local session, ok, data, padding = frpcpack.unpackresponse(msg)	-- session, ok, data, padding
+	if not ok then									--对端出错
+		g_rpc_error_result_map[session] = true
+	end
+	return session, ok, data, padding
+end
+
+--获取并删除call是否出错
+local function getdel_is_call_err(session)
+	local ret = g_rpc_error_result_map[session]
+	if not ret then return end
+	g_rpc_error_result_map[session] = nil
+	return ret
 end
 
 --握手服务端那边就不区分了，但是channel用的模式1
@@ -675,9 +689,8 @@ end
 function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_balance_channel(svr_name)
 	if not channel then
-		log.error("frpc balance_call not connect ",svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
-		return
+		return nil, FRPC_ERRCODE.WAIT_CONNECT_TIME_OUT, "WAIT_CONNECT_TIME_OUT"
 	end
 	if secret then
 		msg, sz = crypt_msg(secret, msg, sz)
@@ -686,8 +699,8 @@ function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num,
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
 	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 	if not isok then
-		log.error("frpc balance_call req err ", isok, tostring(rsp))
-		return
+		local errcode = getdel_is_call_err(session_id) and FRPC_ERRCODE.TRANSLATION_PEER_ERROR or FRPC_ERRCODE.SOCKET_ERROR
+		return nil, errcode, tostring(rsp), cluster_name
 	end
 
 	return cluster_name, rsp, secret
@@ -712,9 +725,8 @@ end
 function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
-		log.error("frpc call_by_id not connect ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
-		return
+		return nil, FRPC_ERRCODE.WAIT_CONNECT_TIME_OUT, "WAIT_CONNECT_TIME_OUT"
 	end
 	if secret then
 		msg, sz = crypt_msg(secret, msg, sz)
@@ -723,8 +735,8 @@ function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mo
 	local req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg, sz, 1)
 	local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 	if not isok then
-		log.error("frpc call_by_id req err ", isok, tostring(rsp))
-		return
+		local errcode = getdel_is_call_err(session_id) and FRPC_ERRCODE.TRANSLATION_PEER_ERROR or FRPC_ERRCODE.SOCKET_ERROR
+		return nil, errcode, tostring(rsp), cluster_name
 	end
 
 	return cluster_name, rsp, secret
@@ -768,17 +780,16 @@ end
 function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
-		log.error("frpc call_all not connect ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
-		return
+		return nil, FRPC_ERRCODE.WAIT_CONNECT_TIME_OUT, "WAIT_CONNECT_TIME_OUT"
 	end
 
 	local msg_buff = skynet.tostring(msg, sz)
 	skynet.trash(msg, sz)
-	local session_id = new_session_id()
 	local cluster_rsp_map = {}
 	local multreq, multpadding = nil, nil					--没有加密的话，可以发相同的包
 	for cluster_name, channel in pairs(channel_map) do
+		local session_id = new_session_id()
 		local req, padding
 		local secret = secret_map[cluster_name]
 		if secret then
@@ -793,7 +804,8 @@ function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg
 
 		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
 		if not isok then
-			log.error("frpc call_all req err ", cluster_name, isok, tostring(rsp))
+			local errcode = getdel_is_call_err(session_id) and FRPC_ERRCODE.TRANSLATION_PEER_ERROR or FRPC_ERRCODE.SOCKET_ERROR
+			cluster_rsp_map[cluster_name] = {errcode, tostring(rsp), cluster_name}
 		else
 			cluster_rsp_map[cluster_name] = rsp
 		end
