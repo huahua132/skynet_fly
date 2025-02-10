@@ -570,7 +570,7 @@ end
 
 ---#desc 用简单轮询负载均衡给单个结点的module_name模板用balance_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:one_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cluster_name, rsp, secret, arg4 = g_frpc_client:balance_call(
@@ -599,7 +599,7 @@ end
 
 ---#desc 用简单轮询负载均衡给单个结点的module_name模板用mod_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:one_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cluster_name, rsp, secret, arg4 = g_frpc_client:balance_call(
@@ -628,7 +628,7 @@ end
 
 ---#desc 用简单轮询负载均衡给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:one_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	local cluster_name, rsp, secret, arg4 = g_frpc_client:balance_call(
@@ -665,7 +665,7 @@ end
 
 ---#desc 用svr_id映射的方式给单个结点的module_name模板用balance_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:byid_balance_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
@@ -696,7 +696,7 @@ end
 
 ---#desc 用svr_id映射的方式给单个结点的module_name模板用mod_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:byid_mod_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
@@ -727,7 +727,7 @@ end
 
 ---#desc 用svr_id映射的方式给单个结点的module_name模板用broadcast_call_by_name的方式发送消息
 ---@param ... any[] cmd, arg1, arg2, arg3, ...
----@return table, table|nil, errcode, errmsg
+---@return table|nil, errcode, errmsg, cluster_name
 function M:byid_broadcast_call_by_name(...)
 	assert(self.instance_name,"not instance_name")
 	assert(self.svr_id,"not svr_id")
