@@ -9,7 +9,7 @@ local CMD = {}
 
 -- 测试基础消息
 local function test_base_msg()
-	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local cli = frpc_client:new("frpc_s","test_m") --访问frpc_s的test_m模板
 	cli:one_balance_send("hello","one_balance_send")
 	cli:one_mod_send("hello","one_mod_send")
 	cli:set_svr_id(1):byid_balance_send("hello","byid_balance_send")
@@ -78,7 +78,7 @@ local function test_base_msg()
 	log.info("byid_broadcast_call_by_name:", cli:byid_broadcast_call_by_name("ping", "byid_broadcast_call_by_name"))
 
 	--测试通过别名发送
-	local cli = frpc_client:new("frpc_server",".testserver_1")
+	local cli = frpc_client:new("frpc_s",".testserver_1")
 	cli:one_send_by_name("hello", "one_send_by_name")
 	log.info("one_call_by_name:", cli:one_call_by_name("ping", "one_call_by_name"))
 	cli:set_svr_id(2)
@@ -118,7 +118,7 @@ local function test_large_msg()
 	end
 
 	req_list = table.concat(req_list, ',')
-	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local cli = frpc_client:new("frpc_s","test_m") --访问frpc_s的test_m模板
 	cli:one_balance_send("large_msg", req_list)
  	local ret = cli:one_balance_call("large_msg", req_list)
 	print_one_ret("one_balance_call:", ret)
@@ -198,7 +198,7 @@ end
 
 --服务掉线测试
 local function test_disconnect()
-	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local cli = frpc_client:new("frpc_s","test_m") --访问frpc_s的test_m模板
 	while true do
 		log.info("balance ping ", cli:one_balance_call("ping"))
 		skynet.sleep(100)
@@ -207,7 +207,7 @@ end
 
 --压测 
 local function test_benchmark()
-	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local cli = frpc_client:new("frpc_s","test_m") --访问frpc_s的test_m模板
 	local max_count = 10000
 
 	local msgsz = 1024
@@ -226,10 +226,10 @@ end
 
 --测试watch_syn活跃同步
 local function test_watch_syn()
-	local cli = frpc_client:new("frpc_server","test_m") --访问frpc_server的test_m模板
+	local cli = frpc_client:new("frpc_s","test_m") --访问frpc_s的test_m模板
 	while true do
 		skynet.sleep(100)
-		if frpc_client:is_active("frpc_server") then
+		if frpc_client:is_active("frpc_s") then
 			log.info("balance ping ", cli:one_balance_call("ping"))
 		else
 			log.info("not active")
@@ -239,7 +239,7 @@ end
 
 --测试错误处理
 local function test_errorcode()
-	local cli = frpc_client:new("frpc_server", "test_m")
+	local cli = frpc_client:new("frpc_s", "test_m")
 	--等待连接超时
 	cli:set_svr_id(3)--设置不存在的连接 3
 	log.info("test_errorcode 1 >>> ", cli:byid_balance_call("ping", "test_errorcode 1"))
@@ -255,52 +255,52 @@ end
 
 function CMD.start()
 	skynet.fork(function()
-		--test_base_msg()
+		test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()
 		--test_watch_syn()
-		test_errorcode()
+		--test_errorcode()
 	end)
 
 	timer:new(timer.second * 5, 1, function()
-		watch_client.watch("frpc_server", "test_pub", "handle_name2", function(...)
+		watch_client.watch("frpc_s", "test_pub", "handle_name2", function(...)
 			log.info("watch msg handle_name2 >>>> ", ...)
 		end)
 
-		watch_client.unwatch_byid("frpc_server", 1, "test_pub", "handle_name1")
+		watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name1")
 
-		watch_client.watch_byid("frpc_server", 1, "test_pub", "handle_name2", function(...)
+		watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name2", function(...)
 			log.info("watch_byid msg handle_name2 >>>> ", ...)
 		end)
 		
 		timer:new(timer.second * 5, 1, function()
-			watch_client.unwatch("frpc_server", "test_pub", "handle_name2")
-			watch_client.unwatch("frpc_server", "test_pub", "handle_name1")
+			watch_client.unwatch("frpc_s", "test_pub", "handle_name2")
+			watch_client.unwatch("frpc_s", "test_pub", "handle_name1")
 			
 			timer:new(timer.second * 5, 1, function()
-				watch_client.unwatch_byid("frpc_server", 1, "test_pub", "handle_name2")
+				watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name2")
 			end)
 		end)
 	end)
 
 	timer:new(timer.second * 5, 1, function()
-		watch_syn_client.watch("frpc_server", "test_syn", "handle_name2", function(...)
+		watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
 			log.info("watch msg handle_name2 >>>> ", ...)
 		end)
 
-		watch_syn_client.unwatch_byid("frpc_server", 1, "test_syn", "handle_name1")
+		watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name1")
 
-		watch_syn_client.watch_byid("frpc_server", 1, "test_syn", "handle_name2", function(...)
+		watch_syn_client.watch_byid("frpc_s", 1, "test_syn", "handle_name2", function(...)
 			log.info("watch_byid msg handle_name2 >>>> ", ...)
 		end)
 		
 		timer:new(timer.second * 5, 1, function()
-			watch_syn_client.unwatch("frpc_server", "test_syn", "handle_name2")
-			watch_syn_client.unwatch("frpc_server", "test_syn", "handle_name1")
+			watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name2")
+			watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name1")
 			
 			timer:new(timer.second * 5, 1, function()
-				watch_syn_client.unwatch_byid("frpc_server", 1, "test_syn", "handle_name2")
+				watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name2")
 			end)
 		end)
 	end)
@@ -317,11 +317,11 @@ function CMD.start()
 	
 			local watch_client = require "skynet-fly.rpc.watch_client"
 	
-			watch_syn_client.watch("frpc_server", "test_syn", "handle_name2", function(...)
+			watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
 				log.info("watch syn test_syn handle_name2 >>> ", ...)
 			end)
 	
-			watch_client.watch("frpc_server", "test_pub", "handle_name1", function(...)
+			watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
 				log.info("watch msg handle_name1 >>>> ", ...)
 			end)
 			skynet_util.lua_dispatch(CMD)
@@ -335,27 +335,27 @@ function CMD.exit()
 	return true
 end
 
-watch_client.watch("frpc_server", "test_pub", "handle_name1", function(...)
+watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
 	log.info("watch msg handle_name1 >>>> ", ...)
 end)
 
-watch_client.watch_byid("frpc_server", 1, "test_pub", "handle_name1", function(...)
+watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name1", function(...)
 	log.info("watch_byid msg handle_name1 >>>> ", ...)
 end)
 
-watch_client.watch_byid("frpc_server", 1, "test_pub_large", "xxxx", function(...)
+watch_client.watch_byid("frpc_s", 1, "test_pub_large", "xxxx", function(...)
 	log.info("watch_byid test_pub_large ")
 end)
 
-watch_syn_client.watch("frpc_server", "test_syn", "handle_name1", function(...)
+watch_syn_client.watch("frpc_s", "test_syn", "handle_name1", function(...)
 	log.info("watch syn test_syn handle_name1 >>> ", ...)
 end)
 
-watch_syn_client.watch("frpc_server", "test_syn", "handle_name3", function(...)
+watch_syn_client.watch("frpc_s", "test_syn", "handle_name3", function(...)
 	log.info("watch syn test_syn handle_name3 >>> ", ...)
 end)
 
-watch_client.watch_byid("frpc_server", 1, "test_syn", "handle_name1", function(...)
+watch_client.watch_byid("frpc_s", 1, "test_syn", "handle_name1", function(...)
 	log.info("watch_byid msg handle_name1 >>>> ", ...)
 end)
 

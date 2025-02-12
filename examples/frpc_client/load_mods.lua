@@ -17,7 +17,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			node_map = {
-				['frpc_server'] = {
+				['frpc_s'] = {
 					[1] = {
 						svr_id = 1,
 						host = "127.0.0.1:9688",

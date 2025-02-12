@@ -20,6 +20,7 @@ return {
 		launch_num = 1,
 		default_arg = {
 			node_map = {
+				['frpc_s'] = true,        --连接frpc_server服务
 				['frpc_server'] = true,   --连接frpc_server服务
 			},
 			watch = 'redis',  --监听redis的方式做服务发现

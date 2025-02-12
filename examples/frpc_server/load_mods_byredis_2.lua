@@ -29,6 +29,7 @@ return {
 			},
 
 			server_cfg = {
+				svr_name = "frpc_s",					--不指定的情况下，默认使用文件夹名(frpc_server)
 				svr_id = 2,
 				debug_port = 9002,
 				logpath = './logs_2/',

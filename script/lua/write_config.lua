@@ -86,6 +86,9 @@ end
 
 if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.default_arg and load_mods_f.share_config_m.default_arg.server_cfg then
 	local cfg = load_mods_f.share_config_m.default_arg.server_cfg
+	if cfg.svr_name then
+		config.svr_name = cfg.svr_name
+	end
 	if cfg.svr_id then
 		config.svr_id = cfg.svr_id
 	end
