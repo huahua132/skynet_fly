@@ -167,7 +167,7 @@ local function dispatch(fd, source, msg, sz)
 	end
 	local header, body = unpack(msg, sz)
 	if not header then
-		log.error("unpack err ",header, body)
+		log.error("unpack err ", agent.player_id, fd, agent.addr, agent.is_ws, sz, header, body)
 		return
 	end
 

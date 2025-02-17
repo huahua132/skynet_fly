@@ -78,14 +78,12 @@ function M.create_gate_unpack(unpack)
 	
 		local msgstr = skynet.tostring(msg,sz)
 		if sz < 2 then
-			log.info("unpack invalid msg ",msgstr,sz)
-			return nil
+			return nil, "The length must be greater than 2 sz=" .. sz
 		end
 		
 		local header,body = unpack(msgstr)
 		if not header then
-			log.error("unpack err ",body)
-			return
+			return nil, body
 		end
 
 		return header,body
@@ -250,22 +248,19 @@ function M.create_ws_gate_unpack(unpack)
 		assert(msg)
 		local msgstr = skynet.tostring(msg,sz)
 		if sz < 2 then
-			log.info("unpack invalid msg ",msg,sz)
-			return
+			return nil, "The length must be greater than 2 sz=" .. sz
 		end
 		
 		local msgsz = (msgstr:byte(1) << 8) + msgstr:byte(2)
 		msgstr = msgstr:sub(3)
 		sz = msgstr:len()
 		if msgsz ~= sz then
-			log.info("unpack invalid msg ",msgsz,sz)
-			return
+			return nil, string.format("Inconsistent length msgsz[%s] sz[%s]", msgsz, sz)
 		end
 
 		local header,body = unpack(msgstr)
 		if not header then
-			log.error("unpack err ",body)
-			return
+			return nil, body
 		end
 
 		return header,body
