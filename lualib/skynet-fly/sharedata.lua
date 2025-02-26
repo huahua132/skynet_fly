@@ -174,13 +174,11 @@ setmetatable(g_version_map, {__index = function(t, k)
     return version
 end})
 
----#desc 加载指定路径列表下配置， 
+---#desc 加载指定路径列表下配置， 废弃，直接用new就行
 ---@param dir_list table 路径列表
 ---@param mode number 模式 sharedata or sharetable
 function M.load(dir_list, mode)
-    assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
-    local sd = skynet.uniqueservice("sharedata_service")
-    skynet.call(sd, 'lua', 'load', dir_list, mode)
+    
 end
 
 local function check_swtich(t)
@@ -206,7 +204,7 @@ end
 function M:new(file_path, mode)
     assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
     local sd = skynet.uniqueservice("sharedata_service")
-    assert(skynet.call(sd, 'lua', 'is_vaild_file_path', file_path, mode))
+    assert(skynet.call(sd, 'lua', 'load', file_path, mode))
     local t = {
         mode = mode,
         file_path = file_path,
