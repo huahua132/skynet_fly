@@ -34,6 +34,7 @@ local file_name = skynet.getenv('logfilename')
 local daemon = skynet.getenv('daemon')
 local log_is_launch_rename = skynet.getenv('log_is_launch_rename')
 local hook_hander_list = {}
+local g_init = false
 
 local function rename_old_file()
     if log_is_launch_rename ~= 'true' then
@@ -75,11 +76,19 @@ local function open_file()
     assert(file, "can`t open file " .. file_p)
 end
 
+local function init()
+    if g_init then return end
+    g_init = true
+    rename_old_file()
+    open_file()
+end
+
 skynet.register_protocol {
 	name = "text",
 	id = skynet.PTYPE_TEXT,
 	unpack = skynet.tostring,
 	dispatch = function(_, address, msg)
+        init()
         local cur_time = time_util.skynet_int_time()
         local second,m = math_floor(cur_time / 100), cur_time % 100
         local mstr = sformat("%02d",m)
@@ -135,8 +144,7 @@ function CMD.log(msg)
 end
 
 skynet.start(function()
-    rename_old_file()
-    open_file()
+    init()
     skynet_util.lua_dispatch(CMD)
 end)
 
