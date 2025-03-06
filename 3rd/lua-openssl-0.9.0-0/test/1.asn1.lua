@@ -1,6 +1,6 @@
 local openssl = require 'openssl'
+local helper = require 'helper'
 local lu = require 'luaunit'
-local helper = require'helper'
 
 local asn1 = openssl.asn1
 local first = true
@@ -300,4 +300,34 @@ function TestType:testBasic()
   assert(o:type())
   assert(o:info())
   assert(o:asn1string())
+end
+
+function TestType:testAll()
+  -- FIXME: need more code
+  local skip = {
+    [asn1.OBJECT] = true,
+    [asn1.SEQUENCE] = true,
+    [asn1.SET] = true,
+    [asn1.NULL] = true,
+    [asn1.BMPSTRING] = true,
+    [asn1.UNIVERSALSTRING] = true
+  }
+  -- FIXME: libressl
+  if helper.libressl then
+    skip[asn1.UTCTIME] = true
+    skip[asn1.GENERALIZEDTIME] = true
+  end
+
+  for i = asn1.BOOLEAN, asn1.BMPSTRING do
+    if not skip[i] then
+
+      local s = assert(asn1.new_string("octet", i))
+      local o = assert(asn1.new_type(s))
+      local d = assert(assert(o:i2d()))
+      assert(asn1.d2i_asn1type(d) == o, i)
+
+      assert(o:info())
+    end
+  end
+
 end

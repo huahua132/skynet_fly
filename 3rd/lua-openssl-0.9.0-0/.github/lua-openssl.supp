@@ -190,3 +190,107 @@
    fun:_dl_catch_error
    fun:_dlerror_run
 }
+
+{
+   asn1.c ASN1_TYPE_set1 in openssl_asn1type_new
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:ASN1_STRING_set
+   fun:ASN1_STRING_copy
+   fun:ASN1_STRING_dup
+   fun:ASN1_TYPE_set1
+   obj:*
+}
+
+{
+   asn1.c ASN1_TYPE_set1 in openssl_asn1type_new
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:ASN1_STRING_type_new
+   fun:ASN1_STRING_dup
+   fun:ASN1_TYPE_set1
+   obj:*
+}
+
+{
+   dlopen_doit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   dlopen_doit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   ASN1_item_d2i
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+   fun:BN_bin2bn
+}
+
+{
+   BIO_new_bio_pair
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+   fun:BIO_new
+   fun:BIO_new_bio_pair
+   obj:*
+}
+
+{
+   BIO_new_bio_pair
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+   fun:BIO_ctrl
+   fun:BIO_new_bio_pair
+   obj:*
+}
+
+{
+   BIO_new_bio_pair
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:BIO_new
+   fun:BIO_new_bio_pair
+   obj:*
+}

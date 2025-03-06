@@ -48,7 +48,7 @@ QQ群号：102993581
 * [skynet](https://github.com/huahua132/skynet.git) 自己维护的fork版本
 * [basexx](https://github.com/aiq/basexx)0.4.1
 * [lua-cjson](https://github.com/cloudwu/lua-cjson)latest
-* [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.0-0
+* [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.1-0
 * [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
 * [lua-radix-router](https://github.com/vm-001/lua-radix-router)latest
 * [luafilesystem](https://github.com/lunarmodules/luafilesystem)1.8.0

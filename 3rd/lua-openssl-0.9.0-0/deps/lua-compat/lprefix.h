@@ -195,12 +195,14 @@ LUAMOD_API int luaopen_compat53_string (lua_State *L) {
 #  endif
 
 /* choose which popen implementation to pick */
-#  if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L) || \
-      (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600) || \
-      defined(__APPLE__)
+#  if (defined(_WIN32) && !defined(__CYGWIN__))
+#    define LUA_USE_WINDOWS 1
+#  endif
+#  if (!defined(LUA_USE_WINDOWS) && !defined(LUA_USE_POSIX)) && \
+      ((defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L) || \
+       (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600) || \
+       defined(__APPLE__))
 #    define LUA_USE_POSIX 1
-#  elif (defined(_MSC_VER))
-#    define LUA_USE_WINDOWS 0
 #  endif
 
 typedef struct COMPAT53_luaL_Stream {
@@ -243,13 +245,17 @@ static void createmeta (lua_State *L);
 #  undef LUA_FILEHANDLE
 #  define LUA_FILEHANDLE COMPAT53_LUA_PFILEHANDLE
 
+LUAMOD_API int luaopen_compat53_io (lua_State *L) {
+  luaL_Reg const funcs[] = {
+
 /* for PUC-Rio Lua 5.1 only */
 #  if defined(LUA_VERSION_NUM) && LUA_VERSION_NUM == 501 && !defined(LUA_JITLIBNAME)
 
-LUAMOD_API int luaopen_compat53_io (lua_State *L) {
-  luaL_Reg const funcs[] = {
     { "popen", io_popen },
     { "type", io_ptype },
+
+#  endif /* for PUC-Rio Lua 5.1 only */
+
     { NULL, NULL }
   };
   luaL_newlib(L, funcs);
@@ -257,7 +263,6 @@ LUAMOD_API int luaopen_compat53_io (lua_State *L) {
   return 1;
 }
 
-#  endif /* for PUC-Rio Lua 5.1 only */
 
 /* fake CLANG feature detection on other compilers */
 #  ifndef __has_attribute

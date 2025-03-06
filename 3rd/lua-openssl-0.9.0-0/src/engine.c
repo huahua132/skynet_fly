@@ -10,6 +10,7 @@
 #include "private.h"
 #include <openssl/ssl.h>
 
+#ifndef OPENSSL_NO_ENGINE
 enum
 {
   TYPE_RSA,
@@ -60,7 +61,6 @@ static const char* const list[] =
 
 int openssl_engine(lua_State *L)
 {
-#ifndef OPENSSL_NO_ENGINE
   const ENGINE* eng = NULL;
   if (lua_isstring(L, 1))
   {
@@ -89,11 +89,9 @@ int openssl_engine(lua_State *L)
   }
   else
     lua_pushnil(L);
-#endif
   return 1;
 }
 
-#ifndef OPENSSL_NO_ENGINE
 static int openssl_engine_next(lua_State*L)
 {
   ENGINE* eng = CHECK_OBJECT(1, ENGINE, "openssl.engine");
@@ -513,12 +511,10 @@ static luaL_Reg eng_funcs[] =
 
   {NULL,      NULL},
 };
-#endif
 
 int openssl_register_engine(lua_State* L)
 {
-#ifndef OPENSSL_NO_ENGINE
   auxiliar_newclass(L, "openssl.engine", eng_funcs);
-#endif
   return 0;
 }
+#endif

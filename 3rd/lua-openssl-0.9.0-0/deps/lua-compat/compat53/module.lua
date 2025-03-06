@@ -13,7 +13,11 @@ if lua_version < "5.3" then
          debug, io, math, package, string, table
    local io_lines = io.lines
    local io_read = io.read
+   local io_open = io.open
+   local io_popen = io.popen
+   local io_tmpfile = io.tmpfile
    local unpack = lua_version == "5.1" and unpack or table.unpack
+   local debug_setmetatable = type(debug) == "table" and debug.setmetatable
 
    -- create module table
    M = {}
@@ -115,6 +119,7 @@ if lua_version < "5.3" then
       M.math.mininteger = minint
 
       function M.math.tointeger(n)
+         n = tonumber(n)
          if type(n) == "number" and n <= maxint and n >= minint and n % 1 == 0 then
             return n
          end
@@ -450,7 +455,6 @@ if lua_version < "5.3" then
       if type(debug) == "table" then
          local debug_setfenv = debug.setfenv
          local debug_getfenv = debug.getfenv
-         local debug_setmetatable = debug.setmetatable
 
          M.debug = setmetatable({}, { __index = debug })
 
@@ -821,6 +825,79 @@ if lua_version < "5.3" then
             return lines_iterator, st
          end
       end -- not luajit
+
+      if is_luajit then
+         local compat_file_meta = {}
+         local compat_file_meta_loaded = false
+
+         local function load_compat_file_meta(file_meta)
+            -- fill compat_file_meta with original entries
+            for k, v in pairs(file_meta) do
+               compat_file_meta[k] = v
+            end
+            compat_file_meta.__index = {}
+            for k, v in pairs(file_meta.__index) do
+               compat_file_meta.__index[k] = v
+            end
+
+            -- update it with compatibility functions
+            local file_mt = require("compat53.file_mt")
+            file_mt.update_file_meta(compat_file_meta, is_luajit52)
+
+            compat_file_meta_loaded = true
+         end
+
+         function M.io.open(...)
+            local fd, err, code = io_open(...)
+            if fd and debug_setmetatable then
+               if not compat_file_meta_loaded then
+                  local file_meta = gmt(fd)
+                  load_compat_file_meta(file_meta)
+               end
+               debug_setmetatable(fd, compat_file_meta)
+            end
+
+            if fd then
+               return fd
+            else
+               return fd, err, code
+            end
+         end
+
+         function M.io.popen(...)
+            local fd, err, code = io_popen(...)
+            if fd and debug_setmetatable then
+               if not compat_file_meta_loaded then
+                  local file_meta = gmt(fd)
+                  load_compat_file_meta(file_meta)
+               end
+               debug_setmetatable(fd, compat_file_meta)
+            end
+
+            if fd then
+               return fd
+            else
+               return fd, err, code
+            end
+         end
+
+         function M.io.tmpfile(...)
+            local fd, err, code = io_tmpfile(...)
+            if fd and debug_setmetatable then
+               if not compat_file_meta_loaded then
+                  local file_meta = gmt(fd)
+                  load_compat_file_meta(file_meta)
+               end
+               debug_setmetatable(fd, compat_file_meta)
+            end
+
+            if fd then
+               return fd
+            else
+               return fd, err, code
+            end
+         end
+      end
 
    end -- lua 5.1
 

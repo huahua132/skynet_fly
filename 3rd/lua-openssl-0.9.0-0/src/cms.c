@@ -54,6 +54,7 @@ static LuaL_Enumeration cms_flags[] =
   {"reuse_digest",          0x8000},
   {"use_keyid",             0x10000},
   {"debug_decrypt",         0x20000},
+  {"key_param",             0x40000},
   {NULL,                    -1}
 };
 
@@ -238,14 +239,14 @@ static int openssl_cms_compress(lua_State *L)
 uncompress cms object
 @function uncompress
 @tparam cms cms
-@tparam bio input
+@tparam[opt=nil] bio dcent default nil for normal, in the rare case where the compressed content is detached.
 @tparam[opt=0] number flags
 @treturn string
 */
 static int openssl_cms_uncompress(lua_State *L)
 {
   CMS_ContentInfo *cms = CHECK_OBJECT(1, CMS_ContentInfo, "openssl.cms");
-  BIO *in = load_bio_object(L, 2);
+  BIO *in = lua_isnoneornil(L, 2) ? NULL : load_bio_object(L, 2);
   int flags = luaL_optint(L, 3, 0);
   BIO *out = BIO_new(BIO_s_mem());
 
@@ -496,7 +497,10 @@ static int openssl_cms_encrypt(lua_State *L)
 
       lua_getfield(L, 2, "key");
       lua_getfield(L, 2, "keyid");
-      if (lua_isstring(L, -1) && lua_isstring(L, -2))
+
+      luaL_argcheck(L, lua_isstring(L, -1) && lua_isstring(L, -2),
+                    2, "key and keyid field must be string");
+
       {
         size_t keylen, keyidlen;
 
@@ -513,29 +517,23 @@ static int openssl_cms_encrypt(lua_State *L)
         if (!recipient)
           ret = 0;
       }
-      else if (!lua_isnil(L, -1) || !lua_isnil(L, -2))
-      {
-        luaL_argerror(L, 2, "key and keyid field must be string");
-      }
       lua_pop(L, 2);
 
       if (ret)
       {
         lua_getfield(L, 2, "password");
-        if (lua_isstring(L, -1))
+        luaL_argcheck(L, lua_isstring(L, -1),
+                      2, "password field must be string");
         {
           const char *passwd = lua_tostring(L, -1);
           passwd = OPENSSL_strdup(passwd);
           recipient = CMS_add0_recipient_password(cms,
                                                   -1, NID_undef, NID_undef,
-                                                  (unsigned char *)passwd, -1, NULL);
+                                                  (unsigned char *)passwd,
+                                                  -1, NULL);
           if (!recipient)
             ret = 0;
           passwd = NULL;
-        }
-        else if (!lua_isnil(L, -1))
-        {
-          luaL_argerror(L, 2, "password field must be string");
         }
         lua_pop(L, 1);
       }
@@ -543,7 +541,7 @@ static int openssl_cms_encrypt(lua_State *L)
 
     if (ret)
     {
-      if (!(flags & CMS_STREAM))
+      if (flags & (CMS_STREAM|CMS_PARTIAL))
         ret = CMS_final(cms, in, NULL, flags);
     }
   }
@@ -582,30 +580,28 @@ static int openssl_cms_decrypt(lua_State *L)
   if (lua_istable(L, 6))
   {
     lua_getfield(L, 6, "password");
-    if (lua_isstring(L, -1))
+    luaL_argcheck(L, lua_isstring(L, -1),
+                  6, "password field must be string");
+
     {
       unsigned char*passwd = (unsigned char*)lua_tostring(L, -1);
       ret = CMS_decrypt_set1_password(cms, passwd, -1);
     }
-    else if (!lua_isnil(L, -1))
-    {
-      luaL_argerror(L, 7, "password field must be string");
-    }
     lua_pop(L, 1);
+
     if (ret)
     {
       lua_getfield(L, 6, "key");
       lua_getfield(L, 6, "keyid");
-      if (lua_isstring(L, -1) && lua_isstring(L, -2))
+
+      luaL_argcheck(L, lua_isstring(L, -1) && lua_isstring(L, -2),
+                    6, "key and keyid field must be string");
+
       {
         size_t keylen, keyidlen;
         unsigned char*key = (unsigned char*)lua_tolstring(L, -2, &keylen);
         unsigned char*keyid = (unsigned char*)lua_tolstring(L, -1, &keyidlen);
         ret = CMS_decrypt_set1_key(cms, key, keylen, keyid, keyidlen);
-      }
-      else if (!lua_isnil(L, -1) || !lua_isnil(L, -2))
-      {
-        luaL_argerror(L, 6, "key and keyid field must be string");
       }
       lua_pop(L, 2);
     }
@@ -732,6 +728,22 @@ static int openssl_cms_content(lua_State *L)
   return ret;
 }
 
+static int openssl_cms_add_signers(lua_State*L)
+{
+  CMS_ContentInfo *cms = CHECK_OBJECT(1, CMS_ContentInfo, "openssl.cms");
+  X509 *signer = CHECK_OBJECT(2, X509, "openssl.x509");
+  EVP_PKEY* pkey = CHECK_OBJECT(3, EVP_PKEY, "openssl.evp_pkey");
+  const EVP_MD* sign_md = get_digest(L, 4, "sha256");
+  unsigned int flags = luaL_optint(L, 5, 0);
+
+  CMS_SignerInfo *si = CMS_add1_signer(cms, signer, pkey, sign_md, flags);
+  if (si == NULL) {
+    return 0;
+  }
+  lua_pushvalue(L, 1);
+  return 1;
+}
+
 static int openssl_cms_get_signers(lua_State*L)
 {
   CMS_ContentInfo *cms = CHECK_OBJECT(1, CMS_ContentInfo, "openssl.cms");
@@ -775,6 +787,125 @@ static int openssl_cms_final(lua_State*L)
   return openssl_pushresult(L, ret);
 }
 
+static STACK_OF(GENERAL_NAMES) *make_names_stack(STACK_OF(OPENSSL_STRING) *ns)
+{
+  int i;
+  STACK_OF(GENERAL_NAMES) *ret;
+  GENERAL_NAMES *gens = NULL;
+  GENERAL_NAME *gen = NULL;
+  ret = sk_GENERAL_NAMES_new_null();
+  if (!ret)
+    goto err;
+  for (i = 0; i < sk_OPENSSL_STRING_num(ns); i++) {
+    char *str = sk_OPENSSL_STRING_value(ns, i);
+    gen = a2i_GENERAL_NAME(NULL, NULL, NULL, GEN_EMAIL, str, 0);
+    if (!gen)
+      goto err;
+    gens = GENERAL_NAMES_new();
+    if (!gens)
+      goto err;
+    if (!sk_GENERAL_NAME_push(gens, gen))
+      goto err;
+    gen = NULL;
+    if (!sk_GENERAL_NAMES_push(ret, gens))
+      goto err;
+    gens = NULL;
+  }
+
+  return ret;
+
+err:
+  if (ret)
+    sk_GENERAL_NAMES_pop_free(ret, GENERAL_NAMES_free);
+  if (gens)
+    GENERAL_NAMES_free(gens);
+  if (gen)
+    GENERAL_NAME_free(gen);
+  return NULL;
+}
+
+static CMS_ReceiptRequest *make_receipt_request(STACK_OF(OPENSSL_STRING)
+                                                *rr_to,
+                                                int rr_allorfirst,
+                                                STACK_OF(OPENSSL_STRING)
+                                                *rr_from)
+{
+  STACK_OF(GENERAL_NAMES) *rct_to, *rct_from;
+  CMS_ReceiptRequest *rr;
+  rct_to = make_names_stack(rr_to);
+  if (!rct_to)
+    goto err;
+  if (rr_from) {
+    rct_from = make_names_stack(rr_from);
+    if (!rct_from)
+      goto err;
+  } else
+  rct_from = NULL;
+  rr = CMS_ReceiptRequest_create0(NULL, -1, rr_allorfirst, rct_from,
+                                  rct_to);
+  return rr;
+err:
+  return NULL;
+}
+
+static int openssl_cms_add_receipt(lua_State *L)
+{
+  CMS_ContentInfo *cms = CHECK_OBJECT(1, CMS_ContentInfo, "openssl.cms");
+  STACK_OF(CMS_SignerInfo) *sis = CMS_get0_SignerInfos(cms);
+  STACK_OF(OPENSSL_STRING) *rr_to = NULL, *rr_from = NULL;
+  int i, ret, rr_allorfirst = 0;
+  CMS_SignerInfo *si;
+  CMS_ReceiptRequest *receipt;
+
+  luaL_argcheck(L, sis != NULL && sk_CMS_SignerInfo_num(sis) > 0,
+                1, "must have at least one signer info");
+  luaL_checktype(L, 2, LUA_TTABLE);
+  luaL_argcheck(L, lua_rawlen(L, 2) > 0, 2, "must have at least one recipient");
+  luaL_checktype(L, 3, LUA_TTABLE);
+  luaL_argcheck(L, lua_rawlen(L, 3) > 0, 3, "must have at least one signer");
+  rr_allorfirst = lua_toboolean(L, 4);
+
+  rr_to = sk_OPENSSL_STRING_new_null();
+  rr_from = sk_OPENSSL_STRING_new_null();
+
+  for (i = 1; i <= lua_rawlen(L, 2); i++)
+  {
+    const char *s = NULL;
+    lua_rawgeti(L, 2, i);
+    s = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    sk_OPENSSL_STRING_push(rr_to, (char*)s);
+  }
+
+  for (i = 1; i <= lua_rawlen(L, 3); i++)
+  {
+    const char *s = NULL;
+    lua_rawgeti(L, 3, i);
+    s = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    sk_OPENSSL_STRING_push(rr_from, (char*)s);
+  }
+  si = sk_CMS_SignerInfo_value(sis, 0);
+
+  receipt = make_receipt_request(rr_to, rr_allorfirst, rr_from);
+
+  if (!receipt)
+    luaL_error(L, "error in make_receipt_request");
+
+  ret = CMS_add1_ReceiptRequest(si, receipt);
+  if (rr_to)
+      sk_OPENSSL_STRING_free(rr_to);
+  if (rr_from)
+      sk_OPENSSL_STRING_free(rr_from);
+  if (ret==1)
+  {
+    CMS_ReceiptRequest_free(receipt);
+    lua_pushvalue(L, 1);
+    return 1;
+  }
+  return openssl_pushresult(L, ret);
+}
+
 static int openssl_cms_sign_receipt(lua_State*L)
 {
   CMS_ContentInfo *cms = CHECK_OBJECT(1, CMS_ContentInfo, "openssl.cms");
@@ -809,6 +940,7 @@ static int openssl_cms_verify_receipt(lua_State*L)
 
   int ret = CMS_verify_receipt(rcms, cms, other, store, flags);
   lua_pushboolean(L, ret>0);
+  sk_X509_pop_free(other, X509_free);
   return 1;
 }
 
@@ -831,8 +963,10 @@ static luaL_Reg cms_ctx_funs[] =
   {"data",          openssl_cms_data},
   {"digest_verify", openssl_cms_digest_verify},
 
-  {"signers",       openssl_cms_get_signers},
+  {"add_signers",   openssl_cms_add_signers},
+  {"get_signers",   openssl_cms_get_signers},
 
+  {"add_receipt",   openssl_cms_add_receipt},
   {"sign_receipt",  openssl_cms_sign_receipt},
   {"verify_receipt",openssl_cms_verify_receipt},
 
@@ -849,10 +983,6 @@ static luaL_Reg cms_ctx_funs[] =
 int luaopen_cms(lua_State *L)
 {
 #ifndef OPENSSL_NO_CMS
-#if OPENSSL_VERSION_NUMBER < 0x30000000
-  ERR_load_CMS_strings();
-#endif
-
   auxiliar_newclass(L, "openssl.cms",  cms_ctx_funs);
 
   lua_newtable(L);
@@ -869,7 +999,9 @@ int luaopen_cms(lua_State *L)
   lua_setfield(L, -2, "compression");
 #endif
 
+  lua_newtable(L);
   auxiliar_enumerate(L, -1, cms_flags);
+  lua_setfield(L, -2, "flags");
 #else
   lua_pushnil(L);
 #endif

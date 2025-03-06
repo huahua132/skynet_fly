@@ -28,12 +28,14 @@ function TestPKEYMY:setUp()
 end
 
 function TestPKEYMY:testBasic()
-  local eng = openssl.engine('openssl')
-  assert(eng)
+  local eng
+  if openssl.engine then
+    eng = assert(openssl.engine('openssl'))
+  end
   for _, v in ipairs(self.genalg) do
     local k = mk_key(v)
     assert(k:is_private())
-    if v[1]~='dh' then
+    if v[1]~='dh' and eng then
       k:set_engine(eng)
     end
     assert(not k:missing_paramaters())
@@ -104,6 +106,16 @@ function TestPKEYMY:testBasic()
     assert(string.len(k:export('pem', false, 'secret')) > 0)
     assert(string.len(k:export('der', false, 'secret')) > 0)
     assert(pkey.new(t[t.type]))
+  end
+end
+
+if helper.openssl3 then
+  function testED25519()
+    local key = openssl.pkey.ctx_new('ED25519'):keygen()
+    assert(key:is_private())
+    local pem = key:export('pem')
+    key = openssl.pkey.read(pem, true, 'pem')
+    assert(key:is_private())
   end
 end
 

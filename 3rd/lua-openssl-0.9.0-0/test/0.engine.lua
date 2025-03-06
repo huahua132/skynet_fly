@@ -1,5 +1,8 @@
 local openssl = require 'openssl'
 local helper = require'helper'
+if not openssl.engine then
+  return
+end
 
 TestEngine = {}
 function TestEngine:testAll()

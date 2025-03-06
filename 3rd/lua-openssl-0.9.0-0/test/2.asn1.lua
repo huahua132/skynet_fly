@@ -26,9 +26,12 @@ local function asn1parse(s, off, last, indent)
 
   if first then
     print(string.format('%sTAG=%s CLS=%s START=%s STOP=%s, %s',
-                        string.rep(tab, indent), asn1.tostring(tag, 'tag'),
-                        asn1.tostring(cls, 'class'), start, stop,
+                        string.rep(tab, indent),
+                        asn1.tostring(tag, 'tag'),
+                        asn1.tostring(cls, 'class'),
+                        start, stop,
                         cons and "CONS" or "PRIM"))
+    assert(asn1.tostring(tag, 'tag') == asn1.tostring(tag))
   end
   if cons then
     table.insert(d, asn1.put_object(tag, cls, stop - start + 1, true))
@@ -48,11 +51,17 @@ end
 TestAsn1_2 = {}
 function TestAsn1_2.testParse()
 
-  d = {}
+  assert(#ss > 0)
   -- fire error
-  asn1parse(ss, 8, 8)
-  asn1parse(ss, #ss+1)
-  asn1parse(ss, #ss+1, #ss-1)
+  lu.assertErrorMsgEquals(
+    "2.asn1.lua:24: bad argument #2 to 'get_object' (start out of length of asn1 string)",
+    asn1parse, ss, 0)
+  lu.assertErrorMsgEquals(
+    "2.asn1.lua:24: bad argument #2 to 'get_object' (start out of length of asn1 string)",
+    asn1parse, ss, #ss)
+  lu.assertErrorMsgEquals(
+    "2.asn1.lua:24: bad argument #3 to 'get_object' (stop out of length of asn1 string)",
+    asn1parse, ss, 1, #ss+1)
 
   d = {}
   asn1parse(ss)

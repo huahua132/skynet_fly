@@ -66,7 +66,6 @@ static LUA_FUNCTION(openssl_pkcs7_read)
   return ret;
 }
 
-#if OPENSSL_VERSION_NUMBER > 0x10000000L
 /***
 create new empty pkcs7 object, which support flexible sign methods.
 
@@ -77,8 +76,28 @@ create new empty pkcs7 object, which support flexible sign methods.
 */
 static LUA_FUNCTION(openssl_pkcs7_new)
 {
-  int type = luaL_optint(L, 1, NID_pkcs7_signed);
-  int content_nid = luaL_optint(L, 2, NID_pkcs7_data);
+  const char *options[] = {
+    "data",
+    "signed",
+    "enveloped",
+    "signedAndEnveloped",
+    "digest",
+    "encrypted",
+    NULL
+  };
+
+  const int opt[] = {
+    NID_pkcs7_data,
+    NID_pkcs7_signed,
+    NID_pkcs7_enveloped,
+    NID_pkcs7_signedAndEnveloped,
+    NID_pkcs7_digest,
+    NID_pkcs7_encrypted,
+    NID_undef
+  };
+
+  int type = auxiliar_checkoption(L, 1, "signed", options, opt);
+  int content_nid = auxiliar_checkoption(L, 2, "data", options, opt);
   int ret = 0;
 
   PKCS7 *p7 = PKCS7_new();
@@ -136,13 +155,7 @@ static LUA_FUNCTION(openssl_pkcs7_set_content)
   PKCS7 *p7 = CHECK_OBJECT(1, PKCS7, "openssl.pkcs7");
   PKCS7 *content = CHECK_OBJECT(2, PKCS7, "openssl.pkcs7");
 
-  int ret = PKCS7_set_content(p7, content);
-  if (ret == 1)
-  {
-    lua_pushvalue(L, 1);
-    lua_pushvalue(L, 2);
-    lua_rawset(L, LUA_REGISTRYINDEX);
-  }
+  int ret = PKCS7_set_content(p7, PKCS7_dup(content));
   return openssl_pushresult(L, ret);
 }
 
@@ -178,7 +191,6 @@ static LUA_FUNCTION(openssl_pkcs7_add)
   return openssl_pushresult(L, ret);
 }
 
-#endif
 
 /***
 sign message with signcert and signpkey to create pkcs7 object
@@ -558,6 +570,30 @@ static LUA_FUNCTION(openssl_pkcs7_parse)
   return 1;
 }
 
+static LUA_FUNCTION(openssl_pkcs7_set_digest)
+{
+  PKCS7 *p7 = CHECK_OBJECT(1, PKCS7, "openssl.pkcs7");
+  const EVP_MD *md = get_digest(L, 2, NULL);
+
+  int ret = PKCS7_set_digest(p7, md);
+  openssl_pushresult(L, ret);
+
+  return 1;
+}
+
+static LUA_FUNCTION(openssl_pkcs7_final)
+{
+  PKCS7 * p7 = CHECK_OBJECT(1, PKCS7, "openssl.pkcs7");
+  BIO* data = load_bio_object(L, 2);
+  int flags = luaL_optint(L, 3, 0);
+
+  int ret = PKCS7_final(p7, data, flags);
+  openssl_pushresult(L, ret);
+  BIO_free(data);
+
+  return 1;
+}
+
 /***
 verify pkcs7 object, and return msg content or verify result
 
@@ -586,10 +622,10 @@ static luaL_Reg pkcs7_funcs[] =
   {"export",        openssl_pkcs7_export},
   {"decrypt",       openssl_pkcs7_decrypt},
   {"verify",        openssl_pkcs7_verify},
-#if OPENSSL_VERSION_NUMBER > 0x10000000L
   {"add",           openssl_pkcs7_add},
-#endif
   {"set_content",   openssl_pkcs7_set_content},
+  {"set_digest",    openssl_pkcs7_set_digest},
+  {"final",         openssl_pkcs7_final},
 
   {"__gc",          openssl_pkcs7_gc},
   {"__tostring",    auxiliar_tostring},
@@ -599,9 +635,7 @@ static luaL_Reg pkcs7_funcs[] =
 
 static const luaL_Reg R[] =
 {
-#if OPENSSL_VERSION_NUMBER > 0x10000000L
   {"new",         openssl_pkcs7_new},
-#endif
   {"create",      openssl_pkcs7_create},
   {"read",        openssl_pkcs7_read},
   {"sign",        openssl_pkcs7_sign},
@@ -630,13 +664,6 @@ static LuaL_Enumeration pkcs7_const[] =
   {"NOCRL",        PKCS7_NOCRL},
   {"PARTIAL",      PKCS7_PARTIAL},
   {"REUSE_DIGEST", PKCS7_REUSE_DIGEST},
-
-  {"data",                NID_pkcs7_data},
-  {"signed",              NID_pkcs7_signed},
-  {"enveloped",           NID_pkcs7_enveloped},
-  {"signedAndEnveloped",  NID_pkcs7_signedAndEnveloped},
-  {"digest",              NID_pkcs7_digest},
-  {"encrypted",           NID_pkcs7_encrypted},
 
   {NULL,           0}
 };

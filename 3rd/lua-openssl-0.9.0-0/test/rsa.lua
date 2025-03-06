@@ -48,7 +48,9 @@ function TestRSA:TestRSA()
       "no"
     }
 
-    k:set_engine(openssl.engine('openssl'))
+    if openssl.engine then
+      k:set_engine(openssl.engine('openssl'))
+    end
 
     for _=1, #padding+1 do
       local pad = padding[_]
@@ -95,6 +97,9 @@ function TestRSA:TestPad_pkcs1()
 end
 
 function TestRSA:TestPad_x931()
+  if helper.libressl and helper._opensslv > 0x30800000 then
+    return
+  end
   local msg = openssl.random(128)
   local padded = rsa.padding_add(msg,'x931', 256)
   local raw = rsa.padding_check(padded, 'x931', 256)

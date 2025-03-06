@@ -65,7 +65,9 @@
 #ifdef OPENSSL_SYS_WIN32
 #include <windows.h>
 #else
+#ifndef PTHREADS
 #define PTHREADS
+#endif
 #endif
 
 #ifdef LINUX

@@ -36,6 +36,8 @@ end
 local V = _VERSION:gsub("^.*(%d+)%.(%d+)$", "%1%2")
 if jit then V = "jit" end
 
+local is_puclua51 = (_VERSION == "Lua 5.1" and not jit)
+
 local mode = "global"
 if arg[1] == "module" then
   mode = "module"
@@ -228,6 +230,7 @@ print("math.mininteger", math.mininteger-1 < math.mininteger)
 ___''
 print("math.tointeger", math.tointeger(0))
 print("math.tointeger", math.tointeger(math.pi))
+print("math.tointeger", math.tointeger("123"))
 print("math.tointeger", math.tointeger("hello"))
 print("math.tointeger", math.tointeger(math.maxinteger+2.0))
 print("math.tointeger", math.tointeger(math.mininteger*2.0))
@@ -575,7 +578,7 @@ ___''
 do
    print("io.write()", io.type(io.write("hello world\n")))
    local f = assert(io.tmpfile())
-   print("file:write()", io.type(f:write("hello world\n")))
+   print("io.tmpfile => file:write()", io.type(f:write("hello world\n")))
    f:close()
 end
 
@@ -588,13 +591,18 @@ do
    io.input("data.txt")
    print("io.read()", io.read("n", "number", "l", "a"))
    io.input(io.stdin)
-   if mode ~= "module" then
-     local f = assert(io.open("data.txt", "r"))
-     print("file:read()", f:read("*n", "*number", "*l", "*a"))
-     f:close()
-     f = assert(io.open("data.txt", "r"))
-     print("file:read()", f:read("n", "number", "l", "a"))
-     f:close()
+   if not is_puclua51 then
+      local f = assert(io.open("data.txt", "r"))
+      print("file:read()", f:read("*n", "*number", "*l", "*a"))
+      f:close()
+      f = assert(io.open("data.txt", "r"))
+      print("file:read()", f:read("n", "number", "l", "a"))
+      f:close()
+      os.remove("data.txt")
+
+      local g = assert(io.open("data.txt", "w"))
+      print("io.open => file:write()", type(g:write("hello")))
+      g:close()
    end
    os.remove("data.txt")
 end

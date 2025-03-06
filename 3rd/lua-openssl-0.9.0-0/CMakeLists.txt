@@ -5,6 +5,10 @@ set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 option(BUILD_SHARED_LUA_OPENSSL "Shared or Static lua-openssl" ON)
+option(BUILD_LINK_LUA_LIBRARIES "Link Lua libraries during build-time" OFF)
+if(WIN32)
+    set(BUILD_LINK_LUA_LIBRARIES ON)
+endif()
 
 include(GNUInstallDirs)
 
@@ -87,14 +91,15 @@ target_link_libraries(lua-openssl PUBLIC
     Threads::Threads
 )
 
-if(WIN32)
-    target_link_libraries(lua-openssl PUBLIC
-        ${LUA_LIBRARIES}
-    )
-endif()
-
-if(APPLE)
-    target_link_options(lua-openssl PUBLIC -bundle -undefined dynamic_lookup)
+if(BUILD_LINK_LUA_LIBRARIES)
+    target_link_libraries(lua-openssl PUBLIC ${LUA_LIBRARIES})
+    if(UNIX)
+      target_link_options(lua-openssl PUBLIC -Wl,--no-undefined)
+    endif()
+else()
+    if(APPLE)
+        target_link_options(lua-openssl PUBLIC -bundle -undefined dynamic_lookup)
+    endif()
 endif()
 
 target_compile_options(lua-openssl PRIVATE -DLUA_LIB)

@@ -267,6 +267,29 @@ if luv then
   end
 end
 
+function TestSSL:testCTX()
+  local protocols = {
+    "TLS", "DTLS", "SSLv23", "DTLSv1_2", "DTLSv1", "TLSv1_2", "TLSv1_1",
+    "TLSv1", "SSLv3"
+  }
+  local mode = {"client", "server", ""}
+  local num = 0
+  for _, v in pairs(protocols) do
+    for _, m in pairs(mode) do
+      local ctx
+
+      if #m > 0 then
+        v = string.format('%s_%s', v, m)
+      end
+      ctx = pcall(ssl.ctx_new, v)
+      if ctx then
+        num = num + 1
+      end
+    end
+  end
+  assert(num > 0)
+end
+
 function TestSSL:testSNI()
   local ca = helper.get_ca()
   local store = ca:get_store()
@@ -351,11 +374,16 @@ function TestSSL:testSNI()
   local srv_ctx = create_srv_ctx()
   local ss = assert(srv_ctx:ssl())
   assert(ss:dup())
+  local sbio = bio.filter('ssl', ss, 0)
+  sbio:close()
+
   local cli_ctx = create_cli_ctx()
   local srv = assert(srv_ctx:ssl(bs, bs, true))
   local cli = assert(cli_ctx:ssl(bc, bc, false))
   srv_ctx:add(ca.cacert, certs)
-  srv_ctx:set_engine(openssl.engine('openssl'))
+  if openssl.engine then
+    srv_ctx:set_engine(openssl.engine('openssl'))
+  end
   srv_ctx:timeout(500)
   assert(srv_ctx:timeout() == 500)
   local t = assert(srv_ctx:session_cache_mode())
@@ -381,6 +409,7 @@ function TestSSL:testSNI()
   sess = cli:session()
   cli:shutdown()
   srv:shutdown()
+  bs:destroy_pair()
   bs:close()
   bc:close()
 
@@ -403,6 +432,7 @@ function TestSSL:testSNI()
   end
   cli:shutdown()
   srv:shutdown()
+  bs:destroy_pair()
   bs:close()
   bc:close()
 
@@ -445,6 +475,7 @@ function TestSSL:testSNI()
   cli:shutdown(false)
   local oneline = peer:subject():oneline()
   assert(oneline == "/CN=server/C=CN" or oneline == "/CN=serverB/C=CN")
+  bs:destroy_pair()
   bs:close()
   bc:close()
 
@@ -555,7 +586,7 @@ function TestSSL:testSNI()
   local old = srv_ctx:session_cache_mode()
 
   srv_ctx:session_cache_mode(0)
-  local t = srv_ctx:session_cache_mode()
+  t = srv_ctx:session_cache_mode()
   assert(#t==1 and t[1]=='off')
 
   srv_ctx:session_cache_mode('client', 'no_internal_lookup')
@@ -573,14 +604,38 @@ function TestSSL:testSNI()
   srv_ctx:session_cache_mode(unpack(old))
   lu.assertEquals(old, srv_ctx:session_cache_mode())
 
-  local eng = openssl.engine('openssl')
-  eng:load_ssl_client_cert(cli)
+  if openssl.engine then
+    local eng = openssl.engine('openssl')
+    eng:load_ssl_client_cert(cli)
+  end
   cli:clear()
   cli:shutdown()
 
+  bs:destroy_pair()
   bs:close()
   bc:close()
 
   sess = ssl.session_new()
   sess:id(id)
+
+  bs, bc = bio.pair()
+  srv = assert(srv_ctx:ssl(bs))
+  srv:set_accept_state()
+  cli = assert(cli_ctx:ssl(bc))
+  cli:use(cert, pkey)
+  cli:set_connect_state()
+  cli:set('hostname', 'serverB')
+  repeat
+    cs, ec = cli:handshake()
+    rs, es = srv:handshake()
+    srv:want()
+  until (rs and cs) or (rs == nil or cs == nil)
+
+  cli:clear()
+  cli:shutdown()
+
+  bs:destroy_pair()
+  bs:close()
+  bc:close()
+
 end

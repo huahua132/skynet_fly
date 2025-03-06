@@ -146,18 +146,9 @@ static int openssl_get_object(lua_State*L)
   int class = 0;
   int ret;
 
-  if (start > l)
-  {
-    lua_pushnil(L);
-    openssl_pushargerror(L, 2, "out of range");
-    return 2;
-  }
-  if (start>stop)
-  {
-    lua_pushnil(L);
-    openssl_pushargerror(L, 3, "before of start");
-    return 2;
-  }
+  luaL_argcheck(L, start > 0 && start < l, 2, "start out of length of asn1 string");
+  luaL_argcheck(L, stop > start, 3, "stop must be greater than start");
+  luaL_argcheck(L, stop <= l, 3, "stop out of length of asn1 string");
 
   p = (const unsigned char *)asn1s + start - 1;
   ret = ASN1_get_object(&p, &len, &tag, &class, stop - start + 1);

@@ -74,7 +74,7 @@ function TestOCSP:testAll()
   --OCSP_SINGLERESP_add1_ext_i2d(single, NID_hold_instruction_code, inst, 0, 0);
   local sn1 = tostring(self.bob.cert:serial())
   local sn2 = tostring(self.alice.cert:serial())
-  local basic = assert(ocsp.basic_new())
+  local basic = assert(ocsp.basicresp_new())
 
   assert(basic:add(self.alice.id, ocsp.GOOD, ocsp.NOSTATUS, nil))
   local single = assert(basic:add(self.bob.id, ocsp.REVOKED, ocsp.UNSPECIFIED, os.time()))

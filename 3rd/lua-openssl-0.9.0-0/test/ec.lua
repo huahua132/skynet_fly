@@ -159,7 +159,9 @@ if openssl.ec then
     der = ec:export()
     assert(type(der)=='string')
     local ec1 = openssl.ec.read(der)
-    assert(ec1:set_method(openssl.engine('openssl')))
+    if openssl.engine then
+      assert(ec1:set_method(openssl.engine('openssl')))
+    end
     assert(ec1:conv_form('hybrid'))
     assert(ec1:conv_form()=='hybrid')
     assert(ec1:enc_flags('explicit'))

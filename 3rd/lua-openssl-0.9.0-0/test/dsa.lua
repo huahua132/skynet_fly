@@ -9,5 +9,7 @@ function TestDSA:Testdsa()
   local t = k:parse()
   assert(t.bits == 1024)
 
-  k:set_engine(openssl.engine('openssl'))
+  if openssl.engine then
+    k:set_engine(openssl.engine('openssl'))
+  end
 end

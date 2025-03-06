@@ -12,6 +12,9 @@ Openssl binding for Lua, provide openssl full function in lua.
 #include <openssl/engine.h>
 #include <openssl/opensslconf.h>
 #include "private.h"
+#ifndef OPENSSL_NO_CMS
+#include <openssl/cms.h>
+#endif
 
 /***
 get lua-openssl version
@@ -81,7 +84,7 @@ base64 encode or decode
 @function base64
 @tparam string|bio input
 @tparam[opt=true] boolean encode true to encoed, false to decode
-@tparam[opt=true] boolean NO_NL true with newline, false without newline
+@tparam[opt=true] boolean NO_NL default true without newline, false with newline
 @treturn string
 */
 static LUA_FUNCTION(openssl_base64)
@@ -401,7 +404,9 @@ static const luaL_Reg eay_functions[] =
   {"clear_error", openssl_clear_error},
   {"error",       openssl_error_string},
   {"errors",      openssl_errors},
+#ifndef OPENSSL_NO_ENGINE
   {"engine",      openssl_engine},
+#endif
   {"FIPS_mode",   openssl_fips_mode},
 
   {NULL, NULL}
@@ -418,12 +423,22 @@ static OSSL_PROVIDER* legacy = NULL;
 static OSSL_PROVIDER* openssl= NULL;
 #endif
 
-static int _guard = 0;
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#include <stdatomic.h>
+static atomic_int _guard = 0;
+#else
+static volatile int _guard = 0;
+#endif
 
 static void openssl_finalize(void)
 {
-  if (!_guard) return;
-  _guard = 0;
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+  if (atomic_fetch_add_explicit(&_guard, -1, memory_order_relaxed) != 1)
+    return;
+#else
+  if (--_guard == 1)
+    return;
+#endif
 
 #if (OPENSSL_VERSION_NUMBER > 0x10100000L && !IS_LIBRESSL()) || \
   LIBRESSL_VERSION_NUMBER > 0x30600000L
@@ -483,8 +498,13 @@ static void openssl_finalize(void)
 }
 
 static void openssl_initialize() {
-  if (_guard) return;
-  _guard = 1;
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+  if (atomic_fetch_add_explicit(&_guard, 1, memory_order_relaxed) > 0)
+    return;
+#else
+  if (++_guard > 0)
+    return;
+#endif
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L || \
     (IS_LIBRESSL() && LIBRESSL_VERSION_NUMBER < 0x30600000L))
@@ -507,6 +527,14 @@ static void openssl_initialize() {
   ERR_load_crypto_strings();
   ERR_load_SSL_strings();
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x30000000
+  ERR_load_BN_strings();
+#endif
+#ifndef OPENSSL_NO_CMS
+#if OPENSSL_VERSION_NUMBER < 0x30000000
+  ERR_load_CMS_strings();
+#endif
+#endif
 
 #ifndef OPENSSL_NO_ENGINE
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
@@ -521,6 +549,11 @@ static void openssl_initialize() {
 #endif
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+  RAND_seed(LOPENSSL_VERSION LUA_VERSION OPENSSL_VERSION_TEXT,
+    sizeof(LOPENSSL_VERSION LUA_VERSION OPENSSL_VERSION_TEXT));
+#endif
+
 #ifdef LOAD_ENGINE_CUSTOM
   LOAD_ENGINE_CUSTOM
 #endif
@@ -531,7 +564,7 @@ static void openssl_initialize() {
 #endif
 }
 
-int luaopen_openssl(lua_State*L)
+LUALIB_API int luaopen_openssl(lua_State*L)
 {
   openssl_initialize();
 
@@ -540,7 +573,9 @@ int luaopen_openssl(lua_State*L)
   luaL_setfuncs(L, eay_functions, 0);
 
   openssl_register_lhash(L);
+#ifndef OPENSSL_NO_ENGINE
   openssl_register_engine(L);
+#endif
 
   luaopen_bio(L);
   lua_setfield(L, -2, "bio");

@@ -18,7 +18,7 @@ function TestCMS:testCompress()
   if cms.compression then
     for i = 1, #cms.compression do
       local comp_alg = cms.compression[i]
-      local cs, err, code = cms.compress(msg, comp_alg)
+      local cs, err, code = cms.compress(msg, comp_alg, cms.flags.binary)
       if cs then
         local ret = assert(cms.uncompress(cs))
         lu.assertEquals(msg, ret)
@@ -29,6 +29,7 @@ function TestCMS:testCompress()
     end
   end
 
+  msg = "hello world"
   local cs, err, code = cms.compress(msg)
   if cs then
     local ret = assert(cms.uncompress(cs))
@@ -86,26 +87,21 @@ function TestCMS:testSign()
   lu.assertEquals(msg, self.msg)
   msg = assert(cms.verify(c1, {}, self.castore))
   lu.assertEquals(msg, self.msg)
-  assert(c1:signers()[1]==self.bob.cert)
+  assert(c1:get_signers()[1]==self.bob.cert)
 end
 
---[[
---FIXME: enable
 function TestCMS:testSignReceipt()
   local c1 = assert(cms.sign(
-    self.bob.cert, self.bob.key, self.msg, {}))
+    self.bob.cert, self.bob.key, self.msg, {self.ca.cert}))
+  assert(c1:add_receipt({"alice"}, {"bob"}))
 
-  print(c1:sign_receipt(
+  local rc = assert(c1:sign_receipt(
     self.alice.cert,
     self.alice.key,
     {self.ca.cert},
     0))
-  assert(rc)
-  if rc then
-    assert(rc:verify_receipt(c1, {self.bob.cert}, self.castore, 0))
-  end
+  assert(rc:verify_receipt(c1, {self.bob.cert}, self.castore, 0))
 end
---]]
 
 function TestCMS:testEncryptedData()
   local key = openssl.random(16)
@@ -155,7 +151,7 @@ function TestCMS:testData()
   d = assert(c:export("data", 0, "der"))
   assert(d)
 
-  c = assert(cms.data("data", cms.stream + cms.partial))
+  c = assert(cms.data("data", cms.flags.stream + cms.flags.partial))
   assert(c:final('aaaa'))
   assert(c:data()=='aaaa')
 end

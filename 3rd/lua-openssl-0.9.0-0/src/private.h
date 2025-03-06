@@ -300,9 +300,6 @@ int openssl_sk_x509_attribute_totable(lua_State *L, const STACK_OF(X509_ATTRIBUT
 
 X509_ATTRIBUTE* openssl_new_xattribute(lua_State*L, X509_ATTRIBUTE** a, int idx);
 
-int openssl_pusherror (lua_State *L, const char *fmt, ...);
-int openssl_pushargerror (lua_State *L, int arg, const char *extramsg);
-
 #ifdef HAVE_USER_CUSTOME
 #include HAVE_USER_CUSTOME
 #endif

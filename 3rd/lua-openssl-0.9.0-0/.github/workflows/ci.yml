@@ -14,10 +14,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-12, ubuntu-latest]
         luarocks_version: [3.9.2]
         lua_version: [luajit2.1, lua5.1, lua5.2, lua5.3, lua5.4]
-        openssl_version: [openssl-1.0.2u, openssl-1.1.1w, openssl-3.0.12, openssl-3.1.4, openssl-3.2.0]
+        openssl_version: [openssl-1.0.2u, openssl-1.1.1w, openssl-3.0.13, openssl-3.1.5, openssl-3.2.1]
     env:
       MACOSX_DEPLOYMENT_TARGET: 10.12
       LUAROCKS: ${{ matrix.luarocks_version }}

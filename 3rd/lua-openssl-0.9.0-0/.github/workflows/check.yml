@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        openssl_version: [openssl-1.0.2u, openssl-3.1.2]
+        openssl_version: [openssl-1.0.2u, openssl-1.1.1w, openssl-3.1.5]
     env:
       COVERALLS_GIT_BRANCH: "${{ github.ref }}"
       COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"

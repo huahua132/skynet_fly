@@ -14,7 +14,6 @@ function TestKDF:testDerive()
   local keylen = 32
 
   local key = assert(kdf.derive(pwd, salt, md, iter, keylen))
-  print('key', key)
   assert(key)
   assert(#key == 32)
 end

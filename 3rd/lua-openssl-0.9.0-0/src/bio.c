@@ -96,6 +96,13 @@ static LUA_FUNCTION(openssl_bio_new_pair)
   return ret > 0 ? ret : openssl_pushresult(L, ret);
 }
 
+static LUA_FUNCTION(openssl_bio_destroy_pair)
+{
+  BIO* bio = CHECK_OBJECT(1, BIO, "openssl.bio");
+  int ret = BIO_destroy_bio_pair(bio);
+  return openssl_pushresult(L, ret);
+}
+
 static LUA_FUNCTION(openssl_bio_new_null)
 {
   BIO *bio = BIO_new(BIO_s_null());
@@ -999,6 +1006,9 @@ static luaL_Reg bio_funs[] =
   /* BIO_s_fd() and BIO_s_file() */
   {"seek",      openssl_bio_seek},
   {"tell",      openssl_bio_tell},
+
+  /* BIO_make_bio_pair */
+  {"destroy_pair", openssl_bio_destroy_pair},
 
   {"__tostring",  auxiliar_tostring},
   {"__gc",  openssl_bio_free},

@@ -17,6 +17,15 @@ Generate, sign, process OCSP request and response.
 #include "private.h"
 #include "openssl/ocsp.h"
 
+
+/***
+create a new ocsp certid object.
+@function certid_new
+@tparam openssl.x509|openssl.bn certificate_or_serialNumber
+@tparam openssl.x509 issuer
+@tparam[opt=sha256] openssl.digest md_alg
+@treturn openssl.ocsp_certid
+*/
 static int openssl_ocsp_certid_new(lua_State *L)
 {
   X509 *cert = GET_OBJECT(1, X509, "openssl.x509");
@@ -60,6 +69,153 @@ static int openssl_ocsp_certid_free(lua_State *L)
   return 1;
 }
 
+/***
+create a new ocsp request object.
+@function request_new
+@tparam[opt] string nonce
+@treturn openssl.ocsp_request
+*/
+static int openssl_ocsp_request_new(lua_State *L)
+{
+  int ret = 0;
+  size_t sz = 0;
+  const char* nonce = luaL_optlstring(L, 1, NULL, &sz);
+
+  OCSP_REQUEST *req = OCSP_REQUEST_new();
+  if (req)
+  {
+    OCSP_request_add1_nonce(req, (unsigned char*)nonce, sz ? sz : -1);
+    PUSH_OBJECT(req, "openssl.ocsp_request");
+    ret = 1;
+  }
+  return ret;
+}
+
+/***
+read ocsp_request object from string or bio data
+@function request_read
+@tparam string|bio input
+@tparam[opt=false] boolean pem, true for PEM, false for DER
+@treturn openssl.ocsp_request
+*/
+static int openssl_ocsp_request_read(lua_State *L)
+{
+  int ret = 0;
+  BIO *bio = load_bio_object(L, 1);
+  int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
+#endif
+  OCSP_REQUEST *req = pem ? PEM_read_bio_OCSP_REQUEST(bio, NULL, NULL)
+                          : d2i_OCSP_REQUEST_bio(bio, NULL);
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+  BIO_free(bio);
+
+  if (req)
+  {
+    PUSH_OBJECT(req, "openssl.ocsp_request");
+    ret = 1;
+  }
+
+  return ret;
+}
+
+/***
+read openssl.ocsp_response object from string or bio object
+@function read
+@tparam string|bio content
+@tparam[opt=false] boolean pem, true for PEM, false for DER
+@treturn openssl.ocsp_response
+*/
+static int openssl_ocsp_response_read(lua_State *L)
+{
+  BIO *bio = load_bio_object(L, 1);
+  int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
+  int ret = 0;
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
+#endif
+  OCSP_RESPONSE *res = pem ? PEM_read_bio_OCSP_RESPONSE(bio, NULL, NULL)
+                           : d2i_OCSP_RESPONSE_bio(bio, NULL);
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+  if (res)
+  {
+    PUSH_OBJECT(res, "openssl.ocsp_response");
+    ret = 1;
+  }
+  BIO_free(bio);
+
+  return ret;
+}
+
+/***
+create a new openssl.ocsp_basicresp object
+@function basicresp_new
+@treturn openssl.ocsp_basicresp
+*/
+static int openssl_ocsp_basicresp_new(lua_State *L)
+{
+  int ret = 0;
+  OCSP_BASICRESP *bs = OCSP_BASICRESP_new();
+
+  if (bs)
+  {
+    PUSH_OBJECT(bs, "openssl.ocsp_basicresp");
+    ret = 1;
+  }
+  return ret;
+}
+
+
+/***
+A openssl.ocsp_certid class.
+@type openssl.ocsp_certid
+@alias certid
+*/
+
+/***
+table which openssl.ocsp_certid:info returned
+@table info
+@field hashAlgorith
+@field issuerNameHash
+@field issuerKeyHash
+@field serialNumber
+*/
+
+/***
+get the certid info table.
+@function info
+@treturn openssl.ocsp_certid.info
+*/
+
 static int openssl_ocsp_certid_info(lua_State *L)
 {
   ASN1_OCTET_STRING *iNameHash = NULL, *ikeyHash = NULL;
@@ -94,43 +250,16 @@ static int openssl_ocsp_certid_info(lua_State *L)
 
 
 /***
-create a new ocsp request object.
-@function request_new
-@tparam[opt] string nonce
-@treturn ocsp_request
-*/
-static int openssl_ocsp_request_new(lua_State *L)
-{
-  int ret = 0;
-  size_t sz = 0;
-  const char* nonce = luaL_optlstring(L, 1, NULL, &sz);
-
-  OCSP_REQUEST *req = OCSP_REQUEST_new();
-  if (req)
-  {
-    OCSP_request_add1_nonce(req, (unsigned char*)nonce, sz ? sz : -1);
-    PUSH_OBJECT(req, "openssl.ocsp_request");
-    ret = 1;
-  }
-  return ret;
-}
-
-/***
-add a OCSP_ONEREQ item with a x509 object
-@function add
-@tparam x509 certificate
-@tparam x509 cacert
-@param[opt='sha256'] digest
-@treturn ocsp_request
+A openssl.ocsp_request class.
+@type openssl.ocsp_request
+@alias request
 */
 
 /***
-add a OCSP_ONEREQ item with a x509 object
+add a ocsp_certid
 @function add
-@param serialNumber
-@tparam x509 cacert
-@param[opt='sha256'] digest
-@treturn ocsp_request
+@tparam openssl.ocsp_certid certid
+@treturn openssl.ocsp_onereq
 */
 
 static int openssl_ocsp_request_add(lua_State *L)
@@ -156,10 +285,10 @@ static int openssl_ocsp_request_add(lua_State *L)
 }
 
 /***
-add a x509_extension to ocsp_request object
-@param serialNumber
-@tparam x509_extension ext
-@param[opt] loc
+add a x509_extension
+@function add_ext
+@tparam openssl.x509_extension extension
+@tparam[opt] integer location
 @treturn boolean
 */
 static int openssl_ocsp_request_add_ext(lua_State *L)
@@ -172,41 +301,9 @@ static int openssl_ocsp_request_add_ext(lua_State *L)
 }
 
 /***
-read ocsp_request object from string or bio data
-@function request_read
-@tparam string|bio input
-@treturn ocsp_request
-*/
-static int openssl_ocsp_request_read(lua_State *L)
-{
-  int ret = 0;
-  BIO *bio = load_bio_object(L, 1);
-  int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
-#endif
-  OCSP_REQUEST *req = pem ? PEM_read_bio_OCSP_REQUEST(bio, NULL, NULL)
-                          : d2i_OCSP_REQUEST_bio(bio, NULL);
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-  BIO_free(bio);
-
-  if (req)
-  {
-    PUSH_OBJECT(req, "openssl.ocsp_request");
-    ret = 1;
-  }
-
-  return ret;
-}
-
-/***
-export a ocsp_request object as PEM or DER encoded data
+export a ocsp_request object to encoded data
 @function export
-@tparam[opt=false] pem default export der
+@tparam[opt=false] boolean pem true for PEM and false for DER
 @treturn string
 */
 static int openssl_ocsp_request_export(lua_State *L)
@@ -261,7 +358,7 @@ sign ocsp_request object
 @tparam x509 signer
 @tparam evp_pkey pkey
 @param[opt] others certificates in ocsp_request
-@tparam[opt=0] number flags
+@tparam[opt=0] integer flags
 @param[opt='sha256'] digest
 @treturn boolean
 */
@@ -293,6 +390,12 @@ static int openssl_ocsp_request_sign(lua_State *L)
   return 1;
 }
 
+/***
+parse openssl.ocsp_request, and return a table
+@function parse
+@tparam openssl.ocsp_request request
+@treturn table
+*/
 static int openssl_ocsp_request_parse(lua_State *L)
 {
   OCSP_REQUEST *req = CHECK_OBJECT(1, OCSP_REQUEST, "openssl.ocsp_request");
@@ -353,31 +456,18 @@ static int openssl_ocsp_request_parse(lua_State *L)
   return 1;
 }
 
-static int openssl_ocsp_response_read(lua_State *L)
-{
-  BIO *bio = load_bio_object(L, 1);
-  int pem = lua_gettop(L) > 1 ? auxiliar_checkboolean(L, 2) : 0;
-  int ret = 0;
+/***
+A openssl.ocsp_singleresp class.
+@type openssl.ocsp_singleresp
+@alias singleresp
+*/
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
-#endif
-  OCSP_RESPONSE *res = pem ? PEM_read_bio_OCSP_RESPONSE(bio, NULL, NULL)
-                           : d2i_OCSP_RESPONSE_bio(bio, NULL);
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-  if (res)
-  {
-    PUSH_OBJECT(res, "openssl.ocsp_response");
-    ret = 1;
-  }
-  BIO_free(bio);
-
-  return ret;
-}
-
+/***
+add openssl.x509_extension object to openssl.ocsp_singleresp
+@function add_ext
+@tparam openssl.x509_extension extension
+@treturn boolean
+*/
 static int openssl_ocsp_singleresp_add_ext(lua_State *L)
 {
   OCSP_SINGLERESP *sr = CHECK_OBJECT(1, OCSP_SINGLERESP, "openssl.ocsp_singleresp");
@@ -388,6 +478,11 @@ static int openssl_ocsp_singleresp_add_ext(lua_State *L)
   return openssl_pushresult(L, ret);
 }
 
+/***
+get a table containing certificate status information
+@function info
+@treturn table
+*/
 static int openssl_ocsp_singleresp_info(lua_State *L)
 {
   OCSP_SINGLERESP *single = CHECK_OBJECT(1, OCSP_SINGLERESP, "openssl.ocsp_singleresp");
@@ -456,20 +551,23 @@ static int openssl_ocsp_singleresp_free(lua_State *L)
   return 0;
 }
 
-static int openssl_ocsp_basic_new(lua_State *L)
-{
-  int ret = 0;
-  OCSP_BASICRESP *bs = OCSP_BASICRESP_new();
 
-  if (bs)
-  {
-    PUSH_OBJECT(bs, "openssl.ocsp_basicresp");
-    ret = 1;
-  }
-  return ret;
-}
+/***
+A openssl.ocsp_basicresp class.
+@type openssl.ocsp_basicresp
+@alias basicresp
+*/
 
-static int openssl_ocsp_basic_add(lua_State *L)
+/***
+add one status item to openssl.ocsp_bascresp, return opessl.ocsp_singleresp
+@function add
+@tparam openssl.ocsp_certid certid
+@tparam integer status
+@tparam integer reason
+@tparam[opt] integer revokedTime
+@treturn openssl.ocsp_singleresp
+*/
+static int openssl_ocsp_basicresp_add(lua_State *L)
 {
   int ret = 0;
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
@@ -513,7 +611,14 @@ static int openssl_ocsp_basic_add(lua_State *L)
   return ret;
 }
 
-static int openssl_ocsp_basic_add_ext(lua_State *L)
+/***
+add one openssl.x509_extension to openssl.ocsp_bascresp
+@function add_ext
+@tparam openssl.x509_extension extension
+@tparam[opt] integer location
+@treturn boolean
+*/
+static int openssl_ocsp_basicresp_add_ext(lua_State *L)
 {
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
   X509_EXTENSION *ext = CHECK_OBJECT(2, X509_EXTENSION, "openssl.x509_extension");
@@ -523,7 +628,17 @@ static int openssl_ocsp_basic_add_ext(lua_State *L)
   return openssl_pushresult(L, ret);
 }
 
-static int openssl_ocsp_basic_sign(lua_State *L)
+/***
+sign then to openssl.ocsp_bascresp
+@function sign
+@tparam openssl.x509 cert
+@tparam openssl.evp_pkey pkey
+@tparam[opt=sha256] openssl.digest digest
+@tparam[opt] table array
+@tparam[opt=0] integer flag
+@treturn boolean
+*/
+static int openssl_ocsp_basicresp_sign(lua_State *L)
 {
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
   X509* ocert = CHECK_OBJECT(2, X509, "openssl.x509");
@@ -536,7 +651,12 @@ static int openssl_ocsp_basic_sign(lua_State *L)
   return openssl_pushresult(L, ret);
 }
 
-static int openssl_ocsp_basic_info(lua_State *L)
+/***
+get openssl.ocsp_bascresp info table
+@function info
+@treturn table
+*/
+static int openssl_ocsp_basicresp_info(lua_State *L)
 {
   OCSP_BASICRESP *br = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
 
@@ -639,7 +759,13 @@ static int openssl_ocsp_basic_info(lua_State *L)
   return 1;
 }
 
-static int openssl_ocsp_basic_copy_nonce(lua_State *L)
+/***
+copy nonce from openssl.ocsp_request to openssl.ocsp_bascresp
+@function copy_nonce
+@tparam openssl.ocsp_request request
+@treturn table
+*/
+static int openssl_ocsp_basicresp_copy_nonce(lua_State *L)
 {
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
   OCSP_REQUEST *req = CHECK_OBJECT(2, OCSP_REQUEST, "openssl.ocsp_request");
@@ -648,7 +774,13 @@ static int openssl_ocsp_basic_copy_nonce(lua_State *L)
   return openssl_pushresult(L, ret);
 }
 
-static int openssl_ocsp_basic_resposne(lua_State *L)
+/***
+create openssl.ocsp_response object
+@function response
+@tparam[opt=0] integer status
+@treturn openssl.ocsp_response
+*/
+static int openssl_ocsp_basicresp_resposne(lua_State *L)
 {
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
   int status = luaL_optint(L, 2, OCSP_RESPONSE_STATUS_SUCCESSFUL);
@@ -663,13 +795,26 @@ static int openssl_ocsp_basic_resposne(lua_State *L)
   return ret;
 }
 
-static int openssl_ocsp_basic_free(lua_State *L)
+static int openssl_ocsp_basicresp_free(lua_State *L)
 {
   OCSP_BASICRESP *bs = CHECK_OBJECT(1, OCSP_BASICRESP, "openssl.ocsp_basicresp");
   OCSP_BASICRESP_free(bs);
   return 0;
 }
 
+
+/***
+A openssl.ocsp_response class.
+@type openssl.ocsp_response
+@alias response
+*/
+
+/***
+export openssl.ocsp_response an encoded string
+@function export
+@tparam[opt=false] boolean pem true for PEM, false for DER
+@treturn string
+*/
 static int openssl_ocsp_response_export(lua_State *L)
 {
   OCSP_RESPONSE *res = CHECK_OBJECT(1, OCSP_RESPONSE, "openssl.ocsp_response");
@@ -694,6 +839,11 @@ static int openssl_ocsp_response_export(lua_State *L)
   return ret;
 }
 
+/***
+get parsed information table from openssl.ocsp_response object
+@function export
+@treturn table
+*/
 static int openssl_ocsp_response_parse(lua_State *L)
 {
   int status;
@@ -770,16 +920,16 @@ static luaL_Reg ocsp_singleresp_cfuns[] =
 
 static luaL_Reg ocsp_basicresp_cfuns[] =
 {
-  {"info",        openssl_ocsp_basic_info},
-  {"add",         openssl_ocsp_basic_add},
-  {"add_ext",     openssl_ocsp_basic_add_ext},
+  {"info",        openssl_ocsp_basicresp_info},
+  {"add",         openssl_ocsp_basicresp_add},
+  {"add_ext",     openssl_ocsp_basicresp_add_ext},
 
-  {"sign",        openssl_ocsp_basic_sign},
-  {"response",    openssl_ocsp_basic_resposne},
-  {"copy_nonce",  openssl_ocsp_basic_copy_nonce},
+  {"sign",        openssl_ocsp_basicresp_sign},
+  {"response",    openssl_ocsp_basicresp_resposne},
+  {"copy_nonce",  openssl_ocsp_basicresp_copy_nonce},
 
   {"__tostring",  auxiliar_tostring},
-  {"__gc",        openssl_ocsp_basic_free},
+  {"__gc",        openssl_ocsp_basicresp_free},
 
   {NULL,          NULL}
 };
@@ -802,7 +952,7 @@ static luaL_Reg R[] =
   {"request_new",   openssl_ocsp_request_new},
   {"response_read", openssl_ocsp_response_read},
 
-  {"basic_new",     openssl_ocsp_basic_new},
+  {"basicresp_new", openssl_ocsp_basicresp_new},
 
   {NULL,            NULL}
 };
