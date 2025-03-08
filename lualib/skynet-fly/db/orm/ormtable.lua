@@ -917,10 +917,7 @@ local function save_one_entry(t, entry)
     return t._adapterinterface:save_one_entry(entry_data, change_map)
 end
 
-local function delete_entry(t, key_values)
-    local res = t._adapterinterface:delete_entry(key_values)
-    if not res then return end
-
+local function clear_cache_by_keyvalue(t, key_values)
     local change_flag_map = t._change_flag_map
     local key_list = t._keylist
     local entry_list = nil
@@ -941,6 +938,13 @@ local function delete_entry(t, key_values)
         entry:clear_change()
         del_key_select(t, entry, true)
     end
+end
+
+local function delete_entry(t, key_values)
+    local res = t._adapterinterface:delete_entry(key_values)
+    if not res then return end
+
+    clear_cache_by_keyvalue(t, key_values)
 
     return res
 end
@@ -1035,6 +1039,18 @@ local function delete_entry_by_in(t, in_values, key_values)
                 entry:clear_change()
                 del_key_select(t, entry, true)
             end
+        end
+    end
+
+    return res
+end
+
+local function batch_delete_entry(t, keys_list)
+    local res = t._adapterinterface:batch_delete_entry(keys_list)
+    for i = 1, #res do
+        local key_values = keys_list[i]
+        if res[i] then
+            clear_cache_by_keyvalue(t, key_values)      --删除成功了，清理缓存
         end
     end
 
@@ -1271,6 +1287,23 @@ function M:delete_entry_by_in(in_values, ...)
    
     local key1value = key_values[1]
     return queue_doing(self, key1value, delete_entry_by_in, self, in_values, key_values)
+end
+
+---#desc 批量删除
+---@param keys_list table 最左前缀主键列表 {{key1,key2,...},{key1,key2,...}}
+---@return table boolean 执行结果
+function M:batch_delete_entry(keys_list)
+    assert(self._is_builder, "not builder can`t batch_delete_entry")
+    assert(#keys_list > 0, "keys_list can`t be empty")
+    local len = #keys_list[1]
+    assert(len > 0, "key_values can`t be empty")
+    for i = 1, #keys_list do
+        local key_values = keys_list[i]
+        assert(#key_values == len, sformat("key_values len mult same firstlen[%s] index[%s]len[%s]", len, i, #key_values))
+        check_key_values(self, key_values)
+    end
+
+    return queue_doing(self, nil, batch_delete_entry, self, keys_list)
 end
 
 return M

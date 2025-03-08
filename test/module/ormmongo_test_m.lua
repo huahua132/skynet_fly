@@ -1996,6 +1996,72 @@ local function test_delete_in(is_cache)
     delete_table()
 end
 
+--测试批量删除
+local function test_batch_delete()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin"):set_batch_delete_num(5)
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :set_keys("player_id","role_id")
+    :builder(adapter)
+
+    for i = 1, 100 do
+        for j = 1, 3 do
+            orm_obj:create_one_entry({player_id = i, role_id = j})
+        end
+    end
+
+    --测试2个key删除 删除1-51的第三条数据
+    local keys_list = {}
+    for i = 1, 51 do
+        table.insert(keys_list, {i, 3})
+    end
+    local res = orm_obj:batch_delete_entry(keys_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+
+    for i = 1, #keys_list do
+        local one_data = keys_list[i]
+        --查询3数据不存在
+        local entry = orm_obj:get_one_entry(one_data[1], one_data[2])
+        assert(not entry)
+        --还有 role_id = 1和2两条数据
+        local entry_list = orm_obj:get_entry(one_data[1])
+        assert(#entry_list == 2)
+        assert(entry_list[1]:get('role_id') == 1)
+        assert(entry_list[2]:get('role_id') == 2)
+    end
+
+    --测试1个key删除 删除52-101
+    local keys_list = {}
+    for i = 52, 101 do
+        table.insert(keys_list, {i})
+    end
+    local res = orm_obj:batch_delete_entry(keys_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+
+    -- 52 - 101 都没有数据了
+    for i = 52, 101 do
+        local entry_list = orm_obj:get_entry(i)
+        assert(#entry_list == 0, i .. ":" .. #entry_list)
+    end
+
+    --1 - 51 都还剩下role_id = 1 和 2 
+    for i = 1, 51 do
+        local entry_list = orm_obj:get_entry(i)
+        assert(#entry_list == 2)
+        assert(entry_list[1]:get('role_id') == 1)
+        assert(entry_list[2]:get('role_id') == 2)
+    end
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2054,6 +2120,8 @@ function CMD.start()
         test_delete_in(true)
         log.info("test_delete_in not cache")
         test_delete_in()
+        log.info("test_batch_delete")
+        test_batch_delete()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

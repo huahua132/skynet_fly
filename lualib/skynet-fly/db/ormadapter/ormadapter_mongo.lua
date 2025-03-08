@@ -19,6 +19,7 @@ local tinsert = table.insert
 local tremove = table.remove
 local pcall = pcall
 local ipairs = ipairs
+local math = math
 
 local M = {}
 local mata = {__index = M}
@@ -35,6 +36,7 @@ function M:new(db_name)
         _key_list = nil,
         batch_insert_num = 10,
         batch_update_num = 10,
+        batch_delete_num = 10,
     }
 
     setmetatable(t, mata)
@@ -57,6 +59,15 @@ end
 function M:set_batch_update_num(num)
     assert(num > 0)
     self.batch_update_num = num
+    return self
+end
+
+---#desc 设置单次整合批量删除的数量
+---@param num number 数量 默认10
+---@return table obj
+function M:set_batch_delete_num(num)
+    assert(num > 0)
+    self.batch_delete_num = num
     return self
 end
 
@@ -378,6 +389,59 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return true
     end
 
+    self._batch_delete = function(keys_list)
+        local len = #keys_list[1]
+        local res_list = {}
+        local total_len = #keys_list
+        local batch = math.ceil(total_len / self.batch_delete_num)
+
+        local args_tmp_list = {}
+        for i = 1, self.batch_delete_num do
+            local one_args = {}
+            for j = 1, len do
+                one_args[key_list[j]] = 0
+            end
+            args_tmp_list[i] = one_args
+        end
+
+        for i = 1, batch do
+            local end_index = i * self.batch_delete_num
+            local start_index = end_index - self.batch_delete_num + 1
+
+            local args = {}
+            local count = 0
+            for j = start_index, end_index do
+                local key_values = keys_list[j]
+                if key_values then
+                    count = count + 1
+                    local one = args_tmp_list[count]
+                    for k = 1, #key_values do
+                        one[key_list[k]] = key_values[k]
+                    end
+                    tinsert(args, one)
+                else
+                    break
+                end
+            end
+
+            if #args <= 0 then break end
+
+            local isok, err = collect_db:safe_batch_delete(args)
+            if isok then
+                for i = 1, count do
+                    res_list[start_index + i - 1] = true
+                end
+            else
+                log.error("_batch_delete err ", self._tab_name, err, args)
+                for i = 1, count do
+                    res_list[start_index + i - 1] = false
+                end
+            end
+        end
+        
+        return res_list
+    end
+
     return self
 end
 
@@ -458,6 +522,11 @@ end
 -- IN 删除
 function M:delete_entry_by_in(in_values, key_values)
     return self._delete_in(in_values, key_values)
+end
+
+-- 批量删除
+function M:batch_delete_entry(keys_list)
+    return self._batch_delete(keys_list)
 end
 
 return M

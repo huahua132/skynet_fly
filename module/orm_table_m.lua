@@ -182,6 +182,11 @@ function g_handle.delete_entry_by_in(in_values, ...)
     return g_orm_obj:delete_entry_by_in(in_values, ...)
 end
 
+-- 批量删除
+function g_handle.batch_delete_entry(keys_list)
+    return g_orm_obj:batch_delete_entry(keys_list)
+end
+
 local CMD = {}
 
 function CMD.start(config)

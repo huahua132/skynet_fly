@@ -107,6 +107,18 @@ local function test()
     local ret = client:delete_entry_by_in({10001})
     local all_data = client:get_all_entry()
     log.info("all_data >>> ", ret, all_data)
+
+    --测试批量删除
+    local entry_data_list = {
+        {player_id = 10005},
+        {player_id = 10006},
+        {player_id = 10007},
+        {player_id = 10008},
+    }
+    client:create_entry(entry_data_list)
+    client:batch_delete_entry({{10005},{10006},{10007}})
+    local all_data = client:get_all_entry()
+    log.info("测试批量删除 all_data >>> ", ret, all_data)
 end
 
 --切换测试
