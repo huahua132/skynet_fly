@@ -1075,7 +1075,7 @@ function M:create_one_entry(entry_data)
     return queue_doing(self, key1value, create_one_entry, self, entry_data)
 end
 
----#desc 查询多条数据
+---#desc 查询多条数据  format[select * from tab_name where key1 = ? and key2 = ?]
 ---@param ... string[] 最左前缀的 key 列表
 ---@return table obj[](ormentry)
 function M:get_entry(...)
@@ -1087,7 +1087,7 @@ function M:get_entry(...)
     return queue_doing(self, key1value, get_entry, self, key_values)
 end
 
----#desc 查询一条数据
+---#desc 查询一条数据 查询单条数据，必须提供所有主键 format[select * from tab_name where key1 = ? and key2 = ?]
 ---@param ... string[] 最左前缀的 key 列表
 ---@return table obj(ormentry)
 function M:get_one_entry(...)
@@ -1120,7 +1120,7 @@ function M:save_one_entry(entry)
     return queue_doing(self, key1value, save_one_entry, self, entry)
 end
 
----#desc 删除数据
+---#desc 删除数据 format[delete * from tab_name where key1 = ? and key2 = ?]
 ---@param ... string[] 最左前缀的 key 列表
 ---@return boolean 成功true失败false
 function M:delete_entry(...)
@@ -1180,11 +1180,11 @@ function M:is_inval_save()
     return self._time_obj ~= nil
 end
 
----#desc 分页查询
+---#desc 分页查询 format[select * from tab_name where key1 = ? and key2 > ? order by ? desc limit ?]
 ---@param cursor number|string 游标
 ---@param limit number 数量限制
 ---@param sort number 1升序  -1降序
----@param ... string[] 最左前缀主键列表
+---@param ... string[] 最左前缀主键列表 key1 key2 ... 不填入的key作为游标
 ---@return table obj[](ormentry)
 function M:get_entry_by_limit(cursor, limit, sort, ...)
     assert(self._is_builder, "not builder can`t get_entry_by_limit")
@@ -1201,8 +1201,8 @@ function M:get_entry_by_limit(cursor, limit, sort, ...)
     return queue_doing(self, key1value, get_entry_by_limit, self, cursor, limit, sort, key_values)
 end
 
----#desc IN 查询
----@param in_values table in对应的值列表 select * from xxx where key1 = xxx and key2 = xxx and key3 in (xxx,xxx,xxx)
+---#desc IN 查询  format[select * from tab_name where key1 = ? and key2 = ? and key3 in (?,?,?)]
+---@param in_values table in对应的值列表
 ---@param ... string[] 最左前缀主键列表 无需填入in_values的key
 ---@return table obj[](ormentry)
 function M:get_entry_by_in(in_values, ...)
@@ -1233,6 +1233,7 @@ end
 -- [left, nil] 删除 >= left
 -- [nil, right] 删除 <= right
 
+---#content format[delete from player where key1=? and key2>=? and key2<=?;]
 ---#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除  >= left <= right  [left, nil] 删除 >= left [nil, right] 删除 <= right
 ---@param left string|number 左值
 ---@param right string|number 右值
@@ -1263,8 +1264,8 @@ function M:delete_entry_by_range(left, right, ...)
     return queue_doing(self, key1value, delete_entry_by_range, self, left, right, key_values)
 end
 
----#desc IN 删除
----@param in_values table in对应的值列表 delete from xxx where key1 = xxx and key2 = xxx and key3 in (xxx,xxx,xxx)
+---#desc IN 删除 format[delete from tab_name where key1 = ? and key2 = ? and key3 in (?,?,?)]
+---@param in_values table in对应的值列表 
 ---@param ... string[] 最左前缀主键列表 无需填入in_values的key
 ---@return boolean
 function M:delete_entry_by_in(in_values, ...)
@@ -1289,7 +1290,7 @@ function M:delete_entry_by_in(in_values, ...)
     return queue_doing(self, key1value, delete_entry_by_in, self, in_values, key_values)
 end
 
----#desc 批量删除
+---#desc 批量删除 format [delete from tab_name where (key1 = ? and key2 = ?) or (key1 = ? and key2 = ?)]
 ---@param keys_list table 最左前缀主键列表 {{key1,key2,...},{key1,key2,...}}
 ---@return table boolean 执行结果
 function M:batch_delete_entry(keys_list)
