@@ -82,6 +82,18 @@ local FIELD_LUA_DEFAULT = {
     [FIELD_TYPE.table] = {},
 }
 
+--不能为index key的类型
+local CANT_INDEX_TYPE_MAP = {
+    [FIELD_TYPE.string1024] = true,
+    [FIELD_TYPE.string2048] = true,
+    [FIELD_TYPE.string4096] = true,
+    [FIELD_TYPE.string8192] = true,
+
+    [FIELD_TYPE.text] = true,
+    [FIELD_TYPE.blob] = true,
+    [FIELD_TYPE.table] = true,
+}
+
 local function create_check_str(len)
     return function(str)
         if type(str) ~= 'string' then return false end
@@ -445,6 +457,8 @@ function M:set_keys(...)
         local field_name = list[i]
         assert(self._field_map[field_name], "not exists: ".. field_name)
         assert(not self._key_map[field_name], "is exists: ".. field_name)
+        local field_type = self._field_map[field_name]
+        assert(not CANT_INDEX_TYPE_MAP[field_type], "can`t key type " .. field_name)
         tinsert(self._keylist, field_name)
         self._key_map[field_name] = true
     end
@@ -970,10 +984,7 @@ local function compare_right(left, right, v)
     return false
 end
 
-local function delete_entry_by_range(t, left, right, key_values)
-    local res = t._adapterinterface:delete_entry_by_range(left, right, key_values)
-    if not res then return end
-
+local function clear_cache_by_range(t, key_values, left, right)
     local change_flag_map = t._change_flag_map
     local key_list = t._keylist
     local entry_list = nil
@@ -1008,6 +1019,13 @@ local function delete_entry_by_range(t, left, right, key_values)
             del_key_select(t, entry, true)
         end
     end
+end
+
+local function delete_entry_by_range(t, left, right, key_values)
+    local res = t._adapterinterface:delete_entry_by_range(left, right, key_values)
+    if not res then return end
+
+    clear_cache_by_range(t, key_values, left, right)
 
     return res
 end
@@ -1051,6 +1069,21 @@ local function batch_delete_entry(t, keys_list)
         local key_values = keys_list[i]
         if res[i] then
             clear_cache_by_keyvalue(t, key_values)      --删除成功了，清理缓存
+        end
+    end
+
+    return res
+end
+
+local function batch_delete_entry_by_range(t, query_list)
+    local res = t._adapterinterface:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        if res[i] then
+            local query = query_list[i]
+            local key_values = query.key_values
+            local left = query.left
+            local right = query.right
+            clear_cache_by_range(t, key_values, left, right)
         end
     end
 
@@ -1227,12 +1260,11 @@ function M:get_entry_by_in(in_values, ...)
     return queue_doing(self, key1value, get_entry_by_in, self, in_values, key_values)
 end
 
--- 范围删除 包含left right
--- 可以有三种操作方式
--- [left, right] 范围删除  >= left <= right
--- [left, nil] 删除 >= left
--- [nil, right] 删除 <= right
-
+---#content 范围删除 包含left right
+---#content 可以有三种操作方式
+---#content [left, right] 范围删除  >= left <= right
+---#content [left, nil] 删除 >= left
+---#content [nil, right] 删除 <= right
 ---#content format[delete from player where key1=? and key2>=? and key2<=?;]
 ---#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除  >= left <= right  [left, nil] 删除 >= left [nil, right] 删除 <= right
 ---@param left string|number 左值
@@ -1305,6 +1337,37 @@ function M:batch_delete_entry(keys_list)
     end
 
     return queue_doing(self, nil, batch_delete_entry, self, keys_list)
+end
+
+--#desc 批量范围删除 format [delete from tab_name where (key1 = ? and key2 >= ? and key2 <= ?) or (key1 = ? and key2 >= ? and key2 <= ?)]  key长度必须一致， left,right 有无必须一致
+---@param query_list table {{left = 1, right = 10, key_values = {10001, 10002}}, {left = 1, right = 10, key_values = {10001, 10002}}} key1[10001], key2[10002] key3[left, right]
+---@return table boolean 执行结果
+function M:batch_delete_entry_by_range(query_list)
+    assert(self._is_builder, "not builder can`t batch_delete_entry_by_range")
+    assert(#query_list > 0, "query_list can`t be empty")
+    local first_query = query_list[1]
+    local first_key_values = first_query.key_values
+    local first_left = first_query.left
+    local first_right = first_query.right
+    assert(first_left or first_right, "not left or right")
+    assert(first_key_values and #first_key_values >= 1 and #first_key_values < #self._keylist, "kv len err")
+    for i = 1, #query_list do
+        local query = query_list[i]
+        assert(#query.key_values == #first_key_values, sformat("key_values len mult same firstlen[%s] index[%s]len[%s]", #first_key_values, i, #query.key_values))
+        if first_left then
+            assert(query.left, "left right mult same : " .. i)
+        else
+            assert(not query.left, "left right mult same : " .. i)
+        end
+        if first_right then
+            assert(query.right, "left right mult same : " .. i)
+        else
+            assert(not query.right, "left right mult same : " .. i)
+        end
+        check_key_values(self, query.key_values)
+    end
+
+    return queue_doing(self, nil, batch_delete_entry_by_range, self, query_list)
 end
 
 return M

@@ -2133,6 +2133,167 @@ local function test_batch_delete()
     delete_table()
 end
 
+--测试批量范围删除
+local function test_batch_range_delete()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin"):set_batch_delete_num(5)
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :set_keys("player_id","role_id", "nickname")
+    :builder(adapter)
+
+    for i = 1, 100 do
+        for j = 1, 5 do
+            for k = 1, 5 do
+                orm_obj:create_one_entry({player_id = i, role_id = j, nickname = i ..':' .. j .. ':' .. k})
+            end
+        end
+    end
+
+    --测试2个key删除 删除 role_id = 1 nickanme >= 2
+    local query_list = {}
+    for i = 1, 51 do
+        local query = {
+            key_values = {i, 1},
+            left = i .. ':1:2',
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1], key_values[2])
+        assert(#entry_list == 1, #entry_list)
+        assert(entry_list[1]:get('nickname') == i .. ":1:1", entry_list[1]:get('nickname'))
+    end
+
+    --测试2个key删除 删除 role_id = 2 nickanme <= 4
+    local query_list = {}
+    for i = 1, 51 do
+        local query = {
+            key_values = {i, 2},
+            right = i .. ':2:4',
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1], key_values[2])
+        assert(#entry_list == 1)
+        assert(entry_list[1]:get('nickname') == i .. ":2:5", entry_list[1]:get('nickname'))
+    end
+
+    --测试2个key删除 删除 role_id = 3 nickname >= 2 and nickname <= 4
+    local query_list = {}
+    for i = 1, 51 do
+        local query = {
+            key_values = {i, 3},
+            left = i .. ':3:2',
+            right = i .. ':3:4',
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1], key_values[2])
+        assert(#entry_list == 2)
+        assert(entry_list[1]:get('nickname') == i .. ":3:1", entry_list[1]:get('nickname'))
+        assert(entry_list[2]:get('nickname') == i .. ":3:5", entry_list[2]:get('nickname'))
+    end
+
+    --测试1个key删除 删除 role_id >= 2
+    local query_list = {}
+    for i = 52, 63 do
+        local query = {
+            key_values = {i},
+            left = 2,
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1])
+        assert(#entry_list == 5)
+        for _, one_entry in pairs(entry_list) do
+            assert(one_entry:get('role_id') == 1, one_entry:get('role_id'))
+        end
+    end
+
+    --测试1个key删除 删除role_id <= 4
+    local query_list = {}
+    for i = 64, 78 do
+        local query = {
+            key_values = {i},
+            right = 4,
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1])
+        assert(#entry_list == 5)
+        for _, one_entry in pairs(entry_list) do
+            assert(one_entry:get('role_id') == 5, one_entry:get('role_id'))
+        end
+    end
+
+    --测试1个key删除 删除role_id >= 2 and role_id <= 4
+    local query_list = {}
+    for i = 79, 100 do
+        local query = {
+            key_values = {i},
+            left = 2,
+            right = 4,
+        }
+        table.insert(query_list, query)
+    end
+    local res = orm_obj:batch_delete_entry_by_range(query_list)
+    for i = 1, #res do
+        assert(res[i])
+    end
+    for i = 1, #query_list do
+        local query = query_list[i]
+        local key_values = query.key_values
+        local entry_list = orm_obj:get_entry(key_values[1])
+        assert(#entry_list == 10)
+        for _, one_entry in pairs(entry_list) do
+            local role_id = one_entry:get('role_id')
+            assert(role_id == 1 or role_id == 5, role_id)
+        end
+    end
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2195,6 +2356,8 @@ function CMD.start()
         test_delete_in()
         log.info("test_batch_delete")
         test_batch_delete()
+        log.info("test_batch_range_delete")
+        test_batch_range_delete()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

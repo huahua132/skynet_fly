@@ -442,6 +442,76 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return res_list
     end
 
+    self._batch_delete_by_range = function(query_list)
+        local first_query = query_list[1]
+        local len = #first_query.key_values
+        local first_left = first_query.left
+        local first_right = first_query.right
+        local res_list = {}
+        local total_len = #query_list
+        local batch = math.ceil(total_len / self.batch_delete_num)
+        local end_field_name = key_list[len + 1]
+        local args_tmp_list = {}
+        for i = 1, self.batch_delete_num do
+            local one_args = {}
+            for j = 1, len do
+                one_args[key_list[j]] = 0
+            end
+            one_args[end_field_name] = {}
+            if first_left then
+                one_args[end_field_name]['$gte'] = 0
+            end
+            if first_right then
+                one_args[end_field_name]['$lte'] = 0
+            end
+            args_tmp_list[i] = one_args
+        end
+
+        for i = 1, batch do
+            local end_index = i * self.batch_delete_num
+            local start_index = end_index - self.batch_delete_num + 1
+
+            local args = {}
+            local count = 0
+            for j = start_index, end_index do
+                local query = query_list[j]
+                if query then
+                    local key_values = query.key_values
+                    count = count + 1
+                    local one = args_tmp_list[count]
+                    for k = 1, #key_values do
+                        one[key_list[k]] = key_values[k]
+                    end
+                    if query.left then
+                        one[end_field_name]['$gte'] = query.left
+                    end
+                    if query.right then
+                        one[end_field_name]['$lte'] = query.right
+                    end
+                    tinsert(args, one)
+                else
+                    break
+                end
+            end
+
+            if #args <= 0 then break end
+
+            local isok, err = collect_db:safe_batch_delete(args)
+            if isok then
+                for i = 1, count do
+                    res_list[start_index + i - 1] = true
+                end
+            else
+                log.error("safe_batch_delete err ", self._tab_name, err, args)
+                for i = 1, count do
+                    res_list[start_index + i - 1] = false
+                end
+            end
+        end
+        
+        return res_list
+    end
+
     return self
 end
 
@@ -527,6 +597,11 @@ end
 -- 批量删除
 function M:batch_delete_entry(keys_list)
     return self._batch_delete(keys_list)
+end
+
+--批量范围删除
+function M:batch_delete_entry_by_range(query_list)
+    return self._batch_delete_by_range(query_list)
 end
 
 return M
