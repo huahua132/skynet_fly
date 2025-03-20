@@ -626,7 +626,6 @@ local function test_cache_entry()
 
     local get_entry_list = orm_obj:get_entry(10001)
     local get_entry = assert(get_entry_list[1])
-
     assert(entry == get_entry) --是同一个表
     skynet.sleep(600)
 
@@ -677,9 +676,9 @@ local function test_cache_entry()
     --1个关联key
     local gg_entry_list = orm_obj:get_entry(10002)
     assert(entry_list[1] == gg_entry_list[1])
-
     -- 多条数据中 有数据缓存过期查询应重拉数据
     skynet.sleep(600)
+
     --两个关联key
     local ggg_entry_list = orm_obj:get_entry(10002, 1)
 
@@ -916,17 +915,16 @@ local function test_get_all()
     local _,is_cache = orm_obj:get_entry(10002) --保活
     assert(not is_cache)
     skynet.sleep(300)
-    
-    assert(orm_obj._key_cache_count == 6 and orm_obj._key_cache_total_count == nil)
+    assert(orm_obj._main_index._cache_count == 6 and orm_obj._main_index._cache_total_count == nil)
     local _,is_cache = orm_obj:get_all_entry()
     assert(not is_cache)
-    assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
+    assert(orm_obj._main_index._cache_count == 12 and orm_obj._main_index._cache_total_count == 12)
 
     orm_obj:delete_entry(10002, 1, 1)
-    assert(orm_obj._key_cache_count == 11 and orm_obj._key_cache_total_count == 11)
+    assert(orm_obj._main_index._cache_count == 11 and orm_obj._main_index._cache_total_count == 11)
 
     orm_obj:create_one_entry({player_id = 10004, role_id = 3, sex = 2})
-    assert(orm_obj._key_cache_count == 12 and orm_obj._key_cache_total_count == 12)
+    assert(orm_obj._main_index._cache_count == 12 and orm_obj._main_index._cache_total_count == 12)
     delete_table()
 end
 
@@ -962,13 +960,13 @@ local function test_delete_all()
 
     orm_obj:delete_all_entry()
 
-    assert(orm_obj._key_cache_count == 0)
+    assert(orm_obj._main_index._cache_count == 0)
 
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 0)
 
     local _ = orm_obj:create_one_entry({player_id = 10002, role_id = 1, sex = 1})
-    assert(orm_obj._key_cache_count == 1 and orm_obj._key_cache_total_count == 1)
+    assert(orm_obj._main_index._cache_count == 1 and orm_obj._main_index._cache_total_count == 1)
 
     local entry_list = orm_obj:get_all_entry()
     assert(#entry_list == 1)
