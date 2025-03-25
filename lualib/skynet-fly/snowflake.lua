@@ -42,8 +42,16 @@ local function snowflake_service()
         local cur_time = os.time()
         assert(cur_time <= TIME_BIT_MAX, "invalid time")
         if g_pre_time == cur_time then
-            assert(g_incr_num < INCR_BIT_MAX, "invalid incr")
-            g_incr_num = g_incr_num + 1
+            if g_incr_num >= INCR_BIT_MAX then
+                while cur_time == g_pre_time do
+                    skynet.sleep(5)
+                    cur_time = os.time()
+                end
+                g_pre_time = cur_time
+                g_incr_num = 0
+            else
+                g_incr_num = g_incr_num + 1
+            end
         else
             g_pre_time = cur_time
             g_incr_num = 0
@@ -76,10 +84,12 @@ local MACHINE_TIME_MASK = (1 << TIME_SHIFT) - 1 --机器号time 掩码
 
 local M = {}
 
+local g_snowflake = nil
 ---#desc 创建全局GUID
 ---@return number 全局GUID
 function M.new_guid()
-    local snowflake = service.new("snowflake", snowflake_service)
+    local snowflake = g_snowflake or service.new("snowflake", snowflake_service)
+    g_snowflake = snowflake
     return skynet.call(snowflake, 'lua', 'new_guid')
 end
 
