@@ -90,7 +90,7 @@ function M.create_gate_unpack(unpack)
 	end
 end
 --------------------------------------------------------
---通用的客户端消息接送处理
+--通用的客户端消息接收处理
 --------------------------------------------------------
 function M.create_recv(read,unpack)
 	return function(fd,dispatch)

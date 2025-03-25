@@ -114,7 +114,7 @@ function M:cancel()
 	return self
 end
 
----#desc 回调执行完注册再下一次，默认先注册下一次，再执行回调
+---#desc 回调执行完再注册下一次，默认先注册下一次，再执行回调
 ---@return table 定时器对象
 function M:after_next()
 	self.is_after_next = true
