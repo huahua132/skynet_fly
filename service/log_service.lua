@@ -69,7 +69,7 @@ local function open_file()
         error("create dir err " .. err)
     end
     local file_p = file_util.path_join(file_path,file_name)
-    file = io.open(file_p, 'a+')
+    file = io.open(file_p, 'a')
     file:write('open log file' .. file_p .. '\n')
     file:write(g_framename)
     file:flush()

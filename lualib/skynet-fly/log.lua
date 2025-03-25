@@ -16,8 +16,8 @@ local schar = string.char
 local tpack = table.pack
 
 local M = {
+	DEBUG = -1,
 	INFO = 0,
-	DEBUG = 1,
 	WARN = 2,
 	ERROR = 3,
 	FATAL = 4,
@@ -27,8 +27,8 @@ local M = {
 }
 
 local level_map = {
-	['info'] = M.INFO,
 	['debug'] = M.DEBUG,
+	['info'] = M.INFO,
 	['warn'] = M.WARN,
 	['error'] = M.ERROR,
 	['fatal'] = M.FATAL,
