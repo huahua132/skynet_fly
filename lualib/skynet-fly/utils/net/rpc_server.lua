@@ -37,6 +37,7 @@ end
 
 local g_cur, g_end = nil, nil
 local g_allocing = false
+local g_session_service = nil
 local function new_session()
     while g_allocing do       --避免并发多次分配
         wait:wait("alloc")
@@ -44,7 +45,8 @@ local function new_session()
 
     if not g_cur or g_cur > g_end then
         g_allocing = true
-        local session_service = service.new("session_service", alloc_push_session)
+        local session_service = g_session_service or service.new("session_service", alloc_push_session)
+        g_session_service = session_service
         g_cur, g_end = skynet.call(session_service, 'lua', 'new_session')
         g_allocing = false
         wait:wakeup("alloc")
