@@ -16,6 +16,7 @@ local function snowflake_service()
     local log = require "skynet-fly.log"
     local skynet = require "skynet"
     local skynet_util = require "skynet-fly.utils.skynet_util"
+    local wait = require "skynet-fly.time_extend.wait":new()
 
     local assert = assert
     local os = os
@@ -35,20 +36,27 @@ local function snowflake_service()
     local MACHINE_ID = nil
     local g_pre_time = 0
     local g_incr_num = 0
+    local g_is_wait = false
 
     local CMD = {}
 
     function CMD.new_guid()
+        if g_is_wait then
+            wait:wait("wait")
+        end
         local cur_time = os.time()
         assert(cur_time <= TIME_BIT_MAX, "invalid time")
         if g_pre_time == cur_time then
             if g_incr_num >= INCR_BIT_MAX then
+                g_is_wait = true
                 while cur_time == g_pre_time do
                     skynet.sleep(5)
                     cur_time = os.time()
                 end
+                g_is_wait = false
                 g_pre_time = cur_time
                 g_incr_num = 0
+                wait:wakeup("wait")
             else
                 g_incr_num = g_incr_num + 1
             end
