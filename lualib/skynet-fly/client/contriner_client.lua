@@ -397,8 +397,8 @@ end
 ---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
 ---@return table obj
 function M:new(module_name,instance_name,can_switch_func)
-	assert(g_register_map[module_name],tostring(module_name) .. " not register")
-	assert(is_ready,"not is ready")
+	assert(g_register_map[module_name], "not register visitor, please be loading code call contriner_client:register('" .. module_name .. "')")
+	assert(is_ready,"not ready, please be started call")
 	assert(module_name)
 	if not can_switch_func then
 		can_switch_func = default_can_switch

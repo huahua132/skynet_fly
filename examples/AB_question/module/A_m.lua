@@ -3,9 +3,9 @@ local timer = require "skynet-fly.timer"
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
 
-contriner_client:register("B_m")                    --向B注册访问
-contriner_client:set_week_visitor("B_m")            --设置B为弱访问者，B服务的访问不会阻止A旧服务的退出。
-contriner_client:set_always_swtich("B_m")           --A服务热更后， A的旧服务也会一直切换访问新的B服务
+-- contriner_client:register("B_m")                    --向B注册访问
+-- contriner_client:set_week_visitor("B_m")            --设置B为弱访问者，B服务的访问不会阻止A旧服务的退出。
+-- contriner_client:set_always_swtich("B_m")           --A服务热更后， A的旧服务也会一直切换访问新的B服务
 
 contriner_client:add_queryed_cb("B_m",function()    --查询到B的地址
     log.info("queryed B_m")
