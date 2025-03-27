@@ -67,7 +67,7 @@ local function create_log_func(level_name,is_format)
 		local log_hook = hooks[level]
 		local len = #log_hook
 		for i = 1, len do
-			local func = log_hook[len]
+			local func = log_hook[i]
 			func(log_str)
 		end
 	end
