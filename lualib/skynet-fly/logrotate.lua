@@ -10,12 +10,16 @@
 local contriner_client = require "skynet-fly.client.contriner_client"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local wait = require "skynet-fly.time_extend.wait"
 local skynet = require "skynet"
+local log = require "skynet-fly.log"
 
 local setmetatable = setmetatable
 local assert = assert
 local type = type
 local pairs = pairs
+
+local g_wait_query = wait:new()
 
 local g_alloc_id = 1
 local function alloc_id()
@@ -27,6 +31,10 @@ end
 local g_rotate_map = {}
 
 contriner_client:register("logrotate_m")
+
+contriner_client:add_queryed_cb("logrotate_m", function()
+    g_wait_query:wakeup("query")
+end)
 
 --logrotate的服务更新之后需要重新发送切割任务
 contriner_client:add_updated_cb("logrotate_m", function()
@@ -54,6 +62,11 @@ function M:new(filename)
         },
         is_builder = false,
     }
+    if not contriner_client:is_ready("logrotate_m") then
+        log.warn("waiting logrotate_m begin")
+        g_wait_query:wait("query")
+        log.warn("waiting logrotate_m end")
+    end
     setmetatable(t, mt)
     return t
 end
