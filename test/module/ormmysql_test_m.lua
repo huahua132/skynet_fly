@@ -2292,6 +2292,77 @@ local function test_batch_range_delete()
     delete_table()
 end
 
+--测试创建修改普通索引
+local function test_create_change_index()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local _ = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :set_keys("player_id","role_id")
+    :set_index("name_index", "nickname")
+    :set_index("role_name_index", "role_id", "nickname")
+    :builder(adapter)
+
+    local _ = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :string32("phone")
+    :set_keys("player_id","role_id")
+    :set_index("name_index", "nickname")
+    :set_index("phone_index", "phone")
+    :builder(adapter)
+
+    delete_table()
+end
+
+--测试通过普通索引查询
+local function test_idx_get_entry()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local ormobj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :string32("phone")
+    :set_keys("player_id","role_id")
+    :set_index("phone_index", "phone")
+    :set_index("role_name_index", "role_id", "nickname")
+    :set_cache(500, 100)
+    :builder(adapter)
+
+    local create_entry_list = ormobj:create_entry {
+        {player_id = 10001, role_id = 101, nickname = "skynet_fly", phone = "13211322990"},
+        {player_id = 10002, role_id = 101, nickname = "skynet", phone = "132113221"},
+        {player_id = 10003, role_id = 101, nickname = "skynet_fly", phone = "132113221"},
+        {player_id = 10004, role_id = 101, nickname = "skynet", phone = "132113222"},
+        {player_id = 10005, role_id = 101, nickname = "skynet_fly", phone = "13211322993"},
+        {player_id = 10006, role_id = 102, nickname = "skynet_fly", phone = "13211322991"},
+        {player_id = 10007, role_id = 102, nickname = "skynet", phone = "132113222"},
+        {player_id = 10008, role_id = 102, nickname = "skynet_fly", phone = "13211322992"},
+        {player_id = 10009, role_id = 102, nickname = "skynet", phone = "132113222"},
+        {player_id = 10010, role_id = 102, nickname = "skynet_fly", phone = "13211322993"},
+    }
+
+    local isok = pcall(ormobj.idx_get_entry, ormobj, {nickname = "skynet"})--这样不行，必须先得有前缀索引 role_id
+    assert(not isok)
+
+    local entry_list = ormobj:idx_get_entry({phone = '132113221'})      --手机号查询
+    assert(#entry_list == 2)
+
+    local entry_list = ormobj:idx_get_entry({phone = '13211322990'})    --缓存entry唯一性
+    assert(entry_list[1] == create_entry_list[1])
+
+    local entry_list = ormobj:idx_get_entry({phone = '132113222', role_id = 102})   --多普通索引查询
+    assert(#entry_list == 2)
+
+    local entry_list = ormobj:idx_get_entry({role_id = 102, nickname = 'skynet_fly'})
+    assert(#entry_list == 3)
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2356,6 +2427,10 @@ function CMD.start()
         test_batch_delete()
         log.info("test_batch_range_delete")
         test_batch_range_delete()
+        log.info("test_create_change_index")
+        test_create_change_index()
+        log.info("test_idx_get_entry")
+        test_idx_get_entry()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

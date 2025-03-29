@@ -166,6 +166,8 @@ local function create_table(t)
     local field_list = t._field_list
     local field_map = t._field_map
     local key_list = t._key_list
+    local indexs_list = t._indexs_list
+
     local sql_str = sformat("create table %s (\n", t._tab_name)
     for i = 1,#field_list do
         local field_name = field_list[i]
@@ -176,6 +178,10 @@ local function create_table(t)
         else
             sql_str = sql_str .. sformat("\t`%s` %s NOT NULL DEFAULT '%s',\n", field_name, convert_type, FIELD_LUA_DEFAULT[field_type])
         end
+    end
+
+    for index_name, list in pairs(indexs_list) do
+        sql_str = sql_str .. sformat("\tINDEX `%s` (%s),\n", index_name, tconcat(list, ','))
     end
 
     sql_str = sql_str .. sformat("\tprimary key(%s)\n", tconcat(key_list,','))
@@ -194,30 +200,36 @@ local function alter_table(t, describe, index_info)
     local field_list = t._field_list
     local field_map = t._field_map
     local key_list = t._key_list
-    local key_map = {}
-    
-    for i = 1,#key_list do
-        key_map[key_list[i]] = true
-        
-    end
+    local indexs_list = t._indexs_list
 
     local key_sort_map = {}
     for i = 1,#field_list do
         key_sort_map[field_list[i]] = i
     end
 
-    local pre_key_map = {}
+    local pre_key_list = {}
+    local pre_indexs_list = {}
 
     for i = 1,#index_info do
         local info = index_info[i]
         local column_name = info.Column_name
         local key_name = info.Key_name
+        local seq_in_index = info.Seq_in_index
+        local non_unique = info.Non_unique
         if key_name == 'PRIMARY' then   --主键
-            pre_key_map[column_name] = true
+            pre_key_list[seq_in_index] = column_name
+        else
+            --普通索引
+            if non_unique == 1 then
+                if not pre_indexs_list[key_name] then
+                    pre_indexs_list[key_name] = {}
+                end
+                pre_indexs_list[key_name][seq_in_index] = column_name
+            end
         end
     end
 
-    local def = table_util.check_def_table(key_map, pre_key_map)
+    local def = table_util.check_def_table(key_list, pre_key_list)
     assert(not next(def),"can`t change keys " .. table_util.def_tostring(def))     --不能修改主键
 
     -- 不能修改字段类型
@@ -274,13 +286,59 @@ local function alter_table(t, describe, index_info)
             error("alter_table table err ")
         end
     end
+
+    --新增修改删除普通索引
+    local def = table_util.check_def_table(indexs_list, pre_indexs_list)
+    local del_index_map = {}
+    local add_index_map = {}
+    for index_name,def_info in pairs(def) do
+        if def_info._flag == 'reduce' then  --删除索引
+            del_index_map[index_name] = true
+        elseif def_info._flag == 'add' then --新增索引
+            add_index_map[index_name] = true
+        else
+            log.error("alter_table err", index_name, def_info)
+            error("alter_table can`t change index")
+        end
+    end
+
+    --删除索引
+    for index_name in pairs(del_index_map) do
+        log.warn_fmt("%s del index[%s]", t._tab_name, index_name)
+        local sql_str = sformat('DROP INDEX `%s` ON %s;', index_name, t._tab_name)
+        local ret = t._db.conn:query(sql_str)
+        if not ret then
+            log.error("alter_table del index err ",sql_str)
+            error("alter_table del index err")
+        elseif ret.err then
+            log.error("alter_table del index err ",ret,sql_str)
+            error("alter_table del index err ")
+        end
+    end
+
+    --新增索引
+    for index_name in pairs(add_index_map) do
+        local list = indexs_list[index_name]
+        local field_list_str = tconcat(list, ',')
+        log.warn_fmt("%s add index[%s] field_list(%s)", t._tab_name, index_name, field_list_str)
+        local sql_str = sformat('CREATE INDEX `%s` ON %s (%s);', index_name, t._tab_name, field_list_str)
+        local ret = t._db.conn:query(sql_str)
+        if not ret then
+            log.error("alter_table add index err ",sql_str)
+            error("alter_table add index err")
+        elseif ret.err then
+            log.error("alter_table add index err ",ret,sql_str)
+            error("alter_table add index err ")
+        end
+    end
 end
 -- 构建表
-function M:builder(tab_name, field_list, field_map, key_list)
+function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     self._tab_name = tab_name
     self._field_map = field_map
     self._key_list = key_list
     self._field_list = field_list
+    self._indexs_list = indexs_list
 
     local tab_encode = self._tab_encode
     local tab_decode = self._tab_decode
@@ -467,7 +525,6 @@ function M:builder(tab_name, field_list, field_map, key_list)
         end
     end
 
-    select_format_head = nil
     select_format_key_head = nil
     count_sql = nil
     select_format_end = nil
@@ -563,7 +620,6 @@ function M:builder(tab_name, field_list, field_map, key_list)
     end
 
     delete_format_head = nil
-    select_format_center = nil
 
     local insert_list = {}                               
     local function entry_data_to_list(entry_data, add_list)
@@ -1112,6 +1168,47 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return res_list
     end
 
+    local _idx_preparecache_map = {}
+
+    self._idx_select = function(query)
+        local field_values = {}
+        local field_names = {}
+        for field_name, field_value in table_util.kvsortipairs(query) do
+            tinsert(field_names, field_name)
+            tinsert(field_values, field_value)
+        end
+
+        local cache_key = tconcat(field_names,'-')
+        
+        local prepare_obj = nil
+        if _idx_preparecache_map[cache_key] then
+            prepare_obj = _idx_preparecache_map[cache_key]
+        else
+            local prepare_str = select_format_head .. select_format_center
+            local len = #field_names
+            for i = 1, len do
+                local field_name = field_names[i]
+                if i ~= len then
+                    prepare_str = prepare_str .. sformat('`%s` = ? and ', field_name)
+                else
+                    prepare_str = prepare_str .. sformat('`%s` = ?;', field_name)
+                end
+            end
+            
+            prepare_obj = new_prepare_obj(prepare_str)
+            _idx_preparecache_map[cache_key] = prepare_obj
+        end
+        
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(field_values))
+        if not isok or not ret or ret.err then
+            log.error("_idx_select err ", ret, query)
+            error("_idx_select err ")
+        end
+
+        decode_tables(ret)
+        return ret
+    end
+
     return self
 end
 
@@ -1178,6 +1275,11 @@ end
 --批量范围删除
 function M:batch_delete_entry_by_range(query_list)
     return self._batch_delete_by_range(query_list)
+end
+
+--通过普通索引查询
+function M:idx_get_entry(query)
+    return self._idx_select(query)
 end
 
 return M

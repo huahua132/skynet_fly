@@ -11,6 +11,7 @@ local json = require "cjson"
 
 local tinsert = table.insert
 local tremove = table.remove
+local tunpack = table.unpack
 local tsort = table.sort
 local type = type
 local assert = assert
@@ -544,6 +545,89 @@ function M.merge(target, source)
 	for k,v in pairs(source) do
 		target[k] = v
 	end
+end
+
+---#desc 数组全排列遍历
+---@param arr table 数组
+---@return talbe
+function M.permute_pairs(arr)
+    local len = #arr
+    if len == 0 then
+        return function() end -- 空数组返回空迭代器
+    end
+
+    -- 深拷贝原数组避免污染
+    local state = {
+        stack = {},     -- 模拟递归调用栈
+        current = {},   -- 当前路径
+        used = {},      -- 记录已用元素
+        arr = {tunpack(arr)}, -- 使用 txxx.unpack
+        initialized = false
+    }
+
+    -- 初始化状态
+    local function init()
+        for i = 1, len do
+            state.current[i] = 0
+            state.used[i] = false
+        end
+        tinsert(state.stack, { depth = 1, selected = nil }) -- 使用 txxx.insert
+        state.initialized = true
+    end
+
+    -- 返回闭包迭代器
+    return function()
+        if not state.initialized then init() end
+
+        while #state.stack > 0 do
+            local frame = state.stack[#state.stack]
+            local depth = frame.depth
+
+            -- 完成一个排列
+            if depth > len then
+                tremove(state.stack, #state.stack) -- 使用 txxx.remove
+                local result = {tunpack(state.current)}
+                return result
+            end
+
+            -- 回溯时重置前一次使用的元素
+            if frame.selected then
+                state.used[frame.selected] = false
+                frame.selected = nil -- 清除标记
+            end
+
+            -- 寻找下一个可用元素
+            local start = frame.pos or 1
+            for i = start, len do
+                if not state.used[i] then
+                    -- 记录当前选择
+                    frame.selected = i
+                    frame.pos = i + 1
+
+                    -- 更新状态
+                    state.current[depth] = state.arr[i]
+                    state.used[i] = true
+
+                    -- 压入下一层
+                    tinsert(state.stack, {
+                        depth = depth + 1,
+                        selected = nil,
+                        pos = 1
+                    })
+                    break
+                else
+                    frame.pos = i + 1
+                end
+            end
+
+            -- 当前层遍历完成，需要回溯
+            if not frame.selected then
+                tremove(state.stack, #state.stack)
+            end
+        end
+
+        return nil -- 遍历结束
+    end
 end
 
 return M
