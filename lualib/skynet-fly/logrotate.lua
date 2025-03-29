@@ -2,7 +2,7 @@
 ---#content ---
 ---#content title: 日志轮换
 ---#content date: 2024-06-29 22:00:00
----#content categories: ["skynet_fly API 文档","日志轮换"]
+---#content categories: ["skynet_fly API 文档","日志相关"]
 ---#content category_bar: true
 ---#content tags: [skynet_fly_api]
 ---#content ---

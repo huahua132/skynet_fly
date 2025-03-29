@@ -1,4 +1,13 @@
---用于写固定每天轮换的用户日志
+---#API
+---#content ---
+---#content title: 用户日志
+---#content date: 2025-03-28 21:00:00
+---#content categories: ["skynet_fly API 文档","日志相关"]
+---#content category_bar: true
+---#content tags: [skynet_fly_api]
+---#content ---
+---#content [ormadapter_uselog](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/use_log.lua)
+---#content用于写固定每天轮换的用户日志
 
 local function log_service()
     local skynet = require "skynet"
