@@ -20,6 +20,7 @@ local type = type
 local tostring = tostring
 local tinsert = table.insert
 local collectgarbage = collectgarbage
+local rawget = rawget
 
 local M = {}
 local meta = {__index = M}
@@ -364,6 +365,16 @@ function M:add_updated_cb(module_name, func)
 		g_updated_map[module_name] = {}
 	end
 	tinsert(g_updated_map[module_name], func)
+end
+
+---#desc 查询模块服务是否准备好了
+---@param module_name string 模块名
+---@return bool
+function M:is_ready(module_name)
+	local t = rawget(g_mod_svr_ids_map, module_name)
+	if not t then return false end
+
+	return true
 end
 
 ---#desc 监听所有服务地址
