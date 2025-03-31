@@ -71,11 +71,12 @@ function M:set_batch_delete_num(num)
     return self
 end
 
-function M:builder(tab_name, field_list, field_map, key_list)
+function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     self._tab_name = tab_name
     self._field_map = field_map
     self._key_list = key_list
     self._field_list = field_list
+    self._indexs_list = indexs_list
 
     local args = {}
     local index_name = "index"
@@ -89,9 +90,24 @@ function M:builder(tab_name, field_list, field_map, key_list)
     local collect_db = self._db[tab_name]
     local res = collect_db:create_index(args)
     if res.ok ~= 1 then
-        log.error("builder err ", tab_name, res)
+        log.error("builder unique key err ", tab_name, res)
     end
-    assert(res.ok == 1, "builder err")
+    assert(res.ok == 1, "builder unique key err")
+
+    for index_name, list in pairs(indexs_list) do
+        local args = {
+            unique = false,
+            name = index_name,
+        }
+        for _,field_name in ipairs(list) do
+            tinsert(args, {[field_name] = 1})
+        end
+        local res = collect_db:create_index(args)
+        if res.ok ~= 1 then
+            log.error("builder index err ", tab_name, res)
+        end
+        assert(res.ok == 1, "builder index err")
+    end
 
     local key_len = #key_list
     --insert 创建
@@ -512,6 +528,19 @@ function M:builder(tab_name, field_list, field_map, key_list)
         return res_list
     end
 
+    self._idx_select = function(query)
+        local res_list = {}
+
+        local ret = collect_db:find(query)
+        while ret:has_next() do
+            local entry_data = ret:next()
+            entry_data._id = nil
+            tinsert(res_list, entry_data)
+        end
+    
+        return res_list
+    end
+
     return self
 end
 
@@ -602,6 +631,11 @@ end
 --批量范围删除
 function M:batch_delete_entry_by_range(query_list)
     return self._batch_delete_by_range(query_list)
+end
+
+--通过普通索引查询
+function M:idx_get_entry(query)
+    return self._idx_select(query)
 end
 
 return M
