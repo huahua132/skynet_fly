@@ -509,8 +509,8 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         select_f_limit_k_pre_pare = new_prepare_obj(sformat("%s%s%s order by `%s` limit ?", select_format_key_head, select_format_center, select_format_end_list[len - 1], end_field_name))
     end
 
+    
     select_count_pre_pare = new_prepare_obj(count_sql)
-
     -- delete from player where key1 in (?);
     -- delete from player where key1=?,key2 in (?);
     -- delete from player where key1=?,key2=?,key3 in (?);
@@ -777,8 +777,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 
     --分页 查询
     self._select_limit = function(cursor, limit, sort, key_values, is_only_key)
-        assert(type(limit) == 'number')
-        assert(type(sort) == 'number')
         local len = #key_values
         local end_field_name = key_list[len + 1]
         local prepare_obj = nil
@@ -1209,6 +1207,118 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return ret
     end
 
+    local _idx_limit_preparecache_map = {}
+    local _idx_limit_count_prepare_cache_map = {}
+    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query)
+        local end_field_name = sort_field_name
+        local field_values = {}
+        local field_names = {}
+        if query then
+            for field_name, field_value in table_util.kvsortipairs(query) do
+                tinsert(field_names, field_name)
+                tinsert(field_values, field_value)
+            end
+        end
+        local is_have_cursor = cursor and 1 or 0
+        local cache_key = tconcat(field_names, ',')
+        cache_key = cache_key .. sformat(",%s_%s_%s", sort_field_name, sort, is_have_cursor)
+
+        local prepare_obj = nil
+        if _idx_limit_preparecache_map[cache_key] then
+            prepare_obj = _idx_limit_preparecache_map[cache_key]
+        else
+            local prepare_str = nil
+            local len = #field_names
+            if len > 0 or cursor then
+                prepare_str = select_format_head .. select_format_center
+            else
+                prepare_str = select_format_head
+            end
+            for i = 1, len do
+                local field_name = field_names[i]
+                if i ~= len or cursor then
+                    prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+                else
+                    prepare_str = prepare_str .. sformat('`%s`=? ', field_name)
+                end
+            end
+            if not cursor then
+                if sort == 1 then  --升序
+                    prepare_str = prepare_str .. sformat(' order by `%s` limit ?', end_field_name)
+                else
+                    prepare_str = prepare_str .. sformat(' order by `%s` desc limit ?', end_field_name)
+                end
+            else
+                if sort == 1 then  --升序
+                    prepare_str = prepare_str .. sformat('`%s` > ? order by `%s` limit ?', end_field_name, end_field_name)
+                else
+                    prepare_str = prepare_str .. sformat('`%s` < ? order by `%s` desc limit ?', end_field_name, end_field_name)
+                end
+            end
+            prepare_obj = new_prepare_obj(prepare_str)
+            _idx_limit_preparecache_map[cache_key] = prepare_obj
+        end
+
+        local count = nil
+        --拿一下count
+        if not cursor then
+            local count_prepare_obj = nil
+            local cache_key = tconcat(field_names, ',')
+            if _idx_limit_count_prepare_cache_map[cache_key] then
+                count_prepare_obj = _idx_limit_count_prepare_cache_map[cache_key]
+            else
+                local count_pre_pare_str = nil
+                local len = #field_names
+                if len > 0 then
+                    count_pre_pare_str = sformat("select count(*) from %s where ", self._tab_name)
+                else
+                    count_pre_pare_str = sformat("select count(*) from %s;", self._tab_name)
+                end
+                for i = 1, len do
+                    local field_name = field_names[i]
+                    if i ~= len then
+                        count_pre_pare_str = count_pre_pare_str .. sformat('`%s`=? and ', field_name)
+                    else
+                        count_pre_pare_str = count_pre_pare_str .. sformat('`%s`=?', field_name)
+                    end
+                end
+                count_prepare_obj = new_prepare_obj(count_pre_pare_str)
+                _idx_limit_count_prepare_cache_map[cache_key] = count_prepare_obj
+            end
+            local isok, ret = pcall(prepare_execute, self._db, count_prepare_obj, tunpack(field_values))
+            if not isok or not ret or ret.err then
+                log.error("_idx_get_entry_by_limit err ", ret, query)
+                error("_idx_get_entry_by_limit err ")
+            end
+            count = ret[1]["count(*)"]
+        end
+       
+        local args = {}
+        --where参数
+        for i = 1, len do
+            args[#args + 1] = field_values[i]
+        end
+        if cursor then
+            args[#args + 1] = cursor
+        end
+        args[#args + 1] = limit
+
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
+        
+        if not isok or not ret or ret.err then
+            log.error("_idx_get_entry_by_limit err ", ret, cursor, limit, sort, sort_field_name, query)
+            error("_idx_get_entry_by_limit err ")
+        end
+        
+        local cursor = nil
+        if #ret > 0 then
+            local end_ret = ret[#ret]
+            cursor = end_ret[end_field_name]
+        end
+        decode_tables(ret)
+        return cursor, ret, count
+    end
+
     return self
 end
 
@@ -1280,6 +1390,11 @@ end
 --通过普通索引查询
 function M:idx_get_entry(query)
     return self._idx_select(query)
+end
+
+--通过普通索引分页查询
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
 end
 
 return M

@@ -969,6 +969,15 @@ local function idx_get_entry(t, query)
     return res
 end
 
+local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, query)
+    local cursor, res, count = t._adapterinterface:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+    for i, entry_data in pairs(res) do
+        local entry = ormentry:new(t, entry_data)
+        res[i] = add_key_select(t, entry)
+    end
+    return cursor, res, count
+end
+
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
 ---@return table obj
@@ -1100,6 +1109,8 @@ end
 ---@return table obj[](ormentry)
 function M:get_entry_by_limit(cursor, limit, sort, ...)
     assert(self._is_builder, "not builder can`t get_entry_by_limit")
+    assert(type(limit) == 'number', "err limit:" .. tostring(limit))
+    assert(type(sort) == 'number', "err sort:" .. tostring(sort))
     local key_list = self._keylist
     local key_values = {...}
     local len = #key_values
@@ -1305,6 +1316,31 @@ function M:idx_get_entry(query)
     check_index_field(self, field_list)
 
     return queue_doing(self, nil, idx_get_entry, self, query)
+end
+
+---#desc 基于普通索引分页查询 format`[select * from tab_name where key1 = ? and key2 > ? order by ? desc limit ?]`
+---@param cursor number|string 游标
+---@param limit number 数量限制
+---@param sort number 1升序  -1降序
+---@param sort_field_name string 排序字段名
+---@param query? table 索引值 [key1 = xxx, key2 = xxx]
+---@return table obj[](ormentry)
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+    assert(self._is_builder, "not builder can`t idx_get_entry_by_limit")
+    assert(type(limit) == 'number', "err limit:" .. tostring(limit))
+    assert(type(sort) == 'number', "err sort:" .. tostring(sort))
+
+    local field_list = {}
+    if query then
+        for field_name, field_value in pairs(query) do
+            check_one_field(self, field_name, field_value)
+            tinsert(field_list, field_name)
+        end
+    end
+    tinsert(field_list, sort_field_name)
+
+    check_index_field(self, field_list)
+    return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query)
 end
 
 return M
