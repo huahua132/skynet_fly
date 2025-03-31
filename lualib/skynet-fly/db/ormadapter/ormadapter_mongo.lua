@@ -361,7 +361,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 
         local isok,err = collect_db:safe_delete(delete_query)
         if not isok then
-            log.error("delete doc err ", self._tab_name, err)
+            log.error("delete doc err ", self._tab_name, key_values, err)
             error("delete doc err")
         end
         return true
@@ -567,6 +567,15 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return cursor, res_list, count
     end
 
+    self._idx_delete_entry = function(query)
+        local isok,err = collect_db:safe_delete(query)
+        if not isok then
+            log.error("_idx_delete_entry doc err ", self._tab_name, query, err)
+            error("_idx_delete_entry doc err")
+        end
+        return true
+    end
+
     return self
 end
 
@@ -667,6 +676,11 @@ end
 --通过普通索引分页查询
 function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
     return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+end
+
+--通过普通索引删除
+function M:idx_delete_entry(query)
+    return self._idx_delete_entry(query)
 end
 
 return M

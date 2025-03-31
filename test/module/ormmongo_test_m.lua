@@ -2448,6 +2448,50 @@ local function test_idx_get_entry_by_limit()
     delete_table()
 end
 
+--测试普通索引删除
+local function test_idx_delete_entry()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local ormobj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :uint8("age")
+    :set_keys("player_id","role_id")
+    :set_index("age_index", "age")
+    :set_index("role_name_index", "role_id", "nickname")
+    :set_cache(500, 100)
+    :builder(adapter)
+
+    for i = 1, 100 do
+        local rid = 1
+        if i > 50 then
+            rid = 2
+        end
+        ormobj:create_one_entry({player_id = i, role_id = rid, nickname = '' .. i, age = i})
+    end
+
+    for i = 1, 2 do
+        --删除age等于i
+        local ret = ormobj:idx_delete_entry({age = i})
+        assert(ret)
+
+        local entry = ormobj:get_one_entry(i, 1)
+        assert(not entry)
+
+        local entry_list = ormobj:idx_get_entry({age = i})
+        assert(#entry_list <= 0)
+    end
+
+    local ret = ormobj:idx_delete_entry({role_id = 1})
+    assert(ret)
+
+    local entry_list = ormobj:get_all_entry()
+    assert(#entry_list == 50)
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2516,6 +2560,8 @@ function CMD.start()
         test_idx_get_entry()
         log.info("test_idx_get_entry_by_limit")
         test_idx_get_entry_by_limit()
+        log.info("test_idx_delete_entry")
+        test_idx_delete_entry()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
