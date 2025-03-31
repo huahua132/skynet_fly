@@ -2294,6 +2294,160 @@ local function test_idx_get_entry()
     delete_table()
 end
 
+--测试分页查询
+local function test_idx_get_entry_by_limit()
+    delete_table()
+
+    local adapter = ormadapter_mongo:new("admin")
+    local ormobj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :uint8("age")
+    :set_keys("player_id","role_id")
+    :set_index("age_index", "age")
+    :set_index("role_name_index", "role_id", "nickname")
+    :set_cache(500, 100)
+    :builder(adapter)
+
+    for i = 1, 100 do
+        local rid = 1
+        if i > 50 then
+            rid = 2
+        end
+        ormobj:create_one_entry({player_id = i, role_id = rid, nickname = '' .. i, age = i})
+    end
+
+    --通过age查询
+    local cursor = nil
+    local limit = 10
+    local sort = 1
+    local count = 0
+    local check = {}
+    --升序查询
+    for i = 1, 10 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age")
+        if i == 1 then
+            assert(count == 100)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l > age_f)
+    end
+
+    check = {}
+    sort = -1
+    cursor = nil
+    --降序查询
+    for i = 1, 10 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age")
+        if i == 1 then
+            assert(count == 100)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l < age_f)
+    end
+
+    check = {}
+    sort = 1
+    cursor = nil
+
+    --通过role_id age查询
+    for i = 1, 5 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2})
+        if i == 1 then
+            assert(count == 50)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l > age_f)
+    end
+
+    check = {}
+    sort = -1   --降序
+    cursor = nil
+
+    --通过role_id age查询
+    for i = 1, 5 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2})
+        if i == 1 then
+            assert(count == 50)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l < age_f)
+    end
+
+    check = {}
+    sort = 1
+    cursor = nil
+
+    --通过role_id nickname查询
+    for i = 1, 5 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1})
+        if i == 1 then
+            assert(count == 50)
+        end
+        for _, entry in ipairs(entry_list) do
+            local nickname = entry:get('nickname')
+            assert(not check[nickname])
+            check[nickname] = true
+        end
+        local age_f = entry_list[1]:get('nickname')
+        local age_l = entry_list[10]:get('nickname')
+        assert(age_l > age_f)
+    end
+
+    check = {}
+    sort = -1
+    cursor = nil
+
+    --通过role_id nickname查询
+    for i = 1, 5 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1})
+        if i == 1 then
+            assert(count == 50)
+        end
+        for _, entry in ipairs(entry_list) do
+            local nickname = entry:get('nickname')
+            assert(not check[nickname])
+            check[nickname] = true
+        end
+        local age_f = entry_list[1]:get('nickname')
+        local age_l = entry_list[10]:get('nickname')
+        assert(age_l < age_f)
+    end
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2360,6 +2514,8 @@ function CMD.start()
         test_create_change_index()
         log.info("test_idx_get_entry")
         test_idx_get_entry()
+        log.info("test_idx_get_entry_by_limit")
+        test_idx_get_entry_by_limit()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)

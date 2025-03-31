@@ -541,6 +541,32 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return res_list
     end
 
+    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query)
+        query = query or {}
+        local end_field_name = sort_field_name
+
+        local count = nil
+        if not cursor then
+            count = collect_db:find(query):count()
+        end
+
+        local res_list = {}
+        local ret = collect_db:find(query):sort({[end_field_name] = sort}):skip(cursor or 0):limit(limit)
+        while ret:has_next() do
+            local entry_data = ret:next()
+            entry_data._id = nil
+            tinsert(res_list, entry_data)
+        end
+
+        if #res_list > 0 then
+            cursor = (cursor or 0) + limit
+        else
+            cursor = nil
+        end
+        
+        return cursor, res_list, count
+    end
+
     return self
 end
 
@@ -636,6 +662,11 @@ end
 --通过普通索引查询
 function M:idx_get_entry(query)
     return self._idx_select(query)
+end
+
+--通过普通索引分页查询
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
 end
 
 return M
