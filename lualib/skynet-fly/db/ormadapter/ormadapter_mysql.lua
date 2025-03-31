@@ -619,8 +619,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         end
     end
 
-    delete_format_head = nil
-
     local insert_list = {}                               
     local function entry_data_to_list(entry_data, add_list)
         for i = 1,#field_list do
@@ -1319,6 +1317,45 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return cursor, ret, count
     end
 
+    local _idx_delete_preparecache_map = {}
+    self._idx_delete_entry = function(query)
+        local field_values = {}
+        local field_names = {}
+        if query then
+            for field_name, field_value in table_util.kvsortipairs(query) do
+                tinsert(field_names, field_name)
+                tinsert(field_values, field_value)
+            end
+        end
+
+        local cache_key = tconcat(field_names, ',')
+        local prepare_obj = nil
+        if _idx_delete_preparecache_map[cache_key] then
+            prepare_obj = _idx_delete_preparecache_map[cache_key]
+        else
+            local prepare_str = delete_format_head .. select_format_center
+            local len = #field_names
+            for i = 1, len do
+                local field_name = field_names[i]
+                if i ~= len then
+                    prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+                else
+                    prepare_str = prepare_str .. sformat('`%s`=? ', field_name)
+                end
+            end
+            prepare_obj = new_prepare_obj(prepare_str)
+            _idx_delete_preparecache_map[cache_key] = prepare_obj
+        end
+
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(field_values))
+        if not isok or not ret or ret.err then
+            log.error("_idx_delete_entry err ", ret, query)
+            error("_idx_delete_entry err ")
+        end
+
+        return true
+    end
+
     return self
 end
 
@@ -1395,6 +1432,11 @@ end
 --通过普通索引分页查询
 function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
     return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+end
+
+--通过普通索引删除
+function M:idx_delete_entry(query)
+    return self._idx_delete_entry(query)
 end
 
 return M

@@ -978,6 +978,23 @@ local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, q
     return cursor, res, count
 end
 
+local function idx_delete_entry(t, query)
+    if t._cache_time then
+        local entry_list = idx_get_entry(t, query)
+        local ret = t._adapterinterface:idx_delete_entry(query)
+        if not ret then return ret end
+
+        for i = 1, #entry_list do
+            local entry = entry_list[i]
+            del_key_select(t, entry, true)
+        end
+
+        return ret
+    else
+        return t._adapterinterface:idx_delete_entry(query)
+    end
+end
+
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
 ---@return table obj
@@ -1341,6 +1358,23 @@ function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
 
     check_index_field(self, field_list)
     return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query)
+end
+
+---#desc 通过普通索引删除数据 format `delete from tab_name where (key1 = ? and key2 = ?)`
+---@param query table 索引值 [key1 = xxx, key2 = xxx]
+---@return boolean 删除结果
+function M:idx_delete_entry(query)
+    assert(self._is_builder, "not builder can`t idx_delete_entry")
+    assert(next(query), "query can`t be empty")
+    local field_list = {}
+    for field_name, field_value in pairs(query) do
+        check_one_field(self, field_name, field_value)
+        tinsert(field_list, field_name)
+    end
+
+    check_index_field(self, field_list)
+
+    return queue_doing(self, nil, idx_delete_entry, self, query)
 end
 
 return M
