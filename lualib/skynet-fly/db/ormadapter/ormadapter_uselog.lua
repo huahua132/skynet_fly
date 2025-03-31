@@ -11,6 +11,7 @@
 local use_log = require "skynet-fly.use_log"
 local log = require "skynet-fly.log"
 local json = require "cjson.safe"
+local watch_server = require "skynet-fly.rpc.watch_server"
 
 local setmetatable = setmetatable
 local assert = assert
@@ -45,11 +46,30 @@ function M:new(file_path, file_name, flush_inval, maxage)
     return t
 end
 
-function M:builder(tab_name, field_list, field_map, key_list)
+---#desc 设置发布同步信息
+function M:set_sub_syn(channel_name)
+    self._channel_name = channel_name
+    return self
+end
+
+function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     self._tab_name = tab_name
     self._field_map = field_map
     self._key_list = key_list
     self._field_list = field_list
+    self._indexs_list = indexs_list
+
+    if self._channel_name then
+        --发布信息同步
+        watch_server.pubsyn(self._channel_name, {
+            [tab_name] = {
+                field_map = field_map,
+                key_list = key_list,
+                field_list = field_list,
+                indexs_list = indexs_list,
+            }
+        })
+    end
 
     --insert_one 创建一条数据
     self._insert_one = function(entry_data)
