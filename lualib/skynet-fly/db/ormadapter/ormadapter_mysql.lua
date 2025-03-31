@@ -1356,6 +1356,125 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return true
     end
 
+    local _idx_get_range_preprecache_map = {}
+    self._idx_get_entry_by_range = function(left, right, range_field_name, query)
+        local field_values = {}
+        local field_names = {}
+        if query then
+            for field_name, field_value in table_util.kvsortipairs(query) do
+                tinsert(field_names, field_name)
+                tinsert(field_values, field_value)
+            end
+        end
+        local fftpye = nil 
+        if left and right then
+            fftpye = 1
+        elseif left then
+            fftpye = 2
+        else
+            fftpye = 3
+        end
+        local cache_key = tconcat(field_names, ',') .. ',' .. range_field_name .. '_' .. fftpye
+        local prepare_obj = nil
+        if _idx_get_range_preprecache_map[cache_key] then
+            prepare_obj = _idx_get_range_preprecache_map[cache_key]
+        else
+            local prepare_str = select_format_head .. select_format_center
+            local len = #field_names
+            for i = 1, len do
+                local field_name = field_names[i]
+                prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+            end
+
+            if left and right then
+                prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', range_field_name, range_field_name)
+            elseif left then
+                prepare_str = prepare_str .. sformat('`%s`>=?', range_field_name)
+            else
+                prepare_str = prepare_str .. sformat('`%s`<=?', range_field_name)
+            end
+            prepare_obj = new_prepare_obj(prepare_str)
+            _idx_get_range_preprecache_map[cache_key] = prepare_obj
+        end
+
+        local args = field_values
+        if left then
+            args[#args + 1] = left
+        end
+
+        if right then
+            args[#args + 1] = right
+        end
+
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
+        if not isok or not ret or ret.err then
+            log.error("_idx_get_entry_by_range err ", ret, query)
+            error("_idx_get_entry_by_range err ")
+        end
+
+        decode_tables(ret)
+        return ret
+    end
+
+    local _idx_delete_range_preprecache_map = {}
+    self._idx_delete_entry_by_range = function(left, right, range_field_name, query)
+        local field_values = {}
+        local field_names = {}
+        if query then
+            for field_name, field_value in table_util.kvsortipairs(query) do
+                tinsert(field_names, field_name)
+                tinsert(field_values, field_value)
+            end
+        end
+        local fftpye = nil 
+        if left and right then
+            fftpye = 1
+        elseif left then
+            fftpye = 2
+        else
+            fftpye = 3
+        end
+        local cache_key = tconcat(field_names, ',') .. ',' .. range_field_name .. '_' .. fftpye
+        local prepare_obj = nil
+        if _idx_delete_range_preprecache_map[cache_key] then
+            prepare_obj = _idx_delete_range_preprecache_map[cache_key]
+        else
+            local prepare_str = delete_format_head .. select_format_center
+            local len = #field_names
+            for i = 1, len do
+                local field_name = field_names[i]
+                prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+            end
+
+            if left and right then
+                prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', range_field_name, range_field_name)
+            elseif left then
+                prepare_str = prepare_str .. sformat('`%s`>=?', range_field_name)
+            else
+                prepare_str = prepare_str .. sformat('`%s`<=?', range_field_name)
+            end
+            prepare_obj = new_prepare_obj(prepare_str)
+            _idx_delete_range_preprecache_map[cache_key] = prepare_obj
+        end
+
+        local args = field_values
+        if left then
+            args[#args + 1] = left
+        end
+
+        if right then
+            args[#args + 1] = right
+        end
+
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
+        if not isok or not ret or ret.err then
+            log.error("_idx_delete_entry_by_range err ", ret, left, right, range_field_name, query)
+            error("_idx_delete_entry_by_range err ")
+        end
+
+        return true
+    end
+
     return self
 end
 
@@ -1437,6 +1556,16 @@ end
 --通过普通索引删除
 function M:idx_delete_entry(query)
     return self._idx_delete_entry(query)
+end
+
+--通过普通索引范围查询
+function M:idx_get_entry_by_range(left, right, range_field_name, query)
+    return self._idx_get_entry_by_range(left, right, range_field_name, query)
+end
+
+--通过普通索引范围删除
+function M:idx_delete_entry_by_range(left, right, range_field_name, query)
+    return self._idx_delete_entry_by_range(left, right, range_field_name, query)
 end
 
 return M

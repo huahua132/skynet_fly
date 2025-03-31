@@ -995,6 +995,32 @@ local function idx_delete_entry(t, query)
     end
 end
 
+local function idx_get_entry_by_range(t, left, right, range_field_name, query)
+    local res = t._adapterinterface:idx_get_entry_by_range(left, right, range_field_name, query)
+    for i, entry_data in pairs(res) do
+        local entry = ormentry:new(t, entry_data)
+        res[i] = add_key_select(t, entry)
+    end
+    return res
+end
+
+local function idx_delete_entry_by_range(t, left, right, range_field_name, query)
+    if t._cache_time then
+        local entry_list = idx_get_entry_by_range(t, left, right, range_field_name, query)
+        local ret = t._adapterinterface:idx_delete_entry_by_range(left, right, range_field_name, query)
+        if not ret then return ret end
+
+        for i = 1, #entry_list do
+            local entry = entry_list[i]
+            del_key_select(t, entry, true)
+        end
+
+        return ret
+    else
+        return t._adapterinterface:idx_delete_entry_by_range(left, right, range_field_name, query)
+    end
+end
+
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
 ---@return table obj
@@ -1174,8 +1200,8 @@ end
 ---#content [nil, right] 删除 <= right
 ---#content format`[delete from player where key1=? and key2>=? and key2<=?;]`
 ---#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除  >= left <= right  [left, nil] 删除 >= left [nil, right] 删除 <= right
----@param left string|number 左值
----@param right string|number 右值
+---@param left string|number|nil 左值
+---@param right string|number|nil 右值
 ---@param ... string[] 最左前缀主键列表 无需填入left right值 对应的key
 ---@return boolean
 function M:delete_entry_by_range(left, right, ...)
@@ -1375,6 +1401,68 @@ function M:idx_delete_entry(query)
     check_index_field(self, field_list)
 
     return queue_doing(self, nil, idx_delete_entry, self, query)
+end
+
+---#content 范围查询 包含left right
+---#content 可以有三种操作方式
+---#content [left, right] 范围查询  >= left <= right
+---#content [left, nil] 查询 range_field_name >= left
+---#content [nil, right] 查询 range_field_name <= right
+---#content format`[select * from player where key1=? and key2>=? and key2<=?;]`
+---#desc 范围查询 包含left right 可以有三种操作方式 [left, right] 范围查询
+---@param left string|number|nil 左值
+---@param right string|number|nil 右值
+---@param range_field_name string 基于该索引值范围
+---@param query table 前置的普通索引查询
+---@return boolean
+function M:idx_get_entry_by_range(left, right, range_field_name, query)
+    assert(self._is_builder, "not builder can`t idx_get_entry_by_range")
+    assert(left or right, "not left or right")
+    if left and right then
+        assert(left <= right, "left right err")
+    end
+    local field_list = {}
+    if query then
+        for field_name, field_value in pairs(query) do
+            check_one_field(self, field_name, field_value)
+            tinsert(field_list, field_name)
+        end
+    end
+    tinsert(field_list, range_field_name)
+
+    check_index_field(self, field_list)
+    return queue_doing(self, nil, idx_get_entry_by_range, self, left, right, range_field_name, query)
+end
+
+---#content 范围删除 包含left right
+---#content 可以有三种操作方式
+---#content [left, right] 范围删除  >= left <= right
+---#content [left, nil] 删除 >= left
+---#content [nil, right] 删除 <= right
+---#content format`[delete from player where key1=? and key2>=? and key2<=?;]`
+---#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除
+---@param left string|number|nil 左值
+---@param right string|number|nil 右值
+---@param range_field_name string 基于该索引值范围
+---@param query table 前置的普通索引查询
+---@return boolean
+function M:idx_delete_entry_by_range(left, right, range_field_name, query)
+    assert(self._is_builder, "not builder can`t idx_delete_entry_by_range")
+    assert(left or right, "not left or right")
+    if left and right then
+        assert(left <= right, "left right err")
+    end
+    local field_list = {}
+    if query then
+        for field_name, field_value in pairs(query) do
+            check_one_field(self, field_name, field_value)
+            tinsert(field_list, field_name)
+        end
+    end
+    tinsert(field_list, range_field_name)
+
+    check_index_field(self, field_list)
+    return queue_doing(self, nil, idx_delete_entry_by_range, self, left, right, range_field_name, query)
 end
 
 return M
