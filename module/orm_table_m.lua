@@ -192,6 +192,31 @@ function g_handle.batch_delete_entry_by_range(query_list)
     return g_orm_obj:batch_delete_entry_by_range(query_list)
 end
 
+--普通索引查询
+function g_handle.idx_get_entry(query)
+    return g_orm_obj:idx_get_entry(query)
+end
+
+--普通索引分页查询
+function g_handle.idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+    return g_orm_obj:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+end
+
+--普通索引删除
+function g_handle.idx_delete_entry(query)
+    return g_orm_obj:idx_delete_entry(query)
+end
+
+--普通索引范围查询
+function g_handle.idx_get_entry_by_range(left, right, range_field_name, query)
+    return g_orm_obj:idx_get_entry_by_range(left, right, range_field_name, query)
+end
+
+--普通索引范围删除
+function g_handle.idx_delete_entry_by_range(left, right, range_field_name, query)
+    return g_orm_obj:idx_delete_entry_by_range(left, right, range_field_name, query)
+end
+
 local CMD = {}
 
 function CMD.start(config)
