@@ -2492,6 +2492,116 @@ local function test_idx_delete_entry()
     delete_table()
 end
 
+--测试普通索引范围查询
+local function test_idx_get_delete_entry_by_range()
+    delete_table()
+    local adapter = ormadapter_mongo:new("admin")
+    local ormobj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :string32("nickname")
+    :uint8("age")
+    :set_keys("player_id","role_id")
+    :set_index("age_index", "age")
+    :set_index("role_name_index", "role_id", "nickname")
+    :set_cache(500, 100)
+    :builder(adapter)
+
+    for i = 1, 100 do
+        local rid = 1
+        if i > 50 then
+            rid = 2
+        end
+        ormobj:create_one_entry({player_id = i, role_id = rid, nickname = '' .. i, age = i})
+    end
+
+    --测试查询
+    for i = 1, 2 do
+        --通过age查询
+        local entry_list = ormobj:idx_get_entry_by_range(11, 20, "age")
+        assert(#entry_list == 10)
+
+        local f_entry = entry_list[1]
+        local l_entry = entry_list[10]
+        assert(f_entry:get('age') == 11)
+        assert(l_entry:get('age') == 20)
+
+        local entry_list = ormobj:idx_get_entry_by_range(11, nil, "age")
+        assert(#entry_list == 90)
+
+        local f_entry = entry_list[1]
+        local l_entry = entry_list[90]
+        assert(f_entry:get('age') == 11)
+        assert(l_entry:get('age') == 100)
+
+        local entry_list = ormobj:idx_get_entry_by_range(nil, 30, "age")
+        assert(#entry_list == 30)
+
+        local f_entry = entry_list[1]
+        local l_entry = entry_list[30]
+        assert(f_entry:get('age') == 1)
+        assert(l_entry:get('age') == 30)
+
+        --通过role_id,age查询
+
+        local entry_list = ormobj:idx_get_entry_by_range(11, 20, "age", {role_id = 1})
+        assert(#entry_list == 10)
+
+        local f_entry = entry_list[1]
+        local l_entry = entry_list[10]
+        assert(f_entry:get('age') == 11)
+        assert(l_entry:get('age') == 20)
+
+        local entry_list = ormobj:idx_get_entry_by_range(11, nil, "age", {role_id = 1})
+        assert(#entry_list == 40)
+        local f_entry = entry_list[1]
+        local l_entry = entry_list[40]
+        assert(f_entry:get('age') == 11)
+        assert(l_entry:get('age') == 50)
+
+        local entry_list = ormobj:idx_get_entry_by_range(nil, 30, "age", {role_id = 2})
+        assert(#entry_list == 0)
+    end
+
+    --测试删除
+    for i = 1, 2 do
+        --通过age删除
+        local ret = ormobj:idx_delete_entry_by_range(11, 20, "age")
+        assert(ret)
+        local entry = ormobj:get_one_entry(11, 1)
+        assert(not entry)
+
+        local ret = ormobj:idx_delete_entry_by_range(90, nil, "age")
+        assert(ret)
+        local entry = ormobj:get_one_entry(100, 2)
+        assert(not entry)
+
+        local ret = ormobj:idx_delete_entry_by_range(nil, 30, "age")
+        assert(ret)
+        local entry = ormobj:get_one_entry(29, 1)
+        assert(not entry)
+
+        --通过role_id,age删除
+        local ret = ormobj:idx_delete_entry_by_range(50, 50, "age", {role_id = 1})
+        assert(ret)
+        local entry = ormobj:get_one_entry(50, 1)
+        assert(not entry)
+
+        local ret = ormobj:idx_delete_entry_by_range(80, nil, "age", {role_id = 2})
+        assert(ret)
+        local entry = ormobj:get_one_entry(80, 2)
+        assert(not entry)
+
+
+        local ret = ormobj:idx_delete_entry_by_range(nil, 60, "age", {role_id = 2})
+        assert(ret)
+        local entry = ormobj:get_one_entry(60, 2)
+        assert(not entry)
+    end
+
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2562,6 +2672,8 @@ function CMD.start()
         test_idx_get_entry_by_limit()
         log.info("test_idx_delete_entry")
         test_idx_delete_entry()
+        log.info("test_idx_get_delete_entry_by_range")
+        test_idx_get_delete_entry_by_range()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
