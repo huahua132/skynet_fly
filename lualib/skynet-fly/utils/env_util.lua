@@ -14,6 +14,7 @@ local tostring = tostring
 
 local g_svr_id = tonumber(skynet.getenv('svr_id'))
 local g_svr_name = skynet.getenv('svr_name')
+local g_svr_type = skynet.getenv('svr_type')
 
 local M = {}
 
@@ -56,9 +57,14 @@ function M.get_svr_id()
 	return g_svr_id
 end
 
----#desc 获取cluster svrname
+---#desc 获取cluster svr_name
 function M.get_svr_name()
 	return g_svr_name
+end
+
+---#desc 获取cluter svr_type
+function M.get_svr_type()
+	return g_svr_type
 end
 
 return M

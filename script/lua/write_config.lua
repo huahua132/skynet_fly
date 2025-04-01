@@ -51,6 +51,7 @@ local config = {
 	daemon          = is_daemon and string.format("./make/skynet.%s.pid", load_mods_name) or nil,
 	svr_id          = 1,
 	svr_name        = svr_name,
+	svr_type 		= 1,				 --服务类型(可理解为svr_name的唯一编码(0,255))
 	debug_port      = 8888,
 	skynet_fly_path = skynet_fly_path,
 	preload         = file_util.path_join(skynet_fly_path, '/lualib/skynet-fly/preload.lua;'),
@@ -88,6 +89,9 @@ if load_mods_f and load_mods_f.share_config_m and load_mods_f.share_config_m.def
 	local cfg = load_mods_f.share_config_m.default_arg.server_cfg
 	if cfg.svr_name then
 		config.svr_name = cfg.svr_name
+	end
+	if cfg.svr_type then
+		config.svr_type = cfg.svr_type
 	end
 	if cfg.svr_id then
 		config.svr_id = cfg.svr_id
