@@ -14,7 +14,7 @@ local tostring = tostring
 
 local g_svr_id = tonumber(skynet.getenv('svr_id'))
 local g_svr_name = skynet.getenv('svr_name')
-local g_svr_type = skynet.getenv('svr_type')
+local g_svr_type = tonumber(skynet.getenv('svr_type'))
 
 local M = {}
 
