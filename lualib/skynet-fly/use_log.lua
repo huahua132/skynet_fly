@@ -10,7 +10,7 @@
 ---#content用于写固定每天轮换的用户日志
 
 local function log_service()
-    local skynet = require "skynet"
+    local skynet = require "skynet.manager"
     local skynet_util = require "skynet-fly.utils.skynet_util"
     local time_util = require "skynet-fly.utils.time_util"
     local file_util = require "skynet-fly.utils.file_util"
@@ -23,12 +23,36 @@ local function log_service()
     local io = io
     local pairs = pairs
     local math = math
+    local setmetatable = setmetatable
 
     local g_alloc_id = 0
     local g_name_id_map = {}
     local g_id_name_map = {}
     local g_file_map = {}
     local g_iswf_map = {}
+    local g_read_file_map = setmetatable({}, {__mode = "kv"})
+
+    local g_readfile_mt = {__gc = function(t)
+        t.file:close()
+    end}
+
+    local function get_read_obj(file_path, file_name)
+        local url = file_util.path_join(file_path, file_name)
+        local read_obj = g_read_file_map[url]
+        if read_obj then
+            return read_obj
+        end
+
+        local file, err = io.open(url, 'r')
+        if not file then
+            return nil, err
+        end
+
+        read_obj = setmetatable({}, g_readfile_mt)
+        read_obj.file = file
+        g_read_file_map[url] = read_obj
+        return read_obj
+    end
 
     local function new_alloc_id()
         g_alloc_id = g_alloc_id + 1
@@ -99,7 +123,27 @@ local function log_service()
         end
     end
 
+    function CMD.read(file_path, file_name, offset, line_num)
+        local read_obj, err = get_read_obj(file_path, file_name)
+        if not read_obj then
+            return false, err
+        end
+
+        read_obj.file:seek('set', offset)
+        local ret_str = ""
+        for i = 1, line_num do
+            local line = read_obj.file:read('L')
+            if not line then
+                break
+            end
+            ret_str = ret_str .. line
+        end
+        local cur_offset = read_obj.file:seek('cur', 0)
+        return true, ret_str, cur_offset
+    end
+
     skynet.start(function()
+        skynet.register(".use_log")
         skynet_util.lua_dispatch(CMD)
         --每日零点重新打开日志文件
         timer_point:new(timer_point.EVERY_DAY)

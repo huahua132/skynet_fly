@@ -29,9 +29,48 @@ local function stress_testing()
     log.info("qps:", count / use_time)
 end
 
+--测试读写
+local function read_write_test()
+    local file_path = "uselogs"
+    local file_name = 'uselog.log'
+    local adapter = ormadapter_uselog:new(file_path, file_name, 100 * 10, 2) --10秒flush一次，保存2天
+    local orm_obj = ormtable:new("item_change")     --道具变化日志
+    :string32("guid")
+    :int64("player_id")
+    :uint32("time")
+    :table("item_list")
+    :set_keys("guid")
+    :builder(adapter)
+
+    skynet.fork(function()
+        for i = 1, 100 do
+            orm_obj:create_one_entry({guid = guid_util.fly_guid(), player_id = i, time = time_util.time(), item_list = { ['10001'] = i, ['10002'] = -i}})
+            log.info("write >>> ", i)
+            skynet.sleep(100)
+        end
+    end)
+
+    local offset = 0
+    local line_num = 6
+
+    local read_file_name = string.format("%s_%s", os.date('%Y%m%d', os.time()), file_name)
+    skynet.fork(function()
+        skynet.sleep(100)
+        for i = 1, 200 do
+            local isok, ret_str, cur_offset = skynet.call('.use_log', 'lua', 'read', file_path, read_file_name, offset, line_num)
+            log.info(isok, ret_str, cur_offset)
+            if isok then
+                offset = cur_offset
+            end
+            skynet.sleep(100)
+        end
+    end)
+end
+
 function CMD.start()
     skynet.fork(function()
-        stress_testing()
+        --stress_testing()
+        read_write_test()
     end)
     return true
 end
