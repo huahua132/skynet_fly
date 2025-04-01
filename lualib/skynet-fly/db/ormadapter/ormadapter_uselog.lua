@@ -40,6 +40,10 @@ function M:new(file_path, file_name, flush_inval, maxage)
         _field_list = nil,
         _field_map = nil,
         _key_list = nil,
+        _file_path = file_path,
+        _file_name = file_name,
+        _flush_inval = flush_inval,
+        _maxage = maxage,
     }
 
     setmetatable(t, mata)
@@ -69,6 +73,10 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                     key_list = key_list,
                     field_list = field_list,
                     indexs_list = indexs_list,
+                    file_path = self._file_path,
+                    file_name = self._file_name,
+                    flush_inval = self._flush_inval,
+                    maxage = self._maxage,
                 }
             })
         end)
