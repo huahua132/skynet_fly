@@ -98,6 +98,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
         return luamsg
     end
     skynet.fork(function()
+        log.warn_fmt("watch_channel_name syn start svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
         while true do
             local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):subsyn(channel_name, version)
             if not ret then
@@ -145,7 +146,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
                 end
             end
         end
-
+        log.warn_fmt("watch_channel_name syn over svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
         g_cluster_reqing_map[cluster_name] = nil
         g_cluster_reqfunc_map[cluster_name] = nil
     end)
