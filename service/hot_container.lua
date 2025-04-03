@@ -27,8 +27,6 @@ end
 local CMD = {}
 
 local skynet_util = require "skynet-fly.utils.skynet_util"
-skynet_util.set_cmd_table(CMD)
-
 local MODULE_NAME = MODULE_NAME
 local module_info = require "skynet-fly.etc.module_info"
 module_info.set_base_info {
@@ -312,8 +310,6 @@ function CMD.hotfix(hotfixmods)
 	end
 	return ret
 end
-
-contriner_client:CMD(CMD)
 
 skynet.start(function()
 	skynet_util.lua_dispatch(CMD)

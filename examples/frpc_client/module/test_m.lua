@@ -255,7 +255,7 @@ end
 
 function CMD.start()
 	skynet.fork(function()
-		test_base_msg()
+		--test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()
@@ -263,47 +263,47 @@ function CMD.start()
 		--test_errorcode()
 	end)
 
-	timer:new(timer.second * 5, 1, function()
-		watch_client.watch("frpc_s", "test_pub", "handle_name2", function(...)
-			log.info("watch msg handle_name2 >>>> ", ...)
-		end)
+	-- timer:new(timer.second * 5, 1, function()
+	-- 	watch_client.watch("frpc_s", "test_pub", "handle_name2", function(...)
+	-- 		log.info("watch msg handle_name2 >>>> ", ...)
+	-- 	end)
 
-		watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name1")
+	-- 	watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name1")
 
-		watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name2", function(...)
-			log.info("watch_byid msg handle_name2 >>>> ", ...)
-		end)
+	-- 	watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name2", function(...)
+	-- 		log.info("watch_byid msg handle_name2 >>>> ", ...)
+	-- 	end)
 		
-		timer:new(timer.second * 5, 1, function()
-			watch_client.unwatch("frpc_s", "test_pub", "handle_name2")
-			watch_client.unwatch("frpc_s", "test_pub", "handle_name1")
+	-- 	timer:new(timer.second * 5, 1, function()
+	-- 		watch_client.unwatch("frpc_s", "test_pub", "handle_name2")
+	-- 		watch_client.unwatch("frpc_s", "test_pub", "handle_name1")
 			
-			timer:new(timer.second * 5, 1, function()
-				watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name2")
-			end)
-		end)
-	end)
+	-- 		timer:new(timer.second * 5, 1, function()
+	-- 			watch_client.unwatch_byid("frpc_s", 1, "test_pub", "handle_name2")
+	-- 		end)
+	-- 	end)
+	-- end)
 
-	timer:new(timer.second * 5, 1, function()
-		watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
-			log.info("watch msg handle_name2 >>>> ", ...)
-		end)
+	-- timer:new(timer.second * 5, 1, function()
+	-- 	watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
+	-- 		log.info("watch msg handle_name2 >>>> ", ...)
+	-- 	end)
 
-		watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name1")
+	-- 	watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name1")
 
-		watch_syn_client.watch_byid("frpc_s", 1, "test_syn", "handle_name2", function(...)
-			log.info("watch_byid msg handle_name2 >>>> ", ...)
-		end)
+	-- 	watch_syn_client.watch_byid("frpc_s", 1, "test_syn", "handle_name2", function(...)
+	-- 		log.info("watch_byid msg handle_name2 >>>> ", ...)
+	-- 	end)
 		
-		timer:new(timer.second * 5, 1, function()
-			watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name2")
-			watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name1")
+	-- 	timer:new(timer.second * 5, 1, function()
+	-- 		watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name2")
+	-- 		watch_syn_client.unwatch("frpc_s", "test_syn", "handle_name1")
 			
-			timer:new(timer.second * 5, 1, function()
-				watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name2")
-			end)
-		end)
-	end)
+	-- 		timer:new(timer.second * 5, 1, function()
+	-- 			watch_syn_client.unwatch_byid("frpc_s", 1, "test_syn", "handle_name2")
+	-- 		end)
+	-- 	end)
+	-- end)
 
 	skynet.fork(function()
 		service.new("test server", function()
@@ -313,18 +313,43 @@ function CMD.start()
 			local log = require "skynet-fly.log"
 			local watch_syn_client = require "skynet-fly.rpc.watch_syn_client"
 			local skynet_util = require "skynet-fly.utils.skynet_util"
-			skynet_util.set_cmd_table(CMD)
 	
-			local watch_client = require "skynet-fly.rpc.watch_client"
+			-- local watch_client = require "skynet-fly.rpc.watch_client"
 	
-			watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
-				log.info("watch syn test_syn handle_name2 >>> ", ...)
+			-- watch_syn_client.watch("frpc_s", "test_syn", "handle_name2", function(...)
+			-- 	log.info("watch syn test_syn handle_name2 >>> ", ...)
+			-- end)
+	
+			-- watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
+			-- 	log.info("watch msg handle_name1 >>>> ", ...)
+			-- end)
+			watch_syn_client.pwatch("frpc_s", "*:age:address", "test server handle-*:age:address", function(cluter_name, ...)
+				log.info("test server handle-*:age:address >>> ", cluter_name, ...)
 			end)
-	
-			watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
-				log.info("watch msg handle_name1 >>>> ", ...)
+
+			watch_syn_client.pwatch_byid("frpc_s", 1, "*:age:address", "test server handle-*:age:address", function(cluter_name, ...)
+				log.info("test server pwatch handle-*:age:address >>> ", cluter_name, ...)
 			end)
+
+			skynet.sleep(500)
+			watch_syn_client.unpwatch("frpc_s", "*:age:address", "test server handle-*:age:address")
+			watch_syn_client.unpwatch_byid("frpc_s", 1, "*:age:address", "test server handle-*:age:address")
+
 			skynet_util.lua_dispatch(CMD)
+		end)
+	end)
+	timer:new(timer.second * 5, 1, function()
+		watch_syn_client.unpwatch("frpc_s", "*:age:address", "handle-*:age:address")
+		watch_syn_client.unpwatch_byid("frpc_s", 1, "*:age:address", "handle-*:age:address")
+	end)
+
+	timer:new(timer.second * 2, 1, function()
+		watch_syn_client.watch("frpc_s", "name1:age:address", "name1:age:address", function(cluter_name, ...)
+			log.info("watch handle-name1:age:address >>> ", cluter_name, ...)
+		end)
+
+		watch_syn_client.watch_byid("frpc_s", 1, "name2:age:address", "name2:age:address", function(cluter_name, ...)
+			log.info("watch_byid handle-name2:age:address >>> ", cluter_name, ...)
 		end)
 	end)
 
@@ -335,28 +360,52 @@ function CMD.exit()
 	return true
 end
 
-watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
-	log.info("watch msg handle_name1 >>>> ", ...)
+-- watch_client.watch("frpc_s", "test_pub", "handle_name1", function(...)
+-- 	log.info("watch msg handle_name1 >>>> ", ...)
+-- end)
+
+-- watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name1", function(...)
+-- 	log.info("watch_byid msg handle_name1 >>>> ", ...)
+-- end)
+
+-- watch_client.watch_byid("frpc_s", 1, "test_pub_large", "xxxx", function(...)
+-- 	log.info("watch_byid test_pub_large ")
+-- end)
+
+-- watch_syn_client.watch("frpc_s", "test_syn", "handle_name1", function(...)
+-- 	log.info("watch syn test_syn handle_name1 >>> ", ...)
+-- end)
+
+-- watch_syn_client.watch("frpc_s", "test_syn", "handle_name3", function(...)
+-- 	log.info("watch syn test_syn handle_name3 >>> ", ...)
+-- end)
+
+-- watch_client.watch_byid("frpc_s", 1, "test_syn", "handle_name1", function(...)
+-- 	log.info("watch_byid msg handle_name1 >>>> ", ...)
+-- end)
+
+watch_syn_client.pwatch("frpc_s", "*:age:address", "handle-*:age:address", function(cluter_name, ...)
+	log.info("pwatch handle-*:age:address >>> ", cluter_name, ...)
 end)
 
-watch_client.watch_byid("frpc_s", 1, "test_pub", "handle_name1", function(...)
-	log.info("watch_byid msg handle_name1 >>>> ", ...)
+watch_syn_client.pwatch_byid("frpc_s", 1, "*:age:address", "handle-*:age:address", function(cluter_name, ...)
+	log.info("pwatch_byid handle-*:age:address >>> ", cluter_name, ...)
 end)
 
-watch_client.watch_byid("frpc_s", 1, "test_pub_large", "xxxx", function(...)
-	log.info("watch_byid test_pub_large ")
+watch_syn_client.pwatch("frpc_s", "name:*:address", "name:*:address", function(cluter_name, ...)
+	log.info("pwatch handle-name:*:address >>> ", cluter_name, ...)
 end)
 
-watch_syn_client.watch("frpc_s", "test_syn", "handle_name1", function(...)
-	log.info("watch syn test_syn handle_name1 >>> ", ...)
+watch_syn_client.pwatch_byid("frpc_s", 1, "name:*:*", "name:*:*", function(cluter_name, ...)
+	log.info("pwatch_byid handle-name:*:* >>> ", cluter_name, ...)
 end)
 
-watch_syn_client.watch("frpc_s", "test_syn", "handle_name3", function(...)
-	log.info("watch syn test_syn handle_name3 >>> ", ...)
+watch_syn_client.pwatch("frpc_s", "*:age:*", "*:age:*", function(cluter_name, ...)
+	log.info("pwatch handle-name:*:age:* >>> ", cluter_name, ...)
 end)
 
-watch_client.watch_byid("frpc_s", 1, "test_syn", "handle_name1", function(...)
-	log.info("watch_byid msg handle_name1 >>>> ", ...)
+watch_syn_client.pwatch_byid("frpc_s", 1, "*:*:address", "*:*:address", function(cluter_name, ...)
+	log.info("pwatch_byid handle-*:*:address >>> ", cluter_name, ...)
 end)
 
 return CMD

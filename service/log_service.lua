@@ -15,7 +15,6 @@ local table = table
 local math_floor = math.floor
 local sformat = string.format
 local osdate = os.date
-local contriner_client = nil
 
 local g_framename = [[
 ####   #     #   #    ###      ##       #          ##      #      #   #
@@ -123,11 +122,6 @@ skynet.register_protocol {
 local CMD = {}
 
 function CMD.add_hook(file_name)
-    if not contriner_client then
-        contriner_client = require "skynet-fly.client.contriner_client"
-        contriner_client:CMD(CMD)
-    end
-    
     local func = require(file_name)
     assert(type(func) == 'function', "err file " .. file_name)
     table.insert(hook_hander_list, func)

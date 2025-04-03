@@ -26,6 +26,7 @@ local type = type
 local pairs = pairs
 local tinsert = table.insert
 local spack = skynet.pack
+local x_pcall = x_pcall
 
 contriner_client:register("frpc_client_m")
 
@@ -36,6 +37,7 @@ local g_watch_client = nil
 
 local g_active_map = {}						--活跃列表
 local g_handler_map = {}
+local g_switch_handler_map = {}
 local SELF_ADDRESS = skynet.self()
 
 M.ERRCODE = FRPC_ERRCODE
@@ -108,6 +110,20 @@ function M:watch_up(svr_name, handler)
 	tinsert(g_handler_map[svr_name], handler)
 end
 
+---#desc 监听 frpc_client_m 切换
+---@param handle_name string 处理绑定名称
+---@param handler function 处理函数
+function M:watch_frpc_client_switch(handle_name, handler)
+	assert(type(handler) == 'function')
+	g_switch_handler_map[handle_name] = handler
+end
+
+--#desc 取消监听 frpc_client_m切换
+---@param handle_name string 处理绑定名称
+function M:unwatch_frpc_client_switch(handle_name)
+	g_switch_handler_map[handle_name] = nil
+end
+
 ---#desc 创建远程rpc调用对象
 ---@param svr_name string 结点名称
 ---@param module_name string 可热更模块名
@@ -123,7 +139,14 @@ function M:new(svr_name,module_name,instance_name)
 	}
 
 	if not g_frpc_client then
-		g_frpc_client = contriner_client:new("frpc_client_m")
+		g_frpc_client = contriner_client:new("frpc_client_m"):set_switch_call_back(function()
+			for handle_name, handler in pairs(g_switch_handler_map) do
+				local isok, err = x_pcall(handler)
+				if not isok then
+					log.error("switch_call_back exec err ", handle_name, err)
+				end
+			end
+		end)
 	end
 
 	setmetatable(t,meta)
@@ -819,7 +842,7 @@ end
 --all_by_name
 --------------------------------------------------------------------------------
 
---订阅相关命名请不要自己调用，请使用rpc/watch_client|rpc/watch_syn_client
+--订阅相关命令请不要自己调用，请使用rpc/watch_client|rpc/watch_syn_client
 
 --sub 订阅
 function M:sub(channel_name, unique_name)
@@ -838,14 +861,25 @@ end
 --subsyn 订阅同步
 function M:subsyn(channel_name, version)
 	assert(channel_name, "not channel_name")
-	assert(version, "not version")
 	return g_frpc_client:balance_call("subsyn", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name, version)
 end
 
 --unsubsyn 取消订阅同步
 function M:unsubsyn(channel_name)
 	assert(channel_name, "not channel_name")
-	return g_frpc_client:balance_call("unsubsyn", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name)
+	return g_frpc_client:balance_send("unsubsyn", self.svr_name, self.svr_id, SELF_ADDRESS, channel_name)
+end
+
+--psubsyn 批订阅同步
+function M:psubsyn(pchannel_name, version)
+	assert(pchannel_name, "not pchannel_name")
+	return g_frpc_client:balance_call("psubsyn", self.svr_name, self.svr_id, SELF_ADDRESS, pchannel_name, version)
+end
+
+--unpsubsyn 批取消订阅同步
+function M:unpsubsyn(pchannel_name)
+	assert(pchannel_name, "not pchannel_name")
+	return g_frpc_client:balance_send("unpsubsyn", self.svr_name, self.svr_id, SELF_ADDRESS, pchannel_name)
 end
 
 return M

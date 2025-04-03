@@ -630,4 +630,51 @@ function M.permute_pairs(arr)
     end
 end
 
+---#desc 组合遍历
+---@param arr table 数组
+---@param k number 组合数量
+function M.combinations_pairs(arr, k)
+    local n = #arr
+    -- 处理无效的k值
+    if k <= 0 or k > n then
+        return function() return nil end
+	end
+
+    -- 初始化组合索引数组
+    local indices = {}
+    for i = 1, k do
+        indices[i] = i
+    end
+
+    -- 返回组合遍历闭包
+    return function()
+        if not indices then return nil end
+        
+        -- 生成当前组合
+        local result = {}
+        for i = 1, k do
+            result[i] = arr[indices[i]]
+        end
+
+        -- 寻找下一个组合
+        local i = k
+        -- 从后向前查找可递增的位置
+        while i >= 1 and indices[i] == n - k + i do
+            i = i - 1
+        end
+
+        if i < 1 then
+            indices = nil  -- 所有组合已生成完毕
+        else
+            -- 递增当前位置并重置后续位置
+            indices[i] = indices[i] + 1
+            for j = i + 1, k do
+                indices[j] = indices[j-1] + 1
+            end
+        end
+
+        return result
+    end
+end
+
 return M

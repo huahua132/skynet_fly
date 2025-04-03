@@ -10,6 +10,8 @@ local frpcpack = require "frpcpack.core"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
 local math_util = require "skynet-fly.utils.math_util"
+local string_util = require "skynet-fly.utils.string_util"
+local table_util = require "skynet-fly.utils.table_util"
 
 local pairs = pairs
 local assert = assert
@@ -36,6 +38,9 @@ local UINIT32MAX = math_util.uint32max
 local g_sub_map = {}								--订阅表
 local g_subsyn_map = {}								--订阅同步表
 local g_subsyn_channel_info_map = {}				--订阅同步表的数据
+local g_subsyn_parsed_map = {}						--订阅同步已经解析过的channel_name
+local g_psubsyn_map = {}							--批订阅同步表
+local g_psubsyn_channel_info_map = {}				--批订阅同步表的数据
 
 contriner_client:register("share_config_m")
 
@@ -195,6 +200,7 @@ local function hand_shake(fd, session_id, msg, sz)
 	if is_watch then
 		agent.sub_map = {}									--订阅列表
 		agent.subsyn_map = {}								--订阅同步列表
+		agent.psubsyn_map = {}								--批订阅同步列表
 	end
 	
 	response(fd, session_id, true, skynet.packstring("ok"))
@@ -438,6 +444,50 @@ HANDLE[FRPC_PACK_ID.unsubsyn] = create_handle(function(agent, module_name, insta
 	end
 end)
 
+--批订阅同步
+HANDLE[FRPC_PACK_ID.psubsyn] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local pchannel_name, version = skynet.unpack(msg, sz)	--订阅渠道名
+	skynet.trash(msg, sz)
+	if not agent.is_watch then
+		log.warn("drop message not watch conn psubsyn", agent.fd, agent.addr)
+		return
+	end
+	
+	local pchannel_name_info = g_psubsyn_channel_info_map[pchannel_name]
+	if not pchannel_name_info or pchannel_name_info.version == version then
+		local psubsyn_map = agent.psubsyn_map
+		psubsyn_map[pchannel_name] = true
+		if not g_psubsyn_map[pchannel_name] then
+			g_psubsyn_map[pchannel_name] = {}
+		end
+		g_psubsyn_map[pchannel_name][agent] = version
+	else
+		--不同直接同步
+		local name_map = pchannel_name_info.name_map
+		pub_message({[agent] = true}, pchannel_name, FRPC_PACK_ID.psubsyn, skynet.packstring(pchannel_name_info.version, name_map))
+	end
+end)
+
+--取消批订阅同步
+HANDLE[FRPC_PACK_ID.unpsubsyn] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
+	local pchannel_name = skynet.unpack(msg, sz)	--订阅渠道名
+	skynet.trash(msg, sz)
+	if not agent.is_watch then
+		log.warn("drop message not watch conn unpsubsyn", agent.fd, agent.addr)
+		return
+	end
+
+	local psubsyn_map = agent.psubsyn_map
+	psubsyn_map[pchannel_name] = nil
+
+	if g_psubsyn_map[pchannel_name] then
+		g_psubsyn_map[pchannel_name][agent] = nil
+		if not next(g_psubsyn_map[pchannel_name]) then
+			g_psubsyn_map[pchannel_name] = nil
+		end
+	end
+end)
+
 local function handle_dispatch(fd, pack_id, module_name, instance_name, session_id, mod_num, msg, sz, ispart, iscall)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
@@ -506,6 +556,60 @@ local function handle_dispatch(fd, pack_id, module_name, instance_name, session_
     func(fd, module_name, instance_name, session_id, mod_num, msg, sz, iscall)
 end
 
+local function set_syn_pchannel_name(channel_name)
+	local split_str = string_util.split(channel_name, ':')
+	local len = #split_str - 1
+	if len <= 0 then return end
+
+	if g_subsyn_parsed_map[channel_name] then return end
+	g_subsyn_parsed_map[channel_name] = true
+	local indexs = {}
+	for i = 1, #split_str do
+		indexs[i] = i
+	end
+	local l_len = #split_str
+	for i = 1, len do
+		for idxs in table_util.combinations_pairs(indexs, i) do
+			local p_channel_name = ""
+			local k = 1
+			for j = 1, l_len do
+				if idxs[k] == j then
+					p_channel_name = p_channel_name .. '*:'
+					k = k + 1
+				else
+					p_channel_name = p_channel_name .. split_str[j] .. ':'
+				end
+
+				if j == l_len then
+					p_channel_name = p_channel_name:sub(1, #p_channel_name - 1)
+				end
+			end
+			
+			if not g_psubsyn_channel_info_map[p_channel_name] then
+				g_psubsyn_channel_info_map[p_channel_name] = {version = 0, name_map = {}}
+			end
+			local info = g_psubsyn_channel_info_map[p_channel_name]
+			info.version = info.version + 1
+			info.name_map[channel_name] = true
+			local agent_map = g_psubsyn_map[p_channel_name]
+			if agent_map then
+				local push_map = {}
+				for agent, version in pairs(agent_map) do
+					if info.version ~= version then
+						push_map[agent] = true
+						agent_map[agent] = nil
+						agent.psubsyn_map[p_channel_name] = nil
+					end
+				end
+
+				if next(push_map) then
+					pub_message(push_map, p_channel_name, FRPC_PACK_ID.psubsyn, skynet.packstring(info.version, info.name_map))
+				end
+			end
+		end
+	end
+end
+
 local CMD = {}
 
 local SOCKET = {}
@@ -558,6 +662,16 @@ function SOCKET.close(fd)
 			g_subsyn_map[channel_name][agent] = nil
 			if not next(g_subsyn_map[channel_name]) then
 				g_subsyn_map[channel_name] = nil
+			end
+		end
+	end
+	
+	local psubsyn_map = agent.psubsyn_map
+	if psubsyn_map then
+		for pchannel_name in pairs(psubsyn_map) do
+			g_psubsyn_map[pchannel_name][agent] = nil
+			if not next(g_psubsyn_map[pchannel_name]) then
+				g_psubsyn_map[pchannel_name] = nil
 			end
 		end
 	end
@@ -615,7 +729,7 @@ function CMD.pubsyn(channel_name, luamsg)
 		info.luamsg = luamsg
 		info.version = info.version + 1
 	end
-	
+	set_syn_pchannel_name(channel_name)
 	local agent_map = g_subsyn_map[channel_name]
 	if not agent_map then return end
 	local push_map = {}
@@ -631,8 +745,6 @@ function CMD.pubsyn(channel_name, luamsg)
 		pub_message(push_map, channel_name, FRPC_PACK_ID.subsyn, skynet.packstring(info.version, luamsg))
 	end
 end
-
-contriner_client:CMD(CMD)
 
 skynet.start(function()
 	skynet.register('.frpc_server')

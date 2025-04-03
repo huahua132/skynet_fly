@@ -265,6 +265,7 @@ local function add_node(svr_name, svr_id, host, secret_key, is_encrypt)
 			watch_channel_map = {},   --监听连接表
 			watch_secret_map = {},    --监听密钥表
 			watch_syn_map = {},		  --监听同步列表信息
+			pwatch_syn_map = {},  	  --p监听同步列表信息
 		}
 
 		g_active_map[svr_name] = {}
@@ -327,6 +328,7 @@ del_node = function(svr_name,svr_id)
 	local watch_channel_map = node_info.watch_channel_map
 	local watch_secret_map = node_info.watch_secret_map
 	local watch_syn_map = node_info.watch_syn_map
+	local pwatch_syn_map = node_info.pwatch_syn_map
 
 	local del_index = nil
 	for i = #name_list,1,-1 do
@@ -367,6 +369,7 @@ del_node = function(svr_name,svr_id)
 	secret_map[cluster_name] = nil
 	watch_secret_map[cluster_name] = nil
 	watch_syn_map[cluster_name] = nil
+	pwatch_syn_map[cluster_name] = nil
 	log.info("disconnect to " .. cluster_name .. ' host ' .. host)
 end
 
@@ -433,9 +436,11 @@ local function add_node_watch(cluster_name)
 	local watch_channel_map = node_info.watch_channel_map
 	local watch_secret_map = node_info.watch_secret_map
 	local watch_syn_map = node_info.watch_syn_map
+	local pwatch_syn_map = node_info.pwatch_syn_map
 	watch_channel_map[cluster_name] = channel
 	watch_secret_map[cluster_name] = msg_secret
 	watch_syn_map[cluster_name] = {}
+	pwatch_syn_map[cluster_name] = {}
 
 	g_wait_watch_svr_id:wakeup(cluster_name)
 
@@ -443,15 +448,19 @@ local function add_node_watch(cluster_name)
 	log.info("watch connected to " .. cluster_name .. ' host ' .. host)
 
 	local watch_syn_info = watch_syn_map[cluster_name]
+	local pwatch_syn_info = pwatch_syn_map[cluster_name]
 
 	skynet.fork(function()
 		while true do
 			local isok, rsp = pcall(channel.response, channel, read_pub_response)
 			if not isok then
-				log.error("watch message err ", cluster_name, rsp)
+				if rsp ~= socketchannel.error then						--网络错误一般就是socket断开了，忽悠
+					log.error("watch message err ", cluster_name, rsp)
+				end
 				break
 			end
-			local isok,pack_id, session, channel_name
+			local isok, pack_id, session, channel_name
+			
 			if type(rsp) == 'table' then
 				--large msg
 				local head_msg = rsp[1]
@@ -482,7 +491,7 @@ local function add_node_watch(cluster_name)
 				rsp = rsp:sub(channel_sz + 7)
 				isok = true
 			end
-
+			
 			if isok then
 				if msg_secret then
 					rsp = crypt.desdecode(msg_secret, rsp)
@@ -520,7 +529,16 @@ local function add_node_watch(cluster_name)
 						rsp_source_map(channel_info, WATCH_SYN_RET.syn, version, luamsg)
 					end
 				elseif pack_id == FRPC_PACK_ID.unsubsyn then
-
+				elseif pack_id == FRPC_PACK_ID.psubsyn then
+					local version, name_map = skynet.unpack(rsp)
+					local pchannel_info = pwatch_syn_info[channel_name]
+					if pchannel_info then
+						pchannel_info.version = version
+						pchannel_info.name_map = name_map
+						pchannel_info.req_syned = false
+						rsp_source_map(pchannel_info, WATCH_SYN_RET.syn, version, name_map)
+					end
+				elseif pack_id == FRPC_PACK_ID.unpsubsyn then
 				else
 					log.warn("unknown pub msg ",cluster_name, pack_id)
 				end
@@ -531,6 +549,7 @@ local function add_node_watch(cluster_name)
 		watch_channel_map[cluster_name] = nil
 		watch_secret_map[cluster_name] = nil
 		watch_syn_map[cluster_name] = nil
+		pwatch_syn_map[cluster_name] = nil
 
 		
 		for channel_name,channel_info in pairs(watch_syn_info) do
@@ -547,6 +566,13 @@ contriner_interface.hook_fix_exit_after(function()
 		for cluster_name, watch_syn_info in pairs(watch_syn_map) do
 			for channel_name,channel_info in pairs(watch_syn_info) do
 				rsp_source_map(channel_info, WATCH_SYN_RET.move)
+			end
+		end
+
+		local pwatch_syn_map = node_info.pwatch_syn_map
+		for cluster_name, pwatch_syn_info in pairs(pwatch_syn_map) do
+			for pchannel_name,pchannel_info in pairs(pwatch_syn_info) do
+				rsp_source_map(pchannel_info, WATCH_SYN_RET.move)
 			end
 		end
 	end
@@ -655,10 +681,12 @@ local function get_watch_channel(svr_name, svr_id)
 
 	local watch_secret_map = node_info.watch_secret_map
 	local watch_syn_map = node_info.watch_syn_map
+	local pwatch_syn_map = node_info.pwatch_syn_map
 	local channel = watch_channel_map[cluster_name]	
 	local secret = watch_secret_map[cluster_name]
 	local watch_syn_info = watch_syn_map[cluster_name]
-	return channel, cluster_name, secret, watch_syn_info
+	local pwatch_syn_info = pwatch_syn_map[cluster_name]
+	return channel, cluster_name, secret, watch_syn_info, pwatch_syn_info
 end
 
 local CMD = {}
@@ -910,17 +938,17 @@ function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 		return nil, "not watch channel"
 	end
 	local channel_info = watch_syn_info[channel_name]
-	if not channel_info then return end
+	if not channel_info then return true end
 
 	local source_map = channel_info.source_map
-	if not source_map then return end
+	if not source_map then return true end
 	local rsp = source_map[source]
 	source_map[source] = nil
-	if not rsp then return end
+	if not rsp then return true end
 	rsp(true, WATCH_SYN_RET.unsyn)
 
 	if next(source_map) then
-		return
+		return true
 	end
 
 	local msg_buff = skynet.packstring(channel_name)
@@ -929,6 +957,88 @@ function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 	end
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.unsubsyn, "", "", session_id, 0, msg_buff, nil, 0)
+	local isok, err = pcall(channel.request, channel, req, nil, padding)
+	if not isok then 
+		return nil, err
+	end
+	return true
+end
+
+--批订阅同步
+function CMD.psubsyn(svr_name, svr_id, source, pchannel_name, version)
+	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+		return WATCH_SYN_RET.move
+	end
+	local channel, cluster_name, secret, _, pwatch_syn_info = get_watch_channel(svr_name, svr_id)
+	if not channel then
+		log.error("frpc watch not connect ", svr_name, source, pchannel_name)
+		return nil, "not watch channel"
+	end
+
+	local pchannel_info = pwatch_syn_info[pchannel_name]
+	if not pchannel_info or not pchannel_info.version or pchannel_info.version == version then
+		if not pchannel_info then
+			pwatch_syn_info[pchannel_name] = {}
+			pchannel_info = pwatch_syn_info[pchannel_name]
+		end
+		if not pchannel_info.source_map then
+			pchannel_info.source_map = {}
+			pchannel_info.source_v_map = {}
+		end                                                          
+		local source_map = pchannel_info.source_map
+		local source_v_map = pchannel_info.source_v_map
+		assert(not source_map[source], "repeat psubsyn ", cluster_name, pchannel_name)
+		
+		source_map[source] = skynet.response()
+		source_v_map[source] = version
+		
+		if not pchannel_info.req_syned then
+			pchannel_info.req_syned = true
+			local msg_buff = skynet.packstring(pchannel_name, pchannel_info.version or 0)
+			if secret then
+				msg_buff = crypt.desencode(secret, msg_buff)
+			end
+			local session_id = new_session_id()
+			local req, padding = frpcpack.packrequest(FRPC_PACK_ID.psubsyn, "", "", session_id, 0, msg_buff, nil, 0)
+			local isok, err = pcall(channel.request, channel, req, nil, padding)
+			if not isok then 
+				return nil, err
+			end
+		end
+
+		return skynet_util.NOT_RET
+	else
+		return WATCH_SYN_RET.syn, pchannel_info.version, pchannel_info.name_map
+	end
+end
+
+--取消批订阅同步
+function CMD.unpsubsyn(svr_name, svr_id, source, pchannel_name)
+	local channel, _, secret, _, pwatch_syn_info = get_watch_channel(svr_name, svr_id)
+	if not channel then
+		log.error("frpc watch not connect ", svr_name, source, pchannel_name)
+		return nil, "not watch channel"
+	end
+	local pchannel_info = pwatch_syn_info[pchannel_name]
+	if not pchannel_info then return true end
+
+	local source_map = pchannel_info.source_map
+	if not source_map then return true end
+
+	local rsp = source_map[source]
+	source_map[source] = nil
+	if not rsp then return true end
+	rsp(true, WATCH_SYN_RET.unsyn)
+	if next(source_map) then
+		return true
+	end
+
+	local msg_buff = skynet.packstring(pchannel_name)
+	if secret then
+		msg_buff = crypt.desencode(secret, msg_buff)
+	end
+	local session_id = new_session_id()
+	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.unpsubsyn, "", "", session_id, 0, msg_buff, nil, 0)
 	local isok, err = pcall(channel.request, channel, req, nil, padding)
 	if not isok then 
 		return nil, err

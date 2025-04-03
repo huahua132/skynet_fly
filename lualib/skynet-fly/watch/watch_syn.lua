@@ -239,9 +239,11 @@ function client:watch(name)
             value_map[name] = v
             version_map[name] = version
             if event_type == EVENT_TYPE.move then
-                local state = contriner_interface.get_server_state()
-                if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
-                    break
+                if skynet_util.is_hot_container_server() then
+                    local state = contriner_interface.get_server_state()
+                    if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
+                        break
+                    end
                 end
                 skynet.sleep(10)                    --避免move中发给旧服务的请求过多
                 not_update_cnt = not_update_cnt + 1

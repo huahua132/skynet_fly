@@ -19,13 +19,15 @@ local assert = assert
 local table = table
 local type = type
 local next = next
+local pairs = pairs
 
+local g_CMD = nil
 local retpack = skynet.retpack
 local NOT_RET = {}
 
 local g_is_regiter = false
 
-local g_CMD = nil
+local g_presets_cmd_map = {}
 
 local M = {
     NOT_RET = NOT_RET
@@ -43,7 +45,12 @@ function M.lua_dispatch(cmd_func)
     
     g_is_regiter = true
     assert(cmd_func)
-    
+    g_CMD = cmd_func
+    for cmd_name, func in pairs(g_presets_cmd_map) do
+        assert(not cmd_func[cmd_name], "exists cmd_name " .. tostring(cmd_name))
+        cmd_func[cmd_name] = func
+    end
+
     skynet.dispatch('lua',function(session,source,cmd,...)
         local f = cmd_func[cmd]
         assert(f,'cmd no found :'..cmd .. ' from : ' .. skynet.address(source))
@@ -63,7 +70,11 @@ function M.lua_src_dispatch(cmd_func)
     g_is_regiter = true
 
     assert(cmd_func)
-    
+    g_CMD = cmd_func
+    for cmd_name, func in pairs(g_presets_cmd_map) do
+        assert(not cmd_func[cmd_name], "exists cmd_name " .. tostring(cmd_name))
+        cmd_func[cmd_name] = func
+    end
     skynet.dispatch('lua',function(session,source,cmd,...)
         local f = cmd_func[cmd]
         assert(f,'cmd no found :'..cmd .. ' from : ' .. source)
@@ -119,19 +130,17 @@ function M.register_info_func(info_name,info_func)
     g_info_func_map[info_name] = info_func
 end
 
----#desc 设置服务的CMD表
----@param CMD table 表
-function M.set_cmd_table(CMD)
-    g_CMD = CMD
-end
-
 ---#desc 扩展CMD函数
 ---@param cmd_name string 命令名称
 ---@param func function 对应函数
 function M.extend_cmd_func(cmd_name, func)
-    assert(g_CMD, "please set_cmd_table")
-    assert(not g_CMD[cmd_name], "exists cmd_name " .. tostring(cmd_name))
-    g_CMD[cmd_name] = func
+    if not g_CMD then
+        assert(not g_presets_cmd_map[cmd_name], "exists cmd_name " .. tostring(cmd_name))
+        g_presets_cmd_map[cmd_name] = func
+    else
+        assert(not g_CMD[cmd_name], "exists cmd_name " .. tostring(cmd_name))
+        g_CMD[cmd_name] = func
+    end
 end
 
 ---#desc 是否可热更服务

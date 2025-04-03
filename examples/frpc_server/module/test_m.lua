@@ -75,7 +75,25 @@ function CMD.start(config)
 			local i = 0
 			while true do
 				watch_server.pubsyn("test_syn", "hello test_syn", i)
-				skynet.sleep(100)
+
+				watch_server.pubsyn("name1:age:address", "hello name1:age:address", i)
+				watch_server.pubsyn("name2:age:address", "hello name2:age:address", i)
+
+				watch_server.pubsyn("name:age1:address", "hello name:age1:address", i)
+				watch_server.pubsyn("name:age2:address", "hello name:age2:address", i)
+
+				watch_server.pubsyn("name:age:address1", "hello name:age:address1", i)
+				watch_server.pubsyn("name:age:address2", "hello name:age:address2", i)
+
+				watch_server.pubsyn("name1:age1:address", "hello name1:age1:address", i)
+				watch_server.pubsyn("name2:age2:address", "hello name2:age2:address", i)
+
+				watch_server.pubsyn("name1:age:address1", "hello name1:age:address1", i)
+				watch_server.pubsyn("name2:age:address2", "hello name2:age:address2", i)
+				
+				watch_server.pubsyn("name:age1:address1", "hello name:age1:address1", i)
+				watch_server.pubsyn("name:age1:address2", "hello name:age1:address2", i)
+				skynet.sleep(500)
 				i = i + 1
 			end
 		end)

@@ -666,5 +666,3 @@ skynet.start(function()
 
 	skynet.register(".room_game_login")
 end)
-
-contriner_client:CMD(CMD)

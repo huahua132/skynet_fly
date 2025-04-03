@@ -55,7 +55,7 @@ end
 local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
 local g_mod_svr_ids_map
-
+local g_week_obj_map = setmetatable({}, g_week_meta)	--避免长时间使用，不切换地址，迫使旧服务驻留
 local g_contriner_mgr = nil
 
 local function get_contriner_mgr_addr()
@@ -94,6 +94,9 @@ local function switch_svr(t)
 		if old_t ~= t.cur_id_list then
 			t.balance = 1
 			t.name_balance = 1
+			if t.switch_call_back then
+				t.switch_call_back()
+			end
 		end
 	end
 end
@@ -254,6 +257,11 @@ skynet.init(function()
 	end
 end)
 
+--预设cmd
+skynet_util.extend_cmd_func('is_not_need_visitor', function(source, module_name)
+	return M:is_not_need_visitor(module_name, source)
+end)
+
 --模块必须全部启动好了才能查询访问其他服务
 function M:open_ready()
 	skynet.fork(function()
@@ -325,6 +333,10 @@ function M:is_not_need_visitor(module_name, source)
 	if not g_id_list_map[module_name] then
 		return true
 	end
+
+	for obj in pairs(g_week_obj_map) do
+		switch_svr(obj)
+	end
 	
 	local list = g_id_list_map[module_name]
 	for _,one_id_list in pairs(list) do
@@ -384,15 +396,6 @@ function M:monitor_all()
 	monitor_all()
 end
 
---扩展CMD
-function M:CMD(cmd)
-	--是否不再需要访问
-	assert(not cmd['is_not_need_visitor'], "repeat cmd is_not_need_visitor")
-	function cmd.is_not_need_visitor(source,module_name)
-		return self:is_not_need_visitor(module_name, source)
-	end
-end
-
 --是否是访问旧的服务
 function M:is_visitor_old()
 	if self.cur_id_list ~= g_mod_svr_ids_map[self.module_name] then
@@ -425,9 +428,12 @@ function M:new(module_name,instance_name,can_switch_func)
 
 		send = skynet.send,
 		call = skynet.call,
+		switch_call_back = nil,
     }
 
     setmetatable(t,meta)
+
+	g_week_obj_map[t] = true
     return t
 end
 
@@ -519,6 +525,15 @@ end
 ---@return number
 function M:get_balance_server_id_by_name()
 	return get_name_balance(self)
+end
+
+---#desc 设置触发切换的回调函数
+---@param call_back function	--回调函数
+---@return table obj
+function M:set_switch_call_back(call_back)
+	assert(type(call_back) == 'function')
+	self.switch_call_back = call_back
+	return self
 end
 
 ---#desc mod hash映射一个服务id，并send skynet lua消息
