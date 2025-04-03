@@ -68,16 +68,15 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         --发布信息同步
         skynet.fork(function()
             watch_server.pubsyn(self._channel_name, {
-                [tab_name] = {
-                    field_map = field_map,
-                    key_list = key_list,
-                    field_list = field_list,
-                    indexs_list = indexs_list,
-                    file_path = self._file_path,
-                    file_name = self._file_name,
-                    flush_inval = self._flush_inval,
-                    maxage = self._maxage,
-                }
+                tab_name = tab_name,
+                field_map = field_map,
+                key_list = key_list,
+                field_list = field_list,
+                indexs_list = indexs_list,
+                file_path = self._file_path,
+                file_name = self._file_name,
+                flush_inval = self._flush_inval,
+                maxage = self._maxage,
             })
         end)
     end
