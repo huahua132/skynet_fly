@@ -139,7 +139,8 @@ local function log_service()
             ret_str = ret_str .. line
         end
         local cur_offset = read_obj.file:seek('cur', 0)
-        return true, ret_str, cur_offset
+        local file_size = read_obj.file:seek('end')
+        return true, ret_str, cur_offset, file_size
     end
 
     skynet.start(function()

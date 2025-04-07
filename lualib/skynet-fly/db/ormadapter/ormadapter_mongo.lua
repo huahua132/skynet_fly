@@ -25,11 +25,12 @@ local M = {}
 local mata = {__index = M}
 
 ---#desc 新建适配器对象
----@param db_name string 对应share_config_m 中写的key为mongo表的名为db_name的连接配置
+---@param db_name? string 对应share_config_m 中写的key为mongo表的名为db_name的连接配置
+---@param db? table 可选自己传入连接对象
 ---@return table obj
-function M:new(db_name)
+function M:new(db_name, db)
     local t = {
-        _db = mongof.new_client(db_name),
+        _db = db or mongof.new_client(db_name),
         _tab_name = nil,
         _field_list = nil,
         _field_map = nil,
