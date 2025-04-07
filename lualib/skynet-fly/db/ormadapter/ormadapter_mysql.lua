@@ -1167,17 +1167,40 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 
     local _idx_preparecache_map = {}
 
-    self._idx_select = function(query)
+    local function parse_query(query)
         local field_values = {}
         local field_names = {}
-        for field_name, field_value in table_util.kvsortipairs(query) do
-            tinsert(field_names, field_name)
-            tinsert(field_values, field_value)
+        local args = {}
+        local cache_key = ""
+        if query then
+            for field_name, field_value in table_util.kvsortipairs(query) do
+                tinsert(field_names, field_name)
+                tinsert(field_values, field_value)
+                if type(field_value) ~= 'table' then
+                    tinsert(args, field_value)
+                    cache_key = cache_key .. field_name .. '-'
+                else
+                    if field_value['$gte'] and field_value['$lte'] then
+                        tinsert(args, field_value['$gte'])
+                        tinsert(args, field_value['$lte'])
+                        cache_key = cache_key .. field_name .. '-gl-'
+                    elseif field_value['$gte'] then
+                        tinsert(args, field_value['$gte'])
+                        cache_key = cache_key .. field_name .. '-g-'
+                    else
+                        tinsert(args, field_value['$lte'])
+                        cache_key = cache_key .. field_name .. '-l-'
+                    end
+                end
+            end
         end
+        return field_values, field_names, args, cache_key
+    end
 
-        local cache_key = tconcat(field_names,'-')
-        
+    self._idx_select = function(query)
+        local field_values, field_names, args, cache_key = parse_query(query)
         local prepare_obj = nil
+        
         if _idx_preparecache_map[cache_key] then
             prepare_obj = _idx_preparecache_map[cache_key]
         else
@@ -1185,18 +1208,28 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             local len = #field_names
             for i = 1, len do
                 local field_name = field_names[i]
-                if i ~= len then
-                    prepare_str = prepare_str .. sformat('`%s` = ? and ', field_name)
+                local field_value = field_values[i]
+                if type(field_value) ~= 'table' then
+                    prepare_str = prepare_str .. sformat('`%s` = ?', field_name)
                 else
-                    prepare_str = prepare_str .. sformat('`%s` = ?;', field_name)
+                    if field_value['$gte'] and field_value['$lte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', field_name, field_name)
+                    elseif field_value['$gte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=?', field_name)
+                    else
+                        prepare_str = prepare_str .. sformat('`%s`<=?', field_name)
+                    end
+                end
+                if i ~= len then
+                    prepare_str = prepare_str .. ' and '
                 end
             end
             
             prepare_obj = new_prepare_obj(prepare_str)
             _idx_preparecache_map[cache_key] = prepare_obj
         end
-        
-        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(field_values))
+
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
         if not isok or not ret or ret.err then
             log.error("_idx_select err ", ret, query)
             error("_idx_select err ")
@@ -1210,16 +1243,9 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     local _idx_limit_count_prepare_cache_map = {}
     self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query)
         local end_field_name = sort_field_name
-        local field_values = {}
-        local field_names = {}
-        if query then
-            for field_name, field_value in table_util.kvsortipairs(query) do
-                tinsert(field_names, field_name)
-                tinsert(field_values, field_value)
-            end
-        end
+        local field_values, field_names, args, cache_key = parse_query(query)
+
         local is_have_cursor = cursor and 1 or 0
-        local cache_key = tconcat(field_names, ',')
         cache_key = cache_key .. sformat(",%s_%s_%s", sort_field_name, sort, is_have_cursor)
 
         local prepare_obj = nil
@@ -1235,10 +1261,20 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             end
             for i = 1, len do
                 local field_name = field_names[i]
-                if i ~= len or cursor then
-                    prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+                local field_value = field_values[i]
+                if type(field_value) ~= 'table' then
+                    prepare_str = prepare_str .. sformat('`%s` = ?', field_name)
                 else
-                    prepare_str = prepare_str .. sformat('`%s`=? ', field_name)
+                    if field_value['$gte'] and field_value['$lte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', field_name, field_name)
+                    elseif field_value['$gte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=?', field_name)
+                    else
+                        prepare_str = prepare_str .. sformat('`%s`<=?', field_name)
+                    end
+                end
+                if i ~= len or cursor then
+                    prepare_str = prepare_str .. ' and '
                 end
             end
             if not cursor then
@@ -1257,7 +1293,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             prepare_obj = new_prepare_obj(prepare_str)
             _idx_limit_preparecache_map[cache_key] = prepare_obj
         end
-
+        
         local count = nil
         --拿一下count
         if not cursor then
@@ -1275,16 +1311,27 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                 end
                 for i = 1, len do
                     local field_name = field_names[i]
-                    if i ~= len then
-                        count_pre_pare_str = count_pre_pare_str .. sformat('`%s`=? and ', field_name)
+                    local field_value = field_values[i]
+                    if type(field_value) ~= 'table' then
+                        count_pre_pare_str = count_pre_pare_str .. sformat('`%s` = ?', field_name)
                     else
-                        count_pre_pare_str = count_pre_pare_str .. sformat('`%s`=?', field_name)
+                        if field_value['$gte'] and field_value['$lte'] then
+                            count_pre_pare_str = count_pre_pare_str .. sformat('`%s`>=? and `%s`<=?', field_name, field_name)
+                        elseif field_value['$gte'] then
+                            count_pre_pare_str = count_pre_pare_str .. sformat('`%s`>=?', field_name)
+                        else
+                            count_pre_pare_str = count_pre_pare_str .. sformat('`%s`<=?', field_name)
+                        end
+                    end
+                    if i ~= len then
+                        count_pre_pare_str = count_pre_pare_str .. ' and '
                     end
                 end
                 count_prepare_obj = new_prepare_obj(count_pre_pare_str)
                 _idx_limit_count_prepare_cache_map[cache_key] = count_prepare_obj
             end
-            local isok, ret = pcall(prepare_execute, self._db, count_prepare_obj, tunpack(field_values))
+            
+            local isok, ret = pcall(prepare_execute, self._db, count_prepare_obj, tunpack(args))
             if not isok or not ret or ret.err then
                 log.error("_idx_get_entry_by_limit err ", ret, query)
                 error("_idx_get_entry_by_limit err ")
@@ -1292,11 +1339,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             count = ret[1]["count(*)"]
         end
        
-        local args = {}
-        --where参数
-        for i = 1, len do
-            args[#args + 1] = field_values[i]
-        end
         if cursor then
             args[#args + 1] = cursor
         end
@@ -1320,16 +1362,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 
     local _idx_delete_preparecache_map = {}
     self._idx_delete_entry = function(query)
-        local field_values = {}
-        local field_names = {}
-        if query then
-            for field_name, field_value in table_util.kvsortipairs(query) do
-                tinsert(field_names, field_name)
-                tinsert(field_values, field_value)
-            end
-        end
-
-        local cache_key = tconcat(field_names, ',')
+        local field_values, field_names, args, cache_key = parse_query(query)
         local prepare_obj = nil
         if _idx_delete_preparecache_map[cache_key] then
             prepare_obj = _idx_delete_preparecache_map[cache_key]
@@ -1338,139 +1371,30 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             local len = #field_names
             for i = 1, len do
                 local field_name = field_names[i]
-                if i ~= len then
-                    prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
+                local field_value = field_values[i]
+                if type(field_value) ~= 'table' then
+                    prepare_str = prepare_str .. sformat('`%s` = ?', field_name)
                 else
-                    prepare_str = prepare_str .. sformat('`%s`=? ', field_name)
+                    if field_value['$gte'] and field_value['$lte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', field_name, field_name)
+                    elseif field_value['$gte'] then
+                        prepare_str = prepare_str .. sformat('`%s`>=?', field_name)
+                    else
+                        prepare_str = prepare_str .. sformat('`%s`<=?', field_name)
+                    end
+                end
+                if i ~= len then
+                    prepare_str = prepare_str .. ' and '
                 end
             end
             prepare_obj = new_prepare_obj(prepare_str)
             _idx_delete_preparecache_map[cache_key] = prepare_obj
         end
 
-        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(field_values))
+        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
         if not isok or not ret or ret.err then
             log.error("_idx_delete_entry err ", ret, query)
             error("_idx_delete_entry err ")
-        end
-
-        return true
-    end
-
-    local _idx_get_range_preprecache_map = {}
-    self._idx_get_entry_by_range = function(left, right, range_field_name, query)
-        local field_values = {}
-        local field_names = {}
-        if query then
-            for field_name, field_value in table_util.kvsortipairs(query) do
-                tinsert(field_names, field_name)
-                tinsert(field_values, field_value)
-            end
-        end
-        local fftpye = nil 
-        if left and right then
-            fftpye = 1
-        elseif left then
-            fftpye = 2
-        else
-            fftpye = 3
-        end
-        local cache_key = tconcat(field_names, ',') .. ',' .. range_field_name .. '_' .. fftpye
-        local prepare_obj = nil
-        if _idx_get_range_preprecache_map[cache_key] then
-            prepare_obj = _idx_get_range_preprecache_map[cache_key]
-        else
-            local prepare_str = select_format_head .. select_format_center
-            local len = #field_names
-            for i = 1, len do
-                local field_name = field_names[i]
-                prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
-            end
-
-            if left and right then
-                prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', range_field_name, range_field_name)
-            elseif left then
-                prepare_str = prepare_str .. sformat('`%s`>=?', range_field_name)
-            else
-                prepare_str = prepare_str .. sformat('`%s`<=?', range_field_name)
-            end
-            prepare_obj = new_prepare_obj(prepare_str)
-            _idx_get_range_preprecache_map[cache_key] = prepare_obj
-        end
-
-        local args = field_values
-        if left then
-            args[#args + 1] = left
-        end
-
-        if right then
-            args[#args + 1] = right
-        end
-
-        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
-        if not isok or not ret or ret.err then
-            log.error("_idx_get_entry_by_range err ", ret, query)
-            error("_idx_get_entry_by_range err ")
-        end
-
-        decode_tables(ret)
-        return ret
-    end
-
-    local _idx_delete_range_preprecache_map = {}
-    self._idx_delete_entry_by_range = function(left, right, range_field_name, query)
-        local field_values = {}
-        local field_names = {}
-        if query then
-            for field_name, field_value in table_util.kvsortipairs(query) do
-                tinsert(field_names, field_name)
-                tinsert(field_values, field_value)
-            end
-        end
-        local fftpye = nil 
-        if left and right then
-            fftpye = 1
-        elseif left then
-            fftpye = 2
-        else
-            fftpye = 3
-        end
-        local cache_key = tconcat(field_names, ',') .. ',' .. range_field_name .. '_' .. fftpye
-        local prepare_obj = nil
-        if _idx_delete_range_preprecache_map[cache_key] then
-            prepare_obj = _idx_delete_range_preprecache_map[cache_key]
-        else
-            local prepare_str = delete_format_head .. select_format_center
-            local len = #field_names
-            for i = 1, len do
-                local field_name = field_names[i]
-                prepare_str = prepare_str .. sformat('`%s`=? and ', field_name)
-            end
-
-            if left and right then
-                prepare_str = prepare_str .. sformat('`%s`>=? and `%s`<=?', range_field_name, range_field_name)
-            elseif left then
-                prepare_str = prepare_str .. sformat('`%s`>=?', range_field_name)
-            else
-                prepare_str = prepare_str .. sformat('`%s`<=?', range_field_name)
-            end
-            prepare_obj = new_prepare_obj(prepare_str)
-            _idx_delete_range_preprecache_map[cache_key] = prepare_obj
-        end
-
-        local args = field_values
-        if left then
-            args[#args + 1] = left
-        end
-
-        if right then
-            args[#args + 1] = right
-        end
-
-        local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
-        if not isok or not ret or ret.err then
-            log.error("_idx_delete_entry_by_range err ", ret, left, right, range_field_name, query)
-            error("_idx_delete_entry_by_range err ")
         end
 
         return true
@@ -1557,16 +1481,6 @@ end
 --通过普通索引删除
 function M:idx_delete_entry(query)
     return self._idx_delete_entry(query)
-end
-
---通过普通索引范围查询
-function M:idx_get_entry_by_range(left, right, range_field_name, query)
-    return self._idx_get_entry_by_range(left, right, range_field_name, query)
-end
-
---通过普通索引范围删除
-function M:idx_delete_entry_by_range(left, right, range_field_name, query)
-    return self._idx_delete_entry_by_range(left, right, range_field_name, query)
 end
 
 return M

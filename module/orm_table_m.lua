@@ -207,16 +207,6 @@ function g_handle.idx_delete_entry(query)
     return g_orm_obj:idx_delete_entry(query)
 end
 
---普通索引范围查询
-function g_handle.idx_get_entry_by_range(left, right, range_field_name, query)
-    return g_orm_obj:idx_get_entry_by_range(left, right, range_field_name, query)
-end
-
---普通索引范围删除
-function g_handle.idx_delete_entry_by_range(left, right, range_field_name, query)
-    return g_orm_obj:idx_delete_entry_by_range(left, right, range_field_name, query)
-end
-
 local CMD = {}
 
 function CMD.start(config)
@@ -243,6 +233,8 @@ function CMD.call(func_name,...)
         return true
     end
 
+    assert(g_orm_obj, "not orm_obj init err?")
+
     local func = assert(g_handle[func_name], "func_name not exists:" .. func_name)
 
     return false, queue(func, ...)
@@ -250,13 +242,15 @@ end
 
 function CMD.herald_exit()
     G_ISCLOSE = true
-
-    queue(g_orm_obj.save_change_now,g_orm_obj)
+    if g_orm_obj then
+        queue(g_orm_obj.save_change_now,g_orm_obj)
+    end
 end
 
 function CMD.exit()
-
-    queue(g_orm_obj.save_change_now,g_orm_obj)
+    if g_orm_obj then
+        queue(g_orm_obj.save_change_now,g_orm_obj)
+    end
     return true
 end
 

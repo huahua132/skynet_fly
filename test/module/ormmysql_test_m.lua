@@ -2344,6 +2344,17 @@ local function test_idx_get_entry()
         {player_id = 10008, role_id = 102, nickname = "skynet_fly", phone = "13211322992"},
         {player_id = 10009, role_id = 102, nickname = "skynet", phone = "132113222"},
         {player_id = 10010, role_id = 102, nickname = "skynet_fly", phone = "13211322993"},
+
+        {player_id = 10011, role_id = 103, nickname = "skynet_fly", phone = "13211322995"},
+        {player_id = 10012, role_id = 104, nickname = "skynet_fly", phone = "13211322995"},
+        {player_id = 10013, role_id = 105, nickname = "skynet_fly", phone = "13211322995"},
+        {player_id = 10014, role_id = 106, nickname = "skynet_fly", phone = "13211322995"},
+        {player_id = 10015, role_id = 107, nickname = "skynet_fly", phone = "13211322995"},
+        {player_id = 10016, role_id = 103, nickname = "skynet_fly", phone = "13211322996"},
+        {player_id = 10017, role_id = 104, nickname = "skynet_fly", phone = "13211322996"},
+        {player_id = 10018, role_id = 105, nickname = "skynet_fly", phone = "13211322996"},
+        {player_id = 10019, role_id = 106, nickname = "skynet_fly", phone = "13211322996"},
+        {player_id = 10020, role_id = 107, nickname = "skynet_fly", phone = "13211322996"},
     }
 
     local isok = pcall(ormobj.idx_get_entry, ormobj, {nickname = "skynet"})--这样不行，必须先得有前缀索引 role_id
@@ -2360,6 +2371,13 @@ local function test_idx_get_entry()
 
     local entry_list = ormobj:idx_get_entry({role_id = 102, nickname = 'skynet_fly'})
     assert(#entry_list == 3)
+
+    local entry_list = ormobj:idx_get_entry({role_id = {['$gte'] = 103, ['$lte'] = 104}})
+    assert(#entry_list == 4)
+
+    local entry_list = ormobj:idx_get_entry({role_id = {['$gte'] = 103, ['$lte'] = 104}, phone = '13211322996'})
+    assert(#entry_list == 2)
+    
     delete_table()
 end
 
@@ -2514,6 +2532,26 @@ local function test_idx_get_entry_by_limit()
         assert(age_l < age_f)
     end
 
+    check = {}
+    sort = 1
+    cursor = nil
+    --通过role_id age查询
+    for i = 1, 2 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2, age = {['$gte'] = 61, ['$lte'] = 80}})
+        if i == 1 then
+            assert(count == 20)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l > age_f)
+    end
+
     delete_table()
 end
 
@@ -2550,6 +2588,14 @@ local function test_idx_delete_entry()
 
         local entry_list = ormobj:idx_get_entry({age = i})
         assert(#entry_list <= 0)
+
+        --删除age >= 20 <=30
+        local ret = ormobj:idx_delete_entry({age = {['$gte'] = 20, ['$lte'] = 30}})
+        assert(ret)
+        for i = 20, 30 do
+            local entry_list = ormobj:idx_get_entry({age = i})
+            assert(#entry_list <= 0)
+        end
     end
 
     local ret = ormobj:idx_delete_entry({role_id = 1})
@@ -2587,7 +2633,7 @@ local function test_idx_get_delete_entry_by_range()
     --测试查询
     for i = 1, 2 do
         --通过age查询
-        local entry_list = ormobj:idx_get_entry_by_range(11, 20, "age")
+        local entry_list = ormobj:idx_get_entry({age = { ['$gte'] = 11, ['$lte'] = 20 }})
         assert(#entry_list == 10)
 
         local f_entry = entry_list[1]
@@ -2595,7 +2641,7 @@ local function test_idx_get_delete_entry_by_range()
         assert(f_entry:get('age') == 11)
         assert(l_entry:get('age') == 20)
 
-        local entry_list = ormobj:idx_get_entry_by_range(11, nil, "age")
+        local entry_list = ormobj:idx_get_entry({age = { ['$gte'] = 11}})
         assert(#entry_list == 90)
 
         local f_entry = entry_list[1]
@@ -2603,7 +2649,7 @@ local function test_idx_get_delete_entry_by_range()
         assert(f_entry:get('age') == 11)
         assert(l_entry:get('age') == 100)
 
-        local entry_list = ormobj:idx_get_entry_by_range(nil, 30, "age")
+        local entry_list = ormobj:idx_get_entry({age = { ['$lte'] = 30 }})
         assert(#entry_list == 30)
 
         local f_entry = entry_list[1]
@@ -2613,7 +2659,7 @@ local function test_idx_get_delete_entry_by_range()
 
         --通过role_id,age查询
 
-        local entry_list = ormobj:idx_get_entry_by_range(11, 20, "age", {role_id = 1})
+        local entry_list = ormobj:idx_get_entry({role_id = 1, age = { ['$gte'] = 11, ['$lte'] = 20 }})
         assert(#entry_list == 10)
 
         local f_entry = entry_list[1]
@@ -2621,48 +2667,48 @@ local function test_idx_get_delete_entry_by_range()
         assert(f_entry:get('age') == 11)
         assert(l_entry:get('age') == 20)
 
-        local entry_list = ormobj:idx_get_entry_by_range(11, nil, "age", {role_id = 1})
+        local entry_list = ormobj:idx_get_entry({role_id = 1, age = { ['$gte'] = 11 }})
         assert(#entry_list == 40)
         local f_entry = entry_list[1]
         local l_entry = entry_list[40]
         assert(f_entry:get('age') == 11)
         assert(l_entry:get('age') == 50)
 
-        local entry_list = ormobj:idx_get_entry_by_range(nil, 30, "age", {role_id = 2})
+        local entry_list = ormobj:idx_get_entry({role_id = 2, age = { ['$lte'] = 30 }})
         assert(#entry_list == 0)
     end
 
     --测试删除
     for i = 1, 2 do
         --通过age删除
-        local ret = ormobj:idx_delete_entry_by_range(11, 20, "age")
+        local ret = ormobj:idx_delete_entry({age = { ['$gte'] = 11, ['$lte'] = 20 }})
         assert(ret)
         local entry = ormobj:get_one_entry(11, 1)
         assert(not entry)
 
-        local ret = ormobj:idx_delete_entry_by_range(90, nil, "age")
+        local ret = ormobj:idx_delete_entry({age = { ['$gte'] = 90}})
         assert(ret)
         local entry = ormobj:get_one_entry(100, 2)
         assert(not entry)
 
-        local ret = ormobj:idx_delete_entry_by_range(nil, 30, "age")
+        local ret = ormobj:idx_delete_entry({age = { ['$lte'] = 30}})
         assert(ret)
         local entry = ormobj:get_one_entry(29, 1)
         assert(not entry)
 
         --通过role_id,age删除
-        local ret = ormobj:idx_delete_entry_by_range(50, 50, "age", {role_id = 1})
+        local ret = ormobj:idx_delete_entry({role_id = 1, age = { ['$gte'] = 50, ['$lte'] = 50 }})
         assert(ret)
         local entry = ormobj:get_one_entry(50, 1)
         assert(not entry)
 
-        local ret = ormobj:idx_delete_entry_by_range(80, nil, "age", {role_id = 2})
+        local ret = ormobj:idx_delete_entry({role_id = 2, age = { ['$gte'] = 80}})
         assert(ret)
         local entry = ormobj:get_one_entry(80, 2)
         assert(not entry)
 
 
-        local ret = ormobj:idx_delete_entry_by_range(nil, 60, "age", {role_id = 2})
+        local ret = ormobj:idx_delete_entry({role_id = 2, age = {['$lte'] = 60 }})
         assert(ret)
         local entry = ormobj:get_one_entry(60, 2)
         assert(not entry)

@@ -1343,126 +1343,65 @@ local function check_index_field(t, field_list)
     error(sformat('can`t hit index field_name_list(%s) Please follow the leftmost prefix principle', tconcat(cant_index_list, ',')))
 end
 
----#desc 通过普通索引查询,设置缓存的情况下，也会先查询数据库 format `select * from tab_name where (key1 = ? and key2 = ?)`
----@param query table 索引值 [key1 = xxx, key2 = xxx]
+local function check_query(self, query)
+    local field_list = {}
+    for field_name, field_value in pairs(query) do
+        if type(field_value) == 'table' then
+            assert(next(field_value), "can`t empty")
+            if field_value['$gte'] then
+                check_one_field(self, field_name, field_value['$gte'])
+            end
+            if field_value['$lte'] then
+                check_one_field(self, field_name, field_value['$lte'])
+            end
+        else
+            check_one_field(self, field_name, field_value)
+        end
+        tinsert(field_list, field_name)
+    end
+
+    check_index_field(self, field_list)
+end
+
+---#desc 通过普通索引查询,设置缓存的情况下，也会先查询数据库 format `select * from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?)`
+---@param query table 索引值 [key1 = xxx, key2 = xxx, key3 = {['$gte' = xxx, '$lte' = xxx]}]
 ---@return table 查询结果列表
 function M:idx_get_entry(query)
     assert(self._is_builder, "not builder can`t idx_get_entry")
     assert(next(query), "query can`t be empty")
     
-    local field_list = {}
-    for field_name, field_value in pairs(query) do
-        check_one_field(self, field_name, field_value)
-        tinsert(field_list, field_name)
-    end
-
-    check_index_field(self, field_list)
+    check_query(self, query)
 
     return queue_doing(self, nil, idx_get_entry, self, query)
 end
 
----#desc 基于普通索引分页查询 format`[select * from tab_name where key1 = ? and key2 > ? order by ? desc limit ?]`
+---#desc 基于普通索引分页查询 format`[select * from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?) order by ? desc limit ?]`
 ---@param cursor number|string 游标
 ---@param limit number 数量限制
 ---@param sort number 1升序  -1降序
 ---@param sort_field_name string 排序字段名
----@param query? table 索引值 [key1 = xxx, key2 = xxx]
+---@param query? table 索引值 [key1 = xxx, key2 = xxx, key3 = {['$gte' = xxx, '$lte' = xxx]}]
 ---@return table obj[](ormentry)
 function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
     assert(self._is_builder, "not builder can`t idx_get_entry_by_limit")
     assert(type(limit) == 'number', "err limit:" .. tostring(limit))
     assert(type(sort) == 'number', "err sort:" .. tostring(sort))
 
-    local field_list = {}
     if query then
-        for field_name, field_value in pairs(query) do
-            check_one_field(self, field_name, field_value)
-            tinsert(field_list, field_name)
-        end
+        check_query(self, query)
     end
-    tinsert(field_list, sort_field_name)
-
-    check_index_field(self, field_list)
     return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query)
 end
 
----#desc 通过普通索引删除数据 format `delete from tab_name where (key1 = ? and key2 = ?)`
----@param query table 索引值 [key1 = xxx, key2 = xxx]
+---#desc 通过普通索引删除数据 format `delete from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?)`
+---@param query table 索引值 [key1 = xxx, key2 = xxx, key3 = {['$gte' = xxx, '$lte' = xxx]}]
 ---@return boolean 删除结果
 function M:idx_delete_entry(query)
     assert(self._is_builder, "not builder can`t idx_delete_entry")
     assert(next(query), "query can`t be empty")
-    local field_list = {}
-    for field_name, field_value in pairs(query) do
-        check_one_field(self, field_name, field_value)
-        tinsert(field_list, field_name)
-    end
-
-    check_index_field(self, field_list)
+    check_query(self, query)
 
     return queue_doing(self, nil, idx_delete_entry, self, query)
-end
-
----#content 范围查询 包含left right
----#content 可以有三种操作方式
----#content [left, right] 范围查询  >= left <= right
----#content [left, nil] 查询 range_field_name >= left
----#content [nil, right] 查询 range_field_name <= right
----#content format`[select * from player where key1=? and key2>=? and key2<=?;]`
----#desc 范围查询 包含left right 可以有三种操作方式 [left, right] 范围查询
----@param left string|number|nil 左值
----@param right string|number|nil 右值
----@param range_field_name string 基于该索引值范围
----@param query table 前置的普通索引查询
----@return boolean
-function M:idx_get_entry_by_range(left, right, range_field_name, query)
-    assert(self._is_builder, "not builder can`t idx_get_entry_by_range")
-    assert(left or right, "not left or right")
-    if left and right then
-        assert(left <= right, "left right err")
-    end
-    local field_list = {}
-    if query then
-        for field_name, field_value in pairs(query) do
-            check_one_field(self, field_name, field_value)
-            tinsert(field_list, field_name)
-        end
-    end
-    tinsert(field_list, range_field_name)
-
-    check_index_field(self, field_list)
-    return queue_doing(self, nil, idx_get_entry_by_range, self, left, right, range_field_name, query)
-end
-
----#content 范围删除 包含left right
----#content 可以有三种操作方式
----#content [left, right] 范围删除  >= left <= right
----#content [left, nil] 删除 >= left
----#content [nil, right] 删除 <= right
----#content format`[delete from player where key1=? and key2>=? and key2<=?;]`
----#desc 范围删除 包含left right 可以有三种操作方式 [left, right] 范围删除
----@param left string|number|nil 左值
----@param right string|number|nil 右值
----@param range_field_name string 基于该索引值范围
----@param query table 前置的普通索引查询
----@return boolean
-function M:idx_delete_entry_by_range(left, right, range_field_name, query)
-    assert(self._is_builder, "not builder can`t idx_delete_entry_by_range")
-    assert(left or right, "not left or right")
-    if left and right then
-        assert(left <= right, "left right err")
-    end
-    local field_list = {}
-    if query then
-        for field_name, field_value in pairs(query) do
-            check_one_field(self, field_name, field_value)
-            tinsert(field_list, field_name)
-        end
-    end
-    tinsert(field_list, range_field_name)
-
-    check_index_field(self, field_list)
-    return queue_doing(self, nil, idx_delete_entry_by_range, self, left, right, range_field_name, query)
 end
 
 return M

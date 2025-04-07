@@ -140,6 +140,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             if ok and isok then
                 for i = 1, #insert_list do
                     res_list[ret_index] = true
+                    entry_data_list[ret_index]._id = nil
                     ret_index = ret_index + 1
                 end
             else
@@ -150,7 +151,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                 end
             end
         end
-
+        
         return res_list
     end
 
@@ -161,6 +162,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             log.error("_insert_one doc err ", self._tab_name, err, entry_data)
             error("_insert_one err ")
         end
+        entry_data._id = nil
         return true
     end
 
@@ -577,41 +579,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return true
     end
 
-    self._idx_get_entry_by_range = function(left, right, range_field_name, query)
-        local args = {}
-        if query then
-            for k,v in pairs(query) do
-                args[k] = v
-            end
-        end
-        args[range_field_name] = {['$gte'] = left, ['$lte'] = right}
-        local res_list = {}
-        local ret = collect_db:find(args)
-        while ret:has_next() do
-            local entry_data = ret:next()
-            entry_data._id = nil
-            tinsert(res_list, entry_data)
-        end
-
-        return res_list
-    end
-
-    self._idx_delete_entry_by_range = function(left, right, range_field_name, query)
-        local args = {}
-        if query then
-            for k,v in pairs(query) do
-                args[k] = v
-            end
-        end
-        args[range_field_name] = {['$gte'] = left, ['$lte'] = right}
-        local isok,err = collect_db:safe_delete(args)
-        if not isok then
-            log.error("_idx_delete_entry_by_range doc err ", self._tab_name, args, err)
-            error("_idx_delete_entry_by_range doc err")
-        end
-        return true
-    end
-
     return self
 end
 
@@ -717,16 +684,6 @@ end
 --通过普通索引删除
 function M:idx_delete_entry(query)
     return self._idx_delete_entry(query)
-end
-
---通过普通索引范围查询
-function M:idx_get_entry_by_range(left, right, range_field_name, query)
-    return self._idx_get_entry_by_range(left, right, range_field_name, query)
-end
-
---通过普通索引范围删除
-function M:idx_delete_entry_by_range(left, right, range_field_name, query)
-    return self._idx_delete_entry_by_range(left, right, range_field_name, query)
 end
 
 return M
