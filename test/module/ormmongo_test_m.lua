@@ -2483,6 +2483,26 @@ local function test_idx_get_entry_by_limit()
         assert(age_l > age_f)
     end
 
+    check = {}
+    sort = 1
+    cursor = nil
+    --通过role_id age查询
+    for i = 1, 2 do
+        local entry_list
+        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2, age = {['$gte'] = 61, ['$lte'] = 100}}, 10)
+        if i == 1 then
+            assert(count == 40)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            assert(not check[age])
+            check[age] = true
+        end
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l > age_f)
+    end
+
     delete_table()
 end
 

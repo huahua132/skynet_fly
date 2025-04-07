@@ -553,7 +553,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return res_list
     end
 
-    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query)
+    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query, offset)
         query = query or {}
         local end_field_name = sort_field_name
 
@@ -572,7 +572,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         end
 
         local res_list = {}
-        local ret = collect_db:find(use_query):sort({[end_field_name] = sort}):limit(limit)
+        local ret = collect_db:find(use_query):sort({[end_field_name] = sort}):skip(offset or 0):limit(limit)
         while ret:has_next() do
             local entry_data = ret:next()
             entry_data._id = nil
@@ -695,8 +695,8 @@ function M:idx_get_entry(query)
 end
 
 --通过普通索引分页查询
-function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
-    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
+    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
 end
 
 --通过普通索引删除

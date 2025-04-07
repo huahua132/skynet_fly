@@ -1241,12 +1241,12 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 
     local _idx_limit_preparecache_map = {}
     local _idx_limit_count_prepare_cache_map = {}
-    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query)
+    self._idx_get_entry_by_limit = function(cursor, limit, sort, sort_field_name, query, offset)
         local end_field_name = sort_field_name
         local field_values, field_names, args, cache_key = parse_query(query)
-
         local is_have_cursor = cursor and 1 or 0
-        cache_key = cache_key .. sformat(",%s_%s_%s", sort_field_name, sort, is_have_cursor)
+        local is_have_offset = offset and 1 or 0
+        cache_key = cache_key .. sformat(",%s_%s_%s_%s", sort_field_name, sort, is_have_cursor, is_have_offset)
 
         local prepare_obj = nil
         if _idx_limit_preparecache_map[cache_key] then
@@ -1290,6 +1290,10 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                     prepare_str = prepare_str .. sformat('`%s` < ? order by `%s` desc limit ?', end_field_name, end_field_name)
                 end
             end
+            if offset then
+                prepare_str = prepare_str .. ' offset ?'
+            end
+            
             prepare_obj = new_prepare_obj(prepare_str)
             _idx_limit_preparecache_map[cache_key] = prepare_obj
         end
@@ -1330,24 +1334,27 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                 count_prepare_obj = new_prepare_obj(count_pre_pare_str)
                 _idx_limit_count_prepare_cache_map[cache_key] = count_prepare_obj
             end
-            
             local isok, ret = pcall(prepare_execute, self._db, count_prepare_obj, tunpack(args))
             if not isok or not ret or ret.err then
-                log.error("_idx_get_entry_by_limit err ", ret, query)
+                log.error("_idx_get_entry_by_limit err ", ret, cursor, limit, sort, sort_field_name, query)
                 error("_idx_get_entry_by_limit err ")
             end
             count = ret[1]["count(*)"]
         end
-       
         if cursor then
             args[#args + 1] = cursor
         end
+
         args[#args + 1] = limit
 
+        if offset then
+            args[#args + 1] = offset
+        end
+        
         local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(args))
         
         if not isok or not ret or ret.err then
-            log.error("_idx_get_entry_by_limit err ", ret, cursor, limit, sort, sort_field_name, query)
+            log.error("_idx_get_entry_by_limit err ", ret, cursor, limit, sort, sort_field_name, query, offset)
             error("_idx_get_entry_by_limit err ")
         end
         
@@ -1474,8 +1481,8 @@ function M:idx_get_entry(query)
 end
 
 --通过普通索引分页查询
-function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
-    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
+    return self._idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
 end
 
 --通过普通索引删除

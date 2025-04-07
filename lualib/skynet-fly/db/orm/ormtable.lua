@@ -969,8 +969,8 @@ local function idx_get_entry(t, query)
     return res
 end
 
-local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, query)
-    local cursor, res, count = t._adapterinterface:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, query, offset)
+    local cursor, res, count = t._adapterinterface:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
     for i, entry_data in pairs(res) do
         local entry = ormentry:new(t, entry_data)
         res[i] = add_key_select(t, entry)
@@ -1149,7 +1149,9 @@ end
 ---@param limit number 数量限制
 ---@param sort number 1升序  -1降序
 ---@param ... string[] 最左前缀主键列表 key1 key2 ... 不填入的key作为游标
----@return table obj[](ormentry)
+---@return number cursor? 游标
+---@return table obj[](ormentry) 结果数组
+---@return number count? 总数
 function M:get_entry_by_limit(cursor, limit, sort, ...)
     assert(self._is_builder, "not builder can`t get_entry_by_limit")
     assert(type(limit) == 'number', "err limit:" .. tostring(limit))
@@ -1381,16 +1383,20 @@ end
 ---@param sort number 1升序  -1降序
 ---@param sort_field_name string 排序字段名
 ---@param query? table 索引值 [key1 = xxx, key2 = xxx, key3 = {['$gte' = xxx, '$lte' = xxx]}]
----@return table obj[](ormentry)
-function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+---@param offset? number 偏移量
+---@return number cursor? 游标
+---@return table obj[](ormentry) 结果数组
+---@return number count? 总数
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
     assert(self._is_builder, "not builder can`t idx_get_entry_by_limit")
     assert(type(limit) == 'number', "err limit:" .. tostring(limit))
     assert(type(sort) == 'number', "err sort:" .. tostring(sort))
+    assert(not offset or type(offset) == 'number', "err offset:" .. tostring(offset))
 
     if query then
         check_query(self, query)
     end
-    return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query)
+    return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query, offset)
 end
 
 ---#desc 通过普通索引删除数据 format `delete from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?)`
