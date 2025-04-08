@@ -149,7 +149,7 @@ function CMD.check_reload()
 
 	for module_name,_ in pairs(load_mods) do
 		if not module_info_map[module_name] then
-		need_reload_module[module_name] = "launch_new_module"
+			need_reload_module[module_name] = "launch_new_module"
 		end
 	end
 
@@ -162,12 +162,12 @@ function CMD.check_reload()
 		for module_name,module_cfg in pairs(load_mods) do
 			local old_module_cfg = old_mod_confg[module_name]
 			if old_module_cfg then
-			local def_des = table_util.check_def_table(module_cfg,old_module_cfg)
-			if next(def_des) then
-				need_reload_module[module_name] = table_util.def_tostring(def_des)
-			end
+				local def_des = table_util.check_def_table(module_cfg,old_module_cfg)
+				if next(def_des) then
+					need_reload_module[module_name] = table_util.def_tostring(def_des)
+				end
 			else
-			need_reload_module[module_name] = "relaunch module"
+				need_reload_module[module_name] = "relaunch_module"
 			end
 		end
 	end
