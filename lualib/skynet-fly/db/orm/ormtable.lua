@@ -995,32 +995,6 @@ local function idx_delete_entry(t, query)
     end
 end
 
-local function idx_get_entry_by_range(t, left, right, range_field_name, query)
-    local res = t._adapterinterface:idx_get_entry_by_range(left, right, range_field_name, query)
-    for i, entry_data in pairs(res) do
-        local entry = ormentry:new(t, entry_data)
-        res[i] = add_key_select(t, entry)
-    end
-    return res
-end
-
-local function idx_delete_entry_by_range(t, left, right, range_field_name, query)
-    if t._cache_time then
-        local entry_list = idx_get_entry_by_range(t, left, right, range_field_name, query)
-        local ret = t._adapterinterface:idx_delete_entry_by_range(left, right, range_field_name, query)
-        if not ret then return ret end
-
-        for i = 1, #entry_list do
-            local entry = entry_list[i]
-            del_key_select(t, entry, true)
-        end
-
-        return ret
-    else
-        return t._adapterinterface:idx_delete_entry_by_range(left, right, range_field_name, query)
-    end
-end
-
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
 ---@return table obj
