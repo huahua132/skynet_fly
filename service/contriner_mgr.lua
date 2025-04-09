@@ -12,6 +12,7 @@ local pairs = pairs
 local os = os
 local tinsert = table.insert
 local tremove = table.remove
+local tpack = table.pack
 local tunpack = table.unpack
 local tsort = table.sort
 local skynet_call = skynet.call
@@ -38,10 +39,18 @@ skynet_util.register_info_func("version",function()
 	return g_version_map
 end)
 
+local function parse_call_ret(isok, err, ...)
+	if not isok then
+		return tpack(false, err)
+	else
+		return tpack(err, ...)
+	end
+end
+
 local function call_id_list(id_list, cmd, ...)
 	local ret_map = {}
 	for _,id in ipairs(id_list) do
-		ret_map[skynet.address(id)] = {skynet_call(id,'lua',cmd, ...)}
+		ret_map[skynet.address(id)] = parse_call_ret(pcall(skynet_call, id, 'lua', cmd, ...))
 	end
 	return ret_map
 end
@@ -79,13 +88,18 @@ local function launch_new_module(module_name, config)
 	local cur_time = time_util.time()
 	local cur_date = os.date("%Y-%m-%d[%H:%M:%S]",cur_time)
 	for i = 1,launch_num do
-		local server_id = skynet.newservice('hot_container',module_name,i,cur_date,cur_time,version,is_record_on)
+		local isok, server_id = pcall(skynet.newservice, 'hot_container', module_name, i, cur_date, cur_time, version, is_record_on)
+		if not isok then
+			is_ok = false
+			log.fatal("launch_new_module load err ", module_name)
+			break
+		end
 		local args = mod_args[i] or default_arg
-
 		local isok,ret = pcall(skynet_call, server_id, 'lua', 'start', args, auto_reload, record_backup)
 		if not isok or not ret then
-			log.fatal("launch_new_module err ",module_name,args)
+			log.fatal("launch_new_module start err ",module_name, args)
 			is_ok = false
+			break
 		end
 		local instance_name = args.instance_name
 		if instance_name then

@@ -169,6 +169,7 @@ local function check_exit()
 end
 
 function CMD.start(cfg, auto_reload, record_backup)
+	log.info("start begin")
 	if g_breakpoint_debug_host and g_breakpoint_debug_port then
 		log.warn_fmt("start breakpoint module_name[%s] index[%s] host[%s] port[%s]", MODULE_NAME, INDEX, g_breakpoint_debug_host, g_breakpoint_debug_port)
 		require("skynet-fly.LuaPanda").start(g_breakpoint_debug_host, g_breakpoint_debug_port);
@@ -251,13 +252,14 @@ function CMD.start(cfg, auto_reload, record_backup)
 	if INDEX == 1 and IS_CLOSE_HOT_RELOAD then
 		skynet.send('.contriner_mgr', 'lua', 'close_loads', SELF_ADDRESS, MODULE_NAME)
 	end
-
+	log.info("start end")
 	return ret
 end
 
 --退出
 assert(not CMD['close'], "repeat cmd close")
 function CMD.close()
+	log.info("fix_exit begin")
 	g_check_timer = timer:new(timer.minute * 10,timer.loop,check_exit)
 	g_check_timer:after_next()
 	module_fix_exit() --确定要退出
@@ -269,18 +271,23 @@ function CMD.close()
 	if g_time_point_obj then
 		g_time_point_obj:cancel()
 	end
+	log.info("fix_exit end")
 end
 
 --退出之前
 function CMD.herald_exit()
+	log.info("herald_exit begin")
 	contriner_client:close_switch()
 	module_herald_exit()
+	log.info("herald_exit end")
 end
 
 --取消退出
 function CMD.cancel_exit()
+	log.info("cancel_exit begin")
 	contriner_client:open_switch()
 	module_cancel_exit()
+	log.info("cancel_exit end")
 end
 
 --注册访问，用于记录来访地址
