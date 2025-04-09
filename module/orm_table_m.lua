@@ -233,8 +233,6 @@ function CMD.call(func_name,...)
         return true
     end
 
-    assert(g_orm_obj, "not orm_obj init err?")
-
     local func = assert(g_handle[func_name], "func_name not exists:" .. func_name)
 
     return false, queue(func, ...)

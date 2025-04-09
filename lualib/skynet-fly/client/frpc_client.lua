@@ -27,6 +27,8 @@ local pairs = pairs
 local tinsert = table.insert
 local spack = skynet.pack
 local x_pcall = x_pcall
+local debug_getinfo = debug.getinfo
+local tostring = tostring
 
 contriner_client:register("frpc_client_m")
 
@@ -37,6 +39,7 @@ local g_watch_client = nil
 
 local g_active_map = {}						--活跃列表
 local g_handler_map = {}
+local g_all_handler_map = {}
 local g_switch_handler_map = {}
 local SELF_ADDRESS = skynet.self()
 
@@ -57,12 +60,15 @@ local function syn_active_map()
 				end
 
 				if old_id ~= id then
-					local handlers = g_handler_map[svr_name]
-					if handlers then
-						for i = 1, #handlers do
-							local handler = handlers[i]
+					local handler_map = g_handler_map[svr_name]
+					if handler_map then
+						for _, handler in pairs(handler_map) do
 							skynet.fork(handler, svr_name, svr_id)
 						end
+					end
+
+					for _, handler in pairs(g_all_handler_map) do
+						skynet.fork(handler, svr_name, svr_id)
 					end
 				end
 			end
@@ -88,6 +94,7 @@ function M:is_active(svr_name, svr_id)
 end
 
 ---#desc 获取指定svr_name活跃的svr_id
+---@param svr_name string 结点名称
 ---@return table
 function M:get_active_svr_ids(svr_name)
 	local list = {}
@@ -102,12 +109,26 @@ function M:get_active_svr_ids(svr_name)
 end
 
 ---#desc 监听节点上线事件
----@return table
-function M:watch_up(svr_name, handler)
+---@param svr_name string 结点名称
+---@param handler function 回调函数
+---@param handle_name? string 回调绑定名称 不填默认代码路径
+function M:watch_up(svr_name, handler, handle_name)
+	assert(type(svr_name) == 'string', "svr_name type err:" .. tostring(svr_name))
+	assert(type(handler) == 'function', "handler type err:" .. tostring(handler))
 	if not g_handler_map[svr_name] then
 		g_handler_map[svr_name] = {}
 	end
-	tinsert(g_handler_map[svr_name], handler)
+	handle_name = handle_name or debug_getinfo(2,"S").short_src
+	g_handler_map[svr_name][handle_name] = handler
+end
+
+---#desc 监听所有节点上线事件
+---@param handle_name? string 回调绑定名称 不填默认代码路径
+---@param handler function 回调函数
+function M:watch_all_up(handle_name, handler)
+	assert(type(handler) == 'function', "handler type err:" .. tostring(handler))
+	handle_name = handle_name or debug_getinfo(2,"S").short_src
+	g_all_handler_map[handle_name] = handler
 end
 
 ---#desc 监听 frpc_client_m 切换
