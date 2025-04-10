@@ -175,7 +175,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
         version = nil
     end)
     skynet.fork(function()
-        log.warn_fmt("watch_channel_name syn start svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
+        log.info_fmt("watch_channel_name syn start svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
         while true do
             local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):subsyn(channel_name, version)
             if not ret then
@@ -192,7 +192,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
                     end
                 end
                 skynet.sleep(10)
-                log.warn("watch_channel_name move ", cluster_name, channel_name)
+                log.info("watch_channel_name move ", cluster_name, channel_name)
             else
                 version = cv
                 luamsg = cl
@@ -225,7 +225,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
                 end
             end
         end
-        log.warn_fmt("watch_channel_name syn over svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
+        log.info_fmt("watch_channel_name syn over svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
         if g_cluster_reqing_map[cluster_name] then
             g_cluster_reqing_map[cluster_name][channel_name] = nil
             if not next(g_cluster_reqing_map[cluster_name]) then
@@ -324,7 +324,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
         version = nil
     end)
     skynet.fork(function()
-        log.warn_fmt("pwatch_channel_name psyn start svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
+        log.info_fmt("pwatch_channel_name psyn start svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
         while true do
             local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):psubsyn(pchannel_name, version)
             if not ret then
@@ -340,7 +340,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
                     end
                 end
                 skynet.sleep(10)
-                log.warn("pwatch_channel_name move ", cluster_name, pchannel_name)
+                log.info("pwatch_channel_name move ", cluster_name, pchannel_name)
             else
                 version = cv
                 name_map = cl
@@ -351,7 +351,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
 
         phandle_name_map(svr_name, svr_id, pchannel_name, name_map, false)
 
-        log.warn_fmt("pwatch_channel_name syn over svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
+        log.info_fmt("pwatch_channel_name syn over svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
         if g_pcluster_reqing_map[cluster_name] then
             g_pcluster_reqing_map[cluster_name][pchannel_name] = nil
             if not next(g_pcluster_reqing_map[cluster_name]) then

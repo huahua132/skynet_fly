@@ -136,7 +136,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name)
     if not isok then
         log.warn("watch_channel_name faild", svr_name, svr_id, channel_name, err)
     else
-        log.warn("watch_channel_name succ ", svr_name, svr_id, channel_name)
+        log.info("watch_channel_name succ ", svr_name, svr_id, channel_name)
     end
 end
 
@@ -146,7 +146,7 @@ local function unwatch_channel_name(svr_name, svr_id, channel_name)
     if not isok then
         log.warn("unwatch_channel_name faild", svr_name, svr_id, channel_name, err)
     else
-        log.warn("unwatch_channel_name succ ", svr_name, svr_id, channel_name)
+        log.info("unwatch_channel_name succ ", svr_name, svr_id, channel_name)
     end
 end
 
