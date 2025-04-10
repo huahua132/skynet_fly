@@ -1331,7 +1331,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         --拿一下count
         if not cursor then
             local count_prepare_obj = nil
-            local cache_key = tconcat(field_names, ',')
             if _idx_limit_count_prepare_cache_map[cache_key] then
                 count_prepare_obj = _idx_limit_count_prepare_cache_map[cache_key]
             else
