@@ -93,6 +93,14 @@ local CANT_INDEX_TYPE_MAP = {
     [FIELD_TYPE.table] = true,
 }
 
+--互斥的符合
+local g_REPEL_SYMBOL = {
+    ['$gt'] = '$gte', --  >
+    ['$gte'] = '$gt', --  >=
+    ['$lt'] = '$lte', --  <
+    ['$lte'] = '$lt', --  <=
+}
+
 local function create_check_str(len)
     return function(str)
         if type(str) ~= 'string' then return false end
@@ -1324,11 +1332,10 @@ local function check_query(self, query)
     for field_name, field_value in pairs(query) do
         if type(field_value) == 'table' then
             assert(next(field_value), "can`t empty")
-            if field_value['$gte'] then
-                check_one_field(self, field_name, field_value['$gte'])
-            end
-            if field_value['$lte'] then
-                check_one_field(self, field_name, field_value['$lte'])
+            for k, v in pairs(field_value) do
+                local repel = assert(g_REPEL_SYMBOL[k], "query invaild k:" .. k)
+                assert(not field_value[repel], "repel repel k:" .. k .. ' repel:' .. repel)
+                check_one_field(self, field_name, v)
             end
         else
             check_one_field(self, field_name, field_value)

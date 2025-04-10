@@ -2309,6 +2309,13 @@ local function test_idx_get_entry()
     local entry_list = ormobj:idx_get_entry({role_id = {['$gte'] = 103, ['$lte'] = 104}, phone = '13211322996'})
     assert(#entry_list == 2)
     
+    local entry_list = ormobj:idx_get_entry({role_id = {['$gt'] = 103, ['$lte'] = 104}})
+    assert(#entry_list == 2)
+
+    local entry_list = ormobj:idx_get_entry({role_id = {['$gt'] = 103, ['$lte'] = 104}, phone = '13211322996'})
+    assert(#entry_list == 1)
+    
+    
     delete_table()
 end
 
