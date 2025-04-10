@@ -39,8 +39,7 @@ end)
 --logrotate的服务更新之后需要重新发送切割任务
 contriner_client:add_updated_cb("logrotate_m", function()
     for id, obj in pairs(g_rotate_map) do
-        obj.is_builder = false
-        obj:builder()
+        contriner_client:instance("logrotate_m"):mod_call("add_rotate", skynet.self(), obj.cfg, id)
     end
 end)
 
