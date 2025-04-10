@@ -22,7 +22,7 @@ local g_rotates_map = {}
 local function os_execute(cmd)
     local isok,status,signal = os.execute(cmd)
     if not isok then
-        log.error("os_execute cmd err ",cmd,status,signal)
+        log.warn("os_execute cmd err ",cmd,status,signal)
     end
     return isok
 end

@@ -155,7 +155,7 @@ local function dispatch(fd, source, msg, sz)
 	skynet.ignoreret()
 	local agent = g_fd_map[fd]
 	if not agent then
-		log.error("dispatch msg not agent ", fd)
+		log.info("dispatch msg not agent ", fd)
 		return
 	end
 
