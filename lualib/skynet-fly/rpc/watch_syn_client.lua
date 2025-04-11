@@ -293,9 +293,9 @@ end
 local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
     local cluster_name = svr_name .. ':' .. svr_id
 
-    if handler and g_pcluster_name_map[svr_name] and g_watch_channel_name_map[svr_name][svr_id] then
+    if handler and g_pcluster_name_map[svr_name] and g_pcluster_name_map[svr_name][svr_id] then
         --监听同步时，已经存在值了，需要触发一次回调
-        local name_map = g_watch_channel_name_map[svr_name][svr_id][pchannel_name]
+        local name_map = g_pcluster_name_map[svr_name][svr_id][pchannel_name]
         if name_map then
             phandle_name_map(svr_name, svr_id, pchannel_name, name_map, true, handler)
         end
