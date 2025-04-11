@@ -20,6 +20,7 @@ local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
 local contriner_interface = require "skynet-fly.contriner.contriner_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local FRPC_ERRCODE = require "skynet-fly.enum.FRPC_ERRCODE"
+local queue = require "skynet.queue"()
 
 local string = string
 local tonumber = tonumber
@@ -882,8 +883,7 @@ function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
 	return true
 end
 
---订阅同步
-function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
+local function subsyn(svr_name, svr_id, source, channel_name, version)
 	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
@@ -929,9 +929,12 @@ function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
 		return WATCH_SYN_RET.syn, channel_info.version, channel_info.luamsg
 	end
 end
+--订阅同步
+function CMD.subsyn(svr_name, svr_id, source, channel_name, version)
+	return queue(subsyn, svr_name, svr_id, source, channel_name, version)
+end
 
---取消订阅同步
-function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
+local function unsubsyn(svr_name, svr_id, source, channel_name)
 	local channel, _, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc watch not connect ", svr_name, source, channel_name)
@@ -958,14 +961,19 @@ function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 	local session_id = new_session_id()
 	local req, padding = frpcpack.packrequest(FRPC_PACK_ID.unsubsyn, "", "", session_id, 0, msg_buff, nil, 0)
 	local isok, err = pcall(channel.request, channel, req, nil, padding)
-	if not isok then 
+	if not isok then
+		log.warn("unsubsyn err ", svr_name, svr_id, source, channel_name, err)
 		return nil, err
 	end
+	watch_syn_info[channel_name] = nil
 	return true
 end
+--取消订阅同步
+function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
+	return queue(unsubsyn, svr_name, svr_id, source, channel_name)
+end
 
---批订阅同步
-function CMD.psubsyn(svr_name, svr_id, source, pchannel_name, version)
+local function psubsyn(svr_name, svr_id, source, pchannel_name, version)
 	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
@@ -1011,9 +1019,12 @@ function CMD.psubsyn(svr_name, svr_id, source, pchannel_name, version)
 		return WATCH_SYN_RET.syn, pchannel_info.version, pchannel_info.name_map
 	end
 end
+--批订阅同步
+function CMD.psubsyn(svr_name, svr_id, source, pchannel_name, version)
+	return queue(psubsyn, svr_name, svr_id, source, pchannel_name, version)
+end
 
---取消批订阅同步
-function CMD.unpsubsyn(svr_name, svr_id, source, pchannel_name)
+local function unpsubsyn(svr_name, svr_id, source, pchannel_name)
 	local channel, _, secret, _, pwatch_syn_info = get_watch_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc watch not connect ", svr_name, source, pchannel_name)
@@ -1043,7 +1054,12 @@ function CMD.unpsubsyn(svr_name, svr_id, source, pchannel_name)
 	if not isok then 
 		return nil, err
 	end
+	pwatch_syn_info[pchannel_name] = nil
 	return true
+end
+--取消批订阅同步
+function CMD.unpsubsyn(svr_name, svr_id, source, pchannel_name)
+	return queue(unpsubsyn, svr_name, svr_id, source, pchannel_name)
 end
 
 function CMD.start(config)
