@@ -100,13 +100,13 @@ function HANDLER.close(fd, code, reason)
 	closed(fd)
 end
 
-function HANDLER.error(fd)
-	log.error("ws error ",fd)
+function HANDLER.error(fd, msg)
 	closed(fd)
+	skynet.send(g_watchdog, "lua", "socket", "error", fd, msg)
 end
 
-function HANDLER.warning(ws_obj,sz)
-	log.warn("ws warning ",ws_obj,sz)
+function HANDLER.warning(ws_obj, sz)
+	skynet.send(g_watchdog, "lua", "socket", "warning", ws_obj.id, sz)
 end
 
 local CMD = {}
