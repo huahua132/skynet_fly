@@ -105,7 +105,7 @@ local function leave(agent, reason)
 	end
 
 	if not isok then
-		log.error("can`t leave !!! ", agent.player_id, errcode, errmsg)
+		log.warn("can`t leave !!! ", agent.player_id, errcode, errmsg)
 		return nil,errcode,errmsg
 	end
 
@@ -208,7 +208,7 @@ local function goout(agent, reason, is_jump_exit)
 	local player_id = agent.player_id
 	local isok,errcode,errmsg = leave(agent, reason)
 	if not isok then
-		log.error("can`t leave !!! ",player_id, errcode, errmsg)
+		log.warn("can`t leave !!! ",player_id, errcode, errmsg)
 		return nil,errcode,errmsg
 	end
 	hall_plug.goout(player_id, is_jump_exit)
@@ -624,7 +624,7 @@ local function connect_new(gate, fd, is_ws, addr, player_id, watchdog, is_jump_j
 		g_player_map[player_id] = agent
 	else
 		if agent.is_goout then
-			log.error("exiting ....",player_id)
+			log.warn("exiting ....",player_id)
 			return nil, -1, "exiting"
 		end
 		g_fd_map[agent.fd] = nil
