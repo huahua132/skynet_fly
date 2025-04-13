@@ -35,7 +35,7 @@ message serverInfoReq {
 message serverInfoRes {
 	optional int32 player_id = 1;
 	optional int32 hall_server_id = 2;  //大厅服id
-	optional int32 alloc_server_id = 3; //匹配服id
+	optional int32 alloc_server_id = 3; //分配服id
 	optional int32 table_server_id = 4;  //房间服id
 	optional string table_id = 5;        //桌子id
 }
