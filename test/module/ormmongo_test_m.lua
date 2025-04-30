@@ -2348,11 +2348,12 @@ local function test_idx_get_entry_by_limit()
     local limit = 10
     local sort = 1
     local count = 0
+    local offset = nil
     local check = {}
     --升序查询
     for i = 1, 10 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age")
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", nil, offset)
         if i == 1 then
             assert(count == 100)
         end
@@ -2369,10 +2370,11 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = -1
     cursor = nil
+    offset = nil
     --降序查询
     for i = 1, 10 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age")
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", nil, offset)
         if i == 1 then
             assert(count == 100)
         end
@@ -2389,11 +2391,11 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = 1
     cursor = nil
-
+    offset = nil 
     --通过role_id age查询
     for i = 1, 5 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2})
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2}, offset)
         if i == 1 then
             assert(count == 50)
         end
@@ -2410,11 +2412,12 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = -1   --降序
     cursor = nil
+    offset = nil
 
     --通过role_id age查询
     for i = 1, 5 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2})
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2}, offset)
         if i == 1 then
             assert(count == 50)
         end
@@ -2431,11 +2434,12 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = 1
     cursor = nil
+    offset = nil
 
     --通过role_id nickname查询
     for i = 1, 5 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1})
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1}, offset)
         if i == 1 then
             assert(count == 50)
         end
@@ -2452,11 +2456,12 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = -1
     cursor = nil
+    offset = nil
 
     --通过role_id nickname查询
     for i = 1, 5 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1})
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "nickname", {role_id = 1}, offset)
         if i == 1 then
             assert(count == 50)
         end
@@ -2473,10 +2478,11 @@ local function test_idx_get_entry_by_limit()
     check = {}
     sort = 1
     cursor = nil
+    offset = nil
     --通过role_id age查询
     for i = 1, 2 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2, age = {['$gte'] = 61, ['$lte'] = 80}})
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2, age = {['$gte'] = 61, ['$lte'] = 80}}, offset)
         if i == 1 then
             assert(count == 20)
         end
@@ -2490,24 +2496,76 @@ local function test_idx_get_entry_by_limit()
         assert(age_l > age_f)
     end
 
-    check = {}
+    --测试age相同时分页查询
+    --增加测试数据
+
+    local create_age_count = {}
+    for i = 1, 100 do
+        local age = 101 + i % 6
+        ormobj:create_one_entry({player_id = i, role_id = 3, nickname = '' .. age, age = age})
+        if not create_age_count[age] then
+            create_age_count[age] = 1
+        else
+            create_age_count[age] = create_age_count[age] + 1
+        end
+    end
+
     sort = 1
     cursor = nil
-    --通过role_id age查询
-    for i = 1, 2 do
+    offset = nil
+    local select_age_count = {}
+    for i = 1, 10 do
         local entry_list
-        cursor, entry_list, count = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 2, age = {['$gte'] = 61, ['$lte'] = 100}}, 10)
+        --log.info(">>>> ", cursor, offset)
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 3}, offset)
         if i == 1 then
-            assert(count == 40)
+            assert(count == 100)
         end
         for _, entry in ipairs(entry_list) do
             local age = entry:get('age')
-            assert(not check[age])
-            check[age] = true
+            if not select_age_count[age] then
+                select_age_count[age] = 1
+            else
+                select_age_count[age] = select_age_count[age] + 1
+            end
+            --log.info("age ", age, entry:get('role_id'))
         end
+
         local age_f = entry_list[1]:get('age')
         local age_l = entry_list[10]:get('age')
-        assert(age_l > age_f)
+        assert(age_l >= age_f)
+    end
+    for age,count in pairs(create_age_count) do
+        assert(count == select_age_count[age], string.format("age[%s] count[%s] != select_age_count[%s]", age, count, select_age_count[age]))
+    end
+
+    sort = -1
+    cursor = nil
+    offset = nil
+    local select_age_count = {}
+    for i = 1, 10 do
+        local entry_list
+        --log.info(">>>> ", cursor, offset)
+        cursor, entry_list, count, offset = ormobj:idx_get_entry_by_limit(cursor, limit, sort, "age", {role_id = 3}, offset)
+        if i == 1 then
+            assert(count == 100)
+        end
+        for _, entry in ipairs(entry_list) do
+            local age = entry:get('age')
+            if not select_age_count[age] then
+                select_age_count[age] = 1
+            else
+                select_age_count[age] = select_age_count[age] + 1
+            end
+            --log.info("age ", age, entry:get('role_id'))
+        end
+
+        local age_f = entry_list[1]:get('age')
+        local age_l = entry_list[10]:get('age')
+        assert(age_l <= age_f)
+    end
+    for age,count in pairs(create_age_count) do
+        assert(count == select_age_count[age], string.format("age[%s] count[%s] != select_age_count[%s]", age, count, select_age_count[age]))
     end
 
     delete_table()

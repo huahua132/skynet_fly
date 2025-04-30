@@ -977,13 +977,13 @@ local function idx_get_entry(t, query)
     return res
 end
 
-local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, query, offset)
-    local cursor, res, count = t._adapterinterface:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
+local function idx_get_entry_by_limit(t, cursor, limit, sort, sort_field_name, query, next_offset)
+    local cursor, res, count, next_offset = t._adapterinterface:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, next_offset)
     for i, entry_data in pairs(res) do
         local entry = ormentry:new(t, entry_data)
         res[i] = add_key_select(t, entry)
     end
-    return cursor, res, count
+    return cursor, res, count, next_offset
 end
 
 local function idx_delete_entry(t, query)
@@ -1359,25 +1359,26 @@ function M:idx_get_entry(query)
 end
 
 ---#desc 基于普通索引分页查询 format`[select * from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?) order by ? desc limit ?]`
----@param cursor number|string 游标
+---@param cursor? number|string 游标
 ---@param limit number 数量限制
 ---@param sort number 1升序  -1降序
 ---@param sort_field_name string 排序字段名
 ---@param query? table 索引值 [key1 = xxx, key2 = xxx, key3 = {['$gte' = xxx, '$lte' = xxx]}]
----@param offset? number 偏移量
----@return number cursor? 游标
+---@param next_offset? number 下一页偏移量
+---@return number|string cursor? 游标
 ---@return table obj[](ormentry) 结果数组
----@return number count? 总数
-function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, offset)
+---@return number count? 总数 首页返回
+---@return number next_offset 下一页偏移量
+function M:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, next_offset)
     assert(self._is_builder, "not builder can`t idx_get_entry_by_limit")
     assert(type(limit) == 'number', "err limit:" .. tostring(limit))
     assert(type(sort) == 'number', "err sort:" .. tostring(sort))
-    assert(not offset or type(offset) == 'number', "err offset:" .. tostring(offset))
+    assert(not next_offset or type(next_offset) == 'number', "err offset:" .. tostring(next_offset))
 
     if query then
         check_query(self, query)
     end
-    return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query, offset)
+    return queue_doing(self, nil, idx_get_entry_by_limit, self, cursor, limit, sort, sort_field_name, query, next_offset)
 end
 
 ---#desc 通过普通索引删除数据 format `delete from tab_name where (key1 = ? and key2 = ? and key3 >= ? and key3 <= ?)`
