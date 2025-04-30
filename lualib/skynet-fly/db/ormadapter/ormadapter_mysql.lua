@@ -373,6 +373,8 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     local updates_format_end = " where("
     local updates_format_key = "("
     local delete_format_head = sformat("delete from %s",tab_name)
+    local desc_key_str = ""
+    local asc_key_str = ""
 
     local len = #field_list
     for i = 1,len do
@@ -411,12 +413,16 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             select_format_key_head = select_format_key_head .. '`' .. field_name .. '`'
             updates_format_end = updates_format_end .. '`' .. field_name .. '`)'
             updates_format_key = updates_format_key .. '?)'
+            desc_key_str = desc_key_str .. '`' .. field_name .. '` desc '
+            asc_key_str = asc_key_str .. '`' .. field_name .. '` desc '
         else
             select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "?"
             update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "? and "
             select_format_key_head = select_format_key_head .. '`' .. field_name .. '`,'
             updates_format_end = updates_format_end .. '`' .. field_name .. '`,'
             updates_format_key = updates_format_key .. '?,'
+            desc_key_str = desc_key_str .. '`' .. field_name .. '` desc,'
+            asc_key_str = asc_key_str .. '`' .. field_name .. '` desc,'
         end
        
         select_format_end_list[i] = select_format_end
@@ -1308,15 +1314,15 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             end
             if not cursor then
                 if sort == 1 then  --升序
-                    prepare_str = prepare_str .. sformat(' order by `%s` limit ?', end_field_name)
+                    prepare_str = prepare_str .. sformat(' order by `%s` asc, %s limit ?', end_field_name, asc_key_str)
                 else
-                    prepare_str = prepare_str .. sformat(' order by `%s` desc limit ?', end_field_name)
+                    prepare_str = prepare_str .. sformat(' order by `%s` desc, %s limit ?', end_field_name, desc_key_str)
                 end
             else
                 if sort == 1 then  --升序
-                    prepare_str = prepare_str .. sformat('`%s` >= ? order by `%s` limit ?', end_field_name, end_field_name)
+                    prepare_str = prepare_str .. sformat('`%s` >= ? order by `%s` asc, %s limit ?', end_field_name, end_field_name, asc_key_str)
                 else
-                    prepare_str = prepare_str .. sformat('`%s` <= ? order by `%s` desc limit ?', end_field_name, end_field_name)
+                    prepare_str = prepare_str .. sformat('`%s` <= ? order by `%s` desc, %s limit ?', end_field_name, end_field_name, desc_key_str)
                 end
             end
             if next_offset then

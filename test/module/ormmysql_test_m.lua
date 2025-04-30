@@ -2581,6 +2581,7 @@ local function test_idx_get_entry_by_limit()
     sort = 1
     cursor = nil
     offset = nil
+    local check_player_id = {}
     local select_age_count = {}
     for i = 1, 10 do
         local entry_list
@@ -2596,7 +2597,12 @@ local function test_idx_get_entry_by_limit()
             else
                 select_age_count[age] = select_age_count[age] + 1
             end
-            --log.info("age ", age, entry:get('role_id'))
+            --log.info("age ", age, entry:get('role_id'), entry:get('player_id'))
+            if not check_player_id[entry:get('player_id')] then
+                check_player_id[entry:get('player_id')] = true
+            else
+                assert(false, string.format("age[%s] player_id[%s] is repeat", age, entry:get('player_id')))
+            end
         end
 
         local age_f = entry_list[1]:get('age')
@@ -2610,6 +2616,7 @@ local function test_idx_get_entry_by_limit()
     sort = -1
     cursor = nil
     offset = nil
+    local check_player_id = {}
     local select_age_count = {}
     for i = 1, 10 do
         local entry_list
@@ -2625,7 +2632,12 @@ local function test_idx_get_entry_by_limit()
             else
                 select_age_count[age] = select_age_count[age] + 1
             end
-            --log.info("age ", age, entry:get('role_id'))
+            --log.info("age ", age, entry:get('role_id'), entry:get('player_id'))
+            if not check_player_id[entry:get('player_id')] then
+                check_player_id[entry:get('player_id')] = true
+            else
+                assert(false, string.format("age[%s] player_id[%s] is repeat", age, entry:get('player_id')))
+            end
         end
 
         local age_f = entry_list[1]:get('age')
