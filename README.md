@@ -20,7 +20,7 @@ QQ群号：102993581
 
 ## openssl 链接出错
 [下载链接](https://slproweb.com/products/Win32OpenSSL.html)
-请自行下载 openssl 对应系统版本， 替换`win3rd/include 和win3rd/lib`，lib使用MT的。
+请自行下载 openssl 对应系统版本， 替换`win3rd/include 和win3rd/lib`，lib使用MT(静态库)的。 下载完整版的msi文件安装openssl，可以找到对应目录(`xxx\lib\VC\xxx\MT`)
 
 # skynet_fly简介
 	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
