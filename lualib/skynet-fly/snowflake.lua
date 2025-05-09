@@ -22,9 +22,9 @@ local function snowflake_service()
     local os = os
     local tostring = tostring
 
-    local MACHINE_ID_BIT = 13             --机器号位数  最大支持配置       8191
+    local MACHINE_ID_BIT = 14             --机器号位数  最大支持配置       16,383
     local TIME_BIT       = 32             --时间位数    最大到时间         21060207 14:28:15
-    local INCR_BIT       = 18             --自增序号数  最大同一秒分配     262143
+    local INCR_BIT       = 17             --自增序号数  最大同一秒分配     131071
 
     local MACHINE_ID_BIT_MAX = (1 << MACHINE_ID_BIT) - 1
     local TIME_BIT_MAX = (1 << TIME_BIT) - 1
@@ -84,7 +84,7 @@ local function snowflake_service()
 end
 
 local TIME_BIT       = 32             --时间位数
-local INCR_BIT       = 18             --自增序号数
+local INCR_BIT       = 17             --自增序号数
 local MACHINE_SHIFT = TIME_BIT + INCR_BIT   --机器号偏移量
 local TIME_SHIFT = INCR_BIT                 --时间偏移量
 local MACHINE_MASK = (1 << MACHINE_SHIFT) - 1 --机器号掩码
