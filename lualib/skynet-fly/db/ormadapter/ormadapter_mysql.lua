@@ -414,7 +414,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             updates_format_end = updates_format_end .. '`' .. field_name .. '`)'
             updates_format_key = updates_format_key .. '?)'
             desc_key_str = desc_key_str .. '`' .. field_name .. '` desc '
-            asc_key_str = asc_key_str .. '`' .. field_name .. '` desc '
+            asc_key_str = asc_key_str .. '`' .. field_name .. '` asc '
         else
             select_format_end = select_format_end .. '`' .. field_name .. '`=' .. "?"
             update_format_end = update_format_end .. '`' .. field_name .. '`=' .. "? and "
@@ -422,7 +422,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
             updates_format_end = updates_format_end .. '`' .. field_name .. '`,'
             updates_format_key = updates_format_key .. '?,'
             desc_key_str = desc_key_str .. '`' .. field_name .. '` desc,'
-            asc_key_str = asc_key_str .. '`' .. field_name .. '` desc,'
+            asc_key_str = asc_key_str .. '`' .. field_name .. '` asc,'
         end
        
         select_format_end_list[i] = select_format_end
