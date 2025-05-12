@@ -161,7 +161,12 @@ function M.day_time(day, hour, min, sec, curtime)
   
 	local sub_day_time = day * 86400
 	curtime = curtime or M.time()
-	local date = os.date("*t",curtime + sub_day_time)
+	local next_time = curtime + sub_day_time
+	if next_time < 86400 then				--避免windows下超出时间戳范围报错
+		next_time = 86400
+	end
+
+	local date = os.date("*t", next_time)
 	date.hour = hour
 	date.min = min
 	date.sec = sec
