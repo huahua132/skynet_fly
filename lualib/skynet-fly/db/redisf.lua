@@ -110,11 +110,12 @@ local mt = {
 			end
 		end
 
-	t[k] = f
-	--缓存命令函数
-	cmdfuncs[k] = f
-	return f
-end}
+		t[k] = f
+		--缓存命令函数
+		cmdfuncs[k] = f
+		return f
+	end
+}
 
 ---#desc 运行redis脚本命令
 ---@param db_name string 对应share_config_m 中写的key为redis表的名为db_name的连接配置
