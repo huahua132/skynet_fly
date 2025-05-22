@@ -39,7 +39,7 @@ local mt = {__index = function(t,k)
             if not is_move then
                 return tunpack(ret, 2, ret.n)
             end
-            skynet.yield()
+            skynet.sleep(10)    --0.1s * 100 最多尝试10秒
         end
         
         error("call err " .. k .. ' ' .. table_util.dump({...}))
