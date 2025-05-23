@@ -197,6 +197,7 @@ function M:new(file_path, file_name, flush_inval, max_age)
     local logd = g_logd or service.new("use_logd", log_service)
     t.logd = logd
     t.id = skynet.call(logd, 'lua', 'new', file_path, file_name, flush_inval, max_age)
+    g_logd = logd
     return t
 end
 ---#desc 写日志
