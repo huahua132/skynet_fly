@@ -37,9 +37,9 @@ end
 ---@param channel_name string 通道名
 ---@param ... string|number|boolean|table|nil 需同步的数据
 function M.pubsyn(channel_name, ...)
-    local msg, sz = skynet.packstring(...)
+    local msg = skynet.packstring(...)
     local addr = get_frpc_addr()
-    skynet.send(addr, 'lua', "pubsyn", channel_name, msg, sz)
+    skynet.send(addr, 'lua', "pubsyn", channel_name, msg)
 end
 
 return M
