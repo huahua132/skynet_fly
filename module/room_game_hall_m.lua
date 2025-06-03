@@ -152,6 +152,7 @@ local function handle_msg(agent, header, body, rsp_session)
 end
 --消息分发
 local function dispatch(fd, source, msg, sz)
+	skynet.set_trace_tag()
 	skynet.ignoreret()
 	local agent = g_fd_map[fd]
 	if not agent then

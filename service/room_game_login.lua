@@ -604,6 +604,7 @@ skynet.start(function()
 			return msg, sz
 		end,
 		dispatch = function(fd, source, msg, sz)
+			skynet.set_trace_tag()
 			skynet.ignoreret()
 			local agent = g_fd_agent_map[fd]
 			if not agent then
