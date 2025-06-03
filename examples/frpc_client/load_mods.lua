@@ -5,6 +5,8 @@ return {
 		launch_num = 1,
 		default_arg = {
 			server_cfg = {
+				--trace = 1,
+				svr_type = 2,
 				svr_id = 1,
 				debug_port = 9000,
 			}

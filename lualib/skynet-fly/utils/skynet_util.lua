@@ -11,6 +11,7 @@ local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
 local log = require "skynet-fly.log"
 local table_util = require "skynet-fly.utils.table_util"
+local guid_util = require "skynet-fly.utils.guid_util"
 local json = require "cjson"
 
 local debug_getinfo = debug.getinfo
@@ -118,6 +119,11 @@ old_skynet_info_func(function()
 
     return json.encode(info)
 end)
+
+--重写方法
+function skynet.create_lua_trace()
+	return guid_util.fly_guid()
+end
 
 ---#desc 注册info_name信息的生成函数
 ---@param info_name string 名称

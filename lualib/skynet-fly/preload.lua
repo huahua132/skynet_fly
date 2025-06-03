@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local file_util = require "skynet-fly.utils.file_util"
-local skynet_util = require "skynet-fly.utils.skynet_util"
 local log = require "skynet-fly.log"
 local skynet_debug = require "skynet.debug"
 local debug = debug
@@ -39,6 +38,8 @@ function xx_pcall(f,...)
 
 	return tunpack(ret, 1, ret.n)
 end
+
+local skynet_util = require "skynet-fly.utils.skynet_util"
 
 skynet_debug.reg_debugcmd("shutdown", function()
 	log.warn("---------------------------------shutdown begin-------------------------------")

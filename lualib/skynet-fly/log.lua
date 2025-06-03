@@ -62,7 +62,7 @@ local function create_log_func(level_name,is_format)
 			end
 		end
 
-		serror(sformat("[%s][%s][%s]%s", level_name, LOG_SERVICE_NAME, lineinfo, log_str))
+		serror(sformat("[%s][%s][%s][%s]%s", level_name, skynet.get_lua_trace(), LOG_SERVICE_NAME, lineinfo, log_str))
 
 		local log_hook = hooks[level]
 		local len = #log_hook
@@ -95,6 +95,7 @@ local g_log_type_info = {
 	time_date = "",                  --日期
 	server_name = "",                --服务名称
 	code_line = "",                  --代码行号
+	tarce_tag = "",
 }
 
 --解析日志
@@ -104,6 +105,7 @@ function M.parse(log_str)
 	local time_date = ""                  --日期
 	local server_name = ""                --服务名称
 	local code_line = ""                  --代码行号
+	local tarce_tag = ""				  --跟踪标记
 	if sfind(log_str,"[:",nil,true) then
 		address = ssub(log_str,2,10)
 		time_date = ssub(log_str,13,32)
@@ -113,16 +115,20 @@ function M.parse(log_str)
 			if type_e then
 				local log_type_str = ssub(log_str,35,type_e - 1)
 				log_type = level_map[log_type_str] or M.UNKNOWN
-
-				local s_n_b = type_e + 2
-				local _,s_n_e = sfind(log_str,"]",s_n_b,true)
-				if s_n_e then
-					server_name = ssub(log_str,s_n_b,s_n_e - 1)
-					
-					local c_l_b = s_n_e + 2
-					local _,c_l_e = sfind(log_str,"]",c_l_b,true)
-					if c_l_e then
-						code_line = ssub(log_str,c_l_b,c_l_e - 1)
+				local tb = type_e + 2
+				local _, te = sfind(log_str, "]", tb, true)
+				if te then
+					tarce_tag = ssub(log_str, tb, te - 1)
+					local s_n_b = te + 2
+					local _,s_n_e = sfind(log_str,"]",s_n_b,true)
+					if s_n_e then
+						server_name = ssub(log_str,s_n_b,s_n_e - 1)
+						
+						local c_l_b = s_n_e + 2
+						local _,c_l_e = sfind(log_str,"]",c_l_b,true)
+						if c_l_e then
+							code_line = ssub(log_str,c_l_b,c_l_e - 1)
+						end
 					end
 				end
 			end
@@ -138,6 +144,7 @@ function M.parse(log_str)
 	g_log_type_info.time_date = time_date
 	g_log_type_info.server_name = server_name
 	g_log_type_info.code_line = code_line
+	g_log_type_info.tarce_tag = tarce_tag
 	return g_log_type_info
 end
 

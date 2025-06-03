@@ -14,7 +14,7 @@ local math_util = require "skynet-fly.utils.math_util"
 local wait = require "skynet-fly.time_extend.wait":new()
 
 local sformat = string.format
-local ostime = os.time
+-- local ostime = os.time   //local 之后录像无法记录
 local assert = assert
 local tonumber = tonumber
 local table = table
@@ -36,14 +36,14 @@ local function get_time_incr()
     if g_is_wait then
         wait:wait("wait")
     end
-    local cur_time = ostime()
+    local cur_time = os.time()
     assert(cur_time <= TIME_MAX, "invalid time")
     if g_pre_time == cur_time then
         if g_incr_num >= INCR_BIT_MAX then
             g_is_wait = true
             while cur_time == g_pre_time do
                 skynet.sleep(5)
-                cur_time = ostime()
+                cur_time = os.time()
             end
             g_is_wait = false
             g_pre_time = cur_time

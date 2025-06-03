@@ -255,7 +255,7 @@ end
 
 function CMD.start()
 	skynet.fork(function()
-		--test_base_msg()
+		test_base_msg()
 		--test_large_msg()
 		--test_disconnect()
 		--test_benchmark()

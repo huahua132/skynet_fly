@@ -18,6 +18,8 @@ return {
 			},
 
 			server_cfg = {
+				--trace = 1,
+				svr_type = 1,
 				svr_name = "frpc_s",			--不指定的情况下，默认使用文件夹名(frpc_server)
 				svr_id = 1,
 				debug_port = 9001,
