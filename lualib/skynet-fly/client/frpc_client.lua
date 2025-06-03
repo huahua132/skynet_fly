@@ -498,11 +498,13 @@ end
 --------------------------------------------------------------------------------
 --all
 --------------------------------------------------------------------------------
-local function handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3)
+local function handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3, is_cast)
 	if not cluster_rsp_map then
 		-- nil, errcode, errmsg
 		return nil, secret_map, arg3
 	end
+
+	local upack = is_cast and unpack_broadcast or unpack_rsp
 	local ret_list = {}
 	local err_list = {}
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
@@ -510,7 +512,7 @@ local function handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3)
 			local secret = secret_map[cluster_name]
 			tinsert(ret_list, {
 				cluster_name = cluster_name,
-				result = {unpack_rsp(rsp, secret)}
+				result = {upack(rsp, secret)}
 			})
 		else
 			--rsp[errcode, errmsg, cluster_name]
@@ -574,7 +576,7 @@ function M:all_broadcast_call(...)
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call, nil, spack(...)
 	)
 
-	return handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3)
+	return handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3, true)
 end
 
 ---#desc 给所有结点的指定别名服务用balance_send的方式发送消息
@@ -686,7 +688,7 @@ function M:one_broadcast_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp, secret)}
+		result = {unpack_broadcast(rsp, secret)}
 	}
 end
 --------------------------------------------------------------------------------
@@ -786,7 +788,7 @@ function M:byid_broadcast_call_by_name(...)
 
 	return {
 		cluster_name = cluster_name,
-		result = {unpack_rsp(rsp, secret)}
+		result = {unpack_broadcast(rsp, secret)}
 	}
 end
 
@@ -857,7 +859,7 @@ function M:all_broadcast_call_by_name(...)
 		"call_all", self.svr_name, self.module_name, self.instance_name, FRPC_PACK_ID.broadcast_call_by_name, nil, spack(...)
 	)
 	
-	return handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3)
+	return handle_cluster_rsp_map(cluster_rsp_map, secret_map, arg3, true)
 end
 --------------------------------------------------------------------------------
 --all_by_name
