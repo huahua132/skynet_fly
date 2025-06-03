@@ -8,7 +8,7 @@ LOG_SERVICE_NAME = args[1]
 if args[1] == 'service_cell' then
 	LOG_SERVICE_NAME = args[1] .. '-' .. args[2]
 elseif args[1] == 'hot_container' then
-	LOG_SERVICE_NAME = args[2] .. '-' .. args[3]
+	LOG_SERVICE_NAME = args[2] .. '-' .. args[#args] .. '-' .. args[3]
 end
 
 local main, pattern
