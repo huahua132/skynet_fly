@@ -245,7 +245,7 @@ end
 
 local function phandle_name_map_svr_name(svr_name, pchannel_name, name_map, is_watch, handler, handlers)
     handlers = handlers or get_pchannel_handlers(svr_name, pchannel_name)
-    if not handlers then return end
+    if not handlers or not name_map then return end
 
     for i = 1, #handlers do
         for cname in pairs(name_map) do
@@ -267,7 +267,7 @@ end
 
 local function phandle_name_map_svr_id(svr_name, svr_id, pchannel_name, name_map, is_watch, handler, handlers)
     handlers = handlers or get_pchannel_svr_id_handlers(svr_name, svr_id, pchannel_name)
-    if not handlers then return end
+    if not handlers or not name_map then return end
     for i = 1, #handlers do
         for cname in pairs(name_map) do
             local handle_name = handlers[i]
