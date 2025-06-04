@@ -9,27 +9,34 @@ local M = {}
 
 function M.start()
     local addr = skynet.self()
+    skynet.send(addr, 'lua', "loop_queue_end")
+    skynet.send(addr, 'lua', "loop_queue_end")
+
     skynet.call(addr, 'lua', "loop_queue_start")
 end
 
 
 skynet_util.extend_cmd_func("loop_queue_start", function()
-    log.info("loop_queue_start begin")
     queue(function()
-        log.info("loop_queue_start queue begin")
-        local addr = skynet.self()
-        skynet.call(addr, 'lua', "loop_queue_end")
-        log.info("loop_queue_start queue end")
+        queue(function()
+            log.info("loop_queue_start queue begin")
+            local addr = skynet.self()
+            skynet.call(addr, 'lua', "loop_queue_end")
+            log.info("loop_queue_start queue end")
+        end)
     end)
-    log.info("loop_queue_start end")
 end)
 
 skynet_util.extend_cmd_func("loop_queue_end", function()
-    log.info("loop_queue_end begin")
     queue(function()
-        log.info("loop_queue_end queue begin")
+        skynet.sleep(100)
+        queue(function()
+            log.info("loop_queue_end queue begin")
+            skynet.sleep(100)
+            log.info("loop_queue_end queue end")
+        end)
+        skynet.sleep(100)
     end)
-    log.info("loop_queue_end end")
 end)
 
 return M

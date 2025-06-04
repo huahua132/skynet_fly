@@ -14,6 +14,7 @@
 
 local skynet = require "skynet"
 local queue = require "skynet.queue"
+local object_pool = require "skynet-fly.pool.object_pool"
 
 local coroutine = coroutine
 local setmetatable = setmetatable
@@ -26,6 +27,8 @@ local x_pcall = x_pcall
 
 local MULTI_TYPE  = 1        -- 并发类型
 local UNIQUE_TYPE = 2        -- 单发类型
+
+local g_queue_pool = object_pool:new(queue)
 
 local M = {}
 local meta = {__index = M}
@@ -75,7 +78,7 @@ function M:multi(key, func, ...)
     local co = coroutine.running()
     assert(not self.doing_co[co], "can`t loop call")   --不能嵌套调用
     if not self.is_lock then
-        local queue = self.queue_map[key] or queue()
+        local queue = self.queue_map[key] or g_queue_pool:get()
         if not self.que_len_map[key] then
             self.que_len_map[key] = 0
         end
@@ -97,6 +100,7 @@ function M:multi(key, func, ...)
         if self.que_len_map[key] == 0 then
             self.que_len_map[key] = nil
             self.queue_map[key] = nil
+            g_queue_pool:release(queue)
         end
 
         local isok, err = ret[1],ret[2]
