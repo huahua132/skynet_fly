@@ -14,6 +14,7 @@ function M.init()
     :int64("nickname")
     :int8("sex")
     :int8("status")
+    :set_index("sex_index", "sex")
     :set_keys("player_id")
     :builder(adapter)
 

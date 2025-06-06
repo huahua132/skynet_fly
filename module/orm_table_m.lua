@@ -194,12 +194,24 @@ end
 
 --普通索引查询
 function g_handle.idx_get_entry(query)
-    return g_orm_obj:idx_get_entry(query)
+    local entry_list = g_orm_obj:idx_get_entry(query)
+    local data_list = {}
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        tinsert(data_list, entry:get_entry_data())
+    end
+    return data_list
 end
 
 --普通索引分页查询
-function g_handle.idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
-    return g_orm_obj:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query)
+function g_handle.idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, next_offset)
+    local cursor, entry_list, count, next_offset = g_orm_obj:idx_get_entry_by_limit(cursor, limit, sort, sort_field_name, query, next_offset)
+    local data_list = {}
+    for i = 1,#entry_list do
+        local entry = entry_list[i]
+        tinsert(data_list, entry:get_entry_data())
+    end
+    return cursor, data_list, count, next_offset
 end
 
 --普通索引删除

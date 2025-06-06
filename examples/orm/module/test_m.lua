@@ -119,6 +119,24 @@ local function test()
     client:batch_delete_entry({{10005},{10006},{10007}})
     local all_data = client:get_all_entry()
     log.info("测试批量删除 all_data >>> ", ret, all_data)
+
+    --测试 idx_get_entry
+    local entry_data_list = {
+        {player_id = 20005, sex = 0},
+        {player_id = 20006, sex = 0},
+        {player_id = 20007, sex = 1},
+        {player_id = 20008, sex = 1},
+    }
+    client:create_entry(entry_data_list)
+    local data_list = client:idx_get_entry({sex = 1})
+    log.info("idx_get_entry >>> ", data_list)
+
+    --测试  idx_get_entry_by_limit
+    local cursor, data_list, count, next_offset = client:idx_get_entry_by_limit(nil, limit, sort, "sex", {}, nil)
+    log.info("idx_get_entry_by_limit1 >>> ", cursor, data_list, count, next_offset)
+
+    cursor, data_list, count, next_offset = client:idx_get_entry_by_limit(cursor, limit, sort, "sex", {}, next_offset)
+    log.info("idx_get_entry_by_limit2 >>> ", cursor, data_list, count, next_offset)
 end
 
 --切换测试
