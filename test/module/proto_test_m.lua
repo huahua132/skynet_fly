@@ -157,11 +157,106 @@ local function sproto_all_test()
 	core.dumpproto(sp.__cobj)
 end
 
+local function benchmark_proto()
+	log.error("benchmark_proto start!!!")
+	log.info(pb_netpack.load("./proto"))
+	local ab = {
+		person = {
+			{
+				name = "Alice",
+				id = 10000,
+				phone = {
+					{ number = "123456789" , type = 1 },
+					{ number = "87654321" , type = 2 },
+				}
+			},
+			{
+				name = "Bob",
+				id = 20000,
+				phone = {
+					{ number = "01234567890" , type = 3 },
+				}
+			}
+		}
+	}
+	local _, str = pb_netpack.encode(".benchmark.AddressBook", ab)
+	log.info("encode size: ", #str)
+	local time = skynet.time()
+	for i = 1, 1024 * 1024 do
+		pb_netpack.encode(".benchmark.AddressBook", ab)
+	end
+	local end_time = skynet.time()
+
+	log.info("encode 1M times use time:", end_time - time)
+
+	for i = 1, 1024 * 1024 do
+		pb_netpack.decode(".benchmark.AddressBook", str)
+	end
+
+	local now_time = skynet.time()
+	log.info("decode 1M times use time:", now_time - end_time)
+
+	log.error("benchmark_proto end!!!")
+end
+
+local function benchmark_sproto(isp)
+	log.error("benchmark_sproto start!!!")
+	local name = "sp"
+	if isp then
+		name = "isp"
+	end
+	local sp = sp_netpack.new(name)
+	log.info(sp.load("./sproto"))
+	if isp then
+		sp.set_pcode()
+	end
+	local ab = {
+		person = {
+			{
+				name = "Alice",
+				id = 10000,
+				phone = {
+					{ number = "123456789" , type = 1 },
+					{ number = "87654321" , type = 2 },
+				}
+			},
+			{
+				name = "Bob",
+				id = 20000,
+				phone = {
+					{ number = "01234567890" , type = 3 },
+				}
+			}
+		}
+	}
+	local _, str = sp.encode("AddressBook", ab)
+	log.info("encode size: ", #str)
+	local time = skynet.time()
+	for i = 1, 1024 * 1024 do
+		sp.encode("AddressBook", ab)
+	end
+	local end_time = skynet.time()
+
+	log.info("encode 1M use time:", end_time - time)
+
+		for i = 1, 1024 * 1024 do
+		sp.decode("AddressBook", str)
+	end
+
+	local now_time = skynet.time()
+	log.info("decode 1M times use time:", now_time - end_time)
+
+	log.error("benchmark_sproto end!!!")
+end
+
 function CMD.start()
 	-- protobuff_test()
 	-- sproto_test()
 	-- sproto_netpack_test()
-	sproto_all_test()
+	-- sproto_all_test()
+	benchmark_proto()
+	benchmark_sproto()
+	benchmark_sproto(true)
 	return true
 end
 

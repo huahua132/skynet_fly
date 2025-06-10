@@ -1,0 +1,18 @@
+package benchmark;
+
+message Person {
+  required string name = 1;
+  required int32 id = 2;
+  optional string email = 3;
+
+  message PhoneNumber {
+    required string number = 1;
+    optional int32 type = 2 ;
+  }
+
+  repeated PhoneNumber phone = 4;
+}
+
+message AddressBook {
+  repeated Person person = 1;
+}

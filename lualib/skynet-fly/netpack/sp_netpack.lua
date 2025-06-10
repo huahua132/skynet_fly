@@ -1,6 +1,7 @@
 local netpack_base = require "skynet-fly.netpack.netpack_base"
 local file_util = require "skynet-fly.utils.file_util"
 local sproto = require "sproto"
+local parser = require "sprotoparser"
 
 local string = string
 local pcall = pcall
@@ -29,7 +30,8 @@ function M.new(name)
                 m_sp_str = m_sp_str .. io.open(file_path, 'r'):read('a') .. '\n'
             end
         end
-        m_sp = sproto.parse(m_sp_str)
+        local pbin = parser.parse(m_sp_str, m_name)
+        m_sp = sproto.new(pbin)
     end
 
     --------------------------------------------------------------------------
