@@ -1,3 +1,6 @@
 [submodule "skynet"]
 	path = skynet
 	url = https://github.com/huahua132/skynet.git
+
+
+*.sh text eol=lf
