@@ -651,7 +651,8 @@ local function get_one_entry(t, key_values)
     return entry, true
 end
 
-local function get_entry_by_in(t, in_values, key_values)
+local function get_entry_by_in(t, _in_values, key_values)
+    local in_values = table_util.copy(_in_values)
     local key_list = t._keylist
     local res_entry_list = {}
     local kv_len = #key_values
