@@ -53,10 +53,10 @@ end
 
 --检查循环调用
 local function check_loop_queue(self)
-    local trace_tags = skynet.get_queue_trace_tag()
-    if trace_tags then
-        for _, trace_tag in pairs(trace_tags) do
-            assert(not self.queue_tag_map[trace_tag], "queue loop:" .. trace_tag)
+    local tags = skynet.get_queue_trace_tag()
+    if tags then
+        for tag in pairs(tags) do
+            assert(not self.queue_tag_map[tag], "queue loop:" .. tag)
         end
     end
 end
