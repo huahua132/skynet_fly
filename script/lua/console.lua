@@ -300,6 +300,10 @@ function CMD.check_hotfix()
 		table.insert(args_list, module_name)
 		table.insert(args_list, change_file)
 	end
+	if #args_list <= 0 then
+		table.insert(args_list, "update_config")
+		table.insert(args_list, "|||")
+	end
 	if file_util.is_window() then
 		print(table.concat(args_list, ' '))
 	else
@@ -319,7 +323,7 @@ function CMD.hotfix()
 		local hotmods = ARGV[i + 1]
 		mod_name_str = mod_name_str .. '/' .. module_name
 		mod_name_str = mod_name_str .. '/' .. hotmods
-		assert(load_mods[module_name])
+		assert(load_mods[module_name] or module_name == "update_config")
 	end
 	local url = string.format('%s/call/%s/hotfix/%s',get_host(),server_id,mod_name_str)
 	print(string.format("'%s'",url))

@@ -4,6 +4,7 @@ local log = require "skynet-fly.log"
 local string_util = require "skynet-fly.utils.string_util"
 local file_util = require "skynet-fly.utils.file_util"
 local time_util = require "skynet-fly.utils.time_util"
+local sharedata = require "skynet-fly.sharedata"
 local module_info = require "skynet-fly.etc.module_info"
 local skynet = require "skynet"
 
@@ -96,6 +97,8 @@ end
 
 --热更
 function M.hotfix(hotfixmods)
+    local hot_ret = {}
+    sharedata.hotfix_all(hot_ret)
     local base_info = module_info.get_base_info()
     local patch_dir
     local cur_time = time_util.time()
@@ -103,7 +106,6 @@ function M.hotfix(hotfixmods)
         patch_dir = get_patch_dir(cur_time)
     end
 
-    local hot_ret = {}
     local name_list = string_util.split(hotfixmods, ':::')
     local sort_list = {}
     for _,name in ipairs(name_list) do

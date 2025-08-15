@@ -45,7 +45,10 @@ local g_recordpath = skynet.getenv("recordpath")
 
 local g_mode_map = {}
 local g_data_map = {}
-local g_version_map = {}
+local g_version_map = {}                    --当前版本
+local g_new_version_map = {}                --最新版本
+local g_new_uptime_map = {}                 --最新版本更新时间
+local g_sharetable_new_map = {}
 local g_flush_time_obj = nil
 
 local M = {
@@ -120,9 +123,13 @@ g_mode_funcs[M.enum.sharedata] = {
         return sharedata.query(file_path)
     end,
     update = function(file_path)
+        sharedata.update_cobj(file_path)
+    end,
+    switch = function(file_path)
         if not g_flush_time_obj or g_flush_time_obj:remain_expire() < 0 then
             g_flush_time_obj = timer:new(timer.minute, 1, sharedata.flush)         --刷一下，尽快释放旧数据
         end
+        sharedata.switch_new(file_path)
         return g_data_map[file_path]
     end
 }
@@ -132,8 +139,11 @@ g_mode_funcs[M.enum.sharetable] = {
         return sharetable.query(file_path)
     end,
     update = function(file_path)
-        return sharetable.query(file_path)
-    end
+        g_sharetable_new_map[file_path] = sharetable.query(file_path)
+    end,
+    switch = function(file_path)
+        return g_sharetable_new_map[file_path]
+    end,
 }
 
 setmetatable(g_data_map, {__index = function(t, k)
@@ -150,13 +160,14 @@ local function watch_update(watchcli, file_path)
         local spstr = string_util.split(str, '-')
         local new_version = tonumber(spstr[1])
         local up_time = tonumber(spstr[2])
+        g_new_version_map[file_path] = new_version
+        g_new_uptime_map[file_path] = up_time
+
         local old_version = g_version_map[file_path]
         if new_version ~= old_version then
             local mode = g_mode_map[file_path]
             local mode_func = g_mode_funcs[mode]
-            g_data_map[file_path] = mode_func.update(file_path)
-            add_patch(file_path, up_time)
-            g_version_map[file_path] = new_version
+            mode_func.update(file_path)
         end
     end
 end
@@ -173,6 +184,22 @@ setmetatable(g_version_map, {__index = function(t, k)
 
     return version
 end})
+
+---#desc 热更配置(框架调用，不对外)
+function M.hotfix_all(hot_ret)
+    for file_path, version in pairs(g_version_map) do
+        local new_version = g_new_version_map[file_path]
+        local up_time = g_new_uptime_map[file_path]
+        if new_version and version ~= new_version then
+            local mode = g_mode_map[file_path]
+            local mode_func = g_mode_funcs[mode]
+            g_data_map[file_path] = mode_func.switch(file_path)
+            add_patch(file_path, up_time)
+            g_version_map[file_path] = new_version
+            hot_ret[file_path] = "configData:" .. new_version
+        end
+    end
+end
 
 ---#desc 加载指定路径列表下配置， 废弃，直接用new就行
 ---@param dir_list table 路径列表
@@ -203,8 +230,10 @@ end
 ---@return table obj 代理对象
 function M:new(file_path, mode)
     assert(mode == M.enum.sharedata or mode == M.enum.sharetable, "not exists mode = " .. mode)
-    local sd = skynet.uniqueservice("sharedata_service")
-    assert(skynet.call(sd, 'lua', 'load', file_path, mode))
+    if not g_mode_map[file_path] then
+        local sd = skynet.uniqueservice("sharedata_service")
+        assert(skynet.call(sd, 'lua', 'load', file_path, mode))
+    end
     local t = {
         mode = mode,
         file_path = file_path,

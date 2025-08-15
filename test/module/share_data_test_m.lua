@@ -14,9 +14,9 @@ local function testsharedata()
     log.info("wait update 10s >>> ")
     skynet.sleep(1000)  --等待去更新配置
 
-    log.info("old", data_table)             --会更新到
-    log.info("subold", sub_table)           --会更新到
-    log.info("new", cfg2:get_data_table())  --会更新到
+    log.info("testsharedata old", data_table)             --会更新到
+    log.info("testsharedata subold", sub_table)           --会更新到
+    log.info("testsharedata new", cfg2:get_data_table())  --会更新到
 end
 
 local function testsharetable()
@@ -28,9 +28,9 @@ local function testsharetable()
     log.info("wait update 10s >>> ")
     skynet.sleep(1000)  --等待去更新配置
 
-    log.info("old", data_table)             --更新不到
-    log.info("subold", sub_table)           --更新不到
-    log.info("new", cfg2:get_data_table())  --更新到
+    log.info("testsharetable old", data_table)             --更新不到
+    log.info("testsharetable subold", sub_table)           --更新不到
+    log.info("testsharetable new", cfg2:get_data_table())  --更新到
 end
 
 local function test_check_func()
@@ -110,13 +110,16 @@ local function test_benchmark_sharetable()
 end
 
 function CMD.start()
-    --testsharedata()
-    testsharetable()
-    --test_check_func()
-    --test_map_list()
-    --test_map_map()
-    --test_benchmark_sharedata()
-    --test_benchmark_sharetable()
+    skynet.fork(function()
+        --testsharedata()
+        testsharetable()
+        --test_check_func()
+        --test_map_list()
+        --test_map_map()
+        --test_benchmark_sharedata()
+        --test_benchmark_sharetable()
+    end)
+
     return true
 end
 
