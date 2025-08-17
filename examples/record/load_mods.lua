@@ -29,7 +29,7 @@ return {
 
         --自动定时热更 skynet-fly.time_extend.time_point.lua 的配置项
 		auto_reload = {
-			type = 3,    --每分钟
+			type = 1,    --每分钟
 			sec = 30,    --第30秒
 		},
 
