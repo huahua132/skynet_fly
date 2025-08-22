@@ -1,1 +1,11 @@
-* text eol=lf
+# 设置 Shell 脚本文件使用 LF 换行符
+*.sh text eol=lf
+
+# 设置 Lua 文件使用 LF 换行符  
+*.lua text eol=lf
+
+# 二进制文件应该被标记为不进行换行符转换
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
