@@ -700,10 +700,10 @@ local function crypt_msg(secret, msg, sz)
 end
 
 --轮询给单个集群结点发
-function CMD.balance_send(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.send_one(svr_name, _, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, _, secret = get_balance_channel(svr_name)
 	if not channel then
-		log.error("frpc balance_send not connect ", svr_name, module_name, skynet.unpack(msg, sz))
+		log.error("frpc send_one not connect ", svr_name, module_name, skynet.unpack(msg, sz))
 		skynet.trash(msg, sz)
 		return
 	end
@@ -715,7 +715,7 @@ function CMD.balance_send(svr_name, module_name, instance_name, packid, mod_num,
 end
 
 --轮询给单个集群结点发
-function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.call_one(svr_name, _, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_balance_channel(svr_name)
 	if not channel then
 		skynet.trash(msg, sz)
@@ -736,7 +736,7 @@ function CMD.balance_call(svr_name, module_name, instance_name, packid, mod_num,
 end
 
 --指定结点id发
-function CMD.send_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.send_byid(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, _, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		log.error("frpc send_by_id not connect ", svr_name, svr_id, module_name, skynet.unpack(msg, sz))
@@ -751,7 +751,7 @@ function CMD.send_by_id(svr_name, svr_id, module_name, instance_name, packid, mo
 end
 
 --指定结点id发
-function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.call_byid(svr_name, svr_id, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel, cluster_name, secret = get_svr_id_channel(svr_name, svr_id)
 	if not channel then
 		skynet.trash(msg, sz)
@@ -772,7 +772,7 @@ function CMD.call_by_id(svr_name, svr_id, module_name, instance_name, packid, mo
 end
 
 --给集群所有结点发
-function CMD.send_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.send_all(svr_name, _, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		log.error("frpc send_all not connect ", svr_name, module_name, skynet.unpack(msg, sz))
@@ -806,7 +806,7 @@ function CMD.send_all(svr_name, module_name, instance_name, packid, mod_num, msg
 end
 
 --给集群所有结点发
-function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg, sz)
+function CMD.call_all(svr_name, _, module_name, instance_name, packid, mod_num, msg, sz)
 	local channel_map, secret_map = get_svr_name_all_channel(svr_name)
 	if not channel_map then
 		skynet.trash(msg, sz)
@@ -839,7 +839,7 @@ function CMD.call_all(svr_name, module_name, instance_name, packid, mod_num, msg
 			cluster_rsp_map[cluster_name] = rsp
 		end
 	end
-	return cluster_rsp_map, secret_map
+	return true, cluster_rsp_map, secret_map
 end
 
 --订阅

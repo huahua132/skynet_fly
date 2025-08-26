@@ -17,7 +17,7 @@ local enum = {
     balance_send_by_name    = 103,
     mod_send_by_name        = 104,
     broadcast_by_name       = 105,
-    send_by_name            = 106,           --指定别名发送消息
+    send_by_alias           = 106,           --指定别名发送消息
 
     balance_call            = 200,           --简单轮询负载均衡
     mod_call                = 201,
@@ -25,7 +25,7 @@ local enum = {
     balance_call_by_name    = 203,
     mod_call_by_name        = 204,
     broadcast_call_by_name  = 205,
-    call_by_name            = 206,           --指定别名调用
+    call_by_alias           = 206,           --指定别名调用
 }
 
 return enum

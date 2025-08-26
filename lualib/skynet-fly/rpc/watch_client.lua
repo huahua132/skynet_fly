@@ -132,7 +132,7 @@ end
 
 local function watch_channel_name(svr_name, svr_id, channel_name)
     local unique_name = get_unique_name()
-    local isok,err = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):sub(channel_name, unique_name)
+    local isok,err = frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):sub(channel_name, unique_name)
     if not isok then
         log.warn("watch_channel_name faild", svr_name, svr_id, channel_name, err)
     else
@@ -142,7 +142,7 @@ end
 
 local function unwatch_channel_name(svr_name, svr_id, channel_name)
     local unique_name = get_unique_name()
-    local isok,err = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):unsub(channel_name, unique_name)
+    local isok,err = frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):unsub(channel_name, unique_name)
     if not isok then
         log.warn("unwatch_channel_name faild", svr_name, svr_id, channel_name, err)
     else

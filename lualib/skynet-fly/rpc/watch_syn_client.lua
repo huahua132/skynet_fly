@@ -177,7 +177,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
     skynet.fork(function()
         log.info_fmt("watch_channel_name syn start svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
         while true do
-            local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):subsyn(channel_name, version)
+            local ret, cv, cl = frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):subsyn(channel_name, version)
             if not ret then
                 log.warn_fmt("watch_channel_name err %s ",version)
                 break                                               --退出 有watch_up重新拉起
@@ -326,7 +326,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
     skynet.fork(function()
         log.info_fmt("pwatch_channel_name psyn start svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
         while true do
-            local ret, cv, cl = frpc_client:instance(svr_name, ""):set_svr_id(svr_id):psubsyn(pchannel_name, version)
+            local ret, cv, cl = frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):psubsyn(pchannel_name, version)
             if not ret then
                 log.warn_fmt("pwatch_channel_name err %s ",version)
                 break                                               --退出 有watch_up重新拉起
@@ -363,11 +363,11 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
 end
 
 local function unwatch_channel_name(svr_name, svr_id, channel_name)
-    frpc_client:instance(svr_name, ""):set_svr_id(svr_id):unsubsyn(channel_name)
+    frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):unsubsyn(channel_name)
 end
 
 local function unpwatch_channel_name(svr_name, svr_id, channel_name)
-    frpc_client:instance(svr_name, ""):set_svr_id(svr_id):unpsubsyn(channel_name)
+    frpc_client:instance(frpc_client.FRPC_MODE.byid, svr_name, ""):set_svr_id(svr_id):unpsubsyn(channel_name)
 end
 
 local function check_unwatch_channel_name(svr_name, svr_id, channel_name)
