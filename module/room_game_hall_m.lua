@@ -526,6 +526,10 @@ function interface:rpc_push_msg(player_id, header, msgbody)
 	end
 	local agent = g_player_map[player_id]
 	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	if not interface:is_online(player_id) then
+		log.info("rpc_push_msg not online ", player_id, header)
+		return
+	end
 	send_msg(agent, header, body)
 end
 
@@ -536,7 +540,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 
 	local ws_gate_list = {}
 	local ws_fd_list = {}
-
+	local body = hall_plug.rpc_pack.pack_push(msgbody)
 	for i = 1, #player_list do
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
@@ -556,7 +560,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 			end
 		end
 	end
-	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	
 	if #gate_list > 0 then
 		hall_plug.broadcast(gate_list, fd_list, header, body)
 	end
@@ -575,7 +579,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 
 	local ws_gate_list = {}
 	local ws_fd_list = {}
-
+	local body = hall_plug.rpc_pack.pack_push(msgbody)
 	for player_id,agent in pairs(g_player_map) do
 		if not filter_map[player_id] then
 			if agent.fd > 0 then
@@ -591,7 +595,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 			end
 		end
 	end
-	local body = hall_plug.rpc_pack.pack_push(msgbody)
+	
 	if #gate_list > 0 then
 		hall_plug.broadcast(gate_list, fd_list, header, body)
 	end

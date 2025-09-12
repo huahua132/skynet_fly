@@ -354,6 +354,10 @@ function interface:rpc_push_msg(player_id, header, msgbody)
 	end
 	local agent = g_player_map[player_id]
 	local body = login_plug.rpc_pack.pack_push(msgbody)
+	if not interface:is_online(player_id) then
+		log.info("rpc_push_msg not online ", player_id, header)
+		return
+	end
 	send_msg(agent, header, body)
 end
 
@@ -366,11 +370,16 @@ function interface:rpc_push_msg_byfd(fd, header, msgbody)
 	end
 
 	local body = login_plug.rpc_pack.pack_push(msgbody)
+	if not agent then
+		log.info("rpc_push_msg_byfd fd not exists ", fd, header)
+		return
+	end
 	send_msg(agent, header, body)
 end
 
 --rpc推送消息给部分玩家
 function interface:rpc_push_by_player_list(player_list, header, msgbody)
+	local body = login_plug.rpc_pack.pack_push(msgbody)
 	local gate_list = {}
 	local fd_list = {}
 
@@ -396,7 +405,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 			end
 		end
 	end
-	local body = login_plug.rpc_pack.pack_push(msgbody)
+
 	if #gate_list > 0 then
 		login_plug.broadcast(gate_list, fd_list, header, body)
 	end
@@ -409,7 +418,7 @@ end
 --rpc推送消息给全部玩家
 function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 	filter_map = filter_map or EMPTY
-
+	local body = login_plug.rpc_pack.pack_push(msgbody)
 	local gate_list = {}
 	local fd_list = {}
 
@@ -431,7 +440,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 			end
 		end
 	end
-	local body = login_plug.rpc_pack.pack_push(msgbody)
+	
 	if #gate_list > 0 then
 		login_plug.broadcast(gate_list, fd_list, header, body)
 	end

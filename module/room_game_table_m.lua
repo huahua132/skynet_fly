@@ -216,7 +216,7 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 	end
 	
 	local player_map = t_info.player_map
-
+	local body = table_plug.rpc_pack.pack_push(msgbody)
 	local gate_list = {}
 	local fd_list = {}
 
@@ -242,8 +242,6 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 		end
 	end
 
-	local body = table_plug.rpc_pack.pack_push(msgbody)
-
 	if #gate_list > 0 then
 		table_plug.broadcast(gate_list, fd_list, header, body)
 	end
@@ -262,7 +260,7 @@ local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
 
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
-
+	local body = table_plug.rpc_pack.pack_push(msgbody)
 	local gate_list = {}
 	local fd_list = {}
 
@@ -284,8 +282,6 @@ local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
 			end
 		end
 	end
-
-	local body = table_plug.rpc_pack.pack_push(msgbody)
 
 	if #gate_list > 0 then
 		table_plug.broadcast(gate_list, fd_list, header, body)
