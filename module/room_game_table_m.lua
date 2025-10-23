@@ -52,16 +52,17 @@ local function kick_out_all(table_id, reason)
 	end
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
-
+	local ok = true
 	for player_id,player in pairs(player_map) do
 		if player_map[player_id] then
 			local isok,err,errmsg = skynet.call(player.hall_server_id,'lua','leave_table',player_id, reason)
 			if not isok then
+				ok = false
 				log.warn("kick_player err ",player_id,err,errmsg)
 			end
 		end
 	end
-	return true
+	return ok
 end
 
 --踢出单个玩家
@@ -473,7 +474,9 @@ function CMD.dismisstable(table_id)
 	if next(player_map) then  --还有玩家
 		return false
 	end
-
+	if t_info.game_table.destroy then
+		t_info.game_table.destroy()
+	end
 	g_table_map[table_id] = nil
 	return true
 end
