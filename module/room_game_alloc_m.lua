@@ -228,6 +228,11 @@ function CMD.leave(player_id, reason)
     return queue(leave, player_id, reason)
 end
 
+--销毁房间
+function CMD.dismisstable(table_id)
+	return queue(dismisstable, table_id)
+end
+
 local function check_dismisstable()
 	local cur_time = time_util.time()
 	for table_id,empty_time in pairs(g_empty_map) do
