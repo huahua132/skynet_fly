@@ -47,6 +47,10 @@ function M.new(name)
 	function ret_M.get_loaded()
 		return m_p.loaded
 	end
+
+	function ret_M.addpath(path)
+		m_p:addpath(path)
+	end
 	--------------------------------------------------------------------------
 	--按包名方式编码
 	--------------------------------------------------------------------------
