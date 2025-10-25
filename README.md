@@ -1,350 +1,350 @@
-# ![skynet_fly(1)](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
+# 🚀 skynet_fly
+
+<div align="center">
+
+![skynet_fly Logo](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
+
+**致力于服务端对 skynet 的最佳实践**
+
+[![GitHub stars](https://img.shields.io/github/stars/huahua132/skynet_fly?style=flat-square)](https://github.com/huahua132/skynet_fly/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/huahua132/skynet_fly?style=flat-square)](https://github.com/huahua132/skynet_fly/network)
+[![License](https://img.shields.io/github/license/huahua132/skynet_fly?style=flat-square)](LICENSE)
+
+[📖 使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/A_home/) | [🎮 示例项目](https://github.com/huahua132/skynet_fly_demo) | [📚 API文档](https://huahua132.github.io/2023/12/17/skynet_fly_api/module/)
+
+</div>
+
 ---
-致力于服务端对skynet的最佳实践
-[使用文档](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_1/A_home/)
 
-	觉得不错，不妨点个**星星**吧！你的星星是作者持续创作维护的最大动力！
+> 💡 **觉得不错，不妨点个 Star 吧！你的 Star 是作者持续创作维护的最大动力！**
 
-# 技术交流群
-QQ群号：102993581
+## 📋 目录
 
-# [网络不好可以去gitree clone](https://gitee.com/huaa/skynet_fly)
+- [社区交流](#-社区交流)
+- [项目简介](#-项目简介)
+- [核心特性](#-核心特性)
+- [快速开始](#-快速开始)
+- [编译安装](#️-编译安装)
+- [第三方依赖](#-第三方依赖)
+- [项目示例](#-项目示例)
 
-# windows 编译
-参考 https://github.com/cloudfreexiao/pluto
+---
 
-基于 [Visual Studio 2022](https://visualstudio.microsoft.com/zh-hans/downloads/) 需要安装 CMake 和 Clang 模块.
+## 💬 社区交流
 
-- [安装CMake](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170)
-- [安装Clang](https://learn.microsoft.com/en-us/cpp/build/clang-support-cmake?view=msvc-170)
+**QQ 交流群：102993581**
 
-## openssl 链接出错
-[下载链接](https://slproweb.com/products/Win32OpenSSL.html)
-请自行下载 openssl 对应系统版本， 替换`win3rd/include 和win3rd/lib`，lib使用MT(静态库)的。 下载完整版的msi文件安装openssl，可以找到对应目录(`xxx\lib\VC\xxx\MT`)
+📌 **镜像仓库**：[网络不好可以去 Gitee Clone](https://gitee.com/huaa/skynet_fly)
 
-# skynet_fly简介
-	skynet_fly是基于skynet扩展的可以快速开发web，游戏，和需要rpc调用的框架。
-	使用skynet_fly的好处：
-	* 支持不停服更新。
-	* 一键生成skynet的配置文件和skynet_fly的配置文件以及配套shell脚本。
-	* 对匹配房间类游戏做了gate,ws_gate的基础设施封装以及pb,json,sproto协议的支持，开发游戏只需要实现相关业务逻辑。
-	* 对redis,mysql,timer,log 使用封装。
-	* 支持远程rpc调用、远程sub/pub、远程subsyn/pubsyn。
-	* 支持服务发现。
-	* 支持http服务长连接。
-	* 支持http服务路由，中间件模式。
-	* 支持jwt鉴权。
-	* 内置日志分割。
-	* 支持快进时间。
-	* 支持orm（数据关系映射）目前适配了(mysql,mongo),数据库可无缝切换。
-	* 支持断点调试。
-	* 支持lua代码加密。
-	* 支持服务录像、录像重放。
+---
 
-* [关于skynet_fly热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
-* [关于skynet_fly的一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
+## 🎯 项目简介
 
-## 第三方依赖来源
-* [skynet](https://github.com/huahua132/skynet.git) 自己维护的fork版本
-* [basexx](https://github.com/aiq/basexx)0.4.1
-* [lua-cjson](https://github.com/cloudwu/lua-cjson)latest
-* [lua-openssl](https://github.com/zhaozg/lua-openssl)0.9.1-0
-* [lua-protobuf](https://github.com/starwing/lua-protobuf)0.4.0
-* [lua-radix-router](https://github.com/vm-001/lua-radix-router)latest
-* [luafilesystem](https://github.com/lunarmodules/luafilesystem)1.8.0
-* [luajwtjitsi](https://github.com/jitsi/luajwtjitsi)3.0  自己适配了lua-openssl
-* [lzlib](https://github.com/LuaDist/lzlib)0.4.3
-* [lua-zset](https://github.com/xjdrew/lua-zset)latest
-* [lua-snapshot](https://github.com/cloudwu/lua-snapshot)latest
-* [lua-socket](https://github.com/lunarmodules/luasocket)latest
-* [LuaPanda](https://github.com/Tencent/LuaPanda)latest
-* [wlua](https://github.com/hanxi/wlua)latest
+**skynet_fly** 是基于 [skynet](https://github.com/cloudwu/skynet) 扩展的高性能游戏服务器框架，专注于快速开发 Web 服务、游戏服务器及需要 RPC 调用的分布式系统。
 
-### [官方示例domo](https://github.com/huahua132/skynet_fly_demo)
+### 🏗️ 技术架构
 
-### [API 文档](https://huahua132.github.io/2023/12/17/skynet_fly_api/module/)
+基于 [skynet](https://github.com/huahua132/skynet.git) 自维护版本，针对服务端开发做了深度优化和扩展。
 
-## 编译(请勿在共享的window文件夹下执行install，编译perl通常会失败)
-编译skynet 参考了涵曦的 [skynet_demo](https://github.com/hanxi/skynet-demo)
-	- `git clone https://github.com/huahua132/skynet_fly`
-	- 根据系统安装一些依赖`sh install_centos.sh` 或者 `sh install_ubuntu`
-        - 在skynet_fly目录下 `make linux` 
+---
 
-## 快速开始 简单可热更服务 (运行examples/AB_question)
-* **构建服务**
-	- `cd examples/AB_question/`
-	- `sh ../../binshell/make_server.sh ../../`
+## ✨ 核心特性
 
-* **运行服务**
-	`sh make/script/run.sh load_mods.lua 0`
+### 🔥 热更新系统
+- ✅ 支持不停服更新
+- ✅ 一键生成配置文件和运维脚本
+- ✅ 完善的热更新机制，确保服务平滑过渡
 
-这个简单的示例是`A服务`向`B服务`发送hello消息，得到回应后打印。
+### 🎮 游戏开发
+- ✅ Gate/WebSocket Gate 基础设施封装
+- ✅ 支持 Protobuf、JSON、Sproto 多种协议
+- ✅ 房间匹配系统完整实现
+- ✅ 开箱即用的游戏业务框架
 
-### A服务消息发送内容
-```lua 
+### 🗄️ 数据持久化
+- ✅ **ORM 对象关系映射**
+  - 支持 MySQL、MongoDB 等多种数据库
+  - 数据库无缝切换
+  - 智能缓存策略，提升性能
+  - CRUD 操作简单高效
+- ✅ Redis、MySQL、Timer、Log 使用封装
+
+### 🔧 分布式支持
+- ✅ 远程 RPC 调用
+- ✅ 远程 Sub/Pub 消息订阅
+- ✅ 远程 SubSync/PubSync 同步订阅
+- ✅ 服务发现机制
+
+### 🌐 HTTP 服务
+- ✅ HTTP 长连接支持
+- ✅ 路由与中间件模式
+- ✅ JWT 鉴权集成
+
+### 🛠️ 开发工具
+- ✅ 内置日志分割
+- ✅ 时间快进功能（测试神器）
+- ✅ 断点调试支持
+- ✅ Lua 代码加密
+
+### 📹 **服务录像与重放**
+- ✅ 服务行为完整录制
+- ✅ 录像重放调试
+- ✅ 快速定位复杂 Bug
+- ✅ 自动热更记录和共享配置管理
+
+> 📖 [详细了解热更新实现](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)  
+> 📖 [一键构建服务配置](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
+
+---
+
+## ⚡ 快速开始
+
+### 示例 1：简单热更新服务
+
+运行 `examples/AB_question` 示例，演示 A 服务向 B 服务发送消息并接收回应。
+
+#### 📦 构建服务
+
+
+```bash
+cd examples/AB_question/
+sh ../../binshell/make_server.sh ../../
+
+```
+
+#### ▶️ 运行服务
+
+
+```bash
+sh make/script/run.sh load_mods.lua 0
+
+```
+
+#### 📝 代码示例
+
+**A 服务发送消息：**
+
+
+```lua
 function CMD.send_msg_to_b()
-    for i = 1,4 do
-		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)
-        local ret = container_client:instance("B_m"):balance_call("hello")                  
+    -- 简单轮询负载均衡
+    for i = 1, 4 do
+        local ret = container_client:instance("B_m"):balance_call("hello")
         log.info("balance_call send_msg_to_b:", i, ret)
-        --对应send发送方式 balance_send
     end
-    for i = 1,4 do
-		--模除映射方式  (用1模除以B_m的服务数量从而达到映射发送到固定服务的目的,不调用set_mod_num指定mod时，mod默认等于skynet.self()）
+    
+    -- 模除映射方式（固定服务）
+    for i = 1, 4 do
         local ret = container_client:instance("B_m"):set_mod_num(1):mod_call("hello")
         log.info("mod_call send_msg_to_b:", i, ret)
-        --对应send发送方式 mod_send
     end
-	--给B_m所有服务发
+    
+    -- 广播到所有 B_m 服务
     local ret = container_client:instance("B_m"):broadcast_call("hello")
     log.info("broadcast_call:", ret)
-    --对应send发送方式 broadcast
-
-    --by_name方式   相当于提供子名字，有时候相同的服务可能会划分不同的职责，比如一个游戏可能分为A玩法，B玩法。
-	--大体逻辑相同，只有很小的区别，这时候可以用子名字，而不用再写一个可热更服务模块了。
-    --by_name方式调用我们必须指定`instance_name`，调用API都是在后面加了_by_name
-
-    for i = 1,4 do
-		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)会排除非test_one的服务。
-        local ret = container_client:instance("B_m", "test_one"):balance_call_by_name("hello")  
-        log.info("balance_call_by_name send_msg_to_b test_one:", i, ret)
-        --对应send发送方式 balance_send_by_name
-    end
-
-    for i = 1,4 do
-		--模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
-        local ret = container_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       
-        log.info("mod_call_by_name send_msg_to_b test_two:", i, ret)
-        --对应send发送方式 mod_send_by_name
-    end
-
-	--给B_m 子名字为test_two所有服务发
-    local ret = container_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    
-    log.info("broadcast_by_name:", ret)
-    --对应dend发送方式 broadcast_by_name
 end
-``` 
-### B服务
+
+```
+
+**B 服务响应：**
+
+
 ```lua
 function CMD.hello()
-    return "HEELO A I am is " .. skynet.address(skynet.self())
-end
-```
-
-### 执行结果解析
-
-`balance_call` 调用4次分别发给了服务地址为`:0000000f`,`:00000010`,`:00000011`,`:00000012`
-`mod_call` 调用4次一直发给服务地址为`:00000010`
-`broadcast_call` 调用发给了所有`B_m`服务。
-`balance_call_by_name` 调用四次轮询发给了`:0000000f`,`:00000010`,因为`:00000011`,`:00000012`子名字是`test_two`所以排除了。
-`mod_call_by_name` 调用四次一直发给了`:00000012`(`B_m`子名字为`test_two`中的一个)。
-`broadcast_call_by_name` 调用发给了所有`B_m`子名字为`test_two`的服务中。
-```
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 1 "HEELO A I am is :0000000f"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 2 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 3 "HEELO A I am is :00000011"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 4 "HEELO A I am is :00000012"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 1 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 2 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 3 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 4 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:59]"broadcast_call:" {
-        [15] =  {
-                [1] = "HEELO A I am is :0000000f",
-        }
-        [16] =  {
-                [1] = "HEELO A I am is :00000010",
-        }
-        [17] =  {
-                [1] = "HEELO A I am is :00000011",
-        }
-        [18] =  {
-                [1] = "HEELO A I am is :00000012",
-        }
-}
-
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 1 "HEELO A I am is :0000000f"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 2 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 3 "HEELO A I am is :0000000f"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 4 "HEELO A I am is :00000010"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 1 "HEELO A I am is :00000012"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 2 "HEELO A I am is :00000012"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 3 "HEELO A I am is :00000012"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 4 "HEELO A I am is :00000012"
-[:0000000e][20240523 17:12:01 70][info][A_m][./module/A_m.lua:78]"broadcast_call_by_name:" {
-        [17] =  {
-                [1] = "HEELO A I am is :00000011",
-        }
-        [18] =  {
-                [1] = "HEELO A I am is :00000012",
-        }
-}
-```
-
-### 热更
-在`B_m.lua`随意加个空格，再执行`sh make/script/check_reload.sh load_mods.lua`,此时会热更`B_m`服务，旧的`B_m`服务将被通知到可以退出了。
-旧的`B_m`将会十分钟检查一次，直到没有访问者，`CMD.check_exit()`也是同意退出的，再调用`CMD.exit()`，如果返回`true`,服务将会在十分钟后调用`skynet.exit()`
-而A服务将会切换访问到新启动的`B_m`服务。
-```lua
-function CMD.check_exit()
-    log.error("检查退出")
-    return true
+    return "HELLO A, I am " .. skynet.address(skynet.self())
 end
 
-function CMD.exit()
-    log.error("退出")
-    return true
-end
 ```
-### 结果解析
-可以看到热更后访问的服务地址都已经改变了。
-```
-[:0000000f][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
-[:00000010][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
-[:00000011][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
-[:00000012][20240523 17:14:41 89][error][B_m][./module/B_m.lua:14]"预告退出"
-[:00000013][20240523 17:14:41 89]LAUNCH snlua hot_container B_m 1 2024-05-23[17:14:41] 1716455681 2
-[:00000014][20240523 17:14:41 90]LAUNCH snlua hot_container B_m 2 2024-05-23[17:14:41] 1716455681 2
-[:00000015][20240523 17:14:41 90]LAUNCH snlua hot_container B_m 3 2024-05-23[17:14:41] 1716455681 2
-[:00000016][20240523 17:14:41 91]LAUNCH snlua hot_container B_m 4 2024-05-23[17:14:41] 1716455681 2
-[:0000000f][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
-[:00000010][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
-[:00000011][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
-[:0000000e][20240523 17:14:41 91][info][A_m][./module/A_m.lua:14]"updated B_m"
-[:00000012][20240523 17:14:41 91][error][B_m][./module/B_m.lua:23]"确认要退出"
-[:0000000d][20240523 17:14:41 91]127.0.0.1:34774 disconnect
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 1 "HEELO A I am is :00000013"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 2 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 3 "HEELO A I am is :00000015"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:49]"balance_call send_msg_to_b:" 4 "HEELO A I am is :00000016"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 1 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 2 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 3 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:54]"mod_call send_msg_to_b:" 4 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:59]"broadcast_call:" {
-        [21] =  {
-                [1] = "HEELO A I am is :00000015",
-        }
-        [19] =  {
-                [1] = "HEELO A I am is :00000013",
-        }
-        [20] =  {
-                [1] = "HEELO A I am is :00000014",
-        }
-        [22] =  {
-                [1] = "HEELO A I am is :00000016",
-        }
-}
 
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 1 "HEELO A I am is :00000013"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 2 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 3 "HEELO A I am is :00000013"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:67]"balance_call_by_name send_msg_to_b test_one:" 4 "HEELO A I am is :00000014"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 1 "HEELO A I am is :00000016"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 2 "HEELO A I am is :00000016"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 3 "HEELO A I am is :00000016"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:73]"mod_call_by_name send_msg_to_b test_two:" 4 "HEELO A I am is :00000016"
-[:0000000e][20240523 17:14:42 85][info][A_m][./module/A_m.lua:78]"broadcast_call_by_name:" {
-        [21] =  {
-                [1] = "HEELO A I am is :00000015",
-        }
-        [22] =  {
-                [1] = "HEELO A I am is :00000016",
-        }
-}
-```
-### 加速时间
-由于我们想测试旧服务退出，又不想改代码，又不想等太久，我们可以利用加速时间的方式来做到。
-首先通过`debug_console`调用gc 快速消除对旧服务地址的引用。
-`nc 127.0.0.1 8888`
-`gc`
-`gc`
+#### 🔄 热更新测试
 
-然后调用快进时间快进1个小时
-`sh make/script/fasttime.sh load_mods.lua '2023:05:23 18:00:00' 1`
-然后在用`debug_console`看看还有哪些服务在
-`nc 127.0.0.1 8888`
-`mem`
+1. 修改 `B_m.lua` 文件
+2. 执行热更新脚本：
+
+
+```bash
+sh make/script/check_reload.sh load_mods.lua
 
 ```
-:00000004       115.50 Kb (snlua cdummy)
-:00000006       107.77 Kb (snlua datacenterd)
-:00000007       135.83 Kb (snlua service_mgr)
-:00000008       109.16 Kb (snlua service_provider)
-:00000009       107.21 Kb (snlua service_cell ltls_holder)
-:0000000b       121.97 Kb (snlua monitor_exit)
-:0000000c       138.60 Kb (snlua container_mgr)
-:0000000d       219.57 Kb (snlua debug_console 8888)
-:0000000e       254.48 Kb (snlua hot_container A_m 1 2024-05-23[17:14:09] 1716455649 1)
-:00000013       201.17 Kb (snlua hot_container B_m 1 2024-05-23[17:14:41] 1716455681 2)
-:00000014       192.19 Kb (snlua hot_container B_m 2 2024-05-23[17:14:41] 1716455681 2)
-:00000015       186.07 Kb (snlua hot_container B_m 3 2024-05-23[17:14:41] 1716455681 2)
-:00000016       177.21 Kb (snlua hot_container B_m 4 2024-05-23[17:14:41] 1716455681 2)
+
+旧服务将在确认无访问者后优雅退出，新服务无缝接管请求。
+
+---
+
+### 示例 2：房间类游戏
+
+运行 `examples/digitalbomb` 数字炸弹游戏示例。
+
+#### 📦 构建并运行
+
+
+```bash
+cd examples/digitalbomb/
+sh ../../binshell/make_server.sh ../../
+sh make/script/run.sh load_mods.lua 0
+
 ```
-可以看到，只存在版本二的B_m服务了。
-	
-## 快速开始 房间类游戏服务 (运行examples/digitalbomb)
 
-* **构建服务**
-	- `cd examples/digitalbomb/`
-	- `sh ../../binshell/make_server.sh ../../`
+#### 🎯 特性展示
 
-* **运行服务**
-	`sh make/script/run.sh load_mods.lua 0`
+- ✅ 基于 TCP 长连接
+- ✅ 支持不停服更新
+- ✅ 登录、大厅、匹配、游戏模块解耦
+- ✅ 内置测试客户端
 
-基于tcp长连接实现不停服更新 `digitalbomb` 数字炸弹游戏。
-除了登录 `login` 服不能热更。
-`hall` 大厅服。
-`alloc` 分配服。
-`table` 桌子服都是可行的。
-内置了客户端，可以直接看到效果。
+**可热更新模块：**
+- `hall` - 大厅服务
+- `alloc` - 分配服务  
+- `table` - 桌子服务
 
-* **业务解耦**
-	对**登录**，**大厅**，**匹配**，**游戏**，还有协议都完成了解耦，开发新游戏只需要实现对应的插件接口即可。
+---
 
-* **热更新**
-	client_m 表写了测试用例，可以用来验证热更新。
-	也可以通过`make/script/check_reload.sh`的方式，不过你先修改好文件，然后开始执行。
+### 示例 3：HTTP 服务
 
-* **游戏热更新原理**
-	新服替换旧服务的方案。
-	旧连接跟旧服务通信。
-	新连接跟新服务通信。
-	适合用于玩一把游戏就退出的微服务架构。
+运行 `examples/webapp` Web 应用示例。
 
-## 快速开始 http服务 (运行examples/webapp)
-1. 构建skynet_config, webapp运维脚本
-    - `cd examples/webapp/`
-    - `sh ../../binshell/make_server.sh ../../`
-    - 如果一些顺利的话将会生成make/script文件夹，文件夹下有:
-      - `run.sh` 运行并配置日志分割
-      - `stop.sh` 停止
-      - `restart.sh` 重启
-      - `reload.sh` 热更某个可热更模块。
-      - `kill_mod.sh` 干掉某个可热更模块(不是强行kill，是通知服务可以退出了)
-      - `check_reload.sh` 检测可热更模块是否有文件或者配置修改，有就更新。
-      - `fasttime.sh` 快进时间。 `sh make/script/fasttime.sh load_mods.lua "2023:11:19 11:10:59" 1`
-      - `try_again_reload.sh` 当热更失败，可以解决相关错误之后进行重试热更。
-      - `check_hotfix.sh` 检测刷热更脚本。
-      - `hotfix.sh` 刷热更脚本。
-    - 还会生成webapp_config.lua，也就是skynet启动用的配置文件。
-2. 运行
-   - `sh make/script/run.sh load_mods.lua 0`
-   - **load_mods.lua**是指启动用的配置文件。
-   - **0**表示不用后台运行。不传就是后台运行。`sh make/script/run.sh load_mods.lua`。
-   - 后台运行，日志会写入log文件。
-3. 访问
-   - 浏览器打开 `x.x.x.x:8688`
-   - 如果一切顺利的话，网页将会显示内容。
-4. 热更
-    - 修改 `webapp/lualib/webapp_dispatch.lua` 中的任意代码。
-    - 之后执行 `sh make/script/check_reload.sh load_mods.lua`
-    - 再次访问网站就更新了。
-    - 也可以观察webapp/logs/server.log
+#### 📦 构建服务
 
-## 如何远程rpc调用
 
-具体使用例子可以参照`examples/frpc_client` `examples/frpc_server`
+```bash
+cd examples/webapp/
+sh ../../binshell/make_server.sh ../../
 
-## 完整项目示例
-* **[中国象棋](https://github.com/huahua132/skynet_fly_demo)**
+```
+
+生成的运维脚本：
+- `run.sh` - 启动服务
+- `stop.sh` - 停止服务
+- `restart.sh` - 重启服务
+- `reload.sh` - 热更新模块
+- `check_reload.sh` - 检测并热更新
+- `fasttime.sh` - 时间快进
+
+#### ▶️ 运行服务
+
+
+```bash
+# 前台运行
+sh make/script/run.sh load_mods.lua 0
+
+# 后台运行
+sh make/script/run.sh load_mods.lua
+
+```
+
+#### 🌐 访问测试
+
+浏览器打开：`http://x.x.x.x:8688`
+
+#### 🔄 热更新
+
+
+```bash
+# 1. 修改代码
+vim webapp/lualib/webapp_dispatch.lua
+
+# 2. 执行热更新
+sh make/script/check_reload.sh load_mods.lua
+
+```
+
+---
+
+## 🛠️ 编译安装
+
+### Linux 环境
+
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/huahua132/skynet_fly
+
+# 2. 安装依赖（根据系统选择）
+sh install_centos.sh
+# 或
+sh install_ubuntu.sh
+
+# 3. 编译
+make linux
+
+```
+
+### Windows 环境
+
+基于 [Visual Studio 2022](https://visualstudio.microsoft.com/zh-hans/downloads/)，需要安装：
+- [CMake 模块](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170)
+- [Clang 模块](https://learn.microsoft.com/en-us/cpp/build/clang-support-cmake?view=msvc-170)
+
+**OpenSSL 配置：**
+
+如果链接出错，请下载 [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) 完整版 MSI 安装包，替换 `win3rd/include` 和 `win3rd/lib` 目录。
+
+> 💡 参考 [Pluto 项目](https://github.com/cloudfreexiao/pluto) 的编译方式
+
+---
+
+## 📦 第三方依赖
+
+| 组件 | 版本 | 说明 |
+|------|------|------|
+| [skynet](https://github.com/huahua132/skynet.git) | latest | 自维护 Fork 版本 |
+| [basexx](https://github.com/aiq/basexx) | 0.4.1 | Base 编码 |
+| [lua-cjson](https://github.com/cloudwu/lua-cjson) | latest | JSON 解析 |
+| [lua-openssl](https://github.com/zhaozg/lua-openssl) | 0.9.1-0 | OpenSSL 绑定 |
+| [lua-protobuf](https://github.com/starwing/lua-protobuf) | 0.4.0 | Protobuf 支持 |
+| [lua-radix-router](https://github.com/vm-001/lua-radix-router) | latest | 路由器 |
+| [luafilesystem](https://github.com/lunarmodules/luafilesystem) | 1.8.0 | 文件系统 |
+| [luajwtjitsi](https://github.com/jitsi/luajwtjitsi) | 3.0 | JWT（已适配 lua-openssl）|
+| [lzlib](https://github.com/LuaDist/lzlib) | 0.4.3 | 压缩库 |
+| [lua-zset](https://github.com/xjdrew/lua-zset) | latest | 有序集合 |
+| [lua-snapshot](https://github.com/cloudwu/lua-snapshot) | latest | 快照工具 |
+| [lua-socket](https://github.com/lunarmodules/luasocket) | latest | Socket 库 |
+| [LuaPanda](https://github.com/Tencent/LuaPanda) | latest | 调试器 |
+| [wlua](https://github.com/hanxi/wlua) | latest | Lua 工具 |
+
+---
+
+## 📚 项目示例
+
+### 官方 Demo
+🎮 [完整示例项目](https://github.com/huahua132/skynet_fly_demo)
+
+### 完整项目案例
+♟️ [中国象棋](https://github.com/huahua132/skynet_fly_demo) - 完整的在线对战游戏实现
+
+---
+
+## 🔗 扩展阅读
+
+### 核心功能详解
+- 📖 [ORM 数据映射详解](文档中的 ORM 部分)
+  - 对象关系映射实现
+  - 多数据库适配
+  - 缓存策略优化
+  
+- 📖 [服务录像与重放](文档中的录像部分)
+  - 完整录制服务行为
+  - 精准重放调试
+  - Bug 快速定位
+
+### 技术博客
+- [热更新实现原理](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
+- [一键构建配置详解](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
+- [ORM 设计与实现](https://huahua132.github.io/2023/12/24/skynet_fly_ss/%E5%85%B3%E4%BA%8E%E5%A2%9E%E5%8A%A0skynet_fly_orm%E6%95%B0%E6%8D%AE%E5%85%B3%E7%B3%BB%E6%98%A0%E5%B0%84/)
+- [服务录像系统](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_3/record/)
+
+---
+
+## 📄 License
+
+本项目采用 MIT 协议开源，详见 [LICENSE](LICENSE) 文件。
+
+---
+
+<div align="center">
+
+**如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！**
+
+Made with ❤️ by [huahua132](https://github.com/huahua132)
+
+</div>
