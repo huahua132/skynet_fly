@@ -8,8 +8,8 @@ local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local table_util = require "skynet-fly.utils.table_util"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
-local contriner_client = require "skynet-fly.client.contriner_client"
-contriner_client:register("share_config_m")
+local container_client = require "skynet-fly.client.container_client"
+container_client:register("share_config_m")
 
 local net_util = nil
 
@@ -25,7 +25,7 @@ local function dispatch(fd,packid,res)
 end
 
 local function connnect(handle)
-	local confclient = contriner_client:new("share_config_m")
+	local confclient = container_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')
 	local fd
 	if g_config.protocol == 'websocket' then
@@ -133,7 +133,7 @@ local function reload_switch_test(mod_name)
 	end)
 	skynet.wait(wi)
 
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), mod_name)
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(), mod_name)
 	loginout(fd)
 	out_wi = coroutine.running()
 	skynet.wait(out_wi)
@@ -170,7 +170,7 @@ local function reload_reconnet_test(mod_name)
 	end)
 	skynet.wait(wi)
 
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),mod_name)
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(),mod_name)
 
 	local close_wi = coroutine.running()
 
@@ -273,7 +273,7 @@ local function player_reload_reconnect(mod_name)
 	skynet.sleep(300)
 	--热更
 	log.info("热更:",mod_name)
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),mod_name)
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(),mod_name)
 	--重新连接
 	skynet.sleep(200)
 	log.info("重新连接:",g_config)

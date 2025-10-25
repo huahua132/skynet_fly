@@ -4,10 +4,10 @@ local socket = require "skynet.socket"
 local log = require "skynet-fly.log"
 local tti = require "skynet-fly.cache.tti"
 local string_util = require "skynet-fly.utils.string_util"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local timer = require "skynet-fly.timer"
 
-contriner_client:register("web_agent_m")
+container_client:register("web_agent_m")
 
 local table  = table
 local string = string
@@ -196,7 +196,7 @@ function CMD.start(args)
 
 	socket.start(listen_fd, function(fd, addr)
 		if not agent_client then
-			agent_client = contriner_client:new("web_agent_m")
+			agent_client = container_client:new("web_agent_m")
 		end
 		local addrs = string_util.split(addr,':')
 		local ip,port = addrs[1],addrs[2]

@@ -1,7 +1,7 @@
 
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local queue = require "skynet.queue"
 local timer = require "skynet-fly.timer"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"

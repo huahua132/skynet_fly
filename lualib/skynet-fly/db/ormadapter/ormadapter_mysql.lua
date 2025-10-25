@@ -8,7 +8,7 @@
 ---#content ---
 ---#content [ormadapter_mysql](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/ormadapter/ormadapter_mysql.lua)
 
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local table_util = require "skynet-fly.utils.table_util"
 local string_util = require "skynet-fly.utils.string_util"
 local mysqli = require "skynet-fly.db.mysqli"

@@ -1,9 +1,9 @@
 local skynet = require "skynet"
-local contriner_launcher = require "skynet-fly.contriner.contriner_launcher"
+local container_launcher = require "skynet-fly.container.container_launcher"
 
 skynet.start(function()
 	skynet.error("start digitalbomb!!!>>>>>>>>>>>>>>>>>")
-	local delay_run = contriner_launcher.run()
+	local delay_run = container_launcher.run()
 
 	skynet.uniqueservice("room_game_login")
 

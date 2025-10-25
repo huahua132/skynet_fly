@@ -85,18 +85,18 @@ QQ群号：102993581
 function CMD.send_msg_to_b()
     for i = 1,4 do
 		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)
-        local ret = contriner_client:instance("B_m"):balance_call("hello")                  
+        local ret = container_client:instance("B_m"):balance_call("hello")                  
         log.info("balance_call send_msg_to_b:", i, ret)
         --对应send发送方式 balance_send
     end
     for i = 1,4 do
 		--模除映射方式  (用1模除以B_m的服务数量从而达到映射发送到固定服务的目的,不调用set_mod_num指定mod时，mod默认等于skynet.self()）
-        local ret = contriner_client:instance("B_m"):set_mod_num(1):mod_call("hello")
+        local ret = container_client:instance("B_m"):set_mod_num(1):mod_call("hello")
         log.info("mod_call send_msg_to_b:", i, ret)
         --对应send发送方式 mod_send
     end
 	--给B_m所有服务发
-    local ret = contriner_client:instance("B_m"):broadcast_call("hello")
+    local ret = container_client:instance("B_m"):broadcast_call("hello")
     log.info("broadcast_call:", ret)
     --对应send发送方式 broadcast
 
@@ -106,20 +106,20 @@ function CMD.send_msg_to_b()
 
     for i = 1,4 do
 		--简单轮询负载均衡 (假如B有2个服务B_1,B_2 用balance_call调用2次，将分别调用到B1，B2)会排除非test_one的服务。
-        local ret = contriner_client:instance("B_m", "test_one"):balance_call_by_name("hello")  
+        local ret = container_client:instance("B_m", "test_one"):balance_call_by_name("hello")  
         log.info("balance_call_by_name send_msg_to_b test_one:", i, ret)
         --对应send发送方式 balance_send_by_name
     end
 
     for i = 1,4 do
 		--模除映射方式  (用1模除一B_m的服务数量从而达到映射发送到固定服务的目的,不用set_mod_num指定mod,mod默认等于skynet.self()）
-        local ret = contriner_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       
+        local ret = container_client:instance("B_m", "test_two"):set_mod_num(1):mod_call_by_name("hello")       
         log.info("mod_call_by_name send_msg_to_b test_two:", i, ret)
         --对应send发送方式 mod_send_by_name
     end
 
 	--给B_m 子名字为test_two所有服务发
-    local ret = contriner_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    
+    local ret = container_client:instance("B_m", "test_two"):broadcast_call_by_name("hello")                    
     log.info("broadcast_by_name:", ret)
     --对应dend发送方式 broadcast_by_name
 end
@@ -273,7 +273,7 @@ end
 :00000008       109.16 Kb (snlua service_provider)
 :00000009       107.21 Kb (snlua service_cell ltls_holder)
 :0000000b       121.97 Kb (snlua monitor_exit)
-:0000000c       138.60 Kb (snlua contriner_mgr)
+:0000000c       138.60 Kb (snlua container_mgr)
 :0000000d       219.57 Kb (snlua debug_console 8888)
 :0000000e       254.48 Kb (snlua hot_container A_m 1 2024-05-23[17:14:09] 1716455649 1)
 :00000013       201.17 Kb (snlua hot_container B_m 1 2024-05-23[17:14:41] 1716455681 2)

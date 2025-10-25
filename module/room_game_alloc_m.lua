@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, need-check-nil
 --桌子分配
 local log = require "skynet-fly.log"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local skynet = require "skynet"
 local queue = require "skynet.queue"()
 local timer = require "skynet-fly.timer"
@@ -9,7 +9,7 @@ local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local table_util = require "skynet-fly.utils.table_util"
 
-contriner_client:register("room_game_table_m")
+container_client:register("room_game_table_m")
 
 local assert = assert
 local pairs = pairs
@@ -64,7 +64,7 @@ local function create_table(table_name, ...)
 		return alloc_plug.tablefull()
 	end
 
-	local room_client = contriner_client:new("room_game_table_m", table_name, NOT_SWITCH_FUNC)
+	local room_client = container_client:new("room_game_table_m", table_name, NOT_SWITCH_FUNC)
 	room_client:set_mod_num(num_id)
 	local table_server_id = room_client:get_mod_server_id_by_name()
 	local ok,errocode,errormsg = room_client:mod_call_by_name('create_table', table_id, SELF_ADDRESS, ...)

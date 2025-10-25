@@ -11,7 +11,7 @@
 local skynet = require "skynet"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local log = require "skynet-fly.log"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local SYSCMD = require "skynet-fly.enum.SYSCMD"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 
@@ -45,7 +45,7 @@ local server_mt = {__index = server}
 ---@param CMD table lua CMD消息表
 ---@return table obj
 function M.new_server(CMD)
-    assert(not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
+    assert(not skynet_util.is_hot_container_server() or container_interface.get_server_state() == SERVER_STATE_TYPE.loading, "not loading can`t new")
     assert(not CMD[watch_cmd], "exists _watch cmd")
     assert(not CMD[unwatch_cmd], "exists _unwatch cmd")
     local watch_map = {}         --监听者记录
@@ -240,7 +240,7 @@ function client:watch(name)
             version_map[name] = version
             if event_type == EVENT_TYPE.move then
                 if skynet_util.is_hot_container_server() then
-                    local state = contriner_interface.get_server_state()
+                    local state = container_interface.get_server_state()
                     if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
                         break
                     end

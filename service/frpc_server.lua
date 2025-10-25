@@ -1,5 +1,5 @@
 local skynet = require "skynet.manager"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local rpc_redis = require "skynet-fly.rpc.rpc_redis"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
@@ -42,10 +42,10 @@ local g_subsyn_parsed_map = {}						--订阅同步已经解析过的channel_name
 local g_psubsyn_map = {}							--批订阅同步表
 local g_psubsyn_channel_info_map = {}				--批订阅同步表的数据
 
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local g_client_map = setmetatable({},{__index = function(t,key)
-	t[key] = contriner_client:new_raw(key)
+	t[key] = container_client:new_raw(key)
 	return t[key]
 end})
 
@@ -750,7 +750,7 @@ skynet.start(function()
 	skynet.register('.frpc_server')
 	skynet_util.lua_dispatch(CMD)
 
-	local confclient = contriner_client:new("share_config_m")
+	local confclient = container_client:new("share_config_m")
 	local conf = confclient:mod_call('query','frpc_server')
 	assert(conf.host,"not host")
 

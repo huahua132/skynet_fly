@@ -1,10 +1,10 @@
 local skynet = require "skynet"
-local contriner_launcher = require "skynet-fly.contriner.contriner_launcher"
+local container_launcher = require "skynet-fly.container.container_launcher"
 local sharedata = require "skynet-fly.sharedata"
 
 skynet.start(function()
 	skynet.error("start record!!!>>>>>>>>>>>>>>>>>")
-	contriner_launcher.run()
+	container_launcher.run()
 
 	skynet.exit()
 end)

@@ -29,7 +29,7 @@ shift
 ]]
     shell_str = shell_str .. string.format("%s %s/console.lua %s %s ${load_mods_name} get_list | \n",lua_path,script_path,skynet_fly_path,svr_name)
     shell_str = shell_str .. string.format("xargs curl -s |\n")
-    shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} find_server_id contriner_mgr 2 | \\\n",lua_path,script_path,skynet_fly_path,svr_name)
+    shell_str = shell_str .. string.format("xargs %s %s/console.lua %s %s ${load_mods_name} find_server_id container_mgr 2 | \\\n",lua_path,script_path,skynet_fly_path,svr_name)
     shell_str = shell_str .. string.format("xargs -t -I {} %s %s/console.lua %s %s ${load_mods_name} reload {} $* | \n",lua_path,script_path,skynet_fly_path,svr_name)
     shell_str = shell_str .. string.format("xargs -t curl -s | \n")
     shell_str = shell_str .. string.format("xargs -t %s %s/console.lua %s %s ${load_mods_name} handle_reload_result | xargs",lua_path,script_path,skynet_fly_path,svr_name)
@@ -76,7 +76,7 @@ for /f %%i in ('{lua_path} {skynet_fly_path}\script\lua\console.lua {skynet_fly_
 echo %getlisturl%
 set serverid=""
 for /f "delims=" %%i in ('curl -s %getlisturl%') do (
-	echo %%i | findstr /C:"contriner_mgr" > nul
+	echo %%i | findstr /C:"container_mgr" > nul
 	if not errorlevel 1 set serverid=%%i
 )
 

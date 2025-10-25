@@ -440,6 +440,6 @@ function CMD.shutdown()
 end
 
 skynet.start(function()
-	skynet.register('.contriner_mgr')
+	skynet.register('.container_mgr')
 	skynet_util.lua_dispatch(CMD)
 end)

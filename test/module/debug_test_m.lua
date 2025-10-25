@@ -1,8 +1,8 @@
 local timer = require "skynet-fly.timer"
 local log = require "skynet-fly.log"
 local debug_test = require "common.debug_test"
-local contriner_client = require "skynet-fly.client.contriner_client"
-contriner_client:register("share_config_m")
+local container_client = require "skynet-fly.client.container_client"
+container_client:register("share_config_m")
 
 local CMD = {}
 
@@ -18,7 +18,7 @@ function CMD.start()
         }
         local dd = debug_test.hello()
         log.info(">>>>>>>>>>>>test ",aa, bb, cc, dd)
-        local cli = contriner_client:new("share_config_m")
+        local cli = container_client:new("share_config_m")
         local server_cfg = cli:mod_call("query", "server_cfg")
         log.info("server_cfg >>> ", server_cfg)                 --call调用回来再次打个断点才行
     end)

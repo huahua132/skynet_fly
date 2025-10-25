@@ -16,7 +16,7 @@ local skynet_util = require "skynet-fly.utils.skynet_util"
 local module_info = require "skynet-fly.etc.module_info"
 local tti = require "skynet-fly.cache.tti"
 local timer = require "skynet-fly.timer"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local queue = require "skynet.queue"()
 
@@ -203,7 +203,7 @@ local function watch(svr_name, channel_name, handle_name, handler)
     g_watch_channel_name_map[svr_name][channel_name][handle_name] = handler
     tinsert(g_watch_channel_handlers_map[svr_name][channel_name], handle_name)
     
-    if is_new and (not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
+    if is_new and (not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
         local svr_list = frpc_client:get_active_svr_ids(svr_name)
         if #svr_list == 0 then
             log.warn("watch not node ", svr_name, channel_name, handle_name)
@@ -297,7 +297,7 @@ local function watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
     g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name] = handler
     tinsert(g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name], handle_name)
 
-    if is_new and (not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
+    if is_new and (not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading) then
         watch_channel_name(svr_name, svr_id, channel_name)
     end
 end

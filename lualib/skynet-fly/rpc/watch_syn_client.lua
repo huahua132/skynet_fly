@@ -12,7 +12,7 @@ local skynet = require "skynet"
 local frpc_client = require "skynet-fly.client.frpc_client"
 local log = require "skynet-fly.log"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
 
@@ -186,7 +186,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
             elseif ret == WATCH_SYN_RET.move then
                 
                 if skynet_util.is_hot_container_server() then
-                    local state = contriner_interface.get_server_state()
+                    local state = container_interface.get_server_state()
                     if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
                         break
                     end
@@ -334,7 +334,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
                 break                                               --退出 有watch_up重新拉起
             elseif ret == WATCH_SYN_RET.move then
                 if skynet_util.is_hot_container_server() then
-                    local state = contriner_interface.get_server_state()
+                    local state = container_interface.get_server_state()
                     if state == SERVER_STATE_TYPE.fix_exited or state == SERVER_STATE_TYPE.exited then  --说明是旧服务，就不用同步了
                         break
                     end
@@ -454,7 +454,7 @@ function M.watch(svr_name, channel_name, handle_name, handler)
     g_watch_channel_name_map[svr_name][channel_name][handle_name] = handler
     tinsert(g_watch_channel_handlers_map[svr_name][channel_name], handle_name)
     
-    if not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
+    if not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         local svr_list = frpc_client:get_active_svr_ids(svr_name)
         if #svr_list == 0 then
             log.warn("watch not node ", svr_name, channel_name, handle_name)
@@ -543,7 +543,7 @@ function M.watch_byid(svr_name, svr_id, channel_name, handle_name, handler)
     g_watch_channel_svr_id_map[svr_name][svr_id][channel_name][handle_name] = handler
     tinsert(g_watch_channel_svr_id_handlers_map[svr_name][svr_id][channel_name], handle_name)
 
-    if not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
+    if not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         watch_channel_name(svr_name, svr_id, channel_name, handler)
     end
 end
@@ -621,7 +621,7 @@ function M.pwatch(svr_name, pchannel_name, handle_name, handler)
     g_pwatch_channel_name_map[svr_name][pchannel_name][handle_name] = handler
     tinsert(g_pwatch_channel_handlers_map[svr_name][pchannel_name], handle_name)
     
-    if not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
+    if not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         local svr_list = frpc_client:get_active_svr_ids(svr_name)
         if #svr_list == 0 then
             log.warn("pwatch not node ", svr_name, pchannel_name, handle_name)
@@ -719,7 +719,7 @@ function M.pwatch_byid(svr_name, svr_id, pchannel_name, handle_name, handler)
     g_pwatch_channel_svr_id_map[svr_name][svr_id][pchannel_name][handle_name] = handler
     tinsert(g_pwatch_channel_svr_id_handlers_map[svr_name][svr_id][pchannel_name], handle_name)
 
-    if not skynet_util.is_hot_container_server() or contriner_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
+    if not skynet_util.is_hot_container_server() or container_interface.get_server_state() ~= SERVER_STATE_TYPE.loading then
         pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
     end
 end

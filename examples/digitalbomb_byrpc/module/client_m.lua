@@ -8,9 +8,9 @@ local sp_netpack = require "skynet-fly.netpack.sp_netpack"
 local table_util = require "skynet-fly.utils.table_util"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local rpc_client = require "skynet-fly.utils.net.rpc_client"
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local net_util = nil
 
@@ -25,7 +25,7 @@ local function dispatch(fd,packid,res)
 end
 
 local function connnect(handle)
-	local confclient = contriner_client:new("share_config_m")
+	local confclient = container_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')
 	local fd
 	if g_config.protocol == 'websocket' then

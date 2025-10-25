@@ -1,12 +1,12 @@
 local watch_syn = require "skynet-fly.watch.watch_syn"
 local skynet = require "skynet"
 
-local contriner_client = require "skynet-fly.client.contriner_client"
-local contriner_watch_interface = require "skynet-fly.watch.interface.contriner_watch_interface"
+local container_client = require "skynet-fly.client.container_client"
+local container_watch_interface = require "skynet-fly.watch.interface.container_watch_interface"
 local service_watch_interface = require "skynet-fly.watch.interface.service_watch_interface"
 local log = require "skynet-fly.log"
 
-contriner_client:register("watch_server_test_m")
+container_client:register("watch_server_test_m")
 
 local watch_client = nil
 
@@ -22,7 +22,7 @@ local function test_syn()
     end
 
     --服务器热更后同步值
-    skynet.call('.contriner_mgr','lua','load_modules', skynet.self(),"watch_server_test_m")
+    skynet.call('.container_mgr','lua','load_modules', skynet.self(),"watch_server_test_m")
 
     assert(watch_client:await_update("test_syn_data") == nil)
     for i = 1, 5 do
@@ -57,7 +57,7 @@ end
 
 function CMD.start()
     skynet.fork(function()
-        local rpc_interface = contriner_watch_interface:new("watch_server_test_m")
+        local rpc_interface = container_watch_interface:new("watch_server_test_m")
         --local rpc_interface = service_watch_interface:new('.watch_server_test_m')      --适用于监听不是可热更的服务
         watch_client = watch_syn.new_client(rpc_interface)
         log.info("start test_syn")

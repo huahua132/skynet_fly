@@ -1,14 +1,14 @@
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
 local socket = require "skynet.socket"
-local contriner_client = require "skynet-fly.client.contriner_client"
-contriner_client:register("B_m")
+local container_client = require "skynet-fly.client.container_client"
+container_client:register("B_m")
 
 local CMD = {}
 
 function CMD.start()
     timer:new(timer.second, timer.loop, function()
-        contriner_client:instance("B_m"):mod_call("ping")
+        container_client:instance("B_m"):mod_call("ping")
     end)
 
     skynet.fork(function()

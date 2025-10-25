@@ -6,7 +6,7 @@
 ---#content category_bar: true
 ---#content tags: [skynet_fly_api]
 ---#content ---
----#content [contriner_client](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/client/contriner_client.lua)
+---#content [container_client](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/client/container_client.lua)
 
 local skynet = require "skynet"
 local module_info = require "skynet-fly.etc.module_info"
@@ -56,15 +56,15 @@ local g_week_meta = {__mode = "kv"}
 local g_id_list_map = {}          --记录id_list的弱引用，用与其他服务查询该服务是否还需要访问自己
 local g_mod_svr_ids_map
 local g_week_obj_map = setmetatable({}, g_week_meta)	--避免长时间使用，不切换地址，迫使旧服务驻留
-local g_contriner_mgr = nil
+local g_container_mgr = nil
 
-local function get_contriner_mgr_addr()
-    if g_contriner_mgr then
-        return g_contriner_mgr
+local function get_container_mgr_addr()
+    if g_container_mgr then
+        return g_container_mgr
     end
 	
-    g_contriner_mgr = skynet.queryservice('contriner_mgr')
-    return g_contriner_mgr
+    g_container_mgr = skynet.queryservice('container_mgr')
+    return g_container_mgr
 end
 
 local function add_id_list_week(module_name,id_list)
@@ -123,7 +123,7 @@ end
 local function monitor(t,key)
 	while not IS_CLOSE do
 		local old_version = g_mod_svr_version_map[key]
-		local id_list,name_id_list,version = skynet.call(get_contriner_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
+		local id_list,name_id_list,version = skynet.call(get_container_mgr_addr(), 'lua', 'watch', SELF_ADDRESS, key, old_version)
 		if not is_close_swtich or g_always_swtich_map[key] then
 			add_id_list_week(key,id_list)
 			register_visitor(id_list)
@@ -149,7 +149,7 @@ local function call_back_queryed(queryed)
 end
 
 g_mod_svr_ids_map = setmetatable({},{__index = function(t,key)
-	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call(get_contriner_mgr_addr(), 'lua', 'query', SELF_ADDRESS, key)
+	t[key],g_name_id_list_map[key],g_mod_svr_version_map[key] = skynet.call(get_container_mgr_addr(), 'lua', 'query', SELF_ADDRESS, key)
 	assert(t[key],"query err " .. key)
 	if not g_is_watch_map[key] then
 		g_is_watch_map[key] = true
@@ -171,7 +171,7 @@ local function monitor_all()
 	skynet.fork(function()
 		local mod_version_map = nil
 		while not IS_CLOSE do
-			mod_version_map = skynet.call(get_contriner_mgr_addr(),'lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
+			mod_version_map = skynet.call(get_container_mgr_addr(),'lua', 'monitor_new', SELF_ADDRESS, mod_version_map)
 			for mod_name,_ in pairs(mod_version_map) do
 				g_register_map[mod_name] = true
 				local _ = g_mod_svr_ids_map[mod_name]
@@ -184,10 +184,10 @@ end
 skynet.exit = function()
 	IS_CLOSE = true
 	for mod_name in pairs(g_mod_svr_ids_map) do
-		skynet.send(get_contriner_mgr_addr(),'lua','unwatch',SELF_ADDRESS, mod_name)
+		skynet.send(get_container_mgr_addr(),'lua','unwatch',SELF_ADDRESS, mod_name)
 	end
 	if is_monitor_all then
-		skynet.call(get_contriner_mgr_addr(),'lua', 'unmonitor_new', SELF_ADDRESS)
+		skynet.call(get_container_mgr_addr(),'lua', 'unmonitor_new', SELF_ADDRESS)
 	end
 	return skynet_exit()
 end
@@ -411,7 +411,7 @@ end
 ---@param can_switch_func function|nil 是否可以切服，当连接的模块服务地址更新后，是否要切换到新服务，每次发消息的时候都会检测是否切服,不传默认切
 ---@return table obj
 function M:new(module_name,instance_name,can_switch_func)
-	assert(g_register_map[module_name], "not register visitor, please be loading code call contriner_client:register('" .. module_name .. "')")
+	assert(g_register_map[module_name], "not register visitor, please be loading code call container_client:register('" .. module_name .. "')")
 	assert(is_ready,"not ready, please be started call")
 	assert(module_name)
 	if not can_switch_func then

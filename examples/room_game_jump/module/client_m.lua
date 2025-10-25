@@ -5,9 +5,9 @@ local websocket = require "http.websocket"
 local socket = require "skynet.socket"
 local pb_netpack = require "skynet-fly.netpack.pb_netpack"
 local table_util = require "skynet-fly.utils.table_util"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local module_info = require "skynet-fly.etc.module_info"
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local CMD = {}
 
@@ -19,11 +19,11 @@ local function dispatch(fd,packname,res)
 end
 
 local function connnect(handle)
-	local confclient = contriner_client:new("share_config_m")
+	local confclient = container_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')
 	local port = room_game_login.wsgateconf.port
 	assert(port, "not wsgateconf port")
-	local confclient = contriner_client:new("share_config_m")
+	local confclient = container_client:new("share_config_m")
 	local room_game_login = confclient:mod_call('query','room_game_login')
 	local fd
 	if g_config.protocol == 'websocket' then
@@ -77,7 +77,7 @@ local function online_jump_test()
 	--热更
 	if module_info.get_base_info().index == 1 then
 		log.info("热更:")
-		skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+		skynet.call('.container_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
 	end
 
 	skynet.send('.room_game_login', 'lua', "send_player_hall", g_config.player_id, 'hello', g_config.player_id)
@@ -104,7 +104,7 @@ local function offline_jump_test()
 	close(fd)
 
 	log.info("热更:")
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
 	for i = 1, 3 do
 		net_util.send(nil, fd, '.login.serverInfoReq', {player_id = g_config.player_id})
 	end
@@ -124,7 +124,7 @@ local function loginout_jump_test()
 	skynet.sleep(100)
 
 	log.info("热更:")
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
 
 	loginout(fd)
 end
@@ -137,7 +137,7 @@ local function table_jump_test()
 	net_util.send(nil,fd,'.login.matchReq',{table_name = "room_3"})
 
 	log.info("热更:")
-	skynet.call('.contriner_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
+	skynet.call('.container_mgr','lua','load_modules', skynet.self(), "room_game_hall_m")
 end
 
 function CMD.start(config)

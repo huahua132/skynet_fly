@@ -2,7 +2,7 @@
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local httpc = require "http.httpc"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local socket = require "skynet.socket"
 local timer = require "skynet-fly.timer"
 local hotfix_func = hotfix_require "testhotfix.hotfix_func"
@@ -11,21 +11,21 @@ local com_test_hotfix = hotfix_require "com_test_hotfix"
 local ccom_test_hotfix = hotfix_require "common.com_test_hotfix"
 local sharedata = require "skynet-fly.sharedata"
 
-contriner_client:register("A_m", "share_config_m")
+container_client:register("A_m", "share_config_m")
 
 local CMD = {}
 
 --测试服务相关API
 local function test_service_api()
     log.info("skynet.newservice:", skynet.newservice("Cservice"))
-    log.info("skynet.uniqueservice:", skynet.uniqueservice('contriner_mgr'))
-    log.info("skynet.queryservice:", skynet.queryservice('contriner_mgr'))
+    log.info("skynet.uniqueservice:", skynet.uniqueservice('container_mgr'))
+    log.info("skynet.queryservice:", skynet.queryservice('container_mgr'))
     log.info("skynet.localname:", skynet.localname('.Cservice'))
 end
 
 --call调用
 local function test_call()
-    log.info("test_call:", contriner_client:instance("A_m"):mod_call('ping'))
+    log.info("test_call:", container_client:instance("A_m"):mod_call('ping'))
 end
 
 --http调用

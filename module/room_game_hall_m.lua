@@ -4,13 +4,13 @@ local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 local queue = require "skynet.queue"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local string_util = require "skynet-fly.utils.string_util"
 local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local table_util = require "skynet-fly.utils.table_util"
 
-contriner_client:register("room_game_alloc_m", "share_config_m")
+container_client:register("room_game_alloc_m", "share_config_m")
 
 local assert = assert
 local pcall = pcall
@@ -32,7 +32,7 @@ local EMPTY = {}
 --private
 ----------------------------------------------------------------------------------
 local function new_join_table(agent, table_name, join_cmd, ...)
-	local alloc_client = contriner_client:new("room_game_alloc_m",table_name,function() return false end)
+	local alloc_client = container_client:new("room_game_alloc_m",table_name,function() return false end)
 	local gate = agent.gate
 	local fd = agent.fd
 	local player_id = agent.player_id
@@ -727,7 +727,7 @@ function CMD.start(config)
 	assert(hall_plug.init,"not init")             --初始化
 
 	skynet.fork(function ()
-		local confclient = contriner_client:new("share_config_m")
+		local confclient = container_client:new("share_config_m")
 		local room_game_login = confclient:mod_call('query','room_game_login')
 
 		if room_game_login.gateconf then

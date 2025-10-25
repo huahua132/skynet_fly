@@ -6,7 +6,7 @@
 ---#content category_bar: true
 ---#content tags: [skynet_fly_api]
 ---#content ---
----#content [contriner_launcher](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/contriner/contriner_launcher.lua)
+---#content [container_launcher](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/container/container_launcher.lua)
 
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
@@ -32,7 +32,7 @@ local M = {}
 ---@return function 返回需要延迟启动的可热更模块
 function M.run()
     skynet.monitor('monitor_exit')
-    local cmgr = skynet.uniqueservice('contriner_mgr')
+    local cmgr = skynet.uniqueservice('container_mgr')
 	skynet.uniqueservice("debug_console", skynet.getenv('debug_port'))
 
     local before_run_list = {} --先跑

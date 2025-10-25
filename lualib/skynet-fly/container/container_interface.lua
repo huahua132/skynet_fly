@@ -6,7 +6,7 @@
 ---#content category_bar: true
 ---#content tags: [skynet_fly_api]
 ---#content ---
----#content [contriner_interface](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/contriner/contriner_interface.lua)
+---#content [container_interface](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/container/container_interface.lua)
 
 local M = {}
 ---#content loading = 1,            --加载中

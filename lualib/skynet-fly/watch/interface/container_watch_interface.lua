@@ -6,9 +6,9 @@
 ---#content category_bar: true
 ---#content tags: [skynet_fly_api]
 ---#content ---
----#content [contriner_watch_interface](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/watch/contriner_watch_interface.lua)
+---#content [container_watch_interface](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/watch/container_watch_interface.lua)
 
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local setmetatable = setmetatable
 
 local M = {}
@@ -19,7 +19,7 @@ local mt = {__index = M}
 ---@return table obj
 function M:new(mod_name, instance_name)
     local t = {
-        cli = contriner_client:new(mod_name, instance_name)
+        cli = container_client:new(mod_name, instance_name)
     }
 
     setmetatable(t, mt)

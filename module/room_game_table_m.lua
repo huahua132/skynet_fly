@@ -1,10 +1,10 @@
 local log = require "skynet-fly.log"
 local skynet = require "skynet"
 local timer = require "skynet-fly.timer"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local table_util = require "skynet-fly.utils.table_util"
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local assert = assert
 local next = next
@@ -559,7 +559,7 @@ function CMD.start(config)
 	assert(table_plug.table_creator,"not table_creator")          --桌子建造者
 
 	skynet.fork(function()
-		local confclient = contriner_client:new("share_config_m")
+		local confclient = container_client:new("share_config_m")
 		local room_game_login = confclient:mod_call('query','room_game_login')
 
 		if room_game_login.gateconf then

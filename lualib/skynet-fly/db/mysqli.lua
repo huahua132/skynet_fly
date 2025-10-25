@@ -14,9 +14,9 @@ local skynet = require "skynet"
 local mysql = require "skynet.db.mysql"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local assert = assert
 local setmetatable = setmetatable
@@ -53,7 +53,7 @@ local week_mt = {__mode = "kv"}
 ---@param db_name string 对应share_config_m 中写的key为mysql表的名为db_name的连接配置
 ---@return table
 function M.new_client(db_name)
-	local cli = contriner_client:new('share_config_m')
+	local cli = container_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','mysql')
 	assert(conf_map and conf_map[db_name],"not mysql conf:" .. db_name)
 

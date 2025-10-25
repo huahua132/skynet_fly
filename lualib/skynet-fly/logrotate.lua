@@ -7,9 +7,9 @@
 ---#content tags: [skynet_fly_api]
 ---#content ---
 ---#content [logrotate](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/logrotate.lua)
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local skynet_util = require "skynet-fly.utils.skynet_util"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local wait = require "skynet-fly.time_extend.wait"
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
@@ -30,22 +30,22 @@ end
 
 local g_rotate_map = {}
 
-contriner_client:register("logrotate_m")
+container_client:register("logrotate_m")
 
-contriner_client:add_queryed_cb("logrotate_m", function()
+container_client:add_queryed_cb("logrotate_m", function()
     g_wait_query:wakeup("query")
 end)
 
 --logrotate的服务更新之后需要重新发送切割任务
-contriner_client:add_updated_cb("logrotate_m", function()
+container_client:add_updated_cb("logrotate_m", function()
     for id, obj in pairs(g_rotate_map) do
-        contriner_client:instance("logrotate_m"):mod_call("add_rotate", skynet.self(), obj.cfg, id)
+        container_client:instance("logrotate_m"):mod_call("add_rotate", skynet.self(), obj.cfg, id)
     end
 end)
 
 if skynet_util.is_hot_container_server() then
-    contriner_interface.hook_fix_exit_after(function()
-        contriner_client:instance("logrotate_m"):mod_call("cancel_all", skynet.self())
+    container_interface.hook_fix_exit_after(function()
+        container_client:instance("logrotate_m"):mod_call("cancel_all", skynet.self())
     end)
 end
 
@@ -61,7 +61,7 @@ function M:new(filename)
         },
         is_builder = false,
     }
-    if not contriner_client:is_ready("logrotate_m") then
+    if not container_client:is_ready("logrotate_m") then
         log.warn("waiting logrotate_m begin")
         g_wait_query:wait("query")
         log.warn("waiting logrotate_m end")
@@ -245,7 +245,7 @@ function M:builder()
     self.is_builder = true
     local id = alloc_id()
     self.id = id
-    contriner_client:instance("logrotate_m"):mod_call("add_rotate", skynet.self(), self.cfg, id)
+    container_client:instance("logrotate_m"):mod_call("add_rotate", skynet.self(), self.cfg, id)
     g_rotate_map[id] = self
     return self
 end
@@ -254,7 +254,7 @@ end
 ---@return table 对象
 function M:cancel()
     assert(self.is_builder, "not builder can`t use cancel")
-    contriner_client:instance("logrotate_m"):mod_call("cancel", skynet.self(), self.id)
+    container_client:instance("logrotate_m"):mod_call("cancel", skynet.self(), self.id)
     g_rotate_map[self.id] = nil
     return self
 end

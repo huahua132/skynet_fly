@@ -11,10 +11,10 @@
 ---#content [frpc_client](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/client/frpc_client.lua)
 
 local skynet = require "skynet"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local FRPC_PACK_ID = require "skynet-fly.enum.FRPC_PACK_ID"
 local watch_syn = require "skynet-fly.watch.watch_syn"
-local watch_interface = require "skynet-fly.watch.interface.contriner_watch_interface"
+local watch_interface = require "skynet-fly.watch.interface.container_watch_interface"
 local frpcpack = require "frpcpack.core"
 local log = require "skynet-fly.log"
 local crypt = require "skynet.crypt"
@@ -31,7 +31,7 @@ local x_pcall = x_pcall
 local debug_getinfo = debug.getinfo
 local tostring = tostring
 
-contriner_client:register("frpc_client_m")
+container_client:register("frpc_client_m")
 
 local M = {}
 local meta = {__index = M}
@@ -176,7 +176,7 @@ function M:new(mode, svr_name, module_name, instance_name)
 	}
 
 	if not g_frpc_client then
-		g_frpc_client = contriner_client:new("frpc_client_m"):set_switch_call_back(function()
+		g_frpc_client = container_client:new("frpc_client_m"):set_switch_call_back(function()
 			for handle_name, handler in pairs(g_switch_handler_map) do
 				local isok, err = x_pcall(handler)
 				if not isok then
@@ -197,7 +197,7 @@ local function mode_check(self)
 	end
 end
 
-contriner_client:add_queryed_cb("frpc_client_m", function()
+container_client:add_queryed_cb("frpc_client_m", function()
 	g_watch_client = watch_syn.new_client(watch_interface:new("frpc_client_m"))
 	skynet.fork(syn_active_map)
 end)

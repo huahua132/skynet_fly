@@ -11,7 +11,7 @@
 ---#content 调用redis命令的基础封装
 
 local skynet = require "skynet"
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local redis = require "skynet.db.redis"
 local string_util = require "skynet-fly.utils.string_util"
 local crypt = require "skynet.crypt"
@@ -28,7 +28,7 @@ local tpack = table.pack
 local tunpack = table.unpack
 local debug_getinfo = debug.getinfo
 
-contriner_client:register('share_config_m')
+container_client:register('share_config_m')
 
 local g_sha_map = {}
 
@@ -121,7 +121,7 @@ local mt = {
 ---@param db_name string 对应share_config_m 中写的key为redis表的名为db_name的连接配置
 ---@return table obj
 function M.new_client(db_name)
-	local cli = contriner_client:new('share_config_m')
+	local cli = container_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
 	assert(conf_map and conf_map[db_name],"not redis conf:" .. db_name)
 
@@ -162,7 +162,7 @@ end
 ---@param call_back function 回调函数
 ---@return function 取消订阅函数
 function M.new_watch(db_name,subscribe_list,psubscribe_list,call_back)
-	local cli = contriner_client:new('share_config_m')
+	local cli = container_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','redis')
 	assert(conf_map and conf_map[db_name],"not redis conf")
 	local conf = conf_map[db_name]

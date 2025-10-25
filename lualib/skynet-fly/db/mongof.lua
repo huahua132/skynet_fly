@@ -8,9 +8,9 @@
 ---#content tags: [skynet_fly_api]
 ---#content ---
 ---#content [mongof](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/db/mongof.lua)
-local contriner_client = require "skynet-fly.client.contriner_client"
+local container_client = require "skynet-fly.client.container_client"
 local mongo = require "skynet.db.mongo"
-contriner_client:register("share_config_m")
+container_client:register("share_config_m")
 
 local assert = assert
 local setmetatable = setmetatable
@@ -22,7 +22,7 @@ local M = {}
 ---@param db_name string 对应share_config_m 中写的key为mongo表的名为db_name的连接配置
 ---@return table
 function M.new_client(db_name)
-	local cli = contriner_client:new('share_config_m')
+	local cli = container_client:new('share_config_m')
 	local conf_map = cli:mod_call('query','mongo')
 	assert(conf_map and conf_map[db_name],"not mongo conf:" .. db_name)
 

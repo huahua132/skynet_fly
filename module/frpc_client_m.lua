@@ -17,7 +17,7 @@ local string_util = require "skynet-fly.utils.string_util"
 local watch_server = require "skynet-fly.rpc.watch_server"
 local SYSCMD = require "skynet-fly.enum.SYSCMD"
 local WATCH_SYN_RET = require "skynet-fly.enum.WATCH_SYN_RET"
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local FRPC_ERRCODE = require "skynet-fly.enum.FRPC_ERRCODE"
 local queue = require "skynet.queue"()
@@ -561,7 +561,7 @@ local function add_node_watch(cluster_name)
 	end)
 end
 
-contriner_interface.hook_fix_exit_after(function()
+container_interface.hook_fix_exit_after(function()
 	for svr_name, node_info in pairs(g_node_info_map) do
 		local watch_syn_map = node_info.watch_syn_map
 		for cluster_name, watch_syn_info in pairs(watch_syn_map) do
@@ -884,7 +884,7 @@ function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
 end
 
 local function subsyn(svr_name, svr_id, source, channel_name, version)
-	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+	if container_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
 	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
@@ -974,7 +974,7 @@ function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 end
 
 local function psubsyn(svr_name, svr_id, source, pchannel_name, version)
-	if contriner_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+	if container_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
 	local channel, cluster_name, secret, _, pwatch_syn_info = get_watch_channel(svr_name, svr_id)

@@ -38,7 +38,7 @@ module_info.set_base_info {
 	is_record_on = IS_RECORD_ON,
 }
 
-local contriner_interface = require "skynet-fly.contriner.contriner_interface"
+local container_interface = require "skynet-fly.container.container_interface"
 local table_util = require "skynet-fly.utils.table_util"
 local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local hotfix = require "skynet-fly.hotfix.hotfix"
@@ -66,25 +66,25 @@ local g_start_after_cb = {}
 --确定退出之后的回调列表
 local g_fix_exit_after_cb = {}
 
---contriner_interface
-function contriner_interface.get_server_state()
+--container_interface
+function container_interface.get_server_state()
 	return SERVER_STATE
 end
 
-function contriner_interface.hook_start_after(cb)
+function container_interface.hook_start_after(cb)
 	table.insert(g_start_after_cb, cb)
 end
 
-function contriner_interface.hook_fix_exit_after(cb)
+function container_interface.hook_fix_exit_after(cb)
 	table.insert(g_fix_exit_after_cb, cb)
 end
 
-function contriner_interface.close_hotreload()
+function container_interface.close_hotreload()
 	IS_CLOSE_HOT_RELOAD = true
 end
 
-local contriner_client = require "skynet-fly.client.contriner_client"
-contriner_client:close_ready()
+local container_client = require "skynet-fly.client.container_client"
+container_client:close_ready()
 local write_mod_required = require "skynet-fly.write_mod_required"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
@@ -126,11 +126,11 @@ local g_source_map = {}        --来访者列表
 skynet_util.register_info_func("hot_container",function()
 	local info = {
 		module_info = module_info.get_base_info(),
-		server_state = contriner_interface.get_server_state(),
+		server_state = container_interface.get_server_state(),
 		source_map = {},
 		exit_remain_time = g_exit_timer and g_exit_timer:remain_expire() or 0,
-		week_visitor_map = contriner_client:get_week_visitor_map(),
-		need_visitor_map = contriner_client:get_need_visitor_map(),
+		week_visitor_map = container_client:get_week_visitor_map(),
+		need_visitor_map = container_client:get_need_visitor_map(),
 	}
 
 	for source in pairs(g_source_map) do
@@ -210,7 +210,7 @@ function CMD.start(cfg, auto_reload, record_backup)
 			set_time_point_opt('yday')
 			g_time_point_obj = g_time_point_obj:builder(function()
 				log.info("auto reload >>>>>>>>>> ", MODULE_NAME)
-				skynet.send('.contriner_mgr','lua','load_modules', skynet.self(), MODULE_NAME)
+				skynet.send('.container_mgr','lua','load_modules', skynet.self(), MODULE_NAME)
 			end)
 		end
 
@@ -243,14 +243,14 @@ function CMD.start(cfg, auto_reload, record_backup)
 			end)
 		end
 
-		contriner_client:open_ready()
+		container_client:open_ready()
 		SERVER_STATE = SERVER_STATE_TYPE.starting
 	else
 		SERVER_STATE = SERVER_STATE_TYPE.start_failed
 	end
 
 	if INDEX == 1 and IS_CLOSE_HOT_RELOAD then
-		skynet.send('.contriner_mgr', 'lua', 'close_loads', SELF_ADDRESS, MODULE_NAME)
+		skynet.send('.container_mgr', 'lua', 'close_loads', SELF_ADDRESS, MODULE_NAME)
 	end
 	log.info("start end")
 	return ret
@@ -277,7 +277,7 @@ end
 --退出之前
 function CMD.herald_exit()
 	log.info("herald_exit begin")
-	contriner_client:close_switch()
+	container_client:close_switch()
 	module_herald_exit()
 	log.info("herald_exit end")
 end
@@ -285,7 +285,7 @@ end
 --取消退出
 function CMD.cancel_exit()
 	log.info("cancel_exit begin")
-	contriner_client:open_switch()
+	container_client:open_switch()
 	module_cancel_exit()
 	log.info("cancel_exit end")
 end
@@ -295,7 +295,7 @@ assert(not CMD['register_visitor'], "repeat cmd register_visitor")
 function CMD.register_visitor(source,module_name,servername)
 	
 	-- 弱访问者
-	if module_name and contriner_client:is_week_visitor(module_name) then
+	if module_name and container_client:is_week_visitor(module_name) then
 		return
 	end
 
