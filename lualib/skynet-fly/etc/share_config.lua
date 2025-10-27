@@ -15,7 +15,7 @@ function M.get(cfg_name)
     if cache[cfg_name] then
         return cache[cfg_name]
     end
-    local cfg = container_client:instance("share_config_m"):query(cfg_name)
+    local cfg = container_client:instance("share_config_m"):mod_call("query", cfg_name)
     cache[cfg_name] = cfg
     return cfg
 end
