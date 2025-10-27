@@ -345,3 +345,38 @@ make linux
 Made with ❤️ by [huahua132](https://github.com/huahua132)
 
 </div>
+
+## 🙏 贡献者
+
+感谢所有为 skynet_fly 做出贡献的开发者！
+
+### 核心贡献者
+
+<a href="https://github.com/huahua132/skynet_fly/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=huahua132/skynet_fly" />
+</a>
+
+### 特别感谢
+
+感谢以下贡献者提交的 Pull Request，让项目变得更好：
+
+- 🌟 所有提交 PR 的朋友
+- 🐛 提交 Issue 和 Bug 报告的朋友
+- 💡 提供建议和想法的朋友
+- 📖 完善文档的朋友
+
+### 如何贡献
+
+我们欢迎所有形式的贡献！
+
+1. 🍴 Fork 本项目
+2. 🔨 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 💾 提交你的修改 (`git commit -m 'Add some AmazingFeature'`)
+4. 📤 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 🎉 提交 Pull Request
+
+**贡献指南：**
+- 遵循项目的代码风格
+- 提交前请测试你的代码
+- 提供清晰的提交信息
+---
