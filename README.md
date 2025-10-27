@@ -1,8 +1,5 @@
-# 🚀 skynet_fly
-
 <div align="center">
-
-![skynet_fly Logo](https://github.com/huahua132/skynet_fly/assets/41766775/98633a2d-6e52-4cc7-aaaf-c82b77b41e49)
+<img width="512" height="512" alt="bcgpt_103248334_gemini-2 5-flash-image_img2img_605126473_1024x1024" src="https://github.com/user-attachments/assets/87fd9f9c-093a-42d9-a880-ca642a457419" />
 
 **致力于服务端对 skynet 的最佳实践**
 
