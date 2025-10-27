@@ -314,12 +314,12 @@ make linux
 ## 🔗 扩展阅读
 
 ### 核心功能详解
-- 📖 [ORM 数据映射详解](文档中的 ORM 部分)
+- 📖 [ORM 数据映射详解](https://huahua132.github.io/2023/12/24/skynet_fly_ss/orm/)
   - 对象关系映射实现
   - 多数据库适配
   - 缓存策略优化
   
-- 📖 [服务录像与重放](文档中的录像部分)
+- 📖 [服务录像与重放](https://huahua132.github.io/2024/10/27/skynet_fly_word/word_3/S_record/)
   - 完整录制服务行为
   - 精准重放调试
   - Bug 快速定位
