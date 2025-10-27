@@ -324,14 +324,6 @@ make linux
   - 精准重放调试
   - Bug 快速定位
 
-### 技术博客
-- [热更新实现原理](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%83%AD%E6%9B%B4%E6%96%B0%E5%AE%9E%E7%8E%B0/)
-- [一键构建配置详解](https://huahua132.github.io/2023/06/30/skynet_fly_ss/%E5%85%B3%E4%BA%8Eskynet_fly%E7%9A%84%E4%B8%80%E9%94%AE%E6%9E%84%E5%BB%BA%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE/)
-- [ORM 设计与实现](https://huahua132.github.io/2023/12/24/skynet_fly_ss/%E5%85%B3%E4%BA%8E%E5%A2%9E%E5%8A%A0skynet_fly_orm%E6%95%B0%E6%8D%AE%E5%85%B3%E7%B3%BB%E6%98%A0%E5%B0%84/)
-- [服务录像系统](https://huahua132.github.io/2023/02/25/skynet_fly_word/word_3/record/)
-
----
-
 ## 📄 License
 
 本项目采用 MIT 协议开源，详见 [LICENSE](LICENSE) 文件。
