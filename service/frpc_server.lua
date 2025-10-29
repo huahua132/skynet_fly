@@ -12,6 +12,7 @@ local crypt = require "skynet.crypt"
 local math_util = require "skynet-fly.utils.math_util"
 local string_util = require "skynet-fly.utils.string_util"
 local table_util = require "skynet-fly.utils.table_util"
+local watch_syn_table = require "skynet-fly.watch.watch_syn_table"
 
 local pairs = pairs
 local assert = assert
@@ -36,6 +37,7 @@ local g_session_id = 0
 local UINIT32MAX = math_util.uint32max
 
 local g_sub_map = {}								--订阅表
+local g_sub_cnt_syn_table = watch_syn_table.new_server("frpc_server.sub_cnt_syn_table")
 local g_subsyn_map = {}								--订阅同步表
 local g_subsyn_channel_info_map = {}				--订阅同步表的数据
 local g_subsyn_parsed_map = {}						--订阅同步已经解析过的channel_name
@@ -205,7 +207,7 @@ local function hand_shake(fd, session_id, msg, sz)
 	
 	response(fd, session_id, true, skynet.packstring("ok"))
 
-	log.info("connected from " .. cluster_name .. ' addr ' .. agent.addr)
+	log.info("connected from " .. cluster_name .. ' addr ' .. agent.addr .. ' is_watch ' .. tostring(is_watch))
 end
 
 local function get_module_cli(module_name, instance_name)
@@ -375,6 +377,9 @@ HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_n
 	end
 
 	g_sub_map[channel_name][agent] = true
+	local v = g_sub_cnt_syn_table:get(channel_name) or 0
+	v = v + 1
+	g_sub_cnt_syn_table:set(channel_name, v)
 	
 	pub_message({[agent] = true}, channel_name, FRPC_PACK_ID.sub, skynet.packstring(address, unique_name))
 end)
@@ -392,8 +397,12 @@ HANDLE[FRPC_PACK_ID.unsub] = create_handle(function(agent, module_name, instance
 	sub_map[channel_name] = nil
 	if g_sub_map[channel_name] then
 		g_sub_map[channel_name][agent] = nil
+		local v = g_sub_cnt_syn_table:get(channel_name) or 0
+		v = v - 1
+		g_sub_cnt_syn_table:set(channel_name, v)
 		if not next(g_sub_map[channel_name]) then
 			g_sub_map[channel_name] = nil
+			g_sub_cnt_syn_table:del(channel_name)
 		end
 	end
 
@@ -650,8 +659,12 @@ function SOCKET.close(fd)
 	if sub_map then
 		for channel_name in pairs(sub_map) do
 			g_sub_map[channel_name][agent] = nil
+			local v = g_sub_cnt_syn_table:get(channel_name) or 0
+			v = v - 1
+			g_sub_cnt_syn_table:set(channel_name, v)
 			if not next(g_sub_map[channel_name]) then
 				g_sub_map[channel_name] = nil
+				g_sub_cnt_syn_table:del(channel_name)
 			end
 		end
 	end

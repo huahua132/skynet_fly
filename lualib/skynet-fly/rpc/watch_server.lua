@@ -9,6 +9,8 @@
 ---#content [watch_server](https://github.com/huahua132/skynet_fly/blob/master/lualib/skynet-fly/rpc/watch_server.lua)
 local skynet = require "skynet"
 local log = require "skynet-fly.log"
+local watch_syn_table = require "skynet-fly.watch.watch_syn_table"
+local service_watch_interface = require "skynet-fly.watch.interface.service_watch_interface"
 
 local M = {}
 
@@ -24,12 +26,23 @@ local function get_frpc_addr()
     return g_frpc_server
 end
 
+skynet.init(function()
+    skynet.fork(function()
+        local interface = service_watch_interface:new(get_frpc_addr())
+        watch_syn_table.watch('frpc_server.sub_cnt_syn_table', interface)
+    end)
+end)
+
 ---#desc 远程推送 /sub/pub (watch)模式用
 ---@param channel_name string 通道名
 ---@param ... string|number|boolean|table|nil 推送的数据
 function M.publish(channel_name, ...)
     local msg, sz = skynet.pack(...)
     local addr = get_frpc_addr()
+    local sub_cnt_syn_table = watch_syn_table.get_table('frpc_server.sub_cnt_syn_table')
+    if not sub_cnt_syn_table or not sub_cnt_syn_table[channel_name] then
+        return
+    end
     skynet.send(addr, 'lua', "publish", channel_name, msg, sz)
 end
 
