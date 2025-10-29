@@ -37,12 +37,12 @@ end)
 ---@param channel_name string 通道名
 ---@param ... string|number|boolean|table|nil 推送的数据
 function M.publish(channel_name, ...)
-    local msg, sz = skynet.pack(...)
-    local addr = get_frpc_addr()
     local sub_cnt_syn_table = watch_syn_table.get_table('frpc_server.sub_cnt_syn_table')
     if not sub_cnt_syn_table or not sub_cnt_syn_table[channel_name] then
         return
     end
+    local msg, sz = skynet.pack(...)
+    local addr = get_frpc_addr()
     skynet.send(addr, 'lua', "publish", channel_name, msg, sz)
 end
 
