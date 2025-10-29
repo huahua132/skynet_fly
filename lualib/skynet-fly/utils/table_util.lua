@@ -23,6 +23,8 @@ local tonumber = tonumber
 local setmetatable = setmetatable
 local getmetatable = getmetatable
 
+local weak_mt = {__mode = "kv"}
+
 local M = {}
 
 ---#desc 检测表是否有环引用
@@ -675,6 +677,13 @@ function M.combinations_pairs(arr, k)
 
         return result
     end
+end
+
+---#desc 新建一个弱引用表
+function M.new_weak_table()
+	local t = {}
+	setmetatable(t, weak_mt)
+	return t
 end
 
 return M

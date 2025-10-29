@@ -35,4 +35,8 @@ function M:call(...)
     return skynet.call(self.server, 'lua', ...)
 end
 
+function M:set_update_cb(update_cb)
+
+end
+
 return M
