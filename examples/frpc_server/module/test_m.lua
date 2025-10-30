@@ -5,9 +5,12 @@ local container_client = require "skynet-fly.client.container_client"
 local watch_server = require "skynet-fly.rpc.watch_server"
 local module_info = require "skynet-fly.etc.module_info"
 local env_util = require "skynet-fly.utils.env_util"
+local orm_table_client = require "skynet-fly.client.orm_table_client"
 
 container_client:register("share_config_m")
 local string = string
+
+local g_player_entity = orm_table_client:new("player")
 
 local g_config = nil
 local g_host_conf = nil
@@ -95,6 +98,8 @@ function CMD.start(config)
 				watch_server.pubsyn("name:age1:address2", "hello name:age1:address2", i)
 				skynet.sleep(500)
 				i = i + 1
+
+				--g_player_entity:change_save_one_entry({player_id = 10001, sex = i})
 			end
 		end)
 	end

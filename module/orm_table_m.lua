@@ -3,12 +3,16 @@ local skynet = require "skynet"
 local log = require "skynet-fly.log"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local timer = require "skynet-fly.timer"
+local guid_util = require "skynet-fly.utils.guid_util"
+local ORM_SYN_CMD = require "skynet-fly.enum.ORM_SYN_CMD"
+local watch_server = require "skynet-fly.rpc.watch_server"
 local queue = require "skynet.queue"()
 
 local assert = assert
 local pairs = pairs
 local type = type
 local tinsert = table.insert
+local next = next
 
 local g_orm_plug = nil
 local g_orm_obj = nil
@@ -16,6 +20,39 @@ local G_ISCLOSE = false
 local g_config = nil
 
 local g_handle = {}
+
+--推送数据变更
+local function push_orm_info(entry, isadd, isdel, change_value)
+    local key_list = g_orm_obj:get_key_list()
+    local main_key = key_list[1]
+    local main_key_v = nil
+    if not isdel then
+        main_key_v = entry:get(main_key)
+    else
+        main_key_v = change_value[1]
+    end
+    local push_key = "_orm_" .. g_config.instance_name .. "_" .. main_key_v
+    log.info("push_orm_info >>>", isadd, isdel, change_value, push_key, watch_server.is_can_publish(push_key))
+    if not watch_server.is_can_publish(push_key) then return end       --没有监听者
+    local cmd = ORM_SYN_CMD.CHANGE
+    local data = nil
+
+    if isadd then
+        cmd = ORM_SYN_CMD.ADD
+        data = entry:get_entry_data()
+    elseif isdel then
+        cmd = ORM_SYN_CMD.DEL
+        data = change_value
+    else
+        data = change_value
+        for i = 1, #key_list do
+            local fn = key_list[i]
+            data[fn] = entry:get(fn)
+        end
+    end
+
+    watch_server.publish(push_key, cmd, data)
+end
 
 --------------------常用handle定义------------------
 --批量创建数据
@@ -83,6 +120,8 @@ function g_handle.change_save_entry(entry_data_list)
             tinsert(entry_list, entry)
             index_map[index] = i
             index = index + 1
+
+            push_orm_info(entry, false, false, entry_data)
         end
     end
 
@@ -116,7 +155,7 @@ function g_handle.change_save_one_entry(entry_data)
     if not g_orm_obj:is_inval_save() then
         g_orm_obj:save_one_entry(entry)
     end
-
+    push_orm_info(entry, false, false, entry_data)
     return true
 end
 
@@ -221,6 +260,18 @@ end
 
 local CMD = {}
 
+local function add_entry_call_back(entry)
+    push_orm_info(entry, true)
+end
+
+local function del_entry_call_back(keyvalues)
+    push_orm_info(nil, false, true, keyvalues)
+end
+
+local function change_entry_call_back(entry, change_data)
+    push_orm_info(entry, false, false, change_data)
+end
+
 function CMD.start(config)
     assert(config.orm_plug)
     g_config = config
@@ -235,7 +286,11 @@ function CMD.start(config)
     end
 
     skynet.fork(function ()
+        skynet.newservice("orm_table_agent", g_config.instance_name)
         g_orm_obj = queue(g_orm_plug.init)
+        g_orm_obj:set_add_call_back(add_entry_call_back)
+        g_orm_obj:set_del_call_back(del_entry_call_back)
+        g_orm_obj:set_change_call_back(change_entry_call_back)
     end)
     return true
 end
@@ -248,6 +303,11 @@ function CMD.call(func_name,...)
     local func = assert(g_handle[func_name], "func_name not exists:" .. func_name)
 
     return false, queue(func, ...)
+end
+
+--获取keylist
+function CMD.get_key_list()
+    return g_orm_obj:get_key_list()
 end
 
 function CMD.herald_exit()

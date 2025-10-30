@@ -14,6 +14,16 @@ return {
 					port = 9688,
 					maxclient = 2048,
 				},
+				mysql = {
+					admin = {
+						host = '127.0.0.1',
+						port = '3306',
+						max_packet_size = 1048576,
+						user = 'root',
+						password = '123456',
+						database = 'admin',
+					}
+				},
 				secret_key = "sdfdsoifhkjguihre234wedfoih24",     --验证密钥
 				is_encrypt = true,                                --是否加密传输
 			},
@@ -33,7 +43,18 @@ return {
 				svr_id = 1,
 				debug_port = 9001,
 				logpath = './logs_1/',
-			}
+			},
+
+			mysql = {
+				admin = {
+					host = '127.0.0.1',
+					port = '3306',
+					max_packet_size = 1048576,
+					user = 'root',
+					password = '123456',
+					database = 'admin',
+				}
+			},
 		}
 	},
 
@@ -47,6 +68,15 @@ return {
 			{instance_name = "test_two"},
 			{instance_name = "test_two"},
 			{instance_name = "test_two"},
+		}
+	},
+
+	orm_table_m = {
+		launch_seq = 3,
+		launch_num = 2,
+		mod_args = {
+			{instance_name = "player", orm_plug = "orm_entity.player_entity"},
+			{instance_name = "item", orm_plug = "orm_entity.item_entity"},
 		}
 	}
 }

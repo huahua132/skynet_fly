@@ -32,6 +32,10 @@ local sformat = string.format
 local next = next
 local tostring = tostring
 
+local g_add_call_back = nil
+local g_del_call_back = nil
+local g_change_call_back = nil
+
 local FIELD_TYPE = {
     int8         = 1,
     int16        = 2,
@@ -174,6 +178,9 @@ local save_entry = nil      --function
 
 -- 添加进key索引表
 local function add_key_select(t, entry, is_add)
+    if is_add and g_add_call_back then
+        g_add_call_back(entry)
+    end
     if not t._cache_time then return entry end
     local res_entry = t._main_index:add(entry, is_add)
 
@@ -821,7 +828,7 @@ local function clear_cache_by_keyvalue(t, key_values)
     else
         entry_list = {entry_list_map}
     end
-
+    
     for i = 1,#entry_list do
         local entry = entry_list[i]
         change_flag_map[entry] = nil        --都删除了，已经不需要同步到库了
@@ -838,7 +845,9 @@ local function delete_entry(t, key_values)
     if not res then return end
 
     clear_cache_by_keyvalue(t, key_values)
-
+    if g_del_call_back and #key_values >= 1 then    --删除所有暂时也不管，一般也不会调用删除所有
+        g_del_call_back(key_values)
+    end
     return res
 end
 
@@ -1391,6 +1400,33 @@ function M:idx_delete_entry(query)
     check_query(self, query)
 
     return queue_doing(self, nil, idx_delete_entry, self, query)
+end
+
+---#desc 手动同步修改
+---@param change_data string 修改的值
+function M:syn_change(entry, change_data)
+    local keylist = self._keylist
+    for i = 1, #keylist do
+        local fn = keylist[i]
+        change_data[fn] = entry:get(fn)
+    end
+    g_change_call_back(entry, change_data)
+end
+
+function M:set_add_call_back(callback)
+    g_add_call_back = callback
+end
+
+function M:set_del_call_back(callback)
+    g_del_call_back = callback
+end
+
+function M:set_change_call_back(callback)
+    g_change_call_back = callback
+end
+
+function M:get_key_list()
+    return self._keylist
 end
 
 return M
