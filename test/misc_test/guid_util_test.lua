@@ -17,7 +17,7 @@ function M.start()
         check[guid] = true
     end
     local use_time = time_util.time()
-    log.info("guid_util_test end ", use_time - cur_time, 20000000 / (use_time - cur_time))
+    log.info("guid_util_test end ", use_time - cur_time, 8000000 / (use_time - cur_time))
     guid_util:fly_guid()
     local guid = guid_util:fly_guid()
     log.info(">>> ", guid)
