@@ -29,10 +29,9 @@ container_client:set_always_swtich("orm_table_m")   --一直会切换访问新�
 local g_instance_map = {}
 
 local M = {}
-local g_func_cache = {}
 
 local mt = {__index = function(t,k)
-    local f = g_func_cache[k]
+    local f = rawget(t, k)
     if f then return f end
     f = function(self, ...)
         t._client = t._client or container_client:new("orm_table_m",t._orm_name)
@@ -49,7 +48,7 @@ local mt = {__index = function(t,k)
         
         error("call err " .. k .. ' ' .. table_util.dump({...}))
     end
-    g_func_cache[k] = f
+    t[k] = f
     return f
 end}
 
