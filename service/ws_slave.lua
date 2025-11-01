@@ -93,19 +93,22 @@ function HANDLER.message(fd, recvmsg, msg_type)
 	local c = g_conn_map[fd]
 	local agent = c.agent
 	c.total_msg = c.total_msg .. recvmsg
-	local msg = unpack_msg(c)
-	if not msg then return end
-	if agent then
-		if c.is_pause then
-			if not c.msg_que then
-				c.msg_que = {}
+	
+	while true do
+		local msg = unpack_msg(c)
+		if not msg then return end
+		if agent then
+			if c.is_pause then
+				if not c.msg_que then
+					c.msg_que = {}
+				end
+				tinsert(c.msg_que, msg)
+			else
+				skynet.redirect(agent, 0, 'client', fd, msg)
 			end
-			tinsert(c.msg_que, msg)
 		else
-			skynet.redirect(agent, 0, 'client', fd, msg)
+			skynet.send(g_watchdog,'lua','socket','data', fd, msg)
 		end
-	else
-		skynet.send(g_watchdog,'lua','socket','data', fd, msg)
 	end
 end
 
