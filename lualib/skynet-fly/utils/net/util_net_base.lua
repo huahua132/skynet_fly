@@ -250,13 +250,6 @@ function M.create_ws_gate_unpack(unpack)
 		if sz < 2 then
 			return nil, "The length must be greater than 2 sz=" .. sz
 		end
-		
-		local msgsz = (msgstr:byte(1) << 8) + msgstr:byte(2)
-		msgstr = msgstr:sub(3)
-		sz = msgstr:len()
-		if msgsz ~= sz then
-			return nil, string.format("Inconsistent length msgsz[%s] sz[%s]", msgsz, sz)
-		end
 
 		local header,body = unpack(msgstr)
 		if not header then
