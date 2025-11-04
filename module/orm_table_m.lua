@@ -32,7 +32,7 @@ local function push_orm_info(entry, isadd, isdel, change_value)
         main_key_v = change_value[1]
     end
     local push_key = "_orm_" .. g_config.instance_name .. "_" .. main_key_v
-    log.info("push_orm_info >>>", isadd, isdel, change_value, push_key, watch_server.is_can_publish(push_key))
+    
     if not watch_server.is_can_publish(push_key) then return end       --没有监听者
     local cmd = ORM_SYN_CMD.CHANGE
     local data = nil
