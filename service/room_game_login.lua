@@ -652,7 +652,8 @@ skynet.start(function()
 
 			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, agent.addr, header, body, rsp_session)
 			if not player_id then
-				close_fd(fd)
+				--这里不用断开，让客户端有机会处理错误码后关闭，超时登录也能关闭
+				--close_fd(fd)
 			elseif player_id == continue then
 				--继续处理后续登录消息
 			else
