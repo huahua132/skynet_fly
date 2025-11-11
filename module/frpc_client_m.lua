@@ -816,19 +816,22 @@ function CMD.call_all(svr_name, _, module_name, instance_name, packid, mod_num, 
 	local msg_buff = skynet.tostring(msg, sz)
 	skynet.trash(msg, sz)
 	local cluster_rsp_map = {}
-	local multreq, multpadding = nil, nil					--没有加密的话，可以发相同的包
+	local multreq, multpadding, mult_session_id = nil, nil, nil					--没有加密的话，可以发相同的包
 	for cluster_name, channel in pairs(channel_map) do
-		local session_id = new_session_id()
+		local session_id = nil
 		local req, padding
 		local secret = secret_map[cluster_name]
 		if secret then
+			session_id = new_session_id()
 			local curmsg, cursz = crypt.desencode(secret, msg_buff)
 			req, padding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, curmsg, cursz, 1)
 		else
 			if not multreq then
+				session_id = new_session_id()
 				multreq, multpadding = frpcpack.packrequest(packid, module_name, instance_name or "", session_id, mod_num or 0, msg_buff, nil, 1)
+				mult_session_id = session_id
 			end
-			req, padding = multreq, multpadding
+			req, padding, session_id = multreq, multpadding, mult_session_id
 		end
 
 		local isok, rsp = pcall(channel.request, channel, req, session_id, padding)
