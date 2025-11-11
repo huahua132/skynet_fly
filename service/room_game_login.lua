@@ -106,7 +106,7 @@ local function connect_hall(gate, fd, is_ws, addr, player_id, header, rsp_sessio
 	if old_agent then
 		hall_client = old_agent.hall_client
 		if interface:is_online(player_id) then
-			login_plug.repeat_login(player_id, header, rsp_session)
+			login_plug.repeat_login(player_id) --这里可以给上一个连接发个错误码
 		end
 		close_fd(old_agent.fd)
 	else
@@ -652,7 +652,7 @@ skynet.start(function()
 
 			local player_id = agent.queue(check_func, agent.gate, fd, agent.is_ws, agent.addr, header, body, rsp_session)
 			if not player_id then
-				--这里不用断开，让客户端有机会处理错误码后关闭，超时登录也能关闭
+				--这里不用断开，让客户端有机会处理错误码，客户端没问题，超时登录也能关闭
 				--close_fd(fd)
 			elseif player_id == continue then
 				--继续处理后续登录消息
