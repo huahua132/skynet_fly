@@ -34,7 +34,7 @@ local M = {}
 local mt = {
     __index = M,
     __gc = function(self)
-        -- GC时自动取消所有监听
+        -- GC时自动取消所有监听, 注意还是尽量手动unwatch，避免因watch中的回调函数的upvalue引用自身，形成环引用
         if not self._watched then return end
         for main_key in pairs(self._watched) do
             local push_key = "_orm_" .. self._orm_entity_instance_name .. "_" .. main_key
