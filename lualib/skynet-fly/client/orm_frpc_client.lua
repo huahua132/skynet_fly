@@ -31,7 +31,19 @@ local g_watch_up_map = {}
 local g_weak_map = {}
 
 local M = {}
-local mt = {__index = M}
+local mt = {
+    __index = M,
+    __gc = function(self)
+        -- GC时自动取消所有监听
+        if not self._watched then return end
+        for main_key in pairs(self._watched) do
+            local push_key = "_orm_" .. self._orm_entity_instance_name .. "_" .. main_key
+            watch_client.unwatch_byid(self._svr_name, self._svr_id, push_key, "orm_frpc_client")
+        end
+        self._watched = {}
+        self._data_map = {}
+    end
+}
 
 ---#desc 创建远程orm访问对象
 ---@param svr_name string 结点名称
