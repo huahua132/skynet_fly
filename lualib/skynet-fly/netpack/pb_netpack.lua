@@ -19,6 +19,7 @@ function M.new(name)
 	local m_loaded = {}
 	local m_pack_id_name = {}
 	local m_p = protoc:new()
+	
 	local ret_M = {}
 	--------------------------------------------------------------------------
 	--加载指定路径pb文件
@@ -29,7 +30,7 @@ function M.new(name)
 				m_p:loadfile(file_path)
 			end
 		end
-	
+
 		--记录加载过的message名称
 		for file_path, info in pairs(m_p.loaded) do
 			if info.message_type then
@@ -50,6 +51,10 @@ function M.new(name)
 
 	function ret_M.addpath(path)
 		m_p:addpath(path)
+	end
+
+	function ret_M.open_include_imports()
+		m_p.include_imports = true
 	end
 	--------------------------------------------------------------------------
 	--按包名方式编码
@@ -108,7 +113,7 @@ function M.new(name)
 		if not m_loaded[name] then
 			return nil,m_name .. " encode not exists " .. name
 		end
-	
+
 		return pcall(pb.encode, name, body)
 	end
 
