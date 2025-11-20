@@ -434,8 +434,20 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     select_format_key_head = select_format_key_head .. ' from ' .. tab_name
     select_format_head = select_format_head .. ' from ' .. tab_name
 
+    -- 构建ON DUPLICATE KEY UPDATE部分
+    local upsert_update_str = ""
+    for i = 1, #field_list do
+        local field_name = field_list[i]
+        if i == #field_list then
+            upsert_update_str = upsert_update_str .. sformat("`%s`=VALUES(`%s`)", field_name, field_name)
+        else
+            upsert_update_str = upsert_update_str .. sformat("`%s`=VALUES(`%s`),", field_name, field_name)
+        end
+    end
+    
     --insert prepare 处理
     local insert_prepare_list = {}
+    local insert_upsert_prepare_list = {}
     for i = 1, self.batch_insert_num do
         local end_str = ""
         for j = 1, i do
@@ -447,6 +459,7 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         end
 
         insert_prepare_list[i] = new_prepare_obj(insert_format_head .. end_str)
+        insert_upsert_prepare_list[i] = new_prepare_obj(insert_format_head .. end_str .. " ON DUPLICATE KEY UPDATE " .. upsert_update_str)
     end
 
     insert_format_head = nil
@@ -660,13 +673,14 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     end
 
     --insert 批量插入
-    self._insert = function(entry_data_list)
+    self._insert = function(entry_data_list, upsert)
          --批量插入
          local res_list = {}
          local ref_list = {}
          local cur = 1
          local ret_index = 1
          local len = #entry_data_list
+         local use_prepare_list = upsert and insert_upsert_prepare_list or insert_prepare_list
          while true do
             if cur > len then break end
             local add_list = {}
@@ -679,12 +693,12 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
                     cur = cur + 1
                     cnt = cnt + 1
                 else
-                    break 
+                    break
                 end
             end
  
             if cnt <= 0 then break end
-            local prepare_obj = insert_prepare_list[cnt]
+            local prepare_obj = use_prepare_list[cnt]
             local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(add_list))
             if isok and ret and not ret.err then
                 for i = 1, cnt do
@@ -704,8 +718,9 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     end
 
     --insert_one插入单条
-    self._insert_one = function(entry_data)
-        local prepare_obj = insert_prepare_list[1]
+    self._insert_one = function(entry_data, upsert)
+        local use_prepare_list = upsert and insert_upsert_prepare_list or insert_prepare_list
+        local prepare_obj = use_prepare_list[1]
         local add_list = entry_data_to_list(entry_data)
         local isok, ret = pcall(prepare_execute, self._db, prepare_obj, tunpack(add_list))
         if not isok or not ret or ret.err then
@@ -1449,13 +1464,13 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 end
 
 -- 批量创建表数据
-function M:create_entry(entry_data_list)
-    return self._insert(entry_data_list)
+function M:create_entry(entry_data_list, upsert)
+    return self._insert(entry_data_list, upsert)
 end
 
 -- 创建一条数据
-function M:create_one_entry(entry_data)
-    return self._insert_one(entry_data)
+function M:create_one_entry(entry_data, upsert)
+    return self._insert_one(entry_data, upsert)
 end
 
 -- 查询表数据

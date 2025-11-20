@@ -56,8 +56,8 @@ end
 
 --------------------常用handle定义------------------
 --批量创建数据
-function g_handle.create_entry(entry_data_list)
-    local entry_list = g_orm_obj:create_entry(entry_data_list)
+function g_handle.create_entry(entry_data_list, upsert)
+    local entry_list = g_orm_obj:create_entry(entry_data_list, upsert)
     local data_list = {}
     for i = 1,#entry_list do
         local entry = entry_list[i]
@@ -71,8 +71,8 @@ function g_handle.create_entry(entry_data_list)
 end
 
 --创建单条数据
-function g_handle.create_one_entry(entry_data)
-    local entry = g_orm_obj:create_one_entry(entry_data)
+function g_handle.create_one_entry(entry_data, upsert)
+    local entry = g_orm_obj:create_one_entry(entry_data, upsert)
     if not entry then
         return nil
     end

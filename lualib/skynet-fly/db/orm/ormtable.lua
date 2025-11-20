@@ -523,13 +523,13 @@ function M:builder(adapterinterface)
     end 
 end
 
-local function create_entry(t, list)
+local function create_entry(t, list, upsert)
     local entry_data_list = {}
     for _,entry_data in ipairs(list) do
         check_fields(t, entry_data)
         tinsert(entry_data_list, init_entry_data(t, entry_data))
     end
-    local ret_list = t._adapterinterface:create_entry(entry_data_list)
+    local ret_list = t._adapterinterface:create_entry(entry_data_list, upsert)
     assert(#ret_list == #entry_data_list, "result len not same " .. #ret_list .. ':' .. #entry_data_list)
     local new_entry_list = {}
     for i,entry_data in ipairs(entry_data_list) do
@@ -545,10 +545,10 @@ local function create_entry(t, list)
     return new_entry_list
 end
 
-local function create_one_entry(t, entry_data)
+local function create_one_entry(t, entry_data, upsert)
     entry_data = init_entry_data(t, entry_data)
 
-    local ret = t._adapterinterface:create_one_entry(entry_data)
+    local ret = t._adapterinterface:create_one_entry(entry_data, upsert)
     if not ret then return nil end
 
     local new_entry = ormentry:new(t, entry_data)
@@ -1015,20 +1015,22 @@ end
 
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
+---@param upsert? boolean 是否忽略已存在的数据（默认false）
 ---@return table obj
-function M:create_entry(entry_data_list)
+function M:create_entry(entry_data_list, upsert)
     assert(self._is_builder, "not builder can`t create_entry")
-    return queue_doing(self, nil, create_entry, self, entry_data_list)
+    return queue_doing(self, nil, create_entry, self, entry_data_list, upsert)
 end
 
 ---#desc 创建一条数据
 ---@param entry_data table 一条数据表
+---@param upsert? boolean 是否忽略已存在的数据（默认false）
 ---@return table obj
-function M:create_one_entry(entry_data)
+function M:create_one_entry(entry_data, upsert)
     assert(self._is_builder, "not builder can`t create_one_entry")
     check_fields(self, entry_data)
     local key1value = get_key1value(self, entry_data)
-    return queue_doing(self, key1value, create_one_entry, self, entry_data)
+    return queue_doing(self, key1value, create_one_entry, self, entry_data, upsert)
 end
 
 ---#desc 查询多条数据  format`[select * from tab_name where key1 = ? and key2 = ?]`

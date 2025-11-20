@@ -21,6 +21,7 @@ local tremove = table.remove
 local pcall = pcall
 local ipairs = ipairs
 local math = math
+local type = type
 
 local M = {}
 local mata = {__index = M}
@@ -110,43 +111,75 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         end
         assert(res.ok == 1, "builder index err")
     end
-
+    
     local key_len = #key_list
-    --insert 创建
-    self._insert = function(entry_data_list)
+    --update 更新
+    local query = {}
+    for i = 1,key_len do
+        query[key_list[i]] = 0
+    end
+
+    self._insert = function(entry_data_list, upsert)
         --批量插入
         local res_list = {}
-        local insert_list = {}
-        local ref_list = {}     --引用一下，用于错误打印
         local cur = 1
         local ret_index = 1
         local len = #entry_data_list
+        
         while true do
             if cur > len then break end
+            local batch_data = {}
+            local ref_list = {}
+            
             for j = 1, self.batch_insert_num do
                 if entry_data_list[cur] then
-                    insert_list[j] = entry_data_list[cur]
-                    ref_list[j] = entry_data_list[cur]
+                    batch_data[j] = entry_data_list[cur]
+                    ref_list[j] = batch_data[j]
+                    cur = cur + 1
                 else
-                    insert_list[j] = nil
+                    batch_data[j] = nil
                     ref_list[j] = nil
                 end
-                
-                cur = cur + 1
             end
 
-            if #insert_list <= 0 then break end
-
-            local ok, isok, err = pcall(collect_db.safe_batch_insert, collect_db, insert_list)
+            if #batch_data <= 0 then break end
+            
+            local ok, isok, err
+            
+            if upsert then
+                -- 使用批量upsert
+                local updates = {}
+                for i = 1, #batch_data do
+                    local entry_data = batch_data[i]
+                    local one_query = {}
+                    for k,_ in pairs(query) do
+                        one_query[k] = entry_data[k]
+                    end
+                    
+                    updates[i] = {
+                        query = one_query,
+                        update = {
+                            ['$set'] = entry_data,
+                        },
+                        upsert = true,
+                    }
+                end
+                
+                ok, isok, err = pcall(collect_db.safe_batch_update, collect_db, updates)
+            else
+                -- 使用批量插入
+                ok, isok, err = pcall(collect_db.safe_batch_insert, collect_db, batch_data)
+            end
+            
             if ok and isok then
-                for i = 1, #insert_list do
+                for i = 1, #batch_data do
                     res_list[ret_index] = true
                     entry_data_list[ret_index]._id = nil
                     ret_index = ret_index + 1
                 end
             else
                 log.error("_insert err ", self._tab_name, err, ref_list)
-                for i = 1, #insert_list do
+                for i = 1, #batch_data do
                     res_list[ret_index] = false
                     ret_index = ret_index + 1
                 end
@@ -157,11 +190,23 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
     end
 
     --insert_one 创建一条数据
-    self._insert_one = function(entry_data)
-        local isok, err = collect_db:safe_insert(entry_data)
-        if not isok then
-            log.error("_insert_one doc err ", self._tab_name, err, entry_data)
-            error("_insert_one err ")
+    self._insert_one = function(entry_data, upsert)
+        if not upsert then
+            local isok, err = collect_db:safe_insert(entry_data)
+            if not isok then
+                log.error("_insert_one doc err ", self._tab_name, err, entry_data)
+                error("_insert_one err ")
+            end
+        else
+            for k,_ in pairs(query) do
+                query[k] = entry_data[k]
+            end
+            
+            local isok,err = collect_db:safe_update(query, {['$set'] = entry_data}, true)
+            if not isok then
+                log.error("_insert_one doc err ",self._tab_name, err, entry_data)
+                error("_insert_one doc err")
+            end
         end
         entry_data._id = nil
         return true
@@ -279,12 +324,6 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
         return cursor, res_list, count
     end
 
-    --update 更新
-    local query = {}
-    for i = 1,key_len do
-        query[key_list[i]] = 0
-    end
- 
     self._update = function(entry_data_list,change_map_list)
         local res_list = {}
         local cur = 1
@@ -615,13 +654,13 @@ function M:builder(tab_name, field_list, field_map, key_list, indexs_list)
 end
 
 -- 批量创建表数据
-function M:create_entry(entry_data_list)
-    return self._insert(entry_data_list)
+function M:create_entry(entry_data_list, upsert)
+    return self._insert(entry_data_list, upsert)
 end
 
 -- 创建一条数据
-function M:create_one_entry(entry_data)
-    return self._insert_one(entry_data)
+function M:create_one_entry(entry_data, upsert)
+    return self._insert_one(entry_data, upsert)
 end
 
 -- 查询表数据

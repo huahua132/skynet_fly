@@ -2813,6 +2813,83 @@ local function test_idx_get_delete_entry_by_range()
     delete_table()
 end
 
+--测试忽略已存在记录功能
+local function test_ignore_exist()
+    delete_table()
+    local adapter = ormadapter_mysql:new("admin")
+    local orm_obj = ormtable:new("t_player")
+    :int64("player_id")
+    :int64("role_id")
+    :int8("sex")
+    :string32("nickname")
+    :set_keys("player_id","role_id","sex")
+    :builder(adapter)
+
+    -- 测试 create_one_entry 忽略已存在
+    local entry1 = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 1, nickname = "test1"})
+    assert(entry1)
+    assert(entry1:get('nickname') == "test1")
+
+    -- 不忽略已存在，应该报错
+    local isok = pcall(orm_obj.create_one_entry, orm_obj, {player_id = 10001, role_id = 1, sex = 1, nickname = "test2"})
+    assert(not isok)
+
+    -- 忽略已存在，应该成功返回 true，但不会更新数据
+    local entry2 = orm_obj:create_one_entry({player_id = 10001, role_id = 1, sex = 1, nickname = "test2"}, true)
+    assert(entry2)
+
+    -- 验证数据有被更新
+    local entry = orm_obj:get_one_entry(10001, 1, 1)
+    assert(entry:get('nickname') == "test2")  -- 还是原来的值
+
+    -- 测试 create_entry 忽略已存在
+    local new_data_list = {
+        {player_id = 10002, role_id = 1, sex = 1, nickname = "batch1"},
+        {player_id = 10002, role_id = 1, sex = 2, nickname = "batch2"},
+        {player_id = 10002, role_id = 1, sex = 3, nickname = "batch3"},
+    }
+    local res = orm_obj:create_entry(new_data_list)
+    assert(#res == 3)
+    for i, v in pairs(res) do
+        assert(v)
+    end
+
+    -- 批量创建包含重复的，不忽略应该失败
+    local dup_data_list = {
+        {player_id = 10002, role_id = 1, sex = 1, nickname = "new1"},  -- 重复
+        {player_id = 10002, role_id = 1, sex = 4, nickname = "new4"},  -- 新数据
+    }
+    local res = orm_obj:create_entry(dup_data_list)
+    assert(res[1] == false)  -- 第一个重复，失败
+    assert(res[2] == false)  -- 都会失败
+
+    -- 批量创建包含重复的，忽略已存在应该都成功
+    local dup_data_list2 = {
+        {player_id = 10002, role_id = 1, sex = 2, nickname = "ignore1"},  -- 重复
+        {player_id = 10002, role_id = 1, sex = 5, nickname = "ignore5"},  -- 新数据
+        {player_id = 10002, role_id = 1, sex = 3, nickname = "ignore3"},  -- 重复
+    }
+    local res = orm_obj:create_entry(dup_data_list2, true)
+    assert(#res == 3)
+    for i, v in pairs(res) do
+        assert(v)  -- 都应该返回 true
+    end
+
+    -- 验证重复数据被更新
+    local entry = orm_obj:get_one_entry(10002, 1, 2)
+    assert(entry:get('nickname') == "ignore1")
+
+    local entry = orm_obj:get_one_entry(10002, 1, 3)
+    assert(entry:get('nickname') == "ignore3")
+
+    -- 验证新数据被正确插入
+    local entry = orm_obj:get_one_entry(10002, 1, 5)
+    assert(entry:get('nickname') == "ignore5")
+
+    log.info("test_ignore_exist passed!")
+    delete_table()
+end
+
 function CMD.start()
     skynet.fork(function()
         delete_table()
@@ -2887,6 +2964,8 @@ function CMD.start()
         test_idx_delete_entry()
         log.info("test_idx_get_delete_entry_by_range")
         test_idx_get_delete_entry_by_range()
+        log.info("test_ignore_exist")
+        test_ignore_exist()
         delete_table()
         log.info("test over >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     end)
