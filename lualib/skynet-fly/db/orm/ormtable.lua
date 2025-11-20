@@ -1015,7 +1015,7 @@ end
 
 ---#desc 批量创建新数据
 ---@param entry_data_list table 数据列表
----@param upsert? boolean 是否忽略已存在的数据（默认false）
+---@param upsert? boolean 已存在覆盖（默认false）
 ---@return table obj
 function M:create_entry(entry_data_list, upsert)
     assert(self._is_builder, "not builder can`t create_entry")
@@ -1024,7 +1024,7 @@ end
 
 ---#desc 创建一条数据
 ---@param entry_data table 一条数据表
----@param upsert? boolean 是否忽略已存在的数据（默认false）
+---@param upsert? boolean 已存在覆盖（默认false）
 ---@return table obj
 function M:create_one_entry(entry_data, upsert)
     assert(self._is_builder, "not builder can`t create_one_entry")
