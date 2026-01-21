@@ -292,7 +292,7 @@ make linux
 | [lua-radix-router](https://github.com/vm-001/lua-radix-router) | latest | 路由器 |
 | [luafilesystem](https://github.com/lunarmodules/luafilesystem) | 1.8.0 | 文件系统 |
 | [luajwtjitsi](https://github.com/jitsi/luajwtjitsi) | 3.0 | JWT（已适配 lua-openssl）|
-| [lzlib](https://github.com/LuaDist/lzlib) | 0.4.3 | 压缩库 |
+| [lzlib](https://github.com/LuaDist/lzlib) | 0.5.3 | 压缩库 |
 | [lua-zset](https://github.com/xjdrew/lua-zset) | latest | 有序集合 |
 | [lua-snapshot](https://github.com/cloudwu/lua-snapshot) | latest | 快照工具 |
 | [lua-socket](https://github.com/lunarmodules/luasocket) | latest | Socket 库 |

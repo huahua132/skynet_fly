@@ -1,6 +1,6 @@
 # 在Lua中操作Google protobuf格式数据
 
-[![Build Status](https://img.shields.io/github/workflow/status/starwing/lua-protobuf/CI)](https://github.com/starwing/lua-protobuf/actions?query=branch%3Amaster)[![Coverage Status](https://img.shields.io/coveralls/github/starwing/lua-protobuf)](https://coveralls.io/github/starwing/lua-protobuf?branch=master)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/starwing/lua-protobuf/test.yml?branch=master)](https://github.com/starwing/lua-protobuf/actions?query=branch%3Amaster)[![Coverage Status](https://img.shields.io/coveralls/github/starwing/lua-protobuf)](https://coveralls.io/github/starwing/lua-protobuf?branch=master)
 
 [English](https://github.com/starwing/lua-protobuf/blob/master/README.md) | 中文
 
@@ -212,21 +212,23 @@ end
 | `pb.encode(type, table, b)`    | buffer          | 同上，但是编码进额外提供的buffer对象里并返回            |
 | `pb.decode(type, data)`        | table           | 将二进制data按照type消息类型解码为一个表                |
 | `pb.decode(type, data, table)` | table           | 同上，但是解码到你提供的表里                            |
-| `pb.pack(fmt, ...)`            | string          | 同 `buffer.pack()` ，但直接用字符串返回二进制数据 |
-| `pb.unpack(data, fmt, ...)`    | values...       | 同 `slice.unpack()` 但是接受任何二进制类型数据    |
+| `pb.pack(type, ...)`           | string          | 编码展开后的消息（后续参数按number顺序提供） |
+| `pb.unpack(data, fmt, ...)`    | values...       | 解码展开后的消息（同上） |
 | `pb.types()`                   | iterator        | 遍历内存数据库里所有的消息类型，返回具体信息 |
 | `pb.type(type)`                | 详情见下        | 返回内存数据库特定消息类型的具体信息          |
 | `pb.fields(type)`              | iterator        | 遍历特定消息里所有的域，返回具体信息 |
 | `pb.field(type, string)`       | 详情见下   | 返回特定消息里特定域的具体信息 |
 | `pb.field(type, number)` | 详情见下 | 返回特定消息里特定域的具体信息 |
-| `pb.typefmt(type)`             | String          | 得到 protobuf 数据类型名对应的 pack/unpack 的格式字符串 |
+| `pb.typefmt(type)`             | string    | 得到 protobuf 数据类型名对应的 pack/unpack 的格式字符串 |
 | `pb.enum(type, string)`        | number          | 提供特定枚举里的名字，返回枚举数字 |
 | `pb.enum(type, number)`        | string          | 提供特定枚举里的数字，返回枚举名字 |
-| `pb.defaults(type[, boolean])` | table           | 获得或设置特定消息类型的默认表 |
+| `pb.defaults(type[, table|nil])` | table           | 获得或设置特定消息类型的默认表 |
 | `pb.hook(type[, function])`    | function        | 获得或设置特定消息类型的解码钩子 |
+| `pb.encode_hook(type[, function])` | function | 获得或设置特定消息类型的编码钩子 |
 | `pb.option(string)`            | string          | 设置编码或解码的具体选项 |
 | `pb.state()`                   | `pb.State`      | 返回当前的内存数据库 |
 | `pb.state(newstate \| nil)`    | `pb.State`      | 设置或删除当前的内存数据库，返回旧的内存数据库 |
+| `pb.tohex(string)` | string | 将string（通常是二进制数据）编码成16进制串用于显示，通常用于调试的目的。 |
 
 #### 内存数据库载入 Schema 信息
 
@@ -309,9 +311,14 @@ print(pb.enum("Color", 2)) --> "Green"
 
 你可以调用`pb.defaults()`	函数得到对应一个消息类型的一张Lua表，这张表存储了该消息类型所有域的默认值。
 
-`pb.defaults()`函数的第一个参数是指定的消息类型名称，如果可选的第二个参数为true，那么该缓存的默认表会被从内存数据库中清除。
+`pb.defaults()`函数的第一个参数是指定的消息类型名称，如果有可选的第二个参数，那么该参数会被指定为该类型的默认值。
 
-其实通过`pb.decode("Type")`本身就能得到一张填充了默认值的Lua表。这个函数的目的是，它提供的表会被内存数据库记住，如果你设置了`use_default_metatable`这个选项，那么这个默认值表就会成为对应类型被解码时被自动设置的原表——也就是说，可以支持解码一个空表，但是你能通过元表取得所有域的默认值，示例如下：
+其实通过`pb.decode("Type")`本身就能得到一张填充了默认值的Lua表。而`pb.defaults`不同的是，他提供的表会被内存数据库记住，如果你设置了`use_default_metatable`这个选项，那么这个默认值表就会成为对应类型被解码时被自动设置的元表—也就是说，可以支持解码一个空表，但是你能通过元表取得所有域的默认值。
+
+另外，你可以传递`"*array"`或者`"*map"`作为特殊的类型名给`pb.defaults()`函数，效果是给解码出来的map/repeated设置元表。这个特性和`use_default_metatable`无关，如果不想设置元表了，只要删掉对应元表就可以禁用这个特性了。
+
+示例如下：
+
 
 ```lua
    check_load [[
@@ -348,6 +355,10 @@ local function make_hook(name, func)
 end
 ```
 
+你可以通过 `pb.option “enable_enchooks”` 启用编码钩子功能。编码钩子会在编码消息中任何 `message` 或者 `enum` 类型的成员**之前**调用。只有一个参数即该成员本体。如果你有返回任何值，那么这个值就会被作为这个 `message` 或者 `enum` 被编码。返回 `nil` （或者不返回值）则待编码的值不变。
+
+编码钩子通过 `pb.encode_hook()` 函数设置，该函数和 `pb.hook()` 类似，但是用来设置编码钩子。
+
 #### 选项
 
 你可以通过调用`pb.option()`函数设置选项来改变编码/解码时的行为。
@@ -367,11 +378,13 @@ end
 | `use_default_metatable` | 将默认值表作为解码目标表的元表使用 |
 | `enable_hooks`          | `pb.decode` 启用钩子功能      |
 | `disable_hooks`         | `pb.decode` 禁用钩子功能 **(默认)**            |
+| `enable_enchooks` | `pb.encode`启用钩子功能 |
+| `disable_enchooks` | `pb.encode` 禁用钩子功能 **(默认)** |
 | `encode_default_values` | 默认值也参与编码 |
 | `no_encode_default_values` | 默认值不参与编码 **(默认)** |
 | `decode_default_array`  | 配合`no_default_values`选项，对于数组，将空值解码为空表 |
 | `no_decode_default_array`  | 配合`no_default_values`选项，对于数组，将空值解码为nil **(默认)** |
-| `encode_order`          | 保证对相同的schema和data，`pb.encode`编码出的结果一致。注意这个选项会损失效率 |
+| `encode_order`          | 保证对相同的schema和data，`pb.encode`编码出的结果一致（按照field number的顺序进行编码）。如果message中空field特别多，可能会导致效率下降。 |
 | `no_encode_order`       | 不保证对相同输入，`pb.encode`编码出的结果一致。**(默认)** |
 | `decode_default_message`  | 将空子消息解析成默认值表 |
 | `no_decode_default_message`  | 将空子消息解析成 `nil`  **(default)** |

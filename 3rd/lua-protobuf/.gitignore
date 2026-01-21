@@ -15,8 +15,11 @@
 *.pdb
 *.rock
 *.so
+*.o
+*.gc*
 google
 lua*/
 out*
 test*
 test*.lua
+build/

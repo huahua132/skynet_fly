@@ -10,6 +10,7 @@ local assert = assert
 local tostring = tostring
 local type = type
 local insert_tab = table.insert
+local str_gmatch = string.gmatch
 
 local function meta(name, t)
    t = t or {}
@@ -146,7 +147,7 @@ end
 
 function Lexer:full_ident(name, opt)
    self:whitespace()
-   local b, ident, pos = self "^()([%a_][%w_.]*)%s*()"
+   local b, ident, pos = self "^()([%a_.][%w_.]*)%s*()"
    if not ident or ident:match "%.%.+" then
       return self:opterror(opt, (name or 'name')..' expected')
    end
@@ -254,12 +255,16 @@ function Lexer:array(opt)
 end
 
 function Lexer:constant(opt)
-   local c = self:full_ident('constant', 'opt') or
-             self:number('opt') or
-             self:quote('opt') or
-             self:structure('opt') or
-             self:array('opt')
-   if not c and not opt then
+   local c = self:full_ident('constant', 'opt')
+   if c == "true"  then return true  end
+   if c == "false" then return false end
+   if c == "none"  then return nil   end
+   if c            then return c     end
+   c = self:number('opt') or
+       self:quote('opt') or
+       self:structure('opt') or
+       self:array('opt')
+   if c == nil and not opt then
       return self:error "constant expected"
    end
    return c
@@ -332,8 +337,11 @@ function Parser:parsefile(name)
       end
       insert_tab(errors, err or fn..": ".."unknown error")
    end
-   if self.import_fallback then
-      info = self.import_fallback(name)
+   local import_fallback = self.unknown_import
+   if import_fallback == true then
+      info = import_fallback
+   elseif import_fallback then
+      info = import_fallback(self, name)
    end
    if not info then
       error("module load error: "..name.."\n\t"..table.concat(errors, "\n\t"))
@@ -455,9 +463,6 @@ local function field(self, lex, ident)
    if options then
       info.default_value, options.default = tostring(options.default), nil
       info.json_name, options.json_name = options.json_name, nil
-      if options.packed and options.packed == "false" then
-         options.packed = false
-      end
       info.options = options
    end
    if info.number <= 0 then
@@ -483,7 +488,7 @@ local function label_field(self, lex, ident, parent)
    if proto3_optional then
       local ot = default(parent, "oneof_decl")
       info.oneof_index = #ot
-      ot[#ot+1] = { name = "optional_" .. info.name }
+      ot[#ot+1] = { name = "_" .. info.name }
    else
       info.label = label
    end
@@ -663,12 +668,13 @@ function toplevel:message(lex, info)
 end
 
 function toplevel:enum(lex, info)
-   local name = lex:ident 'enum name'
+   local name, pos = lex:ident 'enum name'
    local enum = { name = name }
+   self.locmap[enum] = pos
    register_type(self, lex, name, types.enum)
    lex:expected "{"
    while not lex:test "}" do
-      local ident = lex:ident 'enum constant name'
+      local ident, pos = lex:ident 'enum constant name'
       if ident == 'option' then
          toplevel.option(self, lex, enum)
       elseif ident == 'reserved' then
@@ -676,11 +682,13 @@ function toplevel:enum(lex, info)
       else
          local values  = default(enum, 'value')
          local number  = lex:expected '=' :integer()
-         insert_tab(values, {
+         local value = {
             name    = ident,
             number  = number,
             options = inline_option(lex)
-         })
+         }
+         self.locmap[value] = pos
+         insert_tab(values, value)
       end
       lex:line_end 'opt'
    end
@@ -760,8 +768,9 @@ end
 end
 
 function toplevel:service(lex, info)
-   local name = lex:ident 'service name'
+   local name, pos = lex:ident 'service name'
    local svr = { name = name }
+   self.locmap[svr] = pos
    lex:expected "{"
    while not lex:test "}" do
       local ident = lex:type_name()
@@ -789,39 +798,15 @@ local function make_context(self, lex)
       locmap  = {};
       prefix  = ".";
       lex     = lex;
-      parser  = self;
    }
    ctx.loaded  = self.loaded
    ctx.typemap = self.typemap
    ctx.paths   = self.paths
    ctx.proto3_optional =
       self.proto3_optional or self.experimental_allow_proto3_optional
-
-   function ctx.import_fallback(import_name)
-      if self.unknown_import == true then
-         return true
-      elseif type(self.unknown_import) == 'string' then
-         return import_name:match(self.unknown_import) and true or nil
-      elseif self.unknown_import then
-         return self:unknown_import(import_name)
-      end
-   end
-
-   function ctx.type_fallback(type_name)
-      if self.unknown_type == true then
-         return true
-      elseif type(self.unknown_type) == 'string' then
-         return type_name:match(self.unknown_type) and true
-      elseif self.unknown_type then
-         return self:unknown_type(type_name)
-      end
-   end
-
-   function ctx.on_import(info)
-      if self.on_import then
-         return self.on_import(info)
-      end
-   end
+   ctx.unknown_type = self.unknown_type
+   ctx.unknown_import = self.unknown_import
+   ctx.on_import = self.on_import
 
    return setmetatable(ctx, Parser)
 end
@@ -900,8 +885,15 @@ local function check_type(self, lex, tname)
       if t then return t, tn end
    end
    local tn, t
-   if self.type_fallback then
-      tn, t = self.type_fallback(tname)
+   local type_fallback = self.unknown_type
+   if type_fallback then
+      if type_fallback == true then
+         tn = true
+      elseif type(type_fallback) == 'string' then
+         tn = tname:match(type_fallback) and true
+      else
+         tn = type_fallback(self, tname)
+      end
    end
    if tn then
       t = types[t or "message"]
@@ -929,11 +921,9 @@ end
 local function check_enum(self, lex, info)
    local names, numbers = {}, {}
    for _, v in iter(info, 'value') do
-      lex.pos = self.locmap[v]
+      lex.pos = assert(self.locmap[v])
       check_dup(self, lex, 'enum name', names, 'name', v)
-      if not (info.options
-              and info.options.options
-              and info.options.options.allow_alias) then
+      if not (info.options and info.options.allow_alias) then
           check_dup(self, lex, 'enum number', numbers, 'number', v)
       end
    end
@@ -977,7 +967,10 @@ local function check_service(self, lex, info)
 end
 
 function Parser:resolve(lex, info)
-   self.prefix = { "", info.package }
+   self.prefix = { "" }
+   for token in str_gmatch(info.package or "", "[^.]+") do
+      insert_tab(self.prefix, token)
+   end
    for _, v in iter(info, 'message_type') do
       check_message(self, lex, v)
    end

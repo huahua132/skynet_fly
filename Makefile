@@ -61,8 +61,8 @@ $(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem-1_8_0/src/lfs.c | $(LUA_CLIB_PATH) $
 $(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-cjson $^ -o $@
 
-$(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf-0.4.0/pb.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
-	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf-0.4.0 $^ -o $@
+$(LUA_CLIB_PATH)/pb.so : 3rd/lua-protobuf/pb.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
+	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-protobuf $^ -o $@
 
 $(LUA_CLIB_PATH)/zlib.so : 3rd/lzlib/lzlib.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -Werror -pedantic -I3rd/lzlib -I3rd/zlib $^ -o $@ 3rd/zlib/libz.a
