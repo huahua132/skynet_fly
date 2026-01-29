@@ -288,11 +288,11 @@ make linux
 | [basexx](https://github.com/aiq/basexx) | 0.4.1 | Base 编码 |
 | [lua-cjson](https://github.com/cloudwu/lua-cjson) | latest | JSON 解析 |
 | [lua-openssl](https://github.com/zhaozg/lua-openssl) | 0.9.1-0 | OpenSSL 绑定 |
-| [lua-protobuf](https://github.com/starwing/lua-protobuf) | 0.4.0 | Protobuf 支持 |
+| [lua-protobuf](https://github.com/starwing/lua-protobuf) | 0.5.0 | Protobuf 支持 |
 | [lua-radix-router](https://github.com/vm-001/lua-radix-router) | latest | 路由器 |
 | [luafilesystem](https://github.com/lunarmodules/luafilesystem) | 1.8.0 | 文件系统 |
 | [luajwtjitsi](https://github.com/jitsi/luajwtjitsi) | 3.0 | JWT（已适配 lua-openssl）|
-| [lzlib](https://github.com/LuaDist/lzlib) | 0.5.3 | 压缩库 |
+| [lzlib](https://github.com/LuaDist/lzlib) | 0.4.0 | 压缩库 |
 | [lua-zset](https://github.com/xjdrew/lua-zset) | latest | 有序集合 |
 | [lua-snapshot](https://github.com/cloudwu/lua-snapshot) | latest | 快照工具 |
 | [lua-socket](https://github.com/lunarmodules/luasocket) | latest | Socket 库 |
