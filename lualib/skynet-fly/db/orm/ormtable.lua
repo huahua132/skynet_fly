@@ -796,11 +796,11 @@ save_entry = function(t, entry_list)
     assert(#ret_list == #entry_data_list, "result len not same " .. #ret_list .. ':' .. #entry_data_list)
     for i = 1,#ret_list do
         local res = ret_list[i]
-        local entry = entry_list[i]
+        local index = not_ret_index_list[i]
+        local entry = entry_list[index]
         if res then  --保存成功
             entry:clear_change()
         end
-        local index = not_ret_index_list[i]
         result_list[index] = res
     end
 

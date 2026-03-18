@@ -136,8 +136,8 @@ local function monitor(t,key)
 				skynet.fork(call_back_updated, updated)
 			end
 		else
-			--等待开放swtich
-			g_wait:wait("open_swtich")
+			--等待开放switch
+			g_wait:wait("open_switch")
 		end
 	end
 end

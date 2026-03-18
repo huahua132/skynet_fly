@@ -92,17 +92,17 @@ local function join(player_id, gate, fd, is_ws, addr, hall_server_id, table_name
 	local table_server_id = t_info.table_server_id
     local room_client = t_info.room_client
     local table_id = t_info.table_id
+    if alloc_plug.is_can_enter then
+        local ok,errcode,errmsg = alloc_plug.is_can_enter(table_id, player_id)
+        if not ok then
+            return nil, errcode, errmsg
+        end
+    end
     local ok,errcode,errmsg = room_client:mod_call_by_name('enter', table_id, player_id, gate, fd, is_ws, addr, hall_server_id)
     if not ok then
         log.info("enter table fail ",player_id,errcode,errmsg)
         return nil,errcode,errmsg
     else
-		if alloc_plug.is_can_enter then
-			local ok,errcode,errmsg = alloc_plug.is_can_enter(table_id, player_id)
-			if not ok then
-				return nil, errcode, errmsg
-			end
-		end
         g_player_map[player_id] = t_info
         local player_list = t_info.player_list
         table.insert(player_list,player_id)

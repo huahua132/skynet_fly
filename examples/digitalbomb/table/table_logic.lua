@@ -224,7 +224,7 @@ function M:doing_req(player_id, packname, pack_body)
     --切换操作人
     self.m_doing_index = self.m_doing_index + 1
     if self.m_doing_index > #self.m_game_seat_id_list then
-        self.m_doing_index = self.m_doing_index % #self.m_game_seat_id_list
+        self.m_doing_index = 1
     end
     self.m_doing_seat_id = self.m_game_seat_id_list[self.m_doing_index]
     self:next_doing_cast()

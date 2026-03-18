@@ -119,7 +119,18 @@ local function kill_modules(...)
 	for _,module_name in ipairs(module_name_list) do
 		call_module(module_name,"herald_exit")
 		call_module(module_name,"close")
-		
+
+		--唤醒所有正在 watch() 等待中的协程，避免死锁
+		local watch_map = g_watch_map[module_name]
+		if watch_map then
+			local id_list = g_id_list_map[module_name] or {}
+			local name_id_list = g_name_id_list_map[module_name] or {}
+			local version = g_version_map[module_name] or 0
+			for _,response in pairs(watch_map) do
+				response(true, id_list, name_id_list, version)
+			end
+		end
+
 		g_name_id_list_map[module_name] = nil
 		g_id_list_map[module_name] = nil
 		g_watch_map[module_name] = nil

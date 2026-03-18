@@ -887,7 +887,7 @@ function CMD.unsub(svr_name, svr_id, source, channel_name, unique_name)
 end
 
 local function subsyn(svr_name, svr_id, source, channel_name, version)
-	if container_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+	if container_interface.get_server_state() == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
 	local channel, cluster_name, secret, watch_syn_info = get_watch_channel(svr_name, svr_id)
@@ -977,7 +977,7 @@ function CMD.unsubsyn(svr_name, svr_id, source, channel_name)
 end
 
 local function psubsyn(svr_name, svr_id, source, pchannel_name, version)
-	if container_interface.get_server_state == SERVER_STATE_TYPE.fix_exited then
+	if container_interface.get_server_state() == SERVER_STATE_TYPE.fix_exited then
 		return WATCH_SYN_RET.move
 	end
 	local channel, cluster_name, secret, _, pwatch_syn_info = get_watch_channel(svr_name, svr_id)
