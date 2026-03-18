@@ -49,7 +49,7 @@ function M.run()
     local self_address = skynet.self()
     skynet.call(cmgr, 'lua', 'load_modules', self_address, table.unpack(before_run_list))
     return function()
-        if not delay_run_list then return end
+        if not delay_run_list or #delay_run_list <= 0 then return end
         skynet.call(cmgr, 'lua', 'load_modules', self_address, table.unpack(delay_run_list))
         delay_run_list = nil
     end
