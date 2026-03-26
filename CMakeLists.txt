@@ -152,7 +152,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(frpcpack liblua)
 
     # 生成动态库 pb.so
-    aux_source_directory(3rd/lua-protobuf-0.4.0 PB_SRC)
+    aux_source_directory(3rd/lua-protobuf PB_SRC)
     add_library(pb SHARED ${PB_SRC})
     target_link_libraries(pb liblua)
 
