@@ -33,3 +33,8 @@ mkdir -p ${targetpath}/skynet # 确保 skynet 目录存在
 cp skynet/3rd/lua/lua ${targetpath}/skynet/3rd/lua/lua
 cp skynet/3rd/lua/liblua.a ${targetpath}/skynet/3rd/lua/liblua.a
 [ -d "skynet/cservice" ] && cp -r skynet/cservice ${targetpath}/skynet/cservice
+
+# 复制 AI 相关文件和目录
+[ -d ".claude" ] && cp -r .claude ${targetpath}/.claude
+[ -d ".kilocode" ] && cp -r .kilocode ${targetpath}/.kilocode
+[ -f "claude.md" ] && cp claude.md ${targetpath}/claude.md
