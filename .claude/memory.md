@@ -122,6 +122,7 @@ skynet_fly/
 | `debug_port` | `8888` | 调试控制台端口（debug_console_m使用） |
 | `machine_id` | `1` | 机器ID（雪花ID生成器使用，全局唯一） |
 | `trace` | `0` | 链路追踪开关（1=开启） |
+| `luatrace` | `0` | Lua队列循环检测开关（1=开启）；开启后 `skynet.queue` 会为每个队列生成唯一tag，`mult_queue`/`queue` 在进入时检测当前协程是否已持有该队列，发现循环嵌套调用时抛出错误，用于调试死锁/循环队列问题 |
 | `recordlimit` | `100MB` | 录像文件大小限制（字节），超过停止录像 |
 | `harbor` | `0` | skynet集群harbor值（单机为0） |
 | `profile` | `true` | 性能分析开关 |
@@ -253,3 +254,4 @@ sh make/script/stop.sh load_mods.lua            # 停止
 sh make/script/check_reload.sh load_mods.lua    # 热更检测
 sh make/script/fasttime.sh load_mods.lua        # 时间快进
 ```
+

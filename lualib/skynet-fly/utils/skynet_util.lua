@@ -120,14 +120,18 @@ old_skynet_info_func(function()
     return json.encode(info)
 end)
 
---重写方法
-function skynet.create_lua_trace()
-	return guid_util.fly_guid()
-end
+do
+    if tonumber(skynet.getenv("luatrace")) == 1 then
+        --重写方法
+        function skynet.create_lua_trace()
+            return guid_util.fly_guid()
+        end
 
---重写方法
-function skynet.queue_tag_create()
-    return guid_util.fly_guid()
+        --重写方法
+        function skynet.queue_tag_create()
+            return guid_util.fly_guid()
+        end
+    end
 end
 
 ---#desc 注册info_name信息的生成函数

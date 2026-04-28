@@ -26,11 +26,14 @@ local tremove = table.remove
 local assert = assert
 local x_pcall = x_pcall
 local pairs = pairs
+local tonumber = tonumber
 
 local MULTI_TYPE  = 1        -- 并发类型
 local UNIQUE_TYPE = 2        -- 单发类型
 
 local g_queue_pool = object_pool:new(queue)
+
+local g_is_luatrace = tonumber(skynet.getenv("luatrace")) == 1
 
 local M = {}
 local meta = {__index = M}
@@ -53,6 +56,7 @@ end
 
 --检查循环调用
 local function check_loop_queue(self)
+    if not g_is_luatrace then return end
     local tags = skynet.get_queue_trace_tag()
     if tags then
         for tag in pairs(tags) do
@@ -78,7 +82,9 @@ function M:new()
         queue_tag_map = {},
     }
 
-    t.queue_tag_map[skynet.queue_get_queue_tag(t.unique_queue)] = true
+    if g_is_luatrace then
+        t.queue_tag_map[skynet.queue_get_queue_tag(t.unique_queue)] = true
+    end
 
     setmetatable(t, meta)
     return t
@@ -97,7 +103,9 @@ function M:multi(key, func, ...)
         local queue = self.queue_map[key] or g_queue_pool:get()
         if not self.que_len_map[key] then
             self.que_len_map[key] = 0
-            self.queue_tag_map[skynet.queue_get_queue_tag(queue)] = true
+            if g_is_luatrace then
+                self.queue_tag_map[skynet.queue_get_queue_tag(queue)] = true
+            end
         end
         self.queue_map[key] = queue
 
@@ -117,7 +125,9 @@ function M:multi(key, func, ...)
         if self.que_len_map[key] == 0 then
             self.que_len_map[key] = nil
             self.queue_map[key] = nil
-            self.queue_tag_map[skynet.queue_get_queue_tag(queue)] = nil
+            if g_is_luatrace then
+                self.queue_tag_map[skynet.queue_get_queue_tag(queue)] = nil
+            end
             g_queue_pool:release(queue)
         end
 
