@@ -1,4 +1,4 @@
-# skynet_fly AI 编程指南
+# skynet_fly AI 编程指南（Kilo Code）
 
 > **项目**: skynet_fly | **语言**: Lua 5.4 | **框架**: skynet（Actor模型）
 > **仓库**: https://github.com/huahua132/skynet_fly
