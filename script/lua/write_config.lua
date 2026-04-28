@@ -69,7 +69,8 @@ local config = {
 	recordfile      = recordfile,		  --播放录像的文件名
 	recordlimit     = 1024 * 1024 * 100,  --录像记录限制(字节数) 超过不再写录像
 	machine_id      = 1,				  --机器ID(全局唯一)
-	trace			= 0,				  --链路追踪
+	trace			= 0,				  --详细链路追踪
+	luatrace		= 0,				  --链路追踪
 	certfile        = "./server-cert.pem",--ssl 证书相关
 	keyfile 		= "./server-key.pem",
 }

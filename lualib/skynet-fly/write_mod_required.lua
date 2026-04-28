@@ -1,5 +1,6 @@
 local lfs = require "lfs"
 local log = require "skynet-fly.log"
+local skynet = require "skynet"
 local file_util = require "skynet-fly.utils.file_util"
 local env_util = require "skynet-fly.utils.env_util"
 local os = os
