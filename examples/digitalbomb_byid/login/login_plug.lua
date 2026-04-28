@@ -9,6 +9,7 @@ local errors_msg = require "msg.errors_msg"
 local login_msg = require "msg.login_msg"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
+local env_util = require "skynet-fly.utils.env_util"
 
 local pbnet_byid = require "skynet-fly.utils.net.pbnet_byid"
 local ws_pbnet_byid = require "skynet-fly.utils.net.ws_pbnet_byid"
@@ -18,7 +19,7 @@ local ws_spnet_byid = require "skynet-fly.utils.net.ws_spnet_byid"
 
 local assert = assert
 
-local test_proto = skynet.getenv("test_proto")
+local test_proto = env_util.getenv("test_proto")
 
 local g_interface_mgr = nil
 

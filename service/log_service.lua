@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local skynet_util = require "skynet-fly.utils.skynet_util"
 local file_util = require "skynet-fly.utils.file_util"
 local time_util = require "skynet-fly.utils.time_util"
+local env_util = require "skynet-fly.utils.env_util"
 require "skynet.manager"
 
 local os = os
@@ -28,10 +29,10 @@ https://github.com/huahua132/skynet_fly.git
 local SELF_ADDRESS = skynet.self()
 
 local file = nil
-local file_path = skynet.getenv('logpath')
-local file_name = skynet.getenv('logfilename')
-local daemon = skynet.getenv('daemon')
-local log_is_launch_rename = skynet.getenv('log_is_launch_rename')
+local file_path = env_util.getenv('logpath')
+local file_name = env_util.getenv('logfilename')
+local daemon = env_util.getenv('daemon')
+local log_is_launch_rename = env_util.getenv('log_is_launch_rename')
 local hook_hander_list = {}
 local g_init = false
 

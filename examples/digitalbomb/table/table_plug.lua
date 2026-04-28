@@ -5,6 +5,7 @@ local module_cfg = require "skynet-fly.etc.module_info".get_cfg()
 local table_logic = hotfix_require "table.table_logic"
 local errors_msg = require "msg.errors_msg"
 local log = require "skynet-fly.log"
+local env_util = require "skynet-fly.utils.env_util"
 
 local pbnet_util = require "skynet-fly.utils.net.pbnet_util"
 local ws_pbnet_util = require "skynet-fly.utils.net.ws_pbnet_util"
@@ -17,7 +18,7 @@ local assert = assert
 local g_table_conf = module_cfg.table_conf
 local g_interface_mgr = nil
 
-local test_proto = skynet.getenv("test_proto")
+local test_proto = env_util.getenv("test_proto")
 
 --======================enum=================================
 local MINE_MIN = 1

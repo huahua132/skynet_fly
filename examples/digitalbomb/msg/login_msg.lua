@@ -1,6 +1,7 @@
 local setmetatable = setmetatable
 local skynet = require "skynet"
-local test_proto = skynet.getenv("test_proto")
+local env_util = require "skynet-fly.utils.env_util"
+local test_proto = env_util.getenv("test_proto")
 
 local M = {}
 local meta = {__index = M}

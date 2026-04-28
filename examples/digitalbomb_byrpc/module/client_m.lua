@@ -10,11 +10,12 @@ local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
 local container_client = require "skynet-fly.client.container_client"
 local rpc_client = require "skynet-fly.utils.net.rpc_client"
+local env_util = require "skynet-fly.utils.env_util"
 container_client:register("share_config_m")
 
 local net_util = nil
 
-local test_proto = skynet.getenv("test_proto")
+local test_proto = env_util.getenv("test_proto")
 
 local CMD = {}
 

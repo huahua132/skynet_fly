@@ -10,6 +10,7 @@ local errors_msg = require "msg.errors_msg"
 local rsp_msg = require "msg.rsp_msg"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
+local env_util = require "skynet-fly.utils.env_util"
 local pcall = pcall
 local next = next
 local assert = assert
@@ -23,7 +24,7 @@ local ws_spnet_byrpc = require "skynet-fly.utils.net.ws_spnet_byrpc"
 
 local g_interface_mgr = nil
 
-local test_proto = skynet.getenv("test_proto")
+local test_proto = env_util.getenv("test_proto")
 
 local M = {}
 

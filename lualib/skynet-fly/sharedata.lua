@@ -19,6 +19,7 @@ local log = require "skynet-fly.log"
 local file_util = require "skynet-fly.utils.file_util"
 local string_util = require "skynet-fly.utils.string_util"
 local table_util = require "skynet-fly.utils.table_util"
+local env_util = require "skynet-fly.utils.env_util"
 
 local sinterface = service_watch_interface:new(".sharedata_service")
 
@@ -41,7 +42,7 @@ local os = os
 local loadfile = loadfile
 local tonumber = tonumber
 
-local g_recordpath = skynet.getenv("recordpath")
+local g_recordpath = env_util.getenv("recordpath")
 
 local g_mode_map = {}
 local g_data_map = {}

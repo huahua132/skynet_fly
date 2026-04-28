@@ -16,6 +16,7 @@ local function snowflake_service()
     local log = require "skynet-fly.log"
     local skynet = require "skynet"
     local skynet_util = require "skynet-fly.utils.skynet_util"
+    local env_util = require "skynet-fly.utils.env_util"
     local wait = require "skynet-fly.time_extend.wait":new()
 
     local assert = assert
@@ -70,7 +71,7 @@ local function snowflake_service()
 
     skynet.start(function()
         skynet_util.lua_dispatch(CMD)
-        MACHINE_ID = tonumber(skynet.getenv("machine_id"))
+        MACHINE_ID = tonumber(env_util.getenv("machine_id"))
         --检查机器ID
         assert(MACHINE_ID and MACHINE_ID <= MACHINE_ID_BIT_MAX, "invalid machine_id = " .. tostring(MACHINE_ID))
         

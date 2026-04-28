@@ -4,6 +4,7 @@ local time_util = require "skynet-fly.utils.time_util"
 local log = require "skynet-fly.log"
 local json = require "cjson"
 local queue = require "skynet.queue"()
+local env_util = require "skynet-fly.utils.env_util"
 
 local loadfile = loadfile
 local assert = assert
@@ -18,7 +19,7 @@ local tsort = table.sort
 local skynet_call = skynet.call
 local pcall = pcall
 
-local loadmodsfile = skynet.getenv("loadmodsfile")
+local loadmodsfile = env_util.getenv("loadmodsfile")
 
 local g_name_id_list_map = {}
 local g_id_list_map = {}

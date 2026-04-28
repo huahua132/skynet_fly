@@ -27,6 +27,7 @@ end
 local CMD = {}
 
 local skynet_util = require "skynet-fly.utils.skynet_util"
+local env_util = require "skynet-fly.utils.env_util"
 local MODULE_NAME = MODULE_NAME
 local module_info = require "skynet-fly.etc.module_info"
 module_info.set_base_info {
@@ -44,15 +45,15 @@ local SERVER_STATE_TYPE = require "skynet-fly.enum.SERVER_STATE_TYPE"
 local hotfix = require "skynet-fly.hotfix.hotfix"
 hotfix_require = hotfix.require
 
-local g_breakpoint_debug_module_name = skynet.getenv("breakpoint_debug_module_name")
-local g_breakpoint_debug_module_index = tonumber(skynet.getenv("breakpoint_debug_module_index"))
+local g_breakpoint_debug_module_name = env_util.getenv("breakpoint_debug_module_name")
+local g_breakpoint_debug_module_index = tonumber(env_util.getenv("breakpoint_debug_module_index"))
 
 local g_breakpoint_debug_host = nil
 local g_breakpoint_debug_port = nil
 
 if g_breakpoint_debug_module_name == MODULE_NAME and INDEX == g_breakpoint_debug_module_index then
-	g_breakpoint_debug_host = skynet.getenv("breakpoint_debug_host")
-	g_breakpoint_debug_port = tonumber(skynet.getenv("breakpoint_debug_port"))
+	g_breakpoint_debug_host = env_util.getenv("breakpoint_debug_host")
+	g_breakpoint_debug_port = tonumber(env_util.getenv("breakpoint_debug_port"))
 end
 
 local SERVER_STATE = SERVER_STATE_TYPE.loading
@@ -219,7 +220,7 @@ function CMD.start(cfg, auto_reload, record_backup)
 			local logrotate = require "skynet-fly.logrotate"
 			skynet.fork(function()
 				local rotate_obj = logrotate:new()
-				:set_file_path(skynet.getenv('recordpath'))
+				:set_file_path(env_util.getenv('recordpath'))
 				local function set_rotate_opt(opt)
 					if record_backup[opt] then
 						local set_func = assert(logrotate['set_' .. opt], "opt func not exists: " .. opt)

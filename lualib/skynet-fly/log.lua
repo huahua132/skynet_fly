@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
+local env_util = require "skynet-fly.utils.env_util"
 local sformat = string.format
 local sdump = table_util.dump
 local serror = skynet.error
@@ -41,7 +42,7 @@ do
 	end
 end
 
-local loglevel = skynet.getenv('loglevel') or 'info'
+local loglevel = env_util.getenv('loglevel') or 'info'
 local use_level = level_map[loglevel] or 0
 
 local function create_log_func(level_name,is_format)

@@ -7,6 +7,7 @@ local time_util = require "skynet-fly.utils.time_util"
 local sharedata = require "skynet-fly.sharedata"
 local module_info = require "skynet-fly.etc.module_info"
 local skynet = require "skynet"
+local env_util = require "skynet-fly.utils.env_util"
 
 local old_require = require
 local assert = assert
@@ -22,7 +23,7 @@ local tsort = table.sort
 local sgsub = string.gsub
 local os = os
 
-local g_recordpath = skynet.getenv("recordpath")
+local g_recordpath = env_util.getenv("recordpath")
 
 local g_loadedmap = {}
 local M = {}

@@ -16,7 +16,30 @@ local g_svr_id = tonumber(skynet.getenv('svr_id'))
 local g_svr_name = skynet.getenv('svr_name')
 local g_svr_type = tonumber(skynet.getenv('svr_type'))
 
+-- env 缓存表
+local g_env_cache = {}
+
 local M = {}
+
+---#desc 获取env（带缓存）
+---@param key string env key
+---@return string|nil
+function M.getenv(key)
+	local v = g_env_cache[key]
+	if v == nil then
+		v = skynet.getenv(key)
+		g_env_cache[key] = v
+	end
+	return v
+end
+
+---#desc 设置env（同步更新缓存）
+---@param key string env key
+---@param value string env value
+function M.setenv(key, value)
+	skynet.setenv(key, value)
+	g_env_cache[key] = value
+end
 
 ---#desc 添加服务启动之前加载的lua文件
 ---@param path string 路径
@@ -28,11 +51,11 @@ function M.add_pre_load(path)
 	end
 
 	pre_load = pre_load .. path .. ";"
-	skynet.setenv("preload",pre_load)
+	M.setenv("preload",pre_load)
 end
 
 function M.get_pre_load()
-	return skynet.getenv("preload")
+	return M.getenv("preload")
 end
 
 ---#desc 添加服务启动之后加载的lua文件
@@ -45,11 +68,11 @@ function M.add_after_load(path)
 	end
 	old_after_load = old_after_load .. path .. ";"
 
-	skynet.setenv('afterload',old_after_load)
+	M.setenv('afterload',old_after_load)
 end
 
 function M.get_after_load()
-	return skynet.getenv('afterload')
+	return M.getenv('afterload')
 end
 
 ---#desc 获取cluster svr_id

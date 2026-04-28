@@ -5,6 +5,7 @@ local httpd        = require "http.httpd"
 local HTTP_STATUS = require "skynet-fly.web.HTTP_STATUS"
 local table_pool = require "skynet-fly.pool.table_pool":new(2048)
 local log = require "skynet-fly.log"
+local env_util = require "skynet-fly.utils.env_util"
 local error = error
 local string = string
 
@@ -21,8 +22,8 @@ local function gen_interface(protocol, fd)
 		local tls = require "http.tlshelper"
 		if not SSLCTX_SERVER then
 			SSLCTX_SERVER = tls.newctx()
-			local certfile = skynet.getenv("certfile") or "./server-cert.pem"
-			local keyfile  = skynet.getenv("keyfile") or "./server-key.pem"
+			local certfile = env_util.getenv("certfile") or "./server-cert.pem"
+			local keyfile  = env_util.getenv("keyfile") or "./server-key.pem"
 			SSLCTX_SERVER:set_cert(certfile, keyfile)
 		end
 		local tls_ctx = tls.newtls("server", SSLCTX_SERVER)

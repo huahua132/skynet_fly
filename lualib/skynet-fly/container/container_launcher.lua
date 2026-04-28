@@ -10,12 +10,13 @@
 
 local skynet = require "skynet"
 local table_util = require "skynet-fly.utils.table_util"
+local env_util = require "skynet-fly.utils.env_util"
 require "skynet.manager"
 
 local table = table
 local ipairs = ipairs
 
-local loadmodsfile = skynet.getenv("loadmodsfile")
+local loadmodsfile = env_util.getenv("loadmodsfile")
 
 local load_mods = {}
 do
@@ -33,7 +34,7 @@ local M = {}
 function M.run()
     skynet.monitor('monitor_exit')
     local cmgr = skynet.uniqueservice('container_mgr')
-	skynet.uniqueservice("debug_console", skynet.getenv('debug_port'))
+	skynet.uniqueservice("debug_console", env_util.getenv('debug_port'))
 
     local before_run_list = {} --先跑
     local delay_run_list = {}  --延迟再次调用再跑

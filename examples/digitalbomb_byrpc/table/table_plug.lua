@@ -8,6 +8,7 @@ local rsp_msg = require "msg.rsp_msg"
 local log = require "skynet-fly.log"
 local msg_id = require "enum.msg_id"
 local pack_helper = require "common.pack_helper"
+local env_util = require "skynet-fly.utils.env_util"
 
 local pbnet_byrpc = require "skynet-fly.utils.net.pbnet_byrpc"
 local ws_pbnet_byrpc = require "skynet-fly.utils.net.ws_pbnet_byrpc"
@@ -21,7 +22,7 @@ local tunpack = table.unpack
 local g_table_conf = module_cfg.table_conf
 local g_interface_mgr = nil
 
-local test_proto = skynet.getenv("test_proto")
+local test_proto = env_util.getenv("test_proto")
 
 --======================enum=================================
 local MINE_MIN = 1

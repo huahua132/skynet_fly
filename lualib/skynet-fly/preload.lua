@@ -12,6 +12,7 @@ local tremove = table.remove
 local tpack = table.pack
 local tunpack = table.unpack
 
+-- skynet_fly_path 需要在设置 package.path 之前获取，此时 env_util 尚未可 require，故保留原始调用
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 assert(skynet_fly_path,'not skynet_fly_path')
 

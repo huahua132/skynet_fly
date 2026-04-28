@@ -1,12 +1,13 @@
 local skynet = require "skynet"
 local time_util = require "skynet-fly.utils.time_util"
 local skynet_util = require "skynet-fly.utils.skynet_util"
+local env_util = require "skynet-fly.utils.env_util"
 
 local g_debug_console = nil
 local CMD = {}
 
 function CMD.start(config)
-    g_debug_console = skynet.uniqueservice("debug_console", skynet.getenv('debug_port'))
+    g_debug_console = skynet.uniqueservice("debug_console", env_util.getenv('debug_port'))
 	return true
 end
 

@@ -47,6 +47,7 @@ else
 end
 local skynet = require "skynet"
 skynet.cache.mode "OFF"                --不启用代码缓存
+-- 此处是引导阶段，env_util 尚未加载，必须用 skynet.getenv 获取路径
 local skynet_fly_path = skynet.getenv('skynet_fly_path')
 local env_util = loadfile(skynet_fly_path .. '/lualib/skynet-fly/utils/env_util.lua')()
 local pre_load = nil

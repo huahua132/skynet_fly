@@ -1,13 +1,13 @@
-local skynet = require "skynet"
 local lfs = require "lfs"
 local log = require "skynet-fly.log"
 local file_util = require "skynet-fly.utils.file_util"
+local env_util = require "skynet-fly.utils.env_util"
 local os = os
-local io = io 
+local io = io
 local pairs = pairs
 local string = string
 
-local loadmodsfile = skynet.getenv("loadmodsfile")
+local loadmodsfile = env_util.getenv("loadmodsfile")
 
 return function(headname, mod_name, loaded)
 	local write_dir = headname .. "_" .. loadmodsfile:sub(1, #loadmodsfile - 4) --去掉.lua
