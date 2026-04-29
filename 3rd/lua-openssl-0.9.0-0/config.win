@@ -1,0 +1,19 @@
+# Installation directories
+# System's libraries directory (where binary libraries are installed)
+
+# Lua includes and lib
+LUA_INC= "c:\luajit\src"
+LUA_LIB= "c:\luajit\src\lua51.lib"
+
+# Openssl include and lib
+OPENSSL_INC="c:\openssl-win32\include"
+OPENSSL_LIB="c:\openssl-win32\lib\libeay32.lib c:\openssl-win32\lib\ssleay32.lib"
+
+LIBNAME= $T.dll
+
+# Compilation directives
+WARN= /O2
+INCS= /I$(LUA_INC) /I$(OPENSSL_INC) /Ideps
+CFLAGS= /DWIN32_LEAN_AND_MEAN /MD $(WARN) $(INCS)
+CC= cl
+
