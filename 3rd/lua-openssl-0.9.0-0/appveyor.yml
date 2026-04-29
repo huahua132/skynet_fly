@@ -1,0 +1,36 @@
+version: 0.4.{build}
+configuration: Release
+image: Visual Studio 2019
+platform: x86
+clone_depth: 2
+clone_folder: C:\lua-openssl
+install:
+- call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
+- cd C:\
+- git clone https://github.com/LuaJIT/LuaJIT.git C:\luajit
+- cd c:\luajit\src
+- msvcbuild.bat
+- copy luajit.exe C:\
+- copy lua51.* C:\
+- curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz > openssl-1.0.2u.tar.gz
+- 7z x "openssl-1.0.2u.tar.gz" -so | 7z x -aoa -si -ttar
+- cd openssl-1.0.2u
+- ls .
+- perl Configure --prefix=C:\openssl-win32 no-asm no-shared VC-WIN32
+- ms\do_ms.bat
+- nmake -f ms\nt.mak
+- nmake -f ms\nt.mak install
+- ls C:\openssl-win32\lib
+- ls C:\openssl-win32\bin
+- cd c:\lua-openssl
+- git submodule update --init --recursive
+- git submodule update --recursive
+build_script:
+- cd c:\lua-openssl
+- nmake -f makefile.win
+- copy src\openssl.dll c:\
+test_script:
+- cd test\
+- set LUA_PATH=?.lua;
+- set LUA_CPATH=C:\?.dll;
+- c:\luajit.exe test.lua
