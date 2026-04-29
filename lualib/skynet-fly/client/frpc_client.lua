@@ -30,6 +30,8 @@ local spack = skynet.pack
 local x_pcall = x_pcall
 local debug_getinfo = debug.getinfo
 local tostring = tostring
+local tunpack = table.unpack
+local sselect = select
 
 container_client:register("frpc_client_m")
 
@@ -292,18 +294,38 @@ local function unpack_broadcast(rsp, secret)
 	return ret_map
 end
 
+local RET_META = {}
+RET_META.__index = RET_META
+
+---#desc 使用 table.unpack 展开 result 列表中的所有结果（正确处理含 nil 的多返回值）
+---@return any ...
+function RET_META:unpack()
+	return tunpack(self.result, 1, self.result.n)
+end
+
+local function make_result(...)
+	local t = {...}
+	t.n = sselect('#', ...)
+	return t
+end
+
+local function make_ret(cluster_name, result_t)
+	local ret = {
+		cluster_name = cluster_name,
+		result = result_t,
+	}
+	return setmetatable(ret, RET_META)
+end
+
 local MODE_RESULT_HANDLE = {}
 
 MODE_RESULT_HANDLE[FRPC_MODE.one] = function(cluster_name, rsp, secret, cluster_name2, is_cast)
-	if not cluster_name then 
+	if not cluster_name then
 		--nil, errcode, errmsg, cluster_name
 		return nil, rsp, secret, cluster_name2
 	end
 	local upack = is_cast and unpack_broadcast or unpack_rsp
-	return {
-		cluster_name = cluster_name,
-		result = {upack(rsp, secret)}
-	}
+	return make_ret(cluster_name, make_result(upack(rsp, secret)))
 end
 
 MODE_RESULT_HANDLE[FRPC_MODE.byid] = MODE_RESULT_HANDLE[FRPC_MODE.one]
@@ -320,10 +342,7 @@ MODE_RESULT_HANDLE[FRPC_MODE.all] = function(cluster_name, cluster_rsp_map, secr
 	for cluster_name, rsp in pairs(cluster_rsp_map) do
 		if type(rsp) == 'string' then
 			local secret = secret_map[cluster_name]
-			tinsert(ret_list, {
-				cluster_name = cluster_name,
-				result = {upack(rsp, secret)}
-			})
+			tinsert(ret_list, make_ret(cluster_name, make_result(upack(rsp, secret))))
 		else
 			--rsp[errcode, errmsg, cluster_name]
 			tinsert(err_list, rsp)

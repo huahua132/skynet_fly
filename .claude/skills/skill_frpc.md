@@ -76,7 +76,11 @@ local cli = frpc_client:new(
 
 -- 轮询 call（有返回值）
 local ret = cli:balance_call("ping", arg1)
--- ret = { cluster_name="frpc_s", result={返回值} } 或 nil, errcode, errmsg
+-- ret = { cluster_name="frpc_s", result={返回值, n=结果数量} } 或 nil, errcode, errmsg
+
+-- 使用 ret:unpack() 展开结果（正确处理含 nil 的多返回值）
+local v1, v2 = ret:unpack()
+-- 等价于 table.unpack(ret.result, 1, ret.result.n)
 
 -- 轮询 send（不等返回）
 cli:balance_send("hello", "data")
@@ -88,6 +92,33 @@ cli:mod_send("hello", "data")
 -- 广播所有实例
 local ret = cli:broadcast_call("ping")
 cli:broadcast("hello", "data")
+```
+
+---
+
+## ret 对象说明
+
+`call` 系列方法成功时返回 `ret` 对象，该对象具有以下字段和方法：
+
+| 字段/方法 | 说明 |
+|-----------|------|
+| `ret.cluster_name` | 响应节点的集群名称 |
+| `ret.result` | 结果列表（table），包含 `n` 字段记录实际返回值数量 |
+| `ret:unpack()` | 使用 `table.unpack(result, 1, result.n)` 展开所有结果，**正确处理含 nil 的多返回值** |
+
+```lua
+-- 示例：远程函数返回 (val, nil, extra) 三个值
+local ret = cli:balance_call("some_cmd", arg)
+if ret then
+    local a, b, c = ret:unpack()  -- a=val, b=nil, c=extra（n=3，不会因 nil 截断）
+end
+
+-- all 模式下，ret_list 中每个元素同样支持 unpack
+local ret_list, err_list = cli:balance_call("ping")
+for _, one_ret in ipairs(ret_list) do
+    local v1, v2 = one_ret:unpack()
+    log.info(one_ret.cluster_name, v1, v2)
+end
 ```
 
 ---
