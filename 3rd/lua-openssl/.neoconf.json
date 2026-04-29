@@ -1,0 +1,42 @@
+{
+  "lspconfig": {
+    "enable": true,
+    "lua_ls": {
+      "Lua": {
+        "runtime": {
+          "version": "LuaJIT"
+        },
+        "diagnostics": {
+          "enable": true,
+          "globals": [
+          ]
+        },
+        "format": {
+          "format": false
+        },
+        "workspace": {
+          "checkThirdParty": false,
+          "ignoreDir": [
+              "/.luacheckrc"
+          ],
+          "useGitIgnore": true,
+          "maxPreload": 1024,
+          "preloadFileSize": 64
+        },
+        "completion": {
+          "callSnippet": "Replace"
+        }
+      }
+    },
+    "null-ls": {
+      "clang_format": {
+      },
+      "filetype": [ "lua", "c" ],
+      "sources" : [
+        "null-ls.builtins.formatting.stylua",
+        "null-ls.diagnostics.luacheck",
+        "null-ls.builtins.formatting.clang_format"
+      ]
+    }
+  }
+}

@@ -1,0 +1,43 @@
+/* custom.css */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f9f9f9;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: white;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #0056b3;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+tr:hover {
+    background-color: #f1f5f9;
+}
+
+.function-name {
+    font-weight: bold;
+    color: #0056b3;
+    font-family: monospace;
+}
+
+.function-desc {
+    color: #444;
+    font-size: 0.95em;
+}

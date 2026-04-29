@@ -1,0 +1,88 @@
+# .clang-format
+# ========================================
+# 基础配置
+# ========================================
+BasedOnStyle: GNU
+Language: C                  # 关键：显式声明为 C 语言项目
+ColumnLimit: 100             # 单行最大宽度（Google 默认 80，适当放宽）
+IndentWidth: 2               # 缩进宽度为 2 空格
+UseTab: Never                # 禁止使用 Tab，强制空格缩进
+TabWidth: 8                  # Tab 显示宽度（仅影响编辑器显示）
+
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+
+# ========================================
+# 大括号与代码块格式
+# ========================================
+BreakBeforeBraces: Custom   # Linux 内核风格（函数左大括号不换行）
+AllowShortFunctionsOnASingleLine: Empty  # 仅空函数体单行显示（如 `void init() {}`）
+AllowShortIfStatementsOnASingleLine: WithoutElse  # 无 else 的短 if 可单行（如 `if (x) return;`）
+AllowShortLoopsOnASingleLine: true       # 允许短循环单行（如 `while (p) p = p->next;`）
+AlignEscapedNewlinesLeft: false
+PenaltyReturnTypeOnItsOwnLine: 200
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignArrayOfStructures: Left
+
+# ========================================
+# 控制数组/结构体初始化换行和对齐
+# ========================================
+AlignConsecutiveDeclarations: true                # 对齐连续声明（字段对齐）
+BraceWrapping:
+  AfterStruct:     true # 结构体定义后换行
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterClass:      true
+  AfterUnion:      true
+  AfterControlStatement: MultiLine
+  AfterObjCDeclaration: true
+  BeforeCatch:     false
+  BeforeElse:      false
+  IndentBraces:    false
+
+# ========================================
+# 指针与空格规则
+# ========================================
+PointerAlignment: Right      # 指针右对齐（如 `char *ptr;`）
+SpaceBeforeParens: ControlStatementsExceptControlMacros  # 控制语句括号前加空格（如 `if (...)`）
+
+# ========================================
+# 函数与参数格式
+# ========================================
+BinPackParameters: false     # 函数参数每行一个（提高可读性）
+BinPackArguments: false      # 函数调用参数每行一个
+
+# ========================================
+# 预处理指令
+# ========================================
+IndentPPDirectives: None     # 预处理指令不缩进（如 `#ifdef` 顶格）
+PPIndentWidth: 0             # 预处理指令缩进宽度为 0
+
+# ========================================
+# 头文件排序规则
+# ========================================
+SortIncludes: true           # 启用头文件排序
+IncludeCategories:
+  - Regex:           '<openssl/.*>'  # 优先级 0：OpenSSL 系统头文件
+    Priority:        0
+  - Regex:           '^"lua_.*'      # 优先级 1：Lua 绑定头文件
+    Priority:        1
+  - Regex:           '^".*'          # 优先级 2：其他项目头文件
+    Priority:        2
+
+# ========================================
+# 注释对齐
+# ========================================
+AlignTrailingComments: false  # 禁用行尾注释对齐（减少格式干扰）
+SpacesBeforeTrailingComments: 2  # 行尾注释前保留 2 空格（如 `code();  // comment`）
+
+# ========================================
+# 其他关键配置
+# ========================================
+IndentCaseLabels: false       # case 标签不额外缩进（与 switch 对齐）
+BreakBeforeBinaryOperators: true  # 在二元运算符前换行（如 `a && b` 换行为 `a\n&& b`）
+BreakBeforeTernaryOperators: true # 在三元运算符前换行（如 `a ? b : c` 换行为 `a\n? b : c`）
+AlignConsecutiveMacros: AcrossEmptyLines  # 连续宏跨空行对齐
+ForEachMacros:
+  - TAB2SK
+  - SK2TAB

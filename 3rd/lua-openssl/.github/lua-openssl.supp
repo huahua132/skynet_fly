@@ -1,0 +1,813 @@
+# pthread
+{
+   pthread_create unknown leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+}
+
+# dlopen
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:strdup
+   fun:_dl_load_cache_lookup
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_dl_check_map_versions
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+}
+{
+   dlopen_doit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   dlopen_doit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+}
+
+{
+   <_dl_open>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:strdup
+   fun:_dl_map_object
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:strdup
+   fun:_dl_load_cache_lookup
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <_dl_open>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:calloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <_dl_open>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:calloc
+   fun:_dl_check_map_versions
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:calloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   fun:_dl_map_object
+   fun:openaux
+   fun:_dl_catch_exception
+   fun:_dl_map_object_deps
+   fun:dl_open_worker_begin
+   fun:_dl_catch_exception
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:_dl_close_worker*
+}
+
+{
+   <resolve_map>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:calloc
+   fun:do_lookup_unique
+   fun:do_lookup_x
+   fun:_dl_lookup_symbol_x
+   fun:resolve_map
+}
+
+{
+   <_GLOBAL__sub_I_eh_alloc.cc>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:pool
+   fun:__static_initialization_and_destruction_0
+   fun:_GLOBAL__sub_I_eh_alloc.cc
+   fun:call_init
+   fun:call_init
+   fun:_dl_init
+}
+
+# LuaJIT-2.1
+{
+   LuaJIT-2.1 lua_pushlstring noices
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_pushlstring
+}
+
+{
+   LuaJIT-2.1 lua_pushstring noices
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_pushstring
+}
+
+{
+   LuaJIT-2 lua_getfield
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_getfield
+}
+
+{
+   LuaJIT-2 lua_setfield
+   Memcheck:Cond
+   obj:/usr/bin/luajit
+   fun:lua_setfield
+}
+
+{
+   <LuaJIT-2.1 lua_pcall>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+
+# OpenSSL-1.1.1
+
+
+# OpenSSL-3
+
+# BN_GENCB_call
+{
+   <BN_GENCB_call>
+   Memcheck:Cond
+   fun:BN_GENCB_call
+   obj:*/libcrypto.so.3
+   fun:Bisprime
+}
+
+{
+   <EVP_MD_meth_new>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:*/libcrypto.so.3
+   fun:EVP_MD_meth_new
+}
+
+{
+   <EVP_CIPHER_meth_new>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:*/libcrypto.so.3
+   fun:EVP_CIPHER_meth_new
+}
+
+{
+   <ASN1_item_d2i_ex>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:*/libcrypto.so.3
+   obj:*/libcrypto.so.3
+   obj:*/libcrypto.so.3
+   obj:*/libcrypto.so.3
+   fun:ASN1_item_d2i_ex
+}
+
+{
+   <BN_bin2bn>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:*/libcrypto.so.3
+   fun:BN_bin2bn
+}
+
+{
+   <OPENSSL_init_ssl>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:ENGINE_new
+   obj:*/libcrypto.so.3
+   obj:*/libcrypto.so.3
+   fun:__pthread_once_slow
+   fun:CRYPTO_THREAD_run_once
+   fun:OPENSSL_init_crypto
+   fun:OPENSSL_init_ssl
+}
+# consider cleaning up these as well
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:OSSL_DECODER_do_all_provided
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:OSSL_DECODER_CTX_new_for_pkey
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:PEM_read_bio_PrivateKey_ex
+   obj:*
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_strdup
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_strndup
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_MD_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_DigestSignInit
+   fun:ASN1_item_sign_ex
+   fun:X509_REQ_sign
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_strndup
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_CIPHER_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_instantiate
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_strdup
+   fun:BIO_meth_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:OPENSSL_sk_deep_copy
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_CIPHER_meth_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:ENGINE_register_ciphers
+   fun:ENGINE_register_complete
+   fun:ENGINE_register_all_complete
+   fun:OPENSSL_init_crypto
+   fun:OPENSSL_init_ssl
+   obj:*
+   obj:*
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_CIPHER_meth_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:ENGINE_register_ciphers
+   fun:ENGINE_register_complete
+   fun:ENGINE_register_all_complete
+   fun:OPENSSL_init_crypto
+   fun:OPENSSL_init_ssl
+   obj:*
+   obj:*
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_CIPHER_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_instantiate
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:CRYPTO_THREAD_lock_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_MD_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_DigestSignInit
+   fun:ASN1_item_sign_ex
+   fun:X509_REQ_sign
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   fun:BIO_meth_new
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_fetch
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_MD_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_DigestSignInit
+   fun:ASN1_item_sign_ex
+   fun:X509_REQ_sign
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:CRYPTO_zalloc
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_CIPHER_fetch
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:EVP_RAND_instantiate
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   fun:RAND_get0_primary
+   fun:RAND_status
+   obj:*
+   obj:/usr/bin/luajit
+   fun:lua_pcall
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   obj:/usr/bin/luajit
+   fun:lua_cpcall
+   fun:main
+}

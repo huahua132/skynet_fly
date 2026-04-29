@@ -55,8 +55,8 @@ $(SKYNET_BUILDER): $(SKYNET)
 	cd skynet && $(MAKE) PLAT=$(PLAT) TLS_MODULE=ltls TLS_INC=../$(TLS_INC) TLS_LIB=../$(TLS_LIB)
 
 # 创建 Lua 模块并依赖 Skynet 完成编译
-$(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem-1_8_0/src/lfs.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
-	$(CC) $(CFLAGS) $(SHARED) -I3rd/luafilesystem-1_8_0/src $^ -o $@
+$(LUA_CLIB_PATH)/lfs.so : 3rd/luafilesystem/src/lfs.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
+	$(CC) $(CFLAGS) $(SHARED) -I3rd/luafilesystem/src $^ -o $@
 
 $(LUA_CLIB_PATH)/cjson.so : 3rd/lua-cjson/lua_cjson.c 3rd/lua-cjson/strbuf.c 3rd/lua-cjson/fpconv.c | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lua-cjson $^ -o $@
@@ -80,12 +80,55 @@ $(LUA_CLIB_PATH)/frpcpack.so : lualib-src/lua-frpcpack.c | $(LUA_CLIB_PATH) $(SK
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet/skynet-src
 
 # OpenSSL 动态库生成
-SSL_SRCS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.c')
-SSL_HDRS := $(shell find 3rd/lua-openssl-0.9.0-0 -name '*.h')
-SSL_INCS := $(sort $(dir $(SSL_HDRS)))
+# 注意: ec_util.c / group.c / point.c 通过 #include 被 ec.c 内联，不能单独编译
+# 参考 3rd/lua-openssl/Makefile 中的 OBJS 列表
+SSL_SRC_DIR  := 3rd/lua-openssl/src
+SSL_DEP_DIR  := 3rd/lua-openssl/deps
 
-SSL_CFLAGS = $(CFLAGS)
-SSL_CFLAGS += $(foreach dir,$(SSL_INCS),-I$(dir))
+SSL_SRCS := \
+	$(SSL_SRC_DIR)/asn1.c \
+	$(SSL_SRC_DIR)/bio.c \
+	$(SSL_SRC_DIR)/callback.c \
+	$(SSL_SRC_DIR)/cipher.c \
+	$(SSL_SRC_DIR)/cms.c \
+	$(SSL_SRC_DIR)/compat.c \
+	$(SSL_SRC_DIR)/crl.c \
+	$(SSL_SRC_DIR)/csr.c \
+	$(SSL_SRC_DIR)/dh.c \
+	$(SSL_SRC_DIR)/digest.c \
+	$(SSL_SRC_DIR)/dsa.c \
+	$(SSL_SRC_DIR)/ec.c \
+	$(SSL_SRC_DIR)/engine.c \
+	$(SSL_SRC_DIR)/hmac.c \
+	$(SSL_SRC_DIR)/kdf.c \
+	$(SSL_SRC_DIR)/lbn.c \
+	$(SSL_SRC_DIR)/lhash.c \
+	$(SSL_SRC_DIR)/mac.c \
+	$(SSL_SRC_DIR)/misc.c \
+	$(SSL_SRC_DIR)/ocsp.c \
+	$(SSL_SRC_DIR)/openssl.c \
+	$(SSL_SRC_DIR)/ots.c \
+	$(SSL_SRC_DIR)/param.c \
+	$(SSL_SRC_DIR)/pkcs12.c \
+	$(SSL_SRC_DIR)/pkcs7.c \
+	$(SSL_SRC_DIR)/pkey.c \
+	$(SSL_SRC_DIR)/provider.c \
+	$(SSL_SRC_DIR)/rsa.c \
+	$(SSL_SRC_DIR)/srp.c \
+	$(SSL_SRC_DIR)/ssl.c \
+	$(SSL_SRC_DIR)/th-lock.c \
+	$(SSL_SRC_DIR)/util.c \
+	$(SSL_SRC_DIR)/x509.c \
+	$(SSL_SRC_DIR)/xalgor.c \
+	$(SSL_SRC_DIR)/xattrs.c \
+	$(SSL_SRC_DIR)/xexts.c \
+	$(SSL_SRC_DIR)/xname.c \
+	$(SSL_SRC_DIR)/xstore.c \
+	$(SSL_DEP_DIR)/auxiliar/auxiliar.c \
+	$(SSL_DEP_DIR)/auxiliar/subsidiar.c
+
+SSL_CFLAGS  = $(CFLAGS)
+SSL_CFLAGS += -I$(SSL_SRC_DIR) -I$(SSL_DEP_DIR) -I$(SSL_DEP_DIR)/auxiliar -I$(SSL_DEP_DIR)/lua-compat/c-api
 
 $(LUA_CLIB_PATH)/openssl.so : $(SSL_SRCS) | $(LUA_CLIB_PATH) $(SKYNET_BUILDER)
 	$(CC) $(SSL_CFLAGS) $(SHARED) $^ -o $@ -I$(TLS_INC) $(TLS_LIB)/libssl.a $(TLS_LIB)/libcrypto.a

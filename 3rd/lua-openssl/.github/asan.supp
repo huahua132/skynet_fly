@@ -1,0 +1,15 @@
+# OpenSSL v1.1
+leak:X509_REQ_dup
+
+# github ci OpenSSL v3.0
+leak:OPENSSL_init_ssl
+
+# OpenSSL v3.0 fetch API - provider initialization leaks
+leak:EVP_MD_fetch
+leak:EVP_CIPHER_fetch
+leak:OSSL_PROVIDER_load
+
+## MacOS
+#leak:_objc_init
+#leak:localtime_r
+#leak:pthread_once

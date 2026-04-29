@@ -287,10 +287,10 @@ make linux
 | [skynet](https://github.com/huahua132/skynet.git) | latest | 自维护 Fork 版本 |
 | [basexx](https://github.com/aiq/basexx) | 0.4.1 | Base 编码 |
 | [lua-cjson](https://github.com/cloudwu/lua-cjson) | latest | JSON 解析 |
-| [lua-openssl](https://github.com/zhaozg/lua-openssl) | 0.9.1-0 | OpenSSL 绑定 |
-| [lua-protobuf](https://github.com/starwing/lua-protobuf) | 0.5.0 | Protobuf 支持 |
+| [lua-openssl](https://github.com/zhaozg/lua-openssl) | 0.10.1 | OpenSSL 绑定 |
+| [lua-protobuf](https://github.com/starwing/lua-protobuf) | 0.5.3 | Protobuf 支持 | 71ad95b86f1118de24ea637575b444c3efa05c0a
 | [lua-radix-router](https://github.com/vm-001/lua-radix-router) | latest | 路由器 |
-| [luafilesystem](https://github.com/lunarmodules/luafilesystem) | 1.8.0 | 文件系统 |
+| [luafilesystem](https://github.com/lunarmodules/luafilesystem) | 1.9.0 | 文件系统 |
 | [luajwtjitsi](https://github.com/jitsi/luajwtjitsi) | 3.0 | JWT（已适配 lua-openssl）|
 | [lzlib](https://github.com/LuaDist/lzlib) | 0.4.0 | 压缩库 |
 | [lua-zset](https://github.com/xjdrew/lua-zset) | latest | 有序集合 |
