@@ -128,6 +128,9 @@ lpackrequest(lua_State *L) {
 	if (lua_type(L, 6) == LUA_TLIGHTUSERDATA) {
 		msg = lua_touserdata(L, 6);
 		sz = luaL_checkinteger(L, 7);
+		if (sz < 0) {
+			return luaL_error(L, "Invalid message size %d", sz);
+		}
 		need_free = 1;
 	} else {
 		size_t ssz;
@@ -209,6 +212,12 @@ lpackrequest(lua_State *L) {
 	buf[2] = flag;
 	
 	if (part == 1) {
+		if ((uint32_t)bsz + (uint32_t)sz > FRPCPACK_TEMP_LENGTH) {
+			if (need_free == 1) {
+				skynet_free(msg);
+			}
+			return luaL_error(L, "message too large: header %d + body %d exceeds buffer", bsz, sz);
+		}
 		memcpy(buf+bsz, msg, sz);
 		fill_header(buf, bsz + sz - 2);    //-2 有2字节表示包长
 		lua_pushlstring(L, (const char *)buf, bsz + sz);
