@@ -9,7 +9,6 @@ local tonumber = tonumber
 local M = {}
 local meta = {__index = M}
 
-local g_dbindex = 0          --redis几号数据库
 local g_db_name = "rpc"
 
 function M:new()
@@ -63,7 +62,8 @@ end
 --redis config 需要配置 notify-keyspace-events KA
 --可以监听key的所有操作事情包括过期
 function M:watch(svr_name,call_back)
-	local k = string.format("__keyspace@%d__:skynet_fly:rpc:%s:*",g_dbindex, svr_name)
+	local db_idx = self.cli.conf.db
+	local k = string.format("__keyspace@%d__:skynet_fly:rpc:%s:*", db_idx, svr_name)
 	return redisf.new_watch(g_db_name,{},{k},function(event, key, psubkey)
 		local split_str = string_util.split(key,':')
 		local svr_id = tonumber(split_str[#split_str])
