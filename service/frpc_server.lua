@@ -1,6 +1,6 @@
 local skynet = require "skynet.manager"
 local container_client = require "skynet-fly.client.container_client"
-local rpc_redis = require "skynet-fly.rpc.rpc_redis"
+local rpc_discovery = require "skynet-fly.rpc.rpc_discovery"
 local log = require "skynet-fly.log"
 local timer = require "skynet-fly.timer"
 local skynet_util = require "skynet-fly.utils.skynet_util"
@@ -870,8 +870,8 @@ skynet.start(function()
 	
 
 	local register = conf.register
-	if register == 'redis' then --注册到redis
-		local rpccli = rpc_redis:new()
+	if register then --注册到redis/etcd等服务发现
+		local rpccli = rpc_discovery:new(register)
 		rpccli:register(g_svr_name, g_svr_id, conf.host, g_secret_key, g_is_encrypt)
 		--1秒写一次
 		timer:new_loop(timer.second,function()
