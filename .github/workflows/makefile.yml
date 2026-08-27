@@ -47,6 +47,12 @@ jobs:
       with:
         submodules: recursive
 
+    # 初始化 MSVC 环境，让 CMake 的 Visual Studio generator 能探测到 VS 实例
+    - name: Set up MSVC dev environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Configure CMake
       run: cmake --no-warn-unused-cli -S . -B build -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
 
