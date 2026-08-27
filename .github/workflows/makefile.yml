@@ -47,14 +47,16 @@ jobs:
       with:
         submodules: recursive
 
-    # 初始化 MSVC 环境，让 CMake 的 Visual Studio generator 能探测到 VS 实例
+    # 初始化 MSVC 环境（设置 INCLUDE/LIB/VCINSTALLDIR 等），供 clang-cl 使用
     - name: Set up MSVC dev environment
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
 
+    # runner 自带 Visual Studio 18 (2026)，VS17 generator 探测不到实例，
+    # 因此改用 Ninja generator + clang-cl（与本地 build.bat 同编译器）
     - name: Configure CMake
-      run: cmake --no-warn-unused-cli -S . -B build -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
+      run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
 
     - name: Build Release
       run: cmake --build build --config Release
