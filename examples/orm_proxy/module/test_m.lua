@@ -31,7 +31,7 @@ local function test_player_create()
     log.info("[p] test_player_create done")
 
     --本地快照立即可读(零call)
-    local one = proxy1:get_one_entry(10001)
+    local one = proxy1:get_one_entry()
     assert(one and one.nickname == "p10001", "get_one_entry 10001 fail")
     log.info("[p] test_player_create get_one_entry 10001 >>>> ", one)
 
@@ -44,11 +44,11 @@ end
 local function test_player_get()
     local proxy = get_player_proxy(10001)
     --create后本地快照已含数据，get_entry读本地
-    local list = proxy:get_entry(10001)
+    local list = proxy:get_entry()
     assert(#list == 1 and list[1].player_id == 10001, "get_entry fail")
     log.info("[p] test_player_get get_entry 10001 >>>> ", list)
 
-    local one = proxy:get_one_entry(10001)
+    local one = proxy:get_one_entry()
     assert(one and one.nickname == "p10001", "get_one_entry fail")
     log.info("[p] test_player_get get_one_entry >>>> ", one)
 
@@ -63,7 +63,7 @@ local function test_player_save()
     local proxy = get_player_proxy(10001)
     --save_one_entry 修改
     proxy:save_one_entry({player_id = 10001, nickname = "p10001_mod", sex = 1, status = 0})
-    local one = proxy:get_one_entry(10001)
+    local one = proxy:get_one_entry()
     assert(one and one.nickname == "p10001_mod" and one.status == 0, "save_one_entry local fail")
     log.info("[p] test_player_save after save_one >>>> ", one)
 
@@ -72,14 +72,14 @@ local function test_player_save()
         {player_id = 10001, nickname = "p10001_batch", sex = 1, status = 1},
         {player_id = 10001, nickname = "p10001_batch2", sex = 1, status = 1},
     })
-    local one2 = proxy:get_one_entry(10001)
+    local one2 = proxy:get_one_entry()
     assert(one2 and one2.nickname == "p10001_batch2" and one2.status == 1, "save_entry local fail")
     log.info("[p] test_player_save after save_entry >>>> ", one2)
 
     --10002用自己的proxy保存
     local proxy2 = get_player_proxy(10002)
     proxy2:save_one_entry({player_id = 10002, nickname = "p10002_mod", sex = 1, status = 1})
-    local one3 = proxy2:get_one_entry(10002)
+    local one3 = proxy2:get_one_entry()
     assert(one3 and one3.nickname == "p10002_mod", "proxy2 save fail")
     log.info("[p] test_player_save proxy2 >>>> ", one3)
 
@@ -91,9 +91,9 @@ end
 
 local function test_player_delete()
     local proxy = get_player_proxy(10002)
-    proxy:delete_entry(10002)
+    proxy:delete_entry()
     log.info("[p] test_player_delete delete_entry 10002 done")
-    local one = proxy:get_one_entry(10002)
+    local one = proxy:get_one_entry()
     assert(one == nil, "delete_entry local fail")
     log.info("[p] test_player_delete after delete 10002 >>>> ", one)
 
@@ -133,7 +133,7 @@ local function test_bag_create()
     log.info("[b] test_bag_create done")
 
     --本地立即可读
-    local one = proxy:get_one_entry(10001, 1, 1)
+    local one = proxy:get_one_entry(1, 1)
     assert(one and one.count == 10, "bag get_one (10001,1,1) fail")
     log.info("[b] test_bag_create get_one (10001,1,1) >>>> ", one)
 
@@ -147,22 +147,22 @@ local function test_bag_get()
     local proxy = get_backpack_proxy(10001)
 
     --最左前缀 get_entry(10001) 返回全部3条
-    local all = proxy:get_entry(10001)
-    assert(#all == 3, "bag get_entry(10001) count fail, got " .. #all)
+    local all = proxy:get_entry()
+    assert(#all == 3, "bag get_entry count fail, got " .. #all)
     log.info("[b] test_bag_get get_entry(10001) >>>> ", all)
 
-    --最左前缀 get_entry(10001,1) 返回 item=1 的2条
-    local item1 = proxy:get_entry(10001, 1)
-    assert(#item1 == 2, "bag get_entry(10001,1) count fail, got " .. #item1)
+    --最左前缀 get_entry(1) 返回 item=1 的2条
+    local item1 = proxy:get_entry(1)
+    assert(#item1 == 2, "bag get_entry(1) count fail, got " .. #item1)
     log.info("[b] test_bag_get get_entry(10001,1) >>>> ", item1)
 
     --完整主键 get_one_entry(10001,2,1)
-    local one = proxy:get_one_entry(10001, 2, 1)
+    local one = proxy:get_one_entry(2, 1)
     assert(one and one.count == 30, "bag get_one (10001,2,1) fail")
     log.info("[b] test_bag_get get_one (10001,2,1) >>>> ", one)
 
     --不存在
-    local nil_one = proxy:get_one_entry(10001, 9, 9)
+    local nil_one = proxy:get_one_entry(9, 9)
     assert(nil_one == nil, "bag get_one (10001,9,9) should nil")
     log.info("[b] test_bag_get nil-key ok")
 
@@ -176,13 +176,13 @@ local function test_bag_save()
     local proxy = get_backpack_proxy(10001)
     --save_one_entry 修改已有条目
     proxy:save_one_entry({player_id = 10001, item_id = 1, slot_id = 1, count = 100, prop = "a_mod"})
-    local one = proxy:get_one_entry(10001, 1, 1)
+    local one = proxy:get_one_entry(1, 1)
     assert(one and one.count == 100 and one.prop == "a_mod", "bag save_one fail")
     log.info("[b] test_bag_save after save_one >>>> ", one)
 
     --save_one_entry 不存在则本地创建
     proxy:save_one_entry({player_id = 10001, item_id = 9, slot_id = 9, count = 1, prop = "new"})
-    local one9 = proxy:get_one_entry(10001, 9, 9)
+    local one9 = proxy:get_one_entry(9, 9)
     assert(one9 and one9.count == 1, "bag save_one create-new fail")
     log.info("[b] test_bag_save save_one create-new >>>> ", one9)
 
@@ -191,8 +191,8 @@ local function test_bag_save()
         {player_id = 10001, item_id = 2, slot_id = 1, count = 300, prop = "c_mod"},
         {player_id = 10001, item_id = 1, slot_id = 2, count = 200, prop = "b_mod"},
     })
-    local c = proxy:get_one_entry(10001, 2, 1)
-    local b = proxy:get_one_entry(10001, 1, 2)
+    local c = proxy:get_one_entry(2, 1)
+    local b = proxy:get_one_entry(1, 2)
     assert(c and c.count == 300 and b and b.count == 200, "bag save_entry fail")
     log.info("[b] test_bag_save after save_entry >>>> ", c, b)
 
@@ -204,19 +204,19 @@ end
 local function test_bag_delete()
     local proxy = get_backpack_proxy(10001)
     --删除完整主键一条
-    proxy:delete_entry(10001, 1, 2)
-    local b = proxy:get_one_entry(10001, 1, 2)
+    proxy:delete_entry(1, 2)
+    local b = proxy:get_one_entry(1, 2)
     assert(b == nil, "bag delete_one fail")
     log.info("[b] test_bag_delete delete_one done")
 
     --删除最左前缀一批(item=9)
-    proxy:delete_entry(10001, 9)
-    local list9 = proxy:get_entry(10001, 9)
+    proxy:delete_entry(9)
+    local list9 = proxy:get_entry(9)
     assert(#list9 == 0, "bag delete_prefix fail")
     log.info("[b] test_bag_delete delete_prefix done")
 
     --剩余应为 item(1,1) item(2,1)
-    local left = proxy:get_entry(10001)
+    local left = proxy:get_entry()
     assert(#left == 2, "bag delete left count fail, got " .. #left)
     log.info("[b] test_bag_delete left >>>> ", left)
 

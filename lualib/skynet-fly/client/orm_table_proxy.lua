@@ -222,8 +222,8 @@ local function del_leaf_from_snapshot(self, key_values)
 end
 
 --入队写操作
-local function enqueue(self, op, data)
-    tinsert(self._wait_list, {op = op, data = data})
+local function enqueue(self, op, data, exists)
+    tinsert(self._wait_list, {op = op, data = data, exists = exists})
 end
 
 --定时器flush：批量把待写操作异步send到orm_table_m(零call)
@@ -244,7 +244,12 @@ local function do_flush(self)
         if op == "create" then
             tinsert(creates, item.data)
         elseif op == "save" then
-            tinsert(saves, item.data)
+            --本地新建的entry远端需走create；已存在的才走change_save
+            if item.exists then
+                tinsert(saves, item.data)
+            else
+                tinsert(creates, item.data)
+            end
         elseif op == "del" then
             tinsert(dels, item.data)
         elseif op == "del_all" then
@@ -324,12 +329,10 @@ function M:get_all_entry()
 end
 
 ---#desc 查询多条数据(读本地快照，首次同步拉取后零call)
----@param ... any[] 最左前缀key值列表，首个必须等于本proxy的main_key
+---@param ... any[] 除main_key外的最左前缀key值列表(首个主键由proxy的main_key决定)
 ---@return table[] 数据列表(独立拷贝，修改需通过save_*写回)
 function M:get_entry(...)
-    local key_values = {...}
-    assert(#key_values > 0, "err key_values")
-    assert(key_values[1] == self._main_key, "key_values[1] not match main_key:" .. tostring(self._main_key))
+    local key_values = { self._main_key, ... }
     ensure_snapshot(self)
     if not self._snapshot then return {} end
 
@@ -353,13 +356,12 @@ function M:get_entry(...)
 end
 
 ---#desc 查询一条数据(读本地快照，首次同步拉取后零call)
----@param ... any[] 完整主键值列表，首个必须等于本proxy的main_key
+---@param ... any[] 除main_key外的完整主键值列表(首个主键由proxy的main_key决定)
 ---@return table|nil 数据(独立拷贝，修改需通过save_*写回)
 function M:get_one_entry(...)
-    local key_values = {...}
+    local key_values = { self._main_key, ... }
     local key_list = get_key_list(self)
     assert(#key_values == #key_list, "args len err")
-    assert(key_values[1] == self._main_key, "key_values[1] not match main_key:" .. tostring(self._main_key))
     ensure_snapshot(self)
     local wrapper = locate_leaf(self, key_values)
     if not wrapper then return nil end
@@ -375,13 +377,14 @@ function M:save_one_entry(entry_data)
     local data_copy = table_util.copy(entry_data)
     local kv = get_keyvalues_from_data(self, data_copy)
     local wrapper = locate_leaf(self, kv)
-    if wrapper then
+    local exists = wrapper ~= nil
+    if exists then
         table_util.merge(wrapper.data, data_copy)
     else
         build_snapshot_entry(self, data_copy)
     end
     ensure_flush_timer(self)
-    enqueue(self, "save", data_copy)
+    enqueue(self, "save", data_copy, exists)
 end
 
 ---#desc 批量变更保存(异步落库，本地立即可读)
@@ -395,21 +398,20 @@ function M:save_entry(entry_data_list)
         local data_copy = table_util.copy(entry_data)
         local kv = get_keyvalues_from_data(self, data_copy)
         local wrapper = locate_leaf(self, kv)
-        if wrapper then
+        local exists = wrapper ~= nil
+        if exists then
             table_util.merge(wrapper.data, data_copy)
         else
             build_snapshot_entry(self, data_copy)
         end
-        enqueue(self, "save", data_copy)
+        enqueue(self, "save", data_copy, exists)
     end
     ensure_flush_timer(self)
 end
 
----#desc 删除数据(异步落库，本地立即可见) 最左前缀key，首个必须等于本proxy的main_key
+---#desc 删除数据(异步落库，本地立即可见) 除main_key外的最左前缀key(首个主键由proxy的main_key决定)
 function M:delete_entry(...)
-    local key_values = {...}
-    assert(#key_values > 0, "err key_values")
-    assert(key_values[1] == self._main_key, "key_values[1] not match main_key:" .. tostring(self._main_key))
+    local key_values = { self._main_key, ... }
     ensure_snapshot(self)
 
     --本地快照删除所有匹配叶子
