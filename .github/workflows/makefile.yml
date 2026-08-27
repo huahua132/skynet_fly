@@ -6,18 +6,21 @@ on:
   pull_request:
     branches: [ "master" ]
 
-jobs:
-  build:
+permissions:
+  contents: write
+  packages: write
 
+jobs:
+  build-linux:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
 
     - name: install
-      run: 
+      run:
         sh install_ubuntu.sh
-    
+
     - name: chmod
       run:
         chmod -R 777 binshell
@@ -30,47 +33,94 @@ jobs:
       run:
         tar -czvf skynet_fly-master.tar.gz skynet-fly-release
 
-    - name: Debug List current working directory
-      run: ls -alh
-
-    - name: Debug List the release directory
-      run: ls -alh skynet_fly-master.tar.gz
-
-    - name: pwd
-      run: pwd
-
     - name: Upload tar as artifact
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
-        name: release-artifact
-        path: skynet_fly-master.tar.gz  # 上传压缩文件为artifact
-        
+        name: release-linux
+        path: skynet_fly-master.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: cmake --no-warn-unused-cli -S . -B build -G "Visual Studio 17 2022" -A x64 -T ClangCL -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build Release
+      run: cmake --build build --config Release
+
+    - name: Package release
+      shell: bash
+      run: |
+        set -e
+        target=./skynet-fly-release
+        rm -rf ${target}
+        mkdir -p ${target}
+        # 复制构建产物（CMake 已把 lualib/module/service/script/examples 等拷入 build/skynet_fly）
+        cp -r build/skynet_fly/* ${target}/
+        # 复制辅助文件与目录
+        [ -d "binshell" ] && cp -r binshell ${target}/binshell
+        [ -d "binbat" ] && cp -r binbat ${target}/binbat
+        [ -d ".claude" ] && cp -r .claude ${target}/.claude
+        [ -d ".kilocode" ] && cp -r .kilocode ${target}/.kilocode
+        [ -f "claude.md" ] && cp claude.md ${target}/claude.md
+        # 打包 zip（zip 位于仓库根目录，方便后续上传）
+        powershell -Command "Compress-Archive -Path './skynet-fly-release' -DestinationPath './skynet_fly-windows-master.zip' -Force"
+
+    - name: Upload zip as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-windows
+        path: skynet_fly-windows-master.zip
+
   release:
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build-linux, build-windows]
+    if: github.event_name == 'push'
+
     steps:
-       - name: Download artifact
-         uses: actions/download-artifact@master
-         with:
-          name: release-artifact  # 下载构建时上传的 artifact
+    - uses: actions/checkout@v4
 
-       - name: Debug List files in directory after build
-         run: ls -alh
-           
-       - name: pwd
-         run: pwd
-        
-       - name: Debug List the release directory
-         run: ls -alh skynet_fly-master.tar.gz
-        
-       - name: Create GitHub Release
-         uses: softprops/action-gh-release@v1
-         with:
-           files: skynet_fly-master.tar.gz
-           tag_name: master
-         env:
-           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
-permissions:
-  contents: write  # 保证GITHUB_TOKEN有足够的权限
-  packages: write
+    # 删除旧的 master release 与 tag，确保每次 push 都以最新提交重建 release，
+    # 避免 release 停留在旧的 2024 发布时间、tag 指向过期提交
+    - name: Delete old master release and tag
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const tag = 'master';
+          try {
+            const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: release.data.id });
+            console.log('Deleted old release:', release.data.html_url);
+          } catch (e) {
+            console.log('No existing release to delete:', e.message);
+          }
+          try {
+            await github.rest.git.deleteRef({ owner, repo, ref: 'tags/' + tag });
+            console.log('Deleted old tag: tags/' + tag);
+          } catch (e) {
+            console.log('No existing tag to delete:', e.message);
+          }
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifacts/release-linux/skynet_fly-master.tar.gz
+          artifacts/release-windows/skynet_fly-windows-master.zip
+        tag_name: master
+        name: master
+        update_existing: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
