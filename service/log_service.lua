@@ -3,6 +3,7 @@ local skynet_util = require "skynet-fly.utils.skynet_util"
 local file_util = require "skynet-fly.utils.file_util"
 local time_util = require "skynet-fly.utils.time_util"
 local env_util = require "skynet-fly.utils.env_util"
+local log = require "skynet-fly.log"
 require "skynet.manager"
 
 local os = os
@@ -18,11 +19,12 @@ local sformat = string.format
 local osdate = os.date
 
 local g_framename = [[
-####   #     #   #    ###      ##       #          ##      #      #   #
-#      # #    # #    #   #    #  #    #####        #       #       # #
-####   ##      #     #   #    ####      #        #####     #        #
-   #   # #    #      #   #    #         #          #       #       #
-####   #     #       #   #    ####      ###        #      ###     #
+       _      _   _                  _       __   _   _   _
+ ___  | | __ | | | |  _ __     ___  | |_    / _| | | | | | |
+/ __| | |/ / | |_| | | '_ \   / _ \ | __|  | |_  | | | |_| |
+\__ \ |   <   \__, | | | | | |  __/ | |_   |  _| | |  \__, |
+|___/ |_|\_\  |___/  |_| |_|  \___|  \__|  |_|   |_|  |___/
+
 https://github.com/huahua132/skynet_fly.git
 ]]
 
@@ -35,6 +37,17 @@ local daemon = env_util.getenv('daemon')
 local log_is_launch_rename = env_util.getenv('log_is_launch_rename')
 local hook_hander_list = {}
 local g_init = false
+local g_shutdown_when_fatal = false   --检测到 fatal/traceback 日志自动关服（默认关闭）
+local g_shutdown_triggered = false    --已触发关服，防止重复触发
+
+local function write_log(log_str)
+    if file then
+        file:write(log_str .. '\n')
+        file:flush()
+    else
+        print(log_str)
+    end
+end
 
 local function rename_old_file()
     if log_is_launch_rename ~= 'true' then
@@ -83,6 +96,22 @@ local function init()
     open_file()
 end
 
+--检测 fatal/traceback 日志，触发强制关服
+local function shutdown_detect(log_str)
+    if not g_shutdown_when_fatal or g_shutdown_triggered then
+        return
+    end
+
+    local info = log.parse(log_str)
+    if info.log_type ~= log.FATAL and info.log_type ~= log.TRACEBACK then
+        return
+    end
+
+    g_shutdown_triggered = true
+    write_log(sformat('[强制关服] 检测到 %s 日志, 触发 container_mgr 强制关服 %s', info.log_type, log_str))
+    pcall(skynet.send, '.container_mgr', 'lua', 'shutdown')
+end
+
 skynet.register_protocol {
 	name = "text",
 	id = skynet.PTYPE_TEXT,
@@ -93,19 +122,16 @@ skynet.register_protocol {
         local second,m = math_floor(cur_time / 100), cur_time % 100
         local mstr = sformat("%02d",m)
         local time_date = osdate('[%Y%m%d %H:%M:%S ',second)
-        local log_str = '[' .. skynet.address(address) .. ']' .. time_date .. mstr .. ']' .. msg
-        
-        if file then
-            file:write(log_str .. '\n')
-            file:flush()
-        else
-            print(log_str)
-        end
+        local addr = skynet.address(address)
+        local log_str = '[' .. addr .. ']' .. time_date .. mstr .. ']' .. msg
+
+        write_log(log_str)
 
         if address ~= SELF_ADDRESS then
             for i = 1,#hook_hander_list do
                 hook_hander_list[i](log_str,msg)
             end
+            shutdown_detect(log_str)
         end
 	end
 }
@@ -130,12 +156,13 @@ function CMD.add_hook(file_name)
 end
 
 function CMD.log(msg)
-    if file then
-        file:write(msg .. '\n')
-        file:flush()
-    else
-        print(msg)
-    end
+    write_log(msg)
+end
+
+--开关 fatal/traceback 日志自动强制关服, on=true 开启, 默认关闭
+function CMD.set_shutdown_when_fatal(on)
+    g_shutdown_when_fatal = on ~= false
+    return g_shutdown_when_fatal
 end
 
 skynet.start(function()

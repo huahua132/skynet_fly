@@ -90,6 +90,18 @@ function M.add_hook(loglevel,hook_func)
 	tinsert(hooks[loglevel],hook_func)
 end
 
+local LOG_SERVICE = '.logger'
+
+--向 log_service 注册日志处理钩子, file_name 为 log 钩子模块名
+function M.add_hook_service(file_name)
+	return skynet.call(LOG_SERVICE, 'lua', 'add_hook', file_name)
+end
+
+--开关 fatal/traceback 日志自动强制关服, on=true 开启, 默认关闭
+function M.set_shutdown_when_fatal(on)
+	return skynet.call(LOG_SERVICE, 'lua', 'set_shutdown_when_fatal', on)
+end
+
 local g_log_type_info = {
 	log_type = M.UNKNOWN,            --日志类型
 	address = "",         		     --服务地址
