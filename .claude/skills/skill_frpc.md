@@ -183,6 +183,16 @@ frpc_client:watch_all_up("my_handler", function(svr_name, svr_id)
     log.info("任意节点上线:", svr_name, svr_id)
 end)
 
+-- 监听特定节点下线
+frpc_client:watch_down("frpc_s", function(svr_name, svr_id)
+    log.info("节点下线:", svr_name, svr_id)
+end)
+
+-- 监听所有节点下线
+frpc_client:watch_all_down("my_handler", function(svr_name, svr_id)
+    log.info("任意节点下线:", svr_name, svr_id)
+end)
+
 -- 检查节点是否活跃
 frpc_client:is_active("frpc_s")        -- 是否有活跃节点
 frpc_client:is_active("frpc_s", 1)     -- id=1的节点是否活跃
@@ -190,6 +200,47 @@ frpc_client:is_active("frpc_s", 1)     -- id=1的节点是否活跃
 -- 获取所有活跃节点ID
 local ids = frpc_client:get_active_svr_ids("frpc_s")
 ```
+
+---
+
+## 服务端监听连接进来的节点上下线（frpc_server）
+
+客户端用 `frpc_client` 监听**自己连出去**的节点；服务端要监听**连接进来**的节点，用 `skynet-fly.rpc.frpc_server`（用法与 `frpc_client` 完全一致）。
+
+> ⚠️ **svr_name 是"对方节点名"**：服务端监听的是连进来的节点，`watch_up/down` 的第一个参数必须填**对端进程的 svr_name**（例如连进来的客户端进程在 load_mods 里配了 `svr_name = "frpc_client"`，就填 `"frpc_client"`），而不是本服务自己的名字。
+
+```lua
+local frpc_server = require "skynet-fly.rpc.frpc_server"
+
+-- 监听特定节点（对端 svr_name）上线
+frpc_server:watch_up("frpc_client", function(svr_name, svr_id)
+    log.info("节点上线:", svr_name, svr_id)
+end)
+
+-- 监听所有节点上线
+frpc_server:watch_all_up("my_handler", function(svr_name, svr_id)
+    log.info("任意节点上线:", svr_name, svr_id)
+end)
+
+-- 监听特定节点下线
+frpc_server:watch_down("frpc_client", function(svr_name, svr_id)
+    log.info("节点下线:", svr_name, svr_id)
+end)
+
+-- 监听所有节点下线
+frpc_server:watch_all_down("my_handler", function(svr_name, svr_id)
+    log.info("任意节点下线:", svr_name, svr_id)
+end)
+
+-- 检查节点是否活跃
+frpc_server:is_active("frpc_client")        -- 是否有节点连进来
+frpc_server:is_active("frpc_client", 1)     -- svr_id=1的节点是否连进来
+
+-- 获取所有活跃节点ID
+local ids = frpc_server:get_active_svr_ids("frpc_client")
+```
+
+实现说明：`service/frpc_server.lua` 在节点完成握手（上线）和数据连接断开（下线）时，通过 `watch_syn` 发布 `"active"` 通道（已连接节点 map），本模块订阅该通道并 diff 出上/下线事件。订阅连接（watch 连接）不算节点上线，一个节点同时建数据连接和订阅连接只算一次。无需额外配置。
 
 ---
 

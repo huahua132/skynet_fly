@@ -3,6 +3,7 @@ local log = require "skynet-fly.log"
 local skynet = require "skynet.manager"
 local container_client = require "skynet-fly.client.container_client"
 local watch_server = require "skynet-fly.rpc.watch_server"
+local frpc_server = require "skynet-fly.rpc.frpc_server"
 local module_info = require "skynet-fly.etc.module_info"
 local env_util = require "skynet-fly.utils.env_util"
 local orm_table_client = require "skynet-fly.client.orm_table_client"
@@ -152,6 +153,15 @@ function CMD.start(config)
 			watch_server.unpubsyn("test_quick_cancel")
 			log.info("unpubsyn test_quick_cancel done (quick cancel)")
 		end)
+
+		--测试服务端监听连接进来的节点上下线
+		frpc_server:watch_up("frpc_client", function(svr_name, svr_id)
+			log.info("[frpc_server] 节点上线:", svr_name, svr_id)
+		end, "test_watch_up")
+
+		frpc_server:watch_down("frpc_client", function(svr_name, svr_id)
+			log.info("[frpc_server] 节点下线:", svr_name, svr_id)
+		end, "test_watch_down")
 	end
 	--注册别名
 	skynet.register(".testserver_" .. base_info.index)

@@ -13,6 +13,7 @@ local math_util = require "skynet-fly.utils.math_util"
 local string_util = require "skynet-fly.utils.string_util"
 local table_util = require "skynet-fly.utils.table_util"
 local watch_syn_table = require "skynet-fly.watch.watch_syn_table"
+local watch_syn = require "skynet-fly.watch.watch_syn"
 
 local pairs = pairs
 local assert = assert
@@ -43,6 +44,10 @@ local g_subsyn_channel_info_map = {}				--订阅同步表的数据
 local g_subsyn_parsed_map = {}						--订阅同步已经解析过的channel_name
 local g_psubsyn_map = {}							--批订阅同步表
 local g_psubsyn_channel_info_map = {}				--批订阅同步表的数据
+local g_active_map = {}								--已连接节点列表 {svr_name={svr_id=fd}}
+local g_watch_server = nil							--已连接节点上下线发布
+local pub_active = nil								--发布节点上下线
+local del_node = nil								--移除节点
 
 container_client:register("share_config_m")
 
@@ -211,6 +216,20 @@ local function hand_shake(fd, session_id, msg, sz)
 	
 	response(fd, session_id, true, skynet.packstring("ok"))
 
+	--非订阅连接才算节点上线（一个节点会同时建立数据连接和订阅连接）
+	if not is_watch then
+		if g_active_map[svr_name] and g_active_map[svr_name][svr_id] ~= fd then
+			--节点重复建立连接，先发布下线再发布上线，保证监听方能正确感知切换
+			del_node(svr_name, svr_id)
+		end
+
+		if not g_active_map[svr_name] then
+			g_active_map[svr_name] = {}
+		end
+		g_active_map[svr_name][svr_id] = fd
+		pub_active()
+	end
+
 	log.info("connected from " .. cluster_name .. ' addr ' .. agent.addr .. ' is_watch ' .. tostring(is_watch))
 end
 
@@ -363,6 +382,23 @@ end)
 HANDLE[FRPC_PACK_ID.call_by_alias] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
 	return skynet.rawcall(module_name, 'lua', msg, sz)
 end)
+
+--发布节点上下线
+pub_active = function()
+	if g_watch_server then
+		g_watch_server:publish("active", g_active_map)
+	end
+end
+
+--移除节点
+del_node = function(svr_name, svr_id)
+	if not g_active_map[svr_name] then return end
+	g_active_map[svr_name][svr_id] = nil
+	if not next(g_active_map[svr_name]) then
+		g_active_map[svr_name] = nil
+	end
+	pub_active()
+end
 
 --订阅
 HANDLE[FRPC_PACK_ID.sub] = create_handle(function(agent, module_name, instance_name, mod_num, msg, sz)
@@ -696,7 +732,15 @@ function SOCKET.close(fd)
 			end
 		end
 	end
-	
+
+	--非订阅连接断开才算节点下线（订阅连接断开不影响节点状态）
+	if not agent.is_watch and agent.svr_name and agent.svr_id then
+		local active_fd = g_active_map[agent.svr_name] and g_active_map[agent.svr_name][agent.svr_id]
+		if active_fd == fd then
+			del_node(agent.svr_name, agent.svr_id)
+		end
+	end
+
 	log.info_fmt("disconnected %s addr %s is_watch %s", agent.cluster_name, agent.addr, agent.is_watch)
 end
 
@@ -848,6 +892,8 @@ end
 skynet.start(function()
 	skynet.register('.frpc_server')
 	skynet_util.lua_dispatch(CMD)
+	g_watch_server = watch_syn.new_server(CMD)
+	g_watch_server:register("active", g_active_map)
 
 	local confclient = container_client:new("share_config_m")
 	local conf = confclient:mod_call('query','frpc_server')

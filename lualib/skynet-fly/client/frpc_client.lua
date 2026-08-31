@@ -44,6 +44,8 @@ local g_watch_client = nil
 local g_active_map = {}						--活跃列表
 local g_handler_map = {}
 local g_all_handler_map = {}
+local g_down_handler_map = {}
+local g_all_down_handler_map = {}
 local g_switch_handler_map = {}
 local SELF_ADDRESS = skynet.self()
 
@@ -90,6 +92,26 @@ local function syn_active_map()
 				end
 			end
 		end
+
+		--监听节点下线，旧活跃列表中不存在于新活跃列表的节点视为下线
+		for svr_name, map in pairs(g_active_map) do
+			local new_map = new_active_map[svr_name]
+			for svr_id in pairs(map) do
+				if not new_map or not new_map[svr_id] then
+					local handler_map = g_down_handler_map[svr_name]
+					if handler_map then
+						for _, handler in pairs(handler_map) do
+							skynet.fork(handler, svr_name, svr_id)
+						end
+					end
+
+					for _, handler in pairs(g_all_down_handler_map) do
+						skynet.fork(handler, svr_name, svr_id)
+					end
+				end
+			end
+		end
+
 		g_active_map = new_active_map
 	end
 end
@@ -146,6 +168,29 @@ function M:watch_all_up(handle_name, handler)
 	assert(type(handler) == 'function', "handler type err:" .. tostring(handler))
 	handle_name = handle_name or debug_getinfo(2,"S").short_src
 	g_all_handler_map[handle_name] = handler
+end
+
+---#desc 监听节点下线事件
+---@param svr_name string 结点名称
+---@param handler function 回调函数
+---@param handle_name? string 回调绑定名称 不填默认代码路径
+function M:watch_down(svr_name, handler, handle_name)
+	assert(type(svr_name) == 'string', "svr_name type err:" .. tostring(svr_name))
+	assert(type(handler) == 'function', "handler type err:" .. tostring(handler))
+	if not g_down_handler_map[svr_name] then
+		g_down_handler_map[svr_name] = {}
+	end
+	handle_name = handle_name or debug_getinfo(2,"S").short_src
+	g_down_handler_map[svr_name][handle_name] = handler
+end
+
+---#desc 监听所有节点下线事件
+---@param handle_name? string 回调绑定名称 不填默认代码路径
+---@param handler function 回调函数
+function M:watch_all_down(handle_name, handler)
+	assert(type(handler) == 'function', "handler type err:" .. tostring(handler))
+	handle_name = handle_name or debug_getinfo(2,"S").short_src
+	g_all_down_handler_map[handle_name] = handler
 end
 
 ---#desc 监听 frpc_client_m 切换

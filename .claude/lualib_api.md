@@ -21,7 +21,7 @@
 | require路径 | 文件路径 | 核心API |
 |------------|---------|---------|
 | `skynet-fly.client.container_client` | `client/container_client.lua` | `register(mod)` `set_week_visitor(mod)` `set_always_swtich(mod)` `add_queryed_cb` `add_updated_cb` `instance(mod,name?)` `new(mod,name?)` `is_ready(mod)` |
-| `skynet-fly.client.frpc_client` | `client/frpc_client.lua` | `frpc_client:new(mode, svr_name, module_name, instance_name?)` `instance(mode, svr_name, module_name, name?)` `balance_call/send` `mod_call/send` `broadcast_call/broadcast` `*_by_name变体` `is_active` `watch_up` `watch_all_up` |
+| `skynet-fly.client.frpc_client` | `client/frpc_client.lua` | `frpc_client:new(mode, svr_name, module_name, instance_name?)` `instance(mode, svr_name, module_name, name?)` `balance_call/send` `mod_call/send` `broadcast_call/broadcast` `*_by_name变体` `is_active` `watch_up` `watch_all_up` `watch_down` `watch_all_down` |
 | `skynet-fly.client.orm_table_client` | `client/orm_table_client.lua` | `orm_table_client:instance(orm_name)` `new(orm_name)` → 动态代理 handle.xxx |
 | `skynet-fly.client.orm_frpc_client` | `client/orm_frpc_client.lua` | 跨节点ORM访问 |
 
@@ -117,6 +117,8 @@
 |------------|---------|---------|
 | `skynet-fly.rpc.watch_client` | `rpc/watch_client.lua` | `watch_client:watch(svr_name, channel, fn)` `unwatch(svr_name, channel)` |
 | `skynet-fly.rpc.watch_syn_client` | `rpc/watch_syn_client.lua` | 同步订阅客户端 |
+| `skynet-fly.rpc.frpc_server` | `rpc/frpc_server.lua` | 服务端监听连接进来的节点：`watch_up` `watch_all_up` `watch_down` `watch_all_down` `is_active` `get_active_svr_ids` |
+| `skynet-fly.rpc.watch_server` | `rpc/watch_server.lua` | 远程推送端 `publish/pubsyn/unpubsyn` |
 
 ---
 
