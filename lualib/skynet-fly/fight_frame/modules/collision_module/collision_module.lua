@@ -123,7 +123,8 @@ function M:add_entity(entity)
     end
     -- 碰撞盒：x/y 为中心，w/h 为半宽半高（C# 碰撞体中心 + CollisionSize/2）
     -- passive=true 表示被碰撞物（建筑/英雄），只被动被触发，不主动触发他人
-    self._collision:add_agent(entity.id, comp.x, comp.y, comp.w, comp.h, comp.layer, comp.passive)
+    -- is_circle=true 表示圆形碰撞盒（w 作半径）
+    self._collision:add_agent(entity.id, comp.x, comp.y, comp.w, comp.h, comp.layer, comp.passive, comp.is_circle)
 end
 
 function M:remove_entity(entity)

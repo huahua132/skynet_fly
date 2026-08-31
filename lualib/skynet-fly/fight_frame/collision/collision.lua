@@ -1,4 +1,5 @@
 -- 碰撞系统：空间哈希网格 + 单向检测（active 触发 passive，仅对 active 分发事件）
+-- 支持 AABB 矩形（w/h 半宽半高）与圆形（is_circle=true，w 作半径 radius）两种碰撞盒
 -- 数值采用 skynet-fly.fixed Q16.16 定点数（位置 x/y、半宽 w/半高 h、网格尺寸 cell_size）
 local classic = require "skynet-fly.classic"
 local fixed = require "skynet-fly.fixed"
@@ -40,12 +41,14 @@ function collision:set_filter(filter)
     self._filter = filter
 end
 
-function collision:add_agent(id, x, y, w, h, layer, passive)
+function collision:add_agent(id, x, y, w, h, layer, passive, is_circle)
     layer = layer or 0
     -- x/y/w/h 均为 Q16.16 定点数
     -- passive=true 为被碰撞物（只作目标），false 为碰撞物（触发他人）
+    -- is_circle=true 为圆形碰撞盒（w 作半径 radius，h 忽略）
     -- owner：归属队伍（碰撞过滤用，实体装配后同步）；_owner_epoch：owner 缓存版本（过滤缓存失效）
     local agent = { id = id, x = x, y = y, w = w, h = h, layer = layer, passive = passive or false,
+                    is_circle = is_circle or false, radius = is_circle and w or nil,
                     owner = 0 }
     self._agents[id] = agent
     self._agent_count = self._agent_count + 1
@@ -73,6 +76,10 @@ function collision:update_agent(id, x, y, w, h)
         local cs = self._cell_size
         local nw = w or agent.w
         local nh = h or agent.h
+        if agent.is_circle then
+            agent.radius = nw
+            nh = nw
+        end
         local min_cx = cell_of(x, cs)
         local min_cy = cell_of(y, cs)
         local max_cx = cell_of(fixed.add(x, nw), cs)
@@ -112,6 +119,23 @@ function collision:_check_aabb_overlap(a, b)
        and a.x + a.w > b.x - b.w
        and a.y - a.h < b.y + b.h
        and a.y + a.h > b.y - b.h
+end
+
+-- 圆-圆重叠：dist_sq < (r1+r2)^2（全定点整数运算）
+function collision:_check_circle_overlap(a, b)
+    local dx = fixed.sub(a.x, b.x)
+    local dy = fixed.sub(a.y, b.y)
+    local dist_sq = fixed.add(fixed.mul(dx, dx), fixed.mul(dy, dy))
+    local r_sum = fixed.add(a.radius, b.radius)
+    return fixed.mul(r_sum, r_sum) > dist_sq
+end
+
+-- 通用重叠检测：圆形-圆形走圆检测，其余走 AABB（含 圆-AABB 退化为 AABB 粗检）
+function collision:_check_overlap(a, b)
+    if a.is_circle and b.is_circle then
+        return self:_check_circle_overlap(a, b)
+    end
+    return self:_check_aabb_overlap(a, b)
 end
 
 -- 网格 key 数值编码 cx*mul + cy（替代字符串拼接）；要求 |cy| < _cell_key_mul
@@ -177,7 +201,7 @@ function collision:check_agent(id, result)
                 for other_id, other in pairs(cell) do
                     if not seen[other_id] and self:_can_collide(agent.layer, other.layer) then
                         seen[other_id] = true
-                        if self:_check_aabb_overlap(agent, other) then
+                        if self:_check_overlap(agent, other) then
                             result[#result + 1] = other
                         end
                     end
@@ -224,11 +248,21 @@ function collision:check_all()
                                 seen[pair_key] = true
                                 -- 帧级过滤（开战双方过滤）：返回 false 跳过该对
                                 if not filter or filter(agent, other) then
-                                    -- AABB 重叠（内联，x/y 中心 + 半宽/半高）
-                                    if agent.x - agent.w < other.x + other.w
-                                       and agent.x + agent.w > other.x - other.w
-                                       and agent.y - agent.h < other.y + other.h
-                                       and agent.y + agent.h > other.y - other.h then
+                                    -- 重叠检测（圆形走圆-圆，否则 AABB 内联）
+                                    local is_hit
+                                    if agent.is_circle and other.is_circle then
+                                        local dx = fixed.sub(agent.x, other.x)
+                                        local dy = fixed.sub(agent.y, other.y)
+                                        local dist_sq = fixed.add(fixed.mul(dx, dx), fixed.mul(dy, dy))
+                                        local r_sum = fixed.add(agent.radius, other.radius)
+                                        is_hit = fixed.mul(r_sum, r_sum) > dist_sq
+                                    else
+                                        is_hit = agent.x - agent.w < other.x + other.w
+                                           and agent.x + agent.w > other.x - other.w
+                                           and agent.y - agent.h < other.y + other.h
+                                           and agent.y + agent.h > other.y - other.h
+                                    end
+                                    if is_hit then
                                         _pairs[#_pairs + 1] = { agent, other }
                                     end
                                 end

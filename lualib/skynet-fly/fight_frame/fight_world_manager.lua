@@ -13,13 +13,23 @@ local M = {}
 local _worlds = state_data.alloc_table(MODULE_NAME .. ".worlds")
 
 local _default_modules = state_data.alloc_table(MODULE_NAME .. ".default_modules")
-_default_modules["entity_module"] = fight_entity_module
-_default_modules["event_module"] = fight_event_module
-_default_modules["collision_module"] = collision_module
-_default_modules["hash_search_module"] = hash_search_module
+-- 默认模块按插入顺序加载（add_world 按此顺序 add_module → 决定 _update_modules 顺序）
+-- 用顺序表保证确定性（pairs 迭代哈希表顺序随机，会让帧模块更新顺序不定）
+local _default_module_order = state_data.alloc_table(MODULE_NAME .. ".default_module_order")
+local function reg_default(name, module)
+    _default_modules[name] = module
+    _default_module_order[#_default_module_order + 1] = name
+end
+reg_default("entity_module", fight_entity_module)
+reg_default("event_module", fight_event_module)
+reg_default("collision_module", collision_module)
+reg_default("hash_search_module", hash_search_module)
 local _default_frame_rate = 10
 
 function M.register_default_module(name, module)
+    if not _default_modules[name] then
+        _default_module_order[#_default_module_order + 1] = name
+    end
     _default_modules[name] = module
 end
 
@@ -32,8 +42,9 @@ function M.add_world(instance)
     local world_id = instance:GetGuid()
     local world = world(world_id, instance)
     _worlds[world_id] = world
-    for name, module in pairs(_default_modules) do
-        world:add_module(name, module)
+    -- 按注册顺序加载默认模块（保证 _update_modules 顺序确定性，勿用 pairs）
+    for _, name in ipairs(_default_module_order) do
+        world:add_module(name, _default_modules[name])
     end
     world:run(_default_frame_rate)
     log.info(string.format("%s.add_world: world [%d] added", MODULE_NAME, world_id))

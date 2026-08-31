@@ -81,6 +81,15 @@ function entity:has_component(component_type)
     return self.components[component_type] ~= nil
 end
 
+-- 触发实体事件（封装 event_comp 取用；无 event_comp 时忽略）
+-- 组件/外部通过实体广播事件，实体自行监听并处理（如位置变化 → 同步碰撞盒）
+function entity:trigger_event(event_name, ...)
+    local ec = self.components["event_comp"]
+    if ec and ec.trigger_event then
+        ec:trigger_event(event_name, ...)
+    end
+end
+
 -- 更新全部组件（模块每帧对 update 列表实体调用；实体自身 on_update 独立）
 function entity:update_components()
     for _, component in ipairs(self._update_components) do

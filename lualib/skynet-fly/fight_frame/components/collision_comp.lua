@@ -19,6 +19,7 @@ collision_comp.new = function(self, x, y, w, h, layer, passive, static)
     self.h = fixed.from_float(h or 0.5)      -- 半高（碰撞盒宽的一半，默认 0.5 → 宽 1）
     self.layer = layer or 0
     self.passive = passive or false   -- true=被碰撞物（建筑/英雄），false=碰撞物（子弹）
+    self.is_circle = false            -- true=圆形碰撞盒（w 作半径）
     self._static = static or false    -- true=静态实体（位置不变，如建筑），on_update 仅首次同步跳过网格更新
     self._static_synced = false        -- 静态实体首次同步标记
     self._cached_pos_comp = nil -- 位置组件缓存（get_component 哈希查找，on_update 每帧多次调用）
@@ -70,6 +71,19 @@ end
 function collision_comp:set_size(w, h)
     if w then self.w = fixed.from_float(w) end
     if h then self.h = fixed.from_float(h) end
+end
+
+-- 设为圆形碰撞盒（true=圆形，w 作半径；false=AABB 矩形）
+function collision_comp:set_circle(is_circle)
+    self.is_circle = is_circle or false
+end
+
+-- 设置圆形半径（普通数值，内部转定点；同时把 w/h 同步为半径供网格用）
+function collision_comp:set_radius(radius)
+    local r = fixed.from_float(radius)
+    self.w = r
+    self.h = r
+    self.is_circle = true
 end
 
 -- 设置被动标志（被碰撞物 true / 碰撞物 false；装配后调用）
