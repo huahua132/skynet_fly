@@ -9,10 +9,9 @@ local log = require "skynet-fly.log"
 local classic = require "skynet-fly.classic"
 local world = classic:extend()
 
-world.new = function(self, world_id, instance)
+world.new = function(self, world_id)
     local now = skynet.now()
     self.id = world_id
-    self.instance = instance
     self._modules = {}
     self._update_modules = {}
     self.frame_count = 0
@@ -75,7 +74,7 @@ function world:run(frame_rate)
     self.frame_rate = frame_rate
     local self_ref = self
     self._timer = timer:new_loop(tick, function() self_ref:update() end)
-    log.info(string.format("%s.run: world [%d] started, frame_rate=[%d], tick=[%d]ticks", MODULE_NAME, self.id, frame_rate, tick))
+    log.info(string.format("%s.run: world [%s] started, frame_rate=[%d], tick=[%d]ticks", MODULE_NAME, self.id, frame_rate, tick))
 end
 
 function world:stop()

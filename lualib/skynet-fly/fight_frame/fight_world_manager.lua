@@ -1,6 +1,7 @@
 local MODULE_NAME = "fight_world_manager"
 
 local log = require "skynet-fly.log"
+local guid_util = require "skynet-fly.utils.guid_util"
 local state_data = require "skynet-fly.hotfix.state_data"
 local world = hotfix_require "skynet-fly.fight_frame.fight_world"
 local fight_entity_module = hotfix_require "skynet-fly.fight_frame.modules.fight_entity_module.fight_entity_module"
@@ -38,16 +39,17 @@ function M.set_default_frame_rate(frame_rate)
     _default_frame_rate = frame_rate
 end
 
-function M.add_world(instance)
-    local world_id = instance:GetGuid()
-    local world = world(world_id, instance)
+function M.add_world()
+    -- 世界 ID 由 guid_util.fly_guid 生成（服务类型+服务id+地址+时间+递增，跨节点唯一）
+    local world_id = guid_util.fly_guid()
+    local world = world(world_id)
     _worlds[world_id] = world
     -- 按注册顺序加载默认模块（保证 _update_modules 顺序确定性，勿用 pairs）
     for _, name in ipairs(_default_module_order) do
         world:add_module(name, _default_modules[name])
     end
     world:run(_default_frame_rate)
-    log.info(string.format("%s.add_world: world [%d] added", MODULE_NAME, world_id))
+    log.info(string.format("%s.add_world: world [%s] added", MODULE_NAME, world_id))
     return world
 end
 
@@ -64,7 +66,7 @@ function M.remove_world(world_id)
     world:stop()
     world:remove_all_modules()
     _worlds[world_id] = nil
-    log.info(string.format("%s.remove_world: world [%d] removed", MODULE_NAME, world_id))
+    log.info(string.format("%s.remove_world: world [%s] removed", MODULE_NAME, world_id))
     return true
 end
 
