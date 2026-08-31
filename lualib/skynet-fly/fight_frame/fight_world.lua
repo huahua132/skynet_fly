@@ -74,7 +74,7 @@ function world:run(frame_rate)
     self.frame_rate = frame_rate
     local self_ref = self
     self._timer = timer:new_loop(tick, function() self_ref:update() end)
-    log.info(string.format("%s.run: world [%s] started, frame_rate=[%d], tick=[%d]ticks", MODULE_NAME, self.id, frame_rate, tick))
+    log.debug(string.format("%s.run: world [%s] started, frame_rate=[%d], tick=[%d]ticks", MODULE_NAME, self.id, frame_rate, tick))
 end
 
 function world:stop()

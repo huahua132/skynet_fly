@@ -67,7 +67,7 @@ function HANDLER.connect(fd)
 end
 
 function HANDLER.handshake(fd,header,url)
-	--log.info("handshake:",fd,header,url)
+	--log.debug("handshake:",fd,header,url)
 end
 
 local function unpack_msg(c)
@@ -113,11 +113,11 @@ function HANDLER.message(fd, recvmsg, msg_type)
 end
 
 function HANDLER.ping(fd)
-	log.info("ws ping from:",fd)
+	log.debug("ws ping from:",fd)
 end
 
 function HANDLER.pong(fd)
-	log.info("ws pong from:",fd)
+	log.debug("ws pong from:",fd)
 end
 
 function HANDLER.close(fd, code, reason)
@@ -253,5 +253,5 @@ skynet_util.register_info_func("info", function()
 	for k,v in pairs(g_conn_map) do
 		count = count + 1
 	end
-	log.info("ws_slave info ", g_conn_map, count)
+	log.debug("ws_slave info ", g_conn_map, count)
 end)

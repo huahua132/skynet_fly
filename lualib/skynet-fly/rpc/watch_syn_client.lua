@@ -306,7 +306,7 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
                     end
                 end
                 skynet.sleep(10)
-                log.info("watch_channel_name move ", cluster_name, channel_name)
+                log.debug("watch_channel_name move ", cluster_name, channel_name)
             else
                 version = cv
                 luamsg = cl
@@ -483,7 +483,7 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
                     end
                 end
                 skynet.sleep(10)
-                log.info("pwatch_channel_name move ", cluster_name, pchannel_name)
+                log.debug("pwatch_channel_name move ", cluster_name, pchannel_name)
             else
                 version = cv
                 --对比旧name_map与新name_map，取消消失的channel

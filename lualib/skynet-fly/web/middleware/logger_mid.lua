@@ -43,7 +43,7 @@ return function (conf)
             uri = uri,
         }
 
-        log.info(formatter(param))
+        log.debug(formatter(param))
     end
 end
 

@@ -49,7 +49,7 @@ function M.add_world()
         world:add_module(name, _default_modules[name])
     end
     world:run(_default_frame_rate)
-    log.info(string.format("%s.add_world: world [%s] added", MODULE_NAME, world_id))
+    log.debug(string.format("%s.add_world: world [%s] added", MODULE_NAME, world_id))
     return world
 end
 
@@ -66,7 +66,7 @@ function M.remove_world(world_id)
     world:stop()
     world:remove_all_modules()
     _worlds[world_id] = nil
-    log.info(string.format("%s.remove_world: world [%s] removed", MODULE_NAME, world_id))
+    log.debug(string.format("%s.remove_world: world [%s] removed", MODULE_NAME, world_id))
     return true
 end
 

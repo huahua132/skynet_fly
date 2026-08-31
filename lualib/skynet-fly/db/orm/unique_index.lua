@@ -28,7 +28,7 @@ end
 
 --加入索引
 function M:add(entry, is_add)
-    --log.info("add >>> ", entry:get_entry_data(), is_add)
+    --log.debug("add >>> ", entry:get_entry_data(), is_add)
     local key_list = self._key_list
     local select_map = self._select_map
     local cache_num_map = self._cache_num_map
@@ -98,7 +98,7 @@ end
 
 --删除索引
 function M:del(entry, is_del)
-    --log.info("del >>> ", entry:get_entry_data(), is_del)
+    --log.debug("del >>> ", entry:get_entry_data(), is_del)
     local key_list = self._key_list
     local select_map = self._select_map
     local cache_num_map = self._cache_num_map

@@ -193,7 +193,7 @@ end
 --发送消息
 function interface:send_msg(player_id, header, body)
 	if not interface:is_online(player_id) then
-		log.info("send msg not online ", player_id, header)
+		log.debug("send msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -204,7 +204,7 @@ end
 function interface:send_msg_byfd(fd, header, body)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.info("send msg fd not exists ", fd, header)
+		log.debug("send msg fd not exists ", fd, header)
 		return
 	end
 
@@ -223,7 +223,7 @@ function interface:send_msg_by_player_list(player_list, header, body)
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
 		if not agent then
-			log.info("send_msg_by_player_list not exists ",player_id)
+			log.debug("send_msg_by_player_list not exists ",player_id)
 		else
 			if agent.fd > 0 then
 				if agent.is_ws then
@@ -234,7 +234,7 @@ function interface:send_msg_by_player_list(player_list, header, body)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("send_msg_by_player_list not online ",player_id)
+				log.debug("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -269,7 +269,7 @@ function interface:broad_cast_msg(header, body, filter_map)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("broad_cast_msg not online ",player_id)
+				log.debug("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
@@ -301,7 +301,7 @@ end
 --rpc回复消息
 function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("rpc_rsp_msg not online ", player_id, header)
+		log.debug("rpc_rsp_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -314,7 +314,7 @@ end
 function interface:rpc_rsp_msg_byfd(fd, header, msgbody, rsp_session)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.info("rpc_rsp_msg_byfd fd not exists ", fd, header)
+		log.debug("rpc_rsp_msg_byfd fd not exists ", fd, header)
 		return
 	end
 
@@ -325,7 +325,7 @@ end
 --rpc回复error消息
 function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("rpc_error_msg not online ", player_id, header)
+		log.debug("rpc_error_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -338,7 +338,7 @@ end
 function interface:rpc_error_msg_byfd(fd, header, msgbody, rsp_session)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.info("rpc_error_msg_byfd fd not exists ", fd, header)
+		log.debug("rpc_error_msg_byfd fd not exists ", fd, header)
 		return
 	end
 
@@ -349,13 +349,13 @@ end
 --rpc推送消息
 function interface:rpc_push_msg(player_id, header, msgbody)
 	if not interface:is_online(player_id) then
-		log.info("rpc_push_msg not online ", player_id, header)
+		log.debug("rpc_push_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
 	local body = login_plug.rpc_pack.pack_push(msgbody)
 	if not interface:is_online(player_id) then
-		log.info("rpc_push_msg not online ", player_id, header)
+		log.debug("rpc_push_msg not online ", player_id, header)
 		return
 	end
 	send_msg(agent, header, body)
@@ -365,13 +365,13 @@ end
 function interface:rpc_push_msg_byfd(fd, header, msgbody)
 	local agent = g_fd_agent_map[fd]
 	if not agent then
-		log.info("rpc_push_msg_byfd fd not exists ", fd, header)
+		log.debug("rpc_push_msg_byfd fd not exists ", fd, header)
 		return
 	end
 
 	local body = login_plug.rpc_pack.pack_push(msgbody)
 	if not agent then
-		log.info("rpc_push_msg_byfd fd not exists ", fd, header)
+		log.debug("rpc_push_msg_byfd fd not exists ", fd, header)
 		return
 	end
 	send_msg(agent, header, body)
@@ -390,7 +390,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
 		if not agent then
-			log.info("rpc_push_by_player_list not exists ",player_id)
+			log.debug("rpc_push_by_player_list not exists ",player_id)
 		else
 			if agent.fd > 0 then
 				if agent.is_ws then
@@ -401,7 +401,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("rpc_push_by_player_list not online ",player_id)
+				log.debug("rpc_push_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -436,7 +436,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("rpc_push_broad_cast not online ",player_id)
+				log.debug("rpc_push_broad_cast not online ",player_id)
 			end
 		end
 	end
@@ -509,17 +509,17 @@ function SOCKET.close(fd)
 end
 
 function SOCKET.data(fd, msg)
-	log.info('SOCKET.data:',fd, msg)
+	log.debug('SOCKET.data:',fd, msg)
 end
 
 function SOCKET.error(fd, msg)
-	log.info("socket error:", fd, msg)
+	log.debug("socket error:", fd, msg)
 	close_fd(fd)
 end
 
 function SOCKET.warning(fd, size)
 	-- size K bytes havn't send out in fd
-	log.info("socket warning", fd, size)
+	log.debug("socket warning", fd, size)
 end
 
 function CMD.socket(cmd,...)
@@ -621,13 +621,13 @@ skynet.start(function()
 			skynet.ignoreret()
 			local agent = g_fd_agent_map[fd]
 			if not agent then
-				log.info("dispatch not agent ",fd)
+				log.debug("dispatch not agent ",fd)
 				return
 			end
 
 			--避免重复登录，登录成功之后把消息转发到agent那边去，这里只处理登录
 			if agent.is_login then
-				log.info("repeat login ",fd)
+				log.debug("repeat login ",fd)
 				return
 			end
 

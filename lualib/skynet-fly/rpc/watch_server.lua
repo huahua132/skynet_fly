@@ -20,9 +20,9 @@ local function get_frpc_addr()
     if g_frpc_server then
         return g_frpc_server
     end
-    log.info("waiting frpc_addr >>>>>>>>>>>>>")
+    log.debug("waiting frpc_addr >>>>>>>>>>>>>")
     g_frpc_server = skynet.queryservice('frpc_server')
-    log.info("waiting over frpc_addr >>>>>>>>>>>>>")
+    log.debug("waiting over frpc_addr >>>>>>>>>>>>>")
     return g_frpc_server
 end
 
