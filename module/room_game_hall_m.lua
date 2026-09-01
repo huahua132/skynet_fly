@@ -352,7 +352,7 @@ end
 --发送消息
 function interface:send_msg(player_id, header, body)
 	if not interface:is_online(player_id) then
-		log.info("send msg not online ", player_id, header)
+		log.debug("send msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -371,7 +371,7 @@ function interface:send_msg_by_player_list(player_list, header, body)
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
 		if not agent then
-			log.info("send_msg_by_player_list not exists ",player_id)
+			log.debug("send_msg_by_player_list not exists ",player_id)
 		else
 			if agent.fd > 0 then
 				if agent.is_ws then
@@ -382,7 +382,7 @@ function interface:send_msg_by_player_list(player_list, header, body)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("send_msg_by_player_list not online ",player_id)
+				log.debug("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -417,7 +417,7 @@ function interface:broad_cast_msg(header, body, filter_map)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("broad_cast_msg not online ",player_id)
+				log.debug("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
@@ -498,7 +498,7 @@ end
 --rpc回复消息
 function interface:rpc_rsp_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("rpc_rsp_msg not online ", player_id, header)
+		log.debug("rpc_rsp_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -510,7 +510,7 @@ end
 --rpc回复error消息
 function interface:rpc_error_msg(player_id, header, msgbody, rsp_session)
 	if not interface:is_online(player_id) then
-		log.info("rpc_error_msg not online ", player_id, header)
+		log.debug("rpc_error_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
@@ -522,13 +522,13 @@ end
 --rpc推送消息
 function interface:rpc_push_msg(player_id, header, msgbody)
 	if not interface:is_online(player_id) then
-		log.info("rpc_push_msg not online ", player_id, header)
+		log.debug("rpc_push_msg not online ", player_id, header)
 		return
 	end
 	local agent = g_player_map[player_id]
 	local body = hall_plug.rpc_pack.pack_push(msgbody)
 	if not interface:is_online(player_id) then
-		log.info("rpc_push_msg not online ", player_id, header)
+		log.debug("rpc_push_msg not online ", player_id, header)
 		return
 	end
 	send_msg(agent, header, body)
@@ -546,7 +546,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 		local player_id = player_list[i]
 		local agent = g_player_map[player_id]
 		if not agent then
-			log.info("rpc_push_by_player_list not exists ",player_id)
+			log.debug("rpc_push_by_player_list not exists ",player_id)
 		else
 			if agent.fd > 0 then
 				if agent.is_ws then
@@ -557,7 +557,7 @@ function interface:rpc_push_by_player_list(player_list, header, msgbody)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("rpc_push_by_player_list not online ",player_id)
+				log.debug("rpc_push_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -592,7 +592,7 @@ function interface:rpc_push_broad_cast(header, msgbody, filter_map)
 					tinsert(fd_list, agent.fd)
 				end
 			else
-				log.info("rpc_push_broad_cast not online ",player_id)
+				log.debug("rpc_push_broad_cast not online ",player_id)
 			end
 		end
 	end
@@ -659,7 +659,7 @@ function CMD.disconnect(gate,fd,player_id)
 	g_fd_map[fd] = nil
 
 	if fd ~= agent.fd then
-		log.info("disconnect agent is reconnect ",fd,agent.fd,player_id)
+		log.debug("disconnect agent is reconnect ",fd,agent.fd,player_id)
 		return
 	end
 	
@@ -790,10 +790,10 @@ function CMD.check_exit()
 	end
 	
 	if not next(g_player_map) then
-		log.info("g_player_map.is_empty can exit")
+		log.debug("g_player_map.is_empty can exit")
 		return true
 	else
-		log.info("not g_player_map.is_empty can`t exit player_count = ", table_util.count(g_player_map))
+		log.debug("not g_player_map.is_empty can`t exit player_count = ", table_util.count(g_player_map))
 		return false
 	end
 end

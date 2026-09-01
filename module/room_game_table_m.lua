@@ -94,7 +94,7 @@ end
 --发送消息
 local function send_msg(table_id, player_id, header, body)
 	if not is_online(table_id,player_id) then
-		log.info("send msg not online ",table_id, player_id, header)
+		log.debug("send msg not online ",table_id, player_id, header)
 		return
 	end
 	local player = get_player_info(table_id, player_id)
@@ -124,7 +124,7 @@ local function send_msg_by_player_list(table_id, player_list, header, body)
 		local player_id = player_list[i]
 		local player = player_map[player_id]
 		if not player then
-			log.info("send_msg_by_player_list not exists ",player_id)
+			log.debug("send_msg_by_player_list not exists ",player_id)
 		else
 			if player.fd > 0 then
 				if player.is_ws then
@@ -135,7 +135,7 @@ local function send_msg_by_player_list(table_id, player_list, header, body)
 					tinsert(fd_list, player.fd)
 				end
 			else
-				log.info("send_msg_by_player_list not online ",player_id)
+				log.debug("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -177,7 +177,7 @@ local function broad_cast_msg(table_id, header, body, filter_map)
 					tinsert(fd_list, player.fd)
 				end
 			else
-				log.info("broad_cast_msg not online ",player_id)
+				log.debug("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
@@ -228,7 +228,7 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 		local player_id = player_list[i]
 		local player = player_map[player_id]
 		if not player then
-			log.info("rpc_push_by_player_list not exists ",player_id)
+			log.debug("rpc_push_by_player_list not exists ",player_id)
 		else
 			if player.fd > 0 then
 				if player.is_ws then
@@ -239,7 +239,7 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 					tinsert(fd_list, player.fd)
 				end
 			else
-				log.info("rpc_push_by_player_list not online ",player_id)
+				log.debug("rpc_push_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -280,7 +280,7 @@ local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
 					tinsert(fd_list, player.fd)
 				end
 			else
-				log.info("rpc_push_broad_cast not online ",player_id)
+				log.debug("rpc_push_broad_cast not online ",player_id)
 			end
 		end
 	end
@@ -530,7 +530,7 @@ function CMD.request(table_id, player_id, header, body, rsp_session)
 
     local func = t_info.game_table.handle[header]
     if not func then
-        log.info("dorp package ", header, body)
+        log.debug("dorp package ", header, body)
     else
 		if t_info.game_table.handle_before then
 			if not t_info.game_table.handle_before(player_id, header, body, rsp_session) then
