@@ -85,11 +85,14 @@ function world:stop()
 end
 
 function world:remove_all_modules()
-    for _, module in ipairs(self._update_modules) do
-        module:on_remove()
+    -- 遍历全部模块（_modules 含无 on_update 的模块，如 supply_module），
+    -- 不能只遍历 _update_modules：否则无 on_update 的模块收不到 on_remove，
+    -- 其内部定时器（如补给 timer）不被取消，world 销毁后仍在回调 → 解引用已 nil 的 _world 报错
+    for name, module in pairs(self._modules) do
+        if module.on_remove then
+            module:on_remove()
+        end
         module._world = nil
-    end
-    for name in pairs(self._modules) do
         self[name] = nil
     end
     self._modules = {}
