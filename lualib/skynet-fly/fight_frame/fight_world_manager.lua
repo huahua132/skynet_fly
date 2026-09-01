@@ -8,6 +8,7 @@ local fight_entity_module = hotfix_require "skynet-fly.fight_frame.modules.fight
 local fight_event_module = hotfix_require "skynet-fly.fight_frame.modules.fight_event_module.fight_event_module"
 local collision_module = hotfix_require "skynet-fly.fight_frame.modules.collision_module.collision_module"
 local hash_search_module = hotfix_require "skynet-fly.fight_frame.modules.hash_search_module.hash_search_module"
+local world_timer_module = hotfix_require "skynet-fly.fight_frame.modules.world_timer_module.world_timer_module"
 
 local M = {}
 
@@ -25,6 +26,7 @@ reg_default("entity_module", fight_entity_module)
 reg_default("event_module", fight_event_module)
 reg_default("collision_module", collision_module)
 reg_default("hash_search_module", hash_search_module)
+reg_default("timer_module", world_timer_module)
 local _default_frame_rate = 10
 
 function M.register_default_module(name, module)
