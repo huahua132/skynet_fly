@@ -13,6 +13,7 @@ world.new = function(self, world_id)
     local now = skynet.now()
     self.id = world_id
     self._modules = {}
+    self._module_order = {}  -- 模块加载顺序（按 add_module 追加；卸载时先进后出）
     self._update_modules = {}
     self.frame_count = 0
     self.total_time = 0      -- Q16.16 定点秒
@@ -29,6 +30,7 @@ function world:add_module(name, module)
     instance._world = self
     self[name] = instance
     self._modules[name] = instance
+    self._module_order[#self._module_order + 1] = instance
     if instance.on_update then
         self._update_modules[#self._update_modules + 1] = instance
     end
@@ -46,6 +48,12 @@ function world:remove_module(name)
     module._world = nil
     self[name] = nil
     self._modules[name] = nil
+    for i, m in ipairs(self._module_order) do
+        if m == module then
+            table.remove(self._module_order, i)
+            break
+        end
+    end
     for i, m in ipairs(self._update_modules) do
         if m == module then
             table.remove(self._update_modules, i)
@@ -85,17 +93,26 @@ function world:stop()
 end
 
 function world:remove_all_modules()
-    -- 遍历全部模块（_modules 含无 on_update 的模块，如 supply_module），
+    -- 先进后出（LIFO）卸载：按加载顺序逆序执行 on_remove。
+    -- 加载序里后面的模块（如 output_module/帧尾）依赖前面模块（entity/collision 等）
+    -- 提供的服务，逆序卸载让依赖方先收手、被依赖方后销毁，避免卸载中间态互相解引用。
+    -- 遍历全部模块（_module_order 含无 on_update 的模块，如 supply_module），
     -- 不能只遍历 _update_modules：否则无 on_update 的模块收不到 on_remove，
     -- 其内部定时器（如补给 timer）不被取消，world 销毁后仍在回调 → 解引用已 nil 的 _world 报错
-    for name, module in pairs(self._modules) do
+    for i = #self._module_order, 1, -1 do
+        local module = self._module_order[i]
         if module.on_remove then
             module:on_remove()
         end
         module._world = nil
+    end
+    -- 清空全部引用（含 self[name] 快捷访问）
+    for name, module in pairs(self._modules) do
         self[name] = nil
+        module._world = nil
     end
     self._modules = {}
+    self._module_order = {}
     self._update_modules = {}
 end
 
