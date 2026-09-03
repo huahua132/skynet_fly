@@ -15,7 +15,7 @@
 
 > 💡 **觉得不错，不妨点个 Star 吧！你的 Star 是作者持续创作维护的最大动力！**
 
-> 💡 推广 AI路由工具 [![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_2d063586cc1f7fe97d03)
+> 💡 推广 AI路由工具 [![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_2d063586cc1f7fe97d03) 赞助支持OrcaRouter 是一个强大的 AI 路由引擎，能智能调度最合适的 AI 模型处理您的任务。点击上方链接了解详情
 
 ## 📋 目录
 
