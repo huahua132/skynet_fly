@@ -3,8 +3,6 @@
 
 **致力于服务端对 skynet 的最佳实践**
 
-[![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_2d063586cc1f7fe97d03)
-
 [![GitHub stars](https://img.shields.io/github/stars/huahua132/skynet_fly?style=flat-square)](https://github.com/huahua132/skynet_fly/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/huahua132/skynet_fly?style=flat-square)](https://github.com/huahua132/skynet_fly/network)
 [![License](https://img.shields.io/github/license/huahua132/skynet_fly?style=flat-square)](LICENSE)
@@ -16,6 +14,7 @@
 ---
 
 > 💡 **觉得不错，不妨点个 Star 吧！你的 Star 是作者持续创作维护的最大动力！**
+> 💡 推广 AI路由工具 [![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_2d063586cc1f7fe97d03)
 
 ## 📋 目录
 
