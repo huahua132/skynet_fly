@@ -29,6 +29,7 @@ local tunpack = table.unpack
 local g_instance_map = {}
 local g_watch_up_map = {}
 local g_weak_map = {}
+local g_watch_id = 0
 
 local M = {}
 local mt = {
@@ -38,7 +39,7 @@ local mt = {
         if not self._watched then return end
         for main_key in pairs(self._watched) do
             local push_key = "_orm_" .. self._orm_entity_instance_name .. "_" .. main_key
-            watch_client.unwatch_byid(self._svr_name, self._svr_id, push_key, "orm_frpc_client")
+            watch_client.unwatch_byid(self._svr_name, self._svr_id, push_key, self._watch_name)
         end
         self._watched = {}
         self._data_map = {}
@@ -53,7 +54,9 @@ function M:new(svr_name, svr_id, orm_entity_instance_name)
     assert(type(svr_name) == 'string', "err svr_name = " .. tostring(svr_name))
     assert(type(svr_id) == 'number', "err svr_id = " .. tostring(svr_id))
     assert(type(orm_entity_instance_name) == 'string', "err orm_entity_instance_name = " .. tostring(orm_entity_instance_name))
+    g_watch_id = g_watch_id + 1
     local t = {
+        _watch_name = "orm_frpc_client_" .. g_watch_id,
         _cli = frpc_client:new(frpc_client.FRPC_MODE.byid, svr_name, '._ormagent_' .. orm_entity_instance_name),
         _orm_entity_instance_name = orm_entity_instance_name,
         _svr_name = svr_name,
@@ -161,6 +164,7 @@ end
 
 --删除
 local function del_map_value(main_map, keyvalues, data_map, main_key, del_cb)
+    if not main_map then return end
     local len = #keyvalues
     if len == 1 then
         local one_data = data_map[main_key]
@@ -177,7 +181,7 @@ local function del_map_value(main_map, keyvalues, data_map, main_key, del_cb)
         for j = 2, len - 1 do
             local fieldvalue = keyvalues[j]
             if not map[fieldvalue] then
-                break
+                return
             end
             -- 记录路径，用于回溯清理
             table.insert(path, {map = map, key = fieldvalue})
@@ -222,27 +226,58 @@ local function init_main_data(keylist, data_map, data, main_key)
 end
 
 
---对应结点重连需要重连全量同步一下
+local function apply_syn(self, main_key, subscription, syn_cmd, data)
+    if self._watched[main_key] ~= subscription then return end
+    local main_map = self._data_map[main_key]
+    local keylist = subscription.keylist
+    if syn_cmd == ORM_SYN_CMD.ADD then
+        add_map_value(main_map, data, #keylist, self._data_map, main_key, keylist, subscription.add_cb)
+    elseif syn_cmd == ORM_SYN_CMD.DEL then
+        del_map_value(main_map, data, self._data_map, main_key, subscription.del_cb)
+    else
+        change_ma_value(main_map, data, #keylist, keylist, subscription.change_cb)
+    end
+end
+
+--全量读取会让出协程，期间先缓存增量，按顺序回放，避免旧快照覆盖新修改。
+local function drain_pending(self, main_key, subscription, sync_id)
+    while self._watched[main_key] == subscription and subscription.sync_id == sync_id and #subscription.pending > 0 do
+        local event = table.remove(subscription.pending, 1)
+        apply_syn(self, main_key, subscription, event[1], event[2])
+    end
+    if self._watched[main_key] == subscription and subscription.sync_id == sync_id then subscription.loading = false end
+end
+
+local function sync_main(self, main_key, subscription)
+    subscription.sync_id = subscription.sync_id + 1
+    local sync_id = subscription.sync_id
+    subscription.loading = true
+    local ret, errno, errmsg = self._cli:call_by_alias("watch_first_syn", main_key)
+    if self._watched[main_key] ~= subscription or subscription.sync_id ~= sync_id then return false end
+    if not ret then
+        if subscription.ready then drain_pending(self, main_key, subscription, sync_id) end
+        log.error("orm syn err ", self._svr_name, self._svr_id, main_key, errno, errmsg)
+        return false
+    end
+    local keylist, data = ret:unpack()
+    subscription.keylist = keylist
+    init_main_data(keylist, self._data_map, data, main_key)
+    drain_pending(self, main_key, subscription, sync_id)
+    if self._watched[main_key] ~= subscription or subscription.sync_id ~= sync_id then return false end
+    subscription.ready = true
+    if subscription.syn_cb then xx_pcall(subscription.syn_cb, self._data_map[main_key]) end
+    return self._watched[main_key] == subscription
+end
+
+--对应节点重连时补全量，并通知订阅方，不需要业务额外监听节点上线。
 local function cluster_up(svr_name, svr_id)
     if not g_weak_map[svr_name] or not g_weak_map[svr_name][svr_id] then return end 
     local weak_list = g_weak_map[svr_name][svr_id]
-    for i = 1, #weak_list do
-        local t = weak_list[i]
-        local pre_watched = t._watched
-        local data_map = t._data_map
-        local watched = table_util.copy(t._watched)
-        for main_key in pairs(watched) do
-            if pre_watched[main_key] then
-                local ret, errno, errmsg = t._cli:call_by_alias("watch_first_syn", main_key)
-                if not ret then
-                    log.error("re syn err ", t._svr_name, t._svr_id, main_key, errno, errmsg)
-                else
-                    if pre_watched[main_key] then
-                        local keylist, data = ret:unpack()
-                        init_main_data(keylist, data_map, data, main_key)
-                    end
-                end
-            end
+    for _, t in pairs(weak_list) do
+        local watched = {}
+        for main_key, subscription in pairs(t._watched) do watched[main_key] = subscription end
+        for main_key, subscription in pairs(watched) do
+            if t._watched[main_key] == subscription and subscription.ready then sync_main(t, main_key, subscription) end
         end
     end
 end
@@ -252,43 +287,38 @@ end
 ---@param add_cb function(one_data) 新增回调
 ---@param change_cb function(one_data, change_value) 修改回调
 ---@param del_cb function(one_data) 删除回调 
-function M:watch(main_key, add_cb, change_cb, del_cb)
+---@param syn_cb? function(main_data) 首次/重连全量同步完成回调，空数据为nil（多主键为嵌套表）
+function M:watch(main_key, add_cb, change_cb, del_cb, syn_cb)
     assert(main_key, "err main_key = " .. tostring(main_key))
     assert(type(add_cb) == 'function', "err add_cb = " .. tostring(add_cb))
     assert(type(change_cb) == 'function', "err add_cb = " .. tostring(change_cb))
     assert(type(del_cb) == 'function', "err add_cb = " .. tostring(del_cb))
+    assert(syn_cb == nil or type(syn_cb) == 'function', "err syn_cb = " .. tostring(syn_cb))
     local watched = self._watched
-    if watched[main_key] then return true end
-    watched[main_key] = true
-    local ret, errno, errmsg = self._cli:call_by_alias("watch_first_syn", main_key)
-    if not ret then
-        watched[main_key] = false
-        log.error("watch err ", self._svr_name, self._svr_id, main_key, errno, errmsg)
-        return false
-    end
+    if watched[main_key] then return watched[main_key].ready == true end
+    local subscription = {add_cb = add_cb, change_cb = change_cb, del_cb = del_cb, syn_cb = syn_cb,
+        loading = true, pending = {}, sync_id = 0}
+    watched[main_key] = subscription
 
     if not g_watch_up_map[self._svr_name] then
         frpc_client:watch_up(self._svr_name, cluster_up)
         g_watch_up_map[self._svr_name] = true
     end
 
-    local keylist, data = ret:unpack()
-    local data_map = self._data_map
-    local keylen = #keylist
-    init_main_data(keylist, data_map, data, main_key)
     local push_key = "_orm_" .. self._orm_entity_instance_name .. "_" .. main_key
-    watch_client.watch_byid(self._svr_name, self._svr_id, push_key, "orm_frpc_client", function(cluster_name, syn_cmd, data)
-        local main_map = data_map[main_key]
-        if syn_cmd == ORM_SYN_CMD.ADD then
-            add_map_value(main_map, data, keylen, data_map, main_key, keylist, add_cb)
-        elseif syn_cmd == ORM_SYN_CMD.DEL then
-            del_map_value(main_map, data, data_map, main_key, del_cb)
+    --先订阅再读取，订阅建立/读取期间到达的通知都由subscription缓存。
+    watch_client.watch_byid(self._svr_name, self._svr_id, push_key, self._watch_name, function(cluster_name, syn_cmd, data)
+        if watched[main_key] ~= subscription then return end
+        if subscription.loading then
+            table.insert(subscription.pending, {syn_cmd, data})
         else
-            change_ma_value(main_map, data, keylen, keylist, change_cb)
+            apply_syn(self, main_key, subscription, syn_cmd, data)
         end
     end)
-
-    return true
+    if watched[main_key] ~= subscription then return false end
+    local ok = sync_main(self, main_key, subscription)
+    if not ok and watched[main_key] == subscription then self:unwatch(main_key) end
+    return ok
 end
 
 ---#desc 取消监听第一个key下所有数据
@@ -297,15 +327,12 @@ function M:unwatch(main_key)
     assert(main_key, "err main_key = " .. tostring(main_key))
     local data_map = self._data_map
     local watched = self._watched
-    local data = data_map[main_key]
-    if not data then
-        return
-    end
+    if not watched[main_key] then return end
 
     data_map[main_key] = nil
     watched[main_key] = nil
     local push_key = "_orm_" .. self._orm_entity_instance_name .. "_" .. main_key
-    watch_client.unwatch_byid(self._svr_name, self._svr_id, push_key, "orm_frpc_client")
+    watch_client.unwatch_byid(self._svr_name, self._svr_id, push_key, self._watch_name)
 end
 
 ---#desc 获取监听同步到的第一个key下所有数据
