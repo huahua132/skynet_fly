@@ -200,6 +200,25 @@ function interface.dismisstable(table_id)
 	return queue(dismisstable, table_id)
 end
 
+--同步调用指定桌子的命令，自动传入 table_id，保留命令的全部返回值。
+function interface.call_table(table_id, cmd, ...)
+    local t_info = g_table_map[table_id]
+    if not t_info then
+        return alloc_plug.table_not_exists()
+    end
+    return t_info.room_client:mod_call_by_name(cmd, table_id, ...)
+end
+
+--异步发送指定桌子的命令；返回 true 仅表示已发送，不表示桌子执行成功。
+function interface.send_table(table_id, cmd, ...)
+    local t_info = g_table_map[table_id]
+    if not t_info then
+        return alloc_plug.table_not_exists()
+    end
+    t_info.room_client:mod_send_by_name(cmd, table_id, ...)
+    return true
+end
+
 -- 获取空桌列表
 function interface.get_empty_map()
 	return g_empty_map
