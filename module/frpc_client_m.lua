@@ -565,6 +565,12 @@ local function add_node_watch(cluster_name)
 		for channel_name,channel_info in pairs(watch_syn_info) do
 			rsp_source_map(channel_info, WATCH_SYN_RET.disconnect)
 		end
+		--pwatch 同样要通知：漏掉后 psubsyn 的调用方（watch_syn_client 的重订阅循环）永远等不到返回，
+		--它的 g_pcluster_reqing_map 标志不会清，重连时 pwatch_channel_name 会直接 return，
+		--从此该通道再也不会被订阅（表现为同步静默失效）。
+		for pchannel_name,pchannel_info in pairs(pwatch_syn_info) do
+			rsp_source_map(pchannel_info, WATCH_SYN_RET.disconnect)
+		end
 
 		log.info("watch disconnected ", cluster_name, host)
 	end)

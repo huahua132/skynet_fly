@@ -354,6 +354,16 @@ local function watch_channel_name(svr_name, svr_id, channel_name, handler)
         end
 
         frpc_client:unwatch_frpc_client_switch(watch_switch_name)
+        --和 pwatch_channel_name 同样的竞态：重连可能比循环退出更快，up_cluster_server 触发时
+        --上面的 g_cluster_reqing_map 标志还没清，watch_channel_name 直接 return，
+        --而循环退出后不会再有谁来拉起它，通道就永久失联。这里在标志清完之后主动补一次。
+        if frpc_client:is_active(svr_name, svr_id) then
+            local retry_channel_map = g_watch_channel_name_map[svr_name]
+            if retry_channel_map and retry_channel_map[channel_name] then
+                log.info_fmt("watch_channel_name retry svr_name[%s] svr_id[%s] channel_name[%s]", svr_name, svr_id, channel_name)
+                watch_channel_name(svr_name, svr_id, channel_name)
+            end
+        end
     end)
 end
 
@@ -543,6 +553,15 @@ local function pwatch_channel_name(svr_name, svr_id, pchannel_name, handler)
             end
         end
         frpc_client:unwatch_frpc_client_switch(watch_switch_name)
+        --重连可能比循环退出更快：up_cluster_server 触发时上面的标志还没清，pwatch_channel_name 直接 return，
+        --而循环退出后不会再有谁来拉起它，通道就永久失联。这里在标志清完之后主动补一次。
+        if frpc_client:is_active(svr_name, svr_id) then
+            local retry_pchannel_map = g_pwatch_channel_name_map[svr_name]
+            if retry_pchannel_map and retry_pchannel_map[pchannel_name] then
+                log.info_fmt("pwatch_channel_name retry svr_name[%s] svr_id[%s] pchannel_name[%s]", svr_name, svr_id, pchannel_name)
+                pwatch_channel_name(svr_name, svr_id, pchannel_name)
+            end
+        end
     end)
 end
 
