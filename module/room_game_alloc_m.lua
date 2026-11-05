@@ -257,7 +257,9 @@ local function check_dismisstable()
 	for table_id,empty_time in pairs(g_empty_map) do
 		local sub_time = cur_time - empty_time
 		local t_info = g_table_map[table_id]
-		if t_info and sub_time >= g_max_empty_time then
+		--常驻桌（自选房）永不自动回收：alloc_plug 在 createtable 里标了 permanent
+		local is_keep = t_info and alloc_plug.is_keep_table and alloc_plug.is_keep_table(table_id)
+		if t_info and not is_keep and sub_time >= g_max_empty_time then
 			skynet.fork(interface.dismisstable, table_id)
 		end
 	end
