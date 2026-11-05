@@ -390,7 +390,11 @@ local function connect_watch(host, secret_key, is_encrypt)
 	return channel, msg_secret
 end
 
-local function rsp_source_map(channel_info, ret, version, luamsg)
+--@param force boolean 忽略版本检查，强制回应所有等待中的调用
+--断线/取消/迁移这类通知必须送达：版本检查只是为了「调用方已经持有这个版本，不必再回」，
+--而真正到不了的情况是 version 与 source_v_map 都是 nil（首次订阅还没拿到数据就断线），
+--此时 nil ~= nil 为 false，response 会一直悬着，调用方的重订阅循环永久阻塞 —— 必须 force。
+local function rsp_source_map(channel_info, ret, version, luamsg, force)
 	if not channel_info then return end
 	local source_map = channel_info.source_map
 	local source_v_map = channel_info.source_v_map
@@ -398,7 +402,7 @@ local function rsp_source_map(channel_info, ret, version, luamsg)
 
 	for source,response in pairs(source_map) do
 		local v = source_v_map[source]
-		if version ~= v then
+		if force or version ~= v then
 			response(true, ret, version, luamsg)
 			source_map[source] = nil
 			source_v_map[source] = nil
@@ -536,7 +540,7 @@ local function add_node_watch(cluster_name)
 						channel_info.version = nil
 						channel_info.luamsg = nil
 						channel_info.req_syned = false
-						rsp_source_map(channel_info, WATCH_SYN_RET.cancel)
+						rsp_source_map(channel_info, WATCH_SYN_RET.cancel, nil, nil, true)
 					end
 				elseif pack_id == FRPC_PACK_ID.unsubsyn then
 				elseif pack_id == FRPC_PACK_ID.psubsyn then
@@ -563,13 +567,13 @@ local function add_node_watch(cluster_name)
 
 		
 		for channel_name,channel_info in pairs(watch_syn_info) do
-			rsp_source_map(channel_info, WATCH_SYN_RET.disconnect)
+			rsp_source_map(channel_info, WATCH_SYN_RET.disconnect, nil, nil, true)
 		end
 		--pwatch 同样要通知：漏掉后 psubsyn 的调用方（watch_syn_client 的重订阅循环）永远等不到返回，
 		--它的 g_pcluster_reqing_map 标志不会清，重连时 pwatch_channel_name 会直接 return，
 		--从此该通道再也不会被订阅（表现为同步静默失效）。
 		for pchannel_name,pchannel_info in pairs(pwatch_syn_info) do
-			rsp_source_map(pchannel_info, WATCH_SYN_RET.disconnect)
+			rsp_source_map(pchannel_info, WATCH_SYN_RET.disconnect, nil, nil, true)
 		end
 
 		log.info("watch disconnected ", cluster_name, host)
@@ -581,14 +585,14 @@ container_interface.hook_fix_exit_after(function()
 		local watch_syn_map = node_info.watch_syn_map
 		for cluster_name, watch_syn_info in pairs(watch_syn_map) do
 			for channel_name,channel_info in pairs(watch_syn_info) do
-				rsp_source_map(channel_info, WATCH_SYN_RET.move)
+				rsp_source_map(channel_info, WATCH_SYN_RET.move, nil, nil, true)
 			end
 		end
 
 		local pwatch_syn_map = node_info.pwatch_syn_map
 		for cluster_name, pwatch_syn_info in pairs(pwatch_syn_map) do
 			for pchannel_name,pchannel_info in pairs(pwatch_syn_info) do
-				rsp_source_map(pchannel_info, WATCH_SYN_RET.move)
+				rsp_source_map(pchannel_info, WATCH_SYN_RET.move, nil, nil, true)
 			end
 		end
 	end
