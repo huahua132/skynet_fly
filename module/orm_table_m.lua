@@ -306,8 +306,13 @@ function CMD.call(func_name,...)
 end
 
 --获取keylist
+--g_orm_obj 是 CMD.start 里 skynet.fork 异步建出来的（要连 mysql），启动后的短暂窗口内还是 nil。
+--这里必须和 CMD.call 一样走 queue：queue 会把本次调用排在 queue(g_orm_plug.init) 之后，
+--等 init 完成再执行，否则第一次 RPC（如 orm_table_agent 的 watch_first_syn）会直接 attempt to index a nil value。
 function CMD.get_key_list()
-    return g_orm_obj:get_key_list()
+    return queue(function()
+        return g_orm_obj:get_key_list()
+    end)
 end
 
 function CMD.herald_exit()
