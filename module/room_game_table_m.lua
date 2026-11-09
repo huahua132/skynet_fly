@@ -23,7 +23,6 @@ local EMPTY = {}
 -------------------------------------------------------------------------------
 local function get_table_info(table_id)
 	if not g_table_map[table_id] then
-		log.warn("get_table_info not exists table_id = ",table_id)
 		return
 	end
 	return g_table_map[table_id]
@@ -31,14 +30,12 @@ end
 
 local function get_player_info(table_id,player_id)
 	if not g_table_map[table_id] then
-		log.warn("get_player_info not exists table_id = ",table_id)
 		return
 	end
 	local t_info = g_table_map[table_id]
 	local player_map = t_info.player_map
 
 	if not player_map[player_id] then
-		log.warn("get_player_info not exists player_id = ",player_id)
 		return
 	end
 
@@ -48,7 +45,6 @@ end
 --踢出所有玩家
 local function kick_out_all(table_id, reason)
 	if not g_table_map[table_id] then
-		log.warn("kick_out_all not exists table_id = ",table_id)
 		return
 	end
 	local t_info = g_table_map[table_id]
@@ -70,7 +66,6 @@ end
 local function kick_player(table_id, player_id, reason)
 	local player = get_player_info(table_id,player_id)
 	if not player then
-		log.warn("kick_player not exists ",table_id,player_id)
 		return false
 	end
 
@@ -94,7 +89,6 @@ end
 --发送消息
 local function send_msg(table_id, player_id, header, body)
 	if not is_online(table_id,player_id) then
-		log.debug("send msg not online ",table_id, player_id, header)
 		return
 	end
 	local player = get_player_info(table_id, player_id)
@@ -109,7 +103,6 @@ end
 local function send_msg_by_player_list(table_id, player_list, header, body)
 	local t_info = get_table_info(table_id)
 	if not t_info then
-		log.warn("send_msg_by_player_list not exists table_id = ",table_id, header)
 		return
 	end
 	
@@ -124,7 +117,6 @@ local function send_msg_by_player_list(table_id, player_list, header, body)
 		local player_id = player_list[i]
 		local player = player_map[player_id]
 		if not player then
-			log.debug("send_msg_by_player_list not exists ",player_id)
 		else
 			if player.fd > 0 then
 				if player.is_ws then
@@ -134,8 +126,6 @@ local function send_msg_by_player_list(table_id, player_list, header, body)
 					tinsert(gate_list, player.gate)
 					tinsert(fd_list, player.fd)
 				end
-			else
-				log.debug("send_msg_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -152,7 +142,6 @@ end
 --广播发送消息
 local function broad_cast_msg(table_id, header, body, filter_map)
 	if not g_table_map[table_id] then
-		log.warn("broad_cast_msg not exists table_id = ",table_id)
 		return
 	end
 	filter_map = filter_map or EMPTY
@@ -176,8 +165,6 @@ local function broad_cast_msg(table_id, header, body, filter_map)
 					tinsert(gate_list, player.gate)
 					tinsert(fd_list, player.fd)
 				end
-			else
-				log.debug("broad_cast_msg not online ",player_id)
 			end
 		end
 	end
@@ -213,7 +200,6 @@ end
 local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 	local t_info = get_table_info(table_id)
 	if not t_info then
-		log.warn("rpc_push_by_player_list not exists table_id = ",table_id, header)
 		return
 	end
 	
@@ -228,7 +214,6 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 		local player_id = player_list[i]
 		local player = player_map[player_id]
 		if not player then
-			log.debug("rpc_push_by_player_list not exists ",player_id)
 		else
 			if player.fd > 0 then
 				if player.is_ws then
@@ -238,8 +223,6 @@ local function rpc_push_by_player_list(table_id, player_list, header, msgbody)
 					tinsert(gate_list, player.gate)
 					tinsert(fd_list, player.fd)
 				end
-			else
-				log.debug("rpc_push_by_player_list not online ",player_id)
 			end
 		end
 	end
@@ -255,7 +238,6 @@ end
 
 local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
 	if not g_table_map[table_id] then
-		log.warn("rpc_push_broad_cast not exists table_id = ",table_id)
 		return
 	end
 	filter_map = filter_map or EMPTY
@@ -279,8 +261,6 @@ local function rpc_push_broad_cast(table_id, header, msgbody, filter_map)
 					tinsert(gate_list, player.gate)
 					tinsert(fd_list, player.fd)
 				end
-			else
-				log.debug("rpc_push_broad_cast not online ",player_id)
 			end
 		end
 	end
