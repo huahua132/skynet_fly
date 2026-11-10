@@ -37,6 +37,7 @@ local M = {}
 local mt = {
     __index = M,
     __gc = function(self)
+        --兜底：正常应由 close() 收尾，这里只在对象被回收时清掉可能残留的定时器
         if self._flush_timer then
             self._flush_timer:cancel()
             self._flush_timer:release()
@@ -46,6 +47,8 @@ local mt = {
 }
 
 --写操作缓冲条目：{op=op, data=data}
+--写入后延迟这么久再落库（攒批）。注意这是「单次定时器」的延迟，不是循环周期：
+--没有写操作就没有定时器在跑
 local FLUSH_INTERVAL = timer.second / 10   --默认100ms flush一次
 
 --快照叶子包裹层（多主键嵌套表中区分中间key节点和叶子entry_data，内部用，不污染用户entry_data）
@@ -94,6 +97,7 @@ function M:new(orm_name, main_key, flush_interval)
         _wait_list = {},          --待flush的写操作 {op=, data=}
         _flush_interval = flush_interval or FLUSH_INTERVAL,
         _flush_timer = nil,
+        _closed = false,          --是否已 close()（关闭后不再驻留快照/定时器）
     }
     setmetatable(t, mt)
     --构造时同步拉取该main_key下所有数据，建立本地快照(一次同步call)
@@ -275,17 +279,34 @@ local function do_flush(self)
     end
 end
 
---确保flush定时器已启动(首次写时启动)
-local function ensure_flush_timer(self)
+--排一次延时落库：**有写才排**，到点 flush 完定时器自然结束
+--（以前是常驻 timer:new_loop，即使待写队列为空也每秒被 fork 10 次，
+--  登出后 proxy 又被时间轮的闭包引用住，整份快照跟着泄漏 —— 见 close()）
+--
+--回调里先把自己从代理上摘掉并归还对象池：定时器对象会被复用，
+--留在 self._flush_timer 上的话之后的 close() 可能 cancel 到别人。
+--（timer 的回调只透传 args，拿不到定时器对象本身，所以用 upvalue 兜一下）
+local function schedule_flush(self)
+    if self._closed then
+        --已 close 还被写（本不该发生）：直接落库，别再挂定时器
+        do_flush(self)
+        return
+    end
     if self._flush_timer then
         return
     end
-    self._flush_timer = timer:new_loop(self._flush_interval, function()
+    local timer_obj
+    timer_obj = timer:once(self._flush_interval, function()
+        self._flush_timer = nil
+        if timer_obj then
+            timer_obj:release()
+        end
         local isok, err = x_pcall(do_flush, self)
         if not isok then
             log.error("orm_table_proxy flush err ", self._orm_name, self._main_key, err)
         end
     end)
+    self._flush_timer = timer_obj
 end
 
 ---#desc 创建一条数据(异步落库，本地立即可读)
@@ -295,7 +316,7 @@ function M:create_one_entry(entry_data)
     check_main_key(self, entry_data)
     local data_copy = table_util.copy(entry_data)
     build_snapshot_entry(self, data_copy)
-    ensure_flush_timer(self)
+    schedule_flush(self)
     enqueue(self, "create", data_copy)
 end
 
@@ -310,7 +331,7 @@ function M:create_entry(entry_data_list)
         build_snapshot_entry(self, data_copy)
         enqueue(self, "create", data_copy)
     end
-    ensure_flush_timer(self)
+    schedule_flush(self)
 end
 
 ---#desc 查询该main_key下所有数据(读本地快照，首次同步拉取后零call)
@@ -383,7 +404,7 @@ function M:save_one_entry(entry_data)
     else
         build_snapshot_entry(self, data_copy)
     end
-    ensure_flush_timer(self)
+    schedule_flush(self)
     enqueue(self, "save", data_copy, exists)
 end
 
@@ -406,7 +427,7 @@ function M:save_entry(entry_data_list)
         end
         enqueue(self, "save", data_copy, exists)
     end
-    ensure_flush_timer(self)
+    schedule_flush(self)
 end
 
 ---#desc 删除数据(异步落库，本地立即可见) 除main_key外的最左前缀key(首个主键由proxy的main_key决定)
@@ -422,7 +443,7 @@ function M:delete_entry(...)
         del_leaf_from_snapshot(self, kv)
     end
 
-    ensure_flush_timer(self)
+    schedule_flush(self)
     enqueue(self, "del", key_values)
 end
 
@@ -430,13 +451,37 @@ end
 function M:delete_all_entry()
     ensure_snapshot(self)
     self._snapshot = nil
-    ensure_flush_timer(self)
+    schedule_flush(self)
     enqueue(self, "del_all", true)
 end
 
 ---#desc 强制立即flush待写队列
 function M:flush_now()
     do_flush(self)
+end
+
+---#desc 关闭代理：把剩余写落库、取消未到点的flush定时器、释放本地快照
+---  不再使用该代理时必须调用，否则定时器/快照会一直挂在时间轮上（登出场景）
+---  关闭后再调用写接口只落库到 orm_table_client，不再维护快照
+---@return nil
+function M:close()
+    if self._closed then return end
+    self._closed = true
+    local isok, err = x_pcall(do_flush, self)
+    if not isok then
+        log.error("orm_table_proxy close flush err ", self._orm_name, self._main_key, err)
+    end
+    if self._flush_timer then
+        self._flush_timer:cancel()
+        self._flush_timer:release()
+        self._flush_timer = nil
+    end
+    self._snapshot = nil
+end
+
+---#desc 是否已关闭
+function M:is_closed()
+    return self._closed == true
 end
 
 return M
